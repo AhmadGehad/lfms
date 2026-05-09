@@ -3,35 +3,56 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import DashboardLayout from "./components/DashboardLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+
+// Pages
+import Dashboard from "./pages/Dashboard";
+import Animals from "./pages/Animals";
+import AnimalProfile from "./pages/AnimalProfile";
+import Breeding from "./pages/Breeding";
+import Fattening from "./pages/Fattening";
+import Feed from "./pages/Feed";
+import Expenses from "./pages/Expenses";
+import PnL from "./pages/PnL";
+import IncomeStatement from "./pages/IncomeStatement";
+import Sales from "./pages/Sales";
+import Notifications from "./pages/Notifications";
+import AuditLog from "./pages/AuditLog";
+import UserManagement from "./pages/UserManagement";
+import Configuration from "./pages/Configuration";
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
   return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
+    <DashboardLayout>
+      <Switch>
+        <Route path="/" component={Dashboard} />
+        <Route path="/animals" component={Animals} />
+        <Route path="/animals/:id" component={AnimalProfile} />
+        <Route path="/breeding" component={Breeding} />
+        <Route path="/fattening" component={Fattening} />
+        <Route path="/feed" component={Feed} />
+        <Route path="/expenses" component={Expenses} />
+        <Route path="/pnl" component={PnL} />
+        <Route path="/income-statement" component={IncomeStatement} />
+        <Route path="/sales" component={Sales} />
+        <Route path="/notifications" component={Notifications} />
+        <Route path="/audit" component={AuditLog} />
+        <Route path="/users" component={UserManagement} />
+        <Route path="/config" component={Configuration} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </DashboardLayout>
   );
 }
-
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
 
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
+      <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster />
+          <Toaster richColors position="top-right" />
           <Router />
         </TooltipProvider>
       </ThemeProvider>
