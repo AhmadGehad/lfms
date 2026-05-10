@@ -198,3 +198,17 @@
 - [x] All 48 unit tests pass
 - [x] Regression test: 47 passed, 0 failed, 0 warnings
 - [x] Save checkpoint
+
+## Phase 24: Notification Count Reactivity Fix
+- [x] Diagnose: tRPC invalidate() with input object only invalidates exact key match; sidebar uses different input variant
+- [x] Fix: use queryClient.invalidateQueries({ queryKey: [["notifications", "list"]] }) to invalidate ALL variants at once
+- [x] TypeScript: 0 errors
+- [x] Save checkpoint
+
+## Phase 25: Date Serialization Audit + Fix
+- [x] Audit: MySQL date() columns return JS Date objects via Drizzle; String(date).substring(0,10) produces "Mon Mar 09" not "2025-03-09"
+- [x] Fix Sales.tsx: 3 places where saleDate was pre-filled with String(date).substring(0,10) — now uses instanceof Date check with toISOString().split('T')[0]
+- [x] Confirmed all other pages (Animals, Expenses, Breeding, Feed, Weight) use <input type="date"> which always returns YYYY-MM-DD — no other broken patterns found
+- [x] TypeScript: 0 errors
+- [x] 48/48 unit tests pass
+- [x] Save checkpoint

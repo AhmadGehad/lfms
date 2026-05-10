@@ -123,7 +123,7 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
   const [form, setForm] = useState({
     salePrice: String(sale.salePrice ?? ""),
     weightAtSale: String(sale.weightAtSale ?? ""),
-    saleDate: sale.saleDate ? String(sale.saleDate).substring(0, 10) : "",
+    saleDate: sale.saleDate ? (sale.saleDate instanceof Date ? sale.saleDate.toISOString().split("T")[0] : String(sale.saleDate).substring(0, 10)) : "",
     buyerName: sale.buyerName ?? "",
     notes: sale.notes ?? "",
   });
@@ -145,7 +145,7 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
       setForm({
         salePrice: String(sale.salePrice ?? ""),
         weightAtSale: String(sale.weightAtSale ?? ""),
-        saleDate: sale.saleDate ? String(sale.saleDate).substring(0, 10) : "",
+        saleDate: sale.saleDate ? (sale.saleDate instanceof Date ? sale.saleDate.toISOString().split("T")[0] : String(sale.saleDate).substring(0, 10)) : "",
         buyerName: sale.buyerName ?? "",
         notes: sale.notes ?? "",
       });
@@ -315,7 +315,7 @@ export default function Sales() {
                       animalCode,
                       salePrice: String(salePrice),
                       weightAtSale: weightAtSale ? String(weightAtSale) : "",
-                      saleDate: saleDate ? String(saleDate).substring(0, 10) : "",
+                      saleDate: saleDate ? (saleDate instanceof Date ? saleDate.toISOString().split("T")[0] : String(saleDate).substring(0, 10)) : "",
                       buyerName: buyerName ?? "",
                       notes: notes ?? "",
                     };

@@ -2,30 +2,34 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 export default function Notifications() {
   const { t } = useTranslation();
-  const { data: notifications, isLoading, refetch } = trpc.notifications.list.useQuery();
-  const utils = trpc.useUtils();
+  const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
+  // Use the underlying QueryClient to invalidate ALL notifications.list queries
+  // regardless of input (unreadOnly: true or undefined). This ensures the sidebar
+  // badge updates immediately without a page refresh.
+  const queryClient = useQueryClient();
+
+  const invalidateAllNotificationQueries = () => {
+    // tRPC v11 stores query keys as [["notifications", "list"], { input, type }]
+    // Passing just the path prefix invalidates ALL variants (with and without unreadOnly)
+    queryClient.invalidateQueries({ queryKey: [["notifications", "list"]] });
+  };
 
   const markRead = trpc.notifications.markRead.useMutation({
-    onSuccess: () => {
-      // Invalidate both the full list (this page) and the unread-only list (sidebar badge)
-      utils.notifications.list.invalidate();
-      utils.notifications.list.invalidate({ unreadOnly: true });
-    },
+    onSuccess: invalidateAllNotificationQueries,
     onError: (e) => toast.error(e.message),
   });
 
   const markAllRead = trpc.notifications.markAllRead.useMutation({
     onSuccess: () => {
       toast.success(t("notifications.markAllRead"));
-      // Invalidate both the full list (this page) and the unread-only list (sidebar badge)
-      utils.notifications.list.invalidate();
-      utils.notifications.list.invalidate({ unreadOnly: true });
+      invalidateAllNotificationQueries();
     },
     onError: (e) => toast.error(e.message),
   });
