@@ -238,6 +238,14 @@ export const animalsRouter = router({
         createdBy: ctx.user?.id,
       });
 
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "create",
+        entityType: "weightLog",
+        entityId: String((result as any).insertId),
+        newValues: input as any,
+      });
+
       // Check if target weight reached
       const animal = await getAnimalById(input.animalId);
       if (animal?.targetWeightKg) {

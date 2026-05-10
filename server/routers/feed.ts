@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
+  createAuditEntry,
   createFeedStockEntry,
   createNotification,
   createRationPlan,
@@ -26,14 +27,22 @@ export const feedRouter = router({
         endDate: z.string().optional(),
       })
     )
-    .mutation(({ input, ctx }) =>
-      createRationPlan({
+    .mutation(async ({ input, ctx }) => {
+      const result = await createRationPlan({
         ...input,
         effectiveDate: input.effectiveDate as any,
         endDate: input.endDate as any,
         createdBy: ctx.user?.id,
-      })
-    ),
+      });
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "create",
+        entityType: "rationPlan",
+        entityId: String((result as any).insertId),
+        newValues: input as any,
+      });
+      return result;
+    }),
 
   updateRationPlan: protectedProcedure
     .input(
@@ -44,9 +53,17 @@ export const feedRouter = router({
         isActive: z.boolean().optional(),
       })
     )
-    .mutation(({ input: { id, ...data } }) =>
-      updateRationPlan(id, { ...data, endDate: data.endDate as any })
-    ),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateRationPlan(id, { ...data, endDate: data.endDate as any });
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        entityType: "rationPlan",
+        entityId: String(id),
+        newValues: data as any,
+      });
+      return result;
+    }),
 
   // ─── STOCK LEDGER ───────────────────────────────────────────────────────────
   getStockLedger: protectedProcedure
@@ -71,6 +88,13 @@ export const feedRouter = router({
         ...input,
         transactionDate: input.transactionDate as any,
         createdBy: ctx.user?.id,
+      });
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "create",
+        entityType: "feedStock",
+        entityId: String((result as any).insertId),
+        newValues: input as any,
       });
 
       // Check stock levels after new entry

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
+  createAuditEntry,
   getDashboardKPIs,
   getFeedStockStatus,
   getIncomeStatement,
@@ -143,7 +144,17 @@ export const salesRouter = router({
       buyerName: z.string().optional(),
       notes: z.string().optional(),
     }))
-    .mutation(({ input: { id, ...data } }) => updateSale(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateSale(id, data);
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        entityType: "sale",
+        entityId: String(id),
+        newValues: data as any,
+      });
+      return result;
+    }),
 });
 
 export const auditRouter = router({
