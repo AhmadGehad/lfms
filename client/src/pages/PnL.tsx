@@ -28,10 +28,12 @@ export default function PnL() {
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
 
+  // Collect unique status names from data for the filter dropdown
+  const allStatuses = Array.from(new Set((pnlData ?? []).map((a: any) => a.statusName).filter(Boolean))) as string[];
+
   const filtered = (pnlData ?? []).filter((a: any) => {
     if (search && !a.animalCode?.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterStatus === "active" && !a.isActive) return false;
-    if (filterStatus === "inactive" && a.isActive) return false;
+    if (filterStatus !== "all" && a.statusName !== filterStatus) return false;
     return true;
   });
 
@@ -133,11 +135,12 @@ export default function PnL() {
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive / Sold</SelectItem>
+            {allStatuses.map((s) => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -190,8 +193,20 @@ export default function PnL() {
                           <TableCell>{a.speciesName}</TableCell>
                           <TableCell>{a.categoryName}</TableCell>
                           <TableCell>
-                            <Badge variant={a.isActive ? "default" : "secondary"} className="text-xs">
-                              {a.isActive ? "Active" : "Inactive"}
+                            <Badge
+                              className={`text-xs ${
+                                a.statusName?.toLowerCase().includes("active") && a.isActive
+                                  ? "bg-green-100 text-green-800 border-green-200"
+                                  : a.statusName?.toLowerCase().includes("sold")
+                                  ? "bg-blue-100 text-blue-800 border-blue-200"
+                                  : a.statusName?.toLowerCase().includes("dead") || a.statusName?.toLowerCase().includes("death")
+                                  ? "bg-gray-100 text-gray-700 border-gray-200"
+                                  : a.statusName?.toLowerCase().includes("ill") || a.statusName?.toLowerCase().includes("slaughter")
+                                  ? "bg-red-100 text-red-700 border-red-200"
+                                  : "bg-amber-100 text-amber-800 border-amber-200"
+                              }`}
+                            >
+                              {a.statusName ?? (a.isActive ? "Active" : "Inactive")}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right tabular-nums">

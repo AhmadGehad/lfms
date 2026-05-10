@@ -1,0 +1,26 @@
+{
+  "query": "\nSELECT 'lambing_records' as metric, COUNT(*) as value FROM lambing_log WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'weight_logs', COUNT(*) FROM weight_log WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'ration_plans', COUNT(*) FROM ration_plans WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'feed_stock_entries', COUNT(*) FROM feed_stock_ledger WHERE deletedAt IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT 'lambing_records' as metric, COUNT(*) as value FROM lambing_log WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'weight_logs', COUNT(*) FROM weight_log WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'ration_plans', COUNT(*) FROM ration_plans WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'feed_stock_entries', COUNT(*) FROM feed_stock_ledger WHERE deletedAt IS NULL;\n",
+  "rows": [
+    {
+      "metric": "lambing_records",
+      "value": "0"
+    },
+    {
+      "metric": "feed_stock_entries",
+      "value": "22"
+    },
+    {
+      "metric": "weight_logs",
+      "value": "87"
+    },
+    {
+      "metric": "ration_plans",
+      "value": "33"
+    }
+  ],
+  "messages": [],
+  "stdout": "metric\tvalue\nlambing_records\t0\nfeed_stock_entries\t22\nweight_logs\t87\nration_plans\t33\n",
+  "stderr": "",
+  "execution_time_ms": 1769
+}

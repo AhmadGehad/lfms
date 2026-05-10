@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react";
 import { useState } from "react";
@@ -60,6 +61,7 @@ export default function IncomeStatement() {
       // Expenses section
       const expenseRows: [string, string][] = [
         ["Animal Purchases", fmt(statement?.costs?.animalPurchases ?? 0)],
+        ...(statement?.costs?.feedPurchases ? [["Feed Stock Purchases", fmt(statement?.costs?.feedPurchases)]] as [string, string][] : []),
         ...((statement?.costs?.byCategory ?? []).map((cat: any) => [
           cat.categoryName ?? "Other",
           fmt(cat.total),
@@ -223,7 +225,11 @@ export default function IncomeStatement() {
         </CardHeader>
         <CardContent className="space-y-5">
           {isLoading ? (
-            <p className="text-center text-muted-foreground py-8">Loading...</p>
+            <div className="space-y-3 py-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
           ) : (
             <>
               {/* Revenue */}
@@ -257,6 +263,12 @@ export default function IncomeStatement() {
                     <span className="text-muted-foreground">Animal Purchases</span>
                     <span className="font-medium">{fmt(statement?.costs?.animalPurchases ?? 0)}</span>
                   </div>
+                  {(statement?.costs?.feedPurchases ?? 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Feed Stock Purchases</span>
+                      <span className="font-medium">{fmt(statement?.costs?.feedPurchases ?? 0)}</span>
+                    </div>
+                  )}
                   {(statement?.costs?.byCategory ?? []).map((cat: any) => (
                     <div key={cat.categoryName} className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{cat.categoryName ?? "Other"}</span>

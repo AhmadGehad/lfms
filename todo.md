@@ -282,3 +282,20 @@
 - [x] TypeScript: 0 errors
 - [x] 57 tests pass
 - [x] Save checkpoint
+
+## Phase 31: Full Page Data Audit & Fixes
+
+- [x] Animal P&L: show real statusName (Active, Dead, Sold, Ill/Slaughter) — added animalStatuses join to getAllAnimalsPnL
+- [x] Animal P&L: status filter now shows real status names from data (not hardcoded Active/Inactive)
+- [x] Audit Dashboard: KPIs correct (137 active, EGP 42,000 revenue, EGP 67,017 expenses)
+- [x] Audit Animal Registry: all columns correct
+- [x] Audit Animal Profile: all tabs verified
+- [x] Audit Breeding & Lambing: 0 records (no births yet) — loading state fixed to skeleton rows
+- [x] Audit Fattening Tracker: 74 Fattening animals, weights and days on farm correct
+- [x] Audit Feed Management: 21 stock entries, 33 ration plans, 8 feed items — all correct
+- [x] Audit Expense Log: 25 expenses, EGP 67,017 total — all correct
+- [x] Audit Sales Records: 2 sales (O-001 EGP 27,000, B-001 EGP 15,000) — all correct
+- [x] Income Statement: added Feed Stock Purchases line (from feed_stock_ledger) to costs breakdown
+- [x] Income Statement: loading state fixed to skeleton rows
+- [x] TypeScript: 0 errors, 57 tests pass
+- [x] Save checkpoint

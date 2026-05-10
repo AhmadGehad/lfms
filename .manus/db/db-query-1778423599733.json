@@ -1,0 +1,34 @@
+{
+  "query": "\nSELECT 'active_animals' as metric, COUNT(*) as value FROM animals WHERE isActive=1 AND deletedAt IS NULL\nUNION ALL\nSELECT 'total_animals', COUNT(*) FROM animals WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'sales_count', COUNT(*) FROM sales WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'sales_revenue', COALESCE(SUM(salePrice),0) FROM sales WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'expenses_count', COUNT(*) FROM expenses WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'expenses_total', COALESCE(SUM(amount),0) FROM expenses WHERE deletedAt IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT 'active_animals' as metric, COUNT(*) as value FROM animals WHERE isActive=1 AND deletedAt IS NULL\nUNION ALL\nSELECT 'total_animals', COUNT(*) FROM animals WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'sales_count', COUNT(*) FROM sales WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'sales_revenue', COALESCE(SUM(salePrice),0) FROM sales WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'expenses_count', COUNT(*) FROM expenses WHERE deletedAt IS NULL\nUNION ALL\nSELECT 'expenses_total', COALESCE(SUM(amount),0) FROM expenses WHERE deletedAt IS NULL;\n",
+  "rows": [
+    {
+      "metric": "sales_count",
+      "value": "2.00"
+    },
+    {
+      "metric": "total_animals",
+      "value": "142.00"
+    },
+    {
+      "metric": "active_animals",
+      "value": "137.00"
+    },
+    {
+      "metric": "expenses_count",
+      "value": "25.00"
+    },
+    {
+      "metric": "sales_revenue",
+      "value": "42000.00"
+    },
+    {
+      "metric": "expenses_total",
+      "value": "67017.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "metric\tvalue\nsales_count\t2.00\ntotal_animals\t142.00\nactive_animals\t137.00\nexpenses_count\t25.00\nsales_revenue\t42000.00\nexpenses_total\t67017.00\n",
+  "stderr": "",
+  "execution_time_ms": 1890
+}

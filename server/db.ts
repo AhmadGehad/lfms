@@ -891,10 +891,12 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       animal: animals,
       categoryName: animalCategories.name,
       speciesName: species.name,
+      statusName: animalStatuses.name,
     })
     .from(animals)
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
     .leftJoin(species, eq(animals.speciesId, species.id))
+    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
     .where(and(...conditions))
     .orderBy(animals.animalId);
 
@@ -973,6 +975,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       categoryName: row.categoryName ?? "",
       speciesName: row.speciesName ?? "",
       isActive: animal.isActive,
+      statusName: row.statusName ?? (animal.isActive ? "Active" : "Inactive"),
       daysOnFarm,
       purchaseCost,
       feedCost,
@@ -984,10 +987,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       pricePerKg,
     });
   }
-
   return results;
 }
-
 export async function getDashboardKPIs(filters?: {
   fromDate?: string;
   toDate?: string;
@@ -1142,17 +1143,29 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
     .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`))
     .groupBy(expenseCategories.name);
 
+   // Feed stock purchases in period
+  const feedPurchases = await db
+    .select({ total: sql<number>`SUM(totalCost)` })
+    .from(feedStockLedger)
+    .where(
+      and(
+        eq(feedStockLedger.transactionType, "purchase"),
+        sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`,
+        sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`
+      )
+    );
+  const totalFeedCost = parseFloat(String(feedPurchases[0]?.total ?? 0));
   const totalRevenue = parseFloat(String(salesData[0]?.total ?? 0));
   const totalAnimalCost = parseFloat(String(purchaseCosts[0]?.total ?? 0));
   const totalOtherCost = expensesByCategory.reduce((sum, e) => sum + parseFloat(String(e.total ?? 0)), 0);
-  const totalCost = totalAnimalCost + totalOtherCost;
+  const totalCost = totalAnimalCost + totalFeedCost + totalOtherCost;
   const grossProfit = totalRevenue - totalCost;
-
   return {
     period: { fromDate: filters.fromDate, toDate: filters.toDate },
     revenue: { animalSales: totalRevenue, total: totalRevenue },
     costs: {
       animalPurchases: totalAnimalCost,
+      feedPurchases: totalFeedCost,
       byCategory: expensesByCategory,
       totalOther: totalOtherCost,
       total: totalCost,
