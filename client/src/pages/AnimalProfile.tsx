@@ -13,6 +13,7 @@ import { ArrowLeft, GitBranch, Plus, Scale, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   CartesianGrid,
   Line,
@@ -24,6 +25,7 @@ import {
 } from "recharts";
 
 function PnLCard({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
   const { data: pnl, isLoading } = trpc.animals.getPnL.useQuery({ animalId });
 
   if (isLoading) return <Skeleton className="h-40 w-full" />;
@@ -73,7 +75,7 @@ function PnLCard({ animalId }: { animalId: number }) {
               <p className="text-lg font-bold">{fmt(pnl.costPerDay ?? 0)}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Days on Farm</p>
+              <p className="text-xs text-muted-foreground">{t("animals.daysOnFarm")}</p>
               <p className="text-lg font-bold">{pnl.daysOnFarm ?? 0}</p>
             </div>
           </div>
@@ -84,6 +86,7 @@ function PnLCard({ animalId }: { animalId: number }) {
 }
 
 function WeightChart({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
   const { data: weights } = trpc.animals.getWeightLog.useQuery({ animalId });
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -108,7 +111,7 @@ function WeightChart({ animalId }: { animalId: number }) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Weight History</h3>
+        <h3 className="font-semibold">{t("animals.weightHistory")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="gap-2">
@@ -367,11 +370,12 @@ function AnimalSalesTab({ animalId }: { animalId: number }) {
 }
 
 function StatusHistory({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
   const { data: history } = trpc.animals.getStatusHistory.useQuery({ animalId });
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold">Status History</h3>
+      <h3 className="font-semibold">{t("animals.statusHistory")}</h3>
       {(history ?? []).length === 0 ? (
         <p className="text-sm text-muted-foreground">No status changes recorded.</p>
       ) : (
@@ -399,6 +403,7 @@ function StatusHistory({ animalId }: { animalId: number }) {
 }
 
 export default function AnimalProfile() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const animalId = Number(params.id);
   const [, setLocation] = useLocation();
@@ -419,7 +424,7 @@ export default function AnimalProfile() {
     return (
       <div className="p-6">
         <p className="text-muted-foreground">Animal not found.</p>
-        <Button variant="link" onClick={() => setLocation("/animals")}>Back to Registry</Button>
+        <Button variant="link" onClick={() => setLocation("/animals")}>{t("animals.title")}</Button>
       </div>
     );
   }
@@ -505,10 +510,10 @@ export default function AnimalProfile() {
           <Tabs defaultValue="weights">
             <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="weights">Weight Log</TabsTrigger>
-              <TabsTrigger value="feed">Feed History</TabsTrigger>
+              <TabsTrigger value="feed">{t("animals.feedHistory")}</TabsTrigger>
               <TabsTrigger value="expenses">Expenses</TabsTrigger>
               <TabsTrigger value="sales">Sales</TabsTrigger>
-              <TabsTrigger value="status">Status History</TabsTrigger>
+              <TabsTrigger value="status">{t("animals.statusHistory")}</TabsTrigger>
             </TabsList>
             <TabsContent value="weights">
               <WeightChart animalId={animalId} />

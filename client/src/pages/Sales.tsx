@@ -20,8 +20,10 @@ import { trpc } from "@/lib/trpc";
 import { Plus, ShoppingCart, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     animalId: "",
@@ -98,12 +100,12 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Notes</Label>
+            <Label>{t("common.notes")}</Label>
             <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={exitAnimal.isPending}>
             {exitAnimal.isPending ? "Saving..." : "Record Sale"}
           </Button>
@@ -114,6 +116,7 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
 }
 
 export default function Sales() {
+  const { t } = useTranslation();
   const { data: sales, isLoading, refetch } = trpc.sales.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -148,14 +151,14 @@ export default function Sales() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Animal ID</TableHead>
-                  <TableHead>Sale Date</TableHead>
+                  <TableHead>{t("animals.animalId")}</TableHead>
+                  <TableHead>{t("common.date")}</TableHead>
                   <TableHead>Sale Price (EGP)</TableHead>
-                  <TableHead>Weight at Sale</TableHead>
+                  <TableHead>{t("pnl.weightAtSale")}</TableHead>
                   <TableHead>Price / kg</TableHead>
-                  <TableHead>Buyer</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("pnl.buyer")}</TableHead>
+                  <TableHead>{t("common.notes")}</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -197,7 +200,7 @@ export default function Sales() {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteSale.mutate({ id: s.id })}>
                                   Move to Bin
                                 </AlertDialogAction>

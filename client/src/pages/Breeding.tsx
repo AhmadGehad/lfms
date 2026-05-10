@@ -22,8 +22,10 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { control, handleSubmit, reset } = useForm({
     defaultValues: {
@@ -77,20 +79,20 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><Plus className="h-4 w-4" />Record Birth</Button>
+        <Button className="gap-2"><Plus className="h-4 w-4" />{t("breeding.recordBirth")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Record New Birth</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Birth Date *</Label>
+              <Label>{t("breeding.birthDate")} *</Label>
               <Controller name="birthDate" control={control} render={({ field }) => (
                 <Input type="date" {...field} />
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Birth Type *</Label>
+              <Label>{t("breeding.birthType")} *</Label>
               <Controller name="birthTypeId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
@@ -115,7 +117,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Birth Weight (kg)</Label>
+              <Label>{t("breeding.birthWeight")}</Label>
               <Controller name="birthWeightKg" control={control} render={({ field }) => (
                 <Input type="number" placeholder="0.0" {...field} />
               )} />
@@ -134,7 +136,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Sire (Father)</Label>
+              <Label>{t("breeding.sire")}</Label>
               <Controller name="sireId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder="Select sire" /></SelectTrigger>
@@ -167,9 +169,9 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             <Button type="submit" disabled={recordBirth.isPending}>
-              {recordBirth.isPending ? "Recording..." : "Record Birth"}
+              {recordBirth.isPending ? "Recording..." : t("breeding.recordBirth")}
             </Button>
           </DialogFooter>
         </form>
@@ -179,6 +181,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
 }
 
 export default function Breeding() {
+  const { t } = useTranslation();
   const { data: lambingLog, isLoading, refetch } = trpc.breeding.listLambing.useQuery();
   const utils = trpc.useUtils();
 
@@ -244,14 +247,14 @@ export default function Breeding() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Lamb ID</TableHead>
-                  <TableHead>Birth Date</TableHead>
+                  <TableHead>{t("breeding.birthDate")}</TableHead>
                   <TableHead>Sex</TableHead>
-                  <TableHead>Birth Type</TableHead>
-                  <TableHead>Birth Weight</TableHead>
-                  <TableHead>Dam</TableHead>
-                  <TableHead>Sire</TableHead>
+                  <TableHead>{t("breeding.birthType")}</TableHead>
+                  <TableHead>{t("breeding.birthWeight")}</TableHead>
+                  <TableHead>{t("breeding.dam")}</TableHead>
+                  <TableHead>{t("breeding.sire")}</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -300,7 +303,7 @@ export default function Breeding() {
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteLambingLog.mutate({ id: l.id })}>
                                   Move to Bin
                                 </AlertDialogAction>
@@ -365,7 +368,7 @@ export default function Breeding() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPromoteDialog({ open: false, lambId: null })}>Cancel</Button>
+            <Button variant="outline" onClick={() => setPromoteDialog({ open: false, lambId: null })}>{t("common.cancel")}</Button>
             <Button onClick={handlePromote} disabled={promoteLamb.isPending}>
               {promoteLamb.isPending ? "Promoting..." : "Promote to Registry"}
             </Button>

@@ -1,0 +1,23 @@
+{
+  "query": "SELECT isActive, COUNT(*) as cnt FROM animals WHERE deletedAt IS NULL GROUP BY isActive;\nSELECT a.id, a.animalId, a.isActive, a.categoryId, ac.name as categoryName \nFROM animals a \nLEFT JOIN animal_categories ac ON a.categoryId = ac.id \nWHERE a.isActive = 1 AND a.deletedAt IS NULL \nLIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT isActive, COUNT(*) as cnt FROM animals WHERE deletedAt IS NULL GROUP BY isActive;\nSELECT a.id, a.animalId, a.isActive, a.categoryId, ac.name as categoryName \nFROM animals a \nLEFT JOIN animal_categories ac ON a.categoryId = ac.id \nWHERE a.isActive = 1 AND a.deletedAt IS NULL \nLIMIT 3;",
+  "rows": [
+    {
+      "isActive": "0",
+      "cnt": "3"
+    },
+    {
+      "isActive": "1",
+      "cnt": "128"
+    }
+  ],
+  "messages": [
+    "id\tanimalId\tisActive\tcategoryId\tcategoryName",
+    "30003\tF-003\t1\t3\tFattening",
+    "30002\tF-002\t1\t3\tFattening",
+    "30001\tF-001\t1\t3\tFattening"
+  ],
+  "stdout": "isActive\tcnt\n0\t3\n1\t128\nid\tanimalId\tisActive\tcategoryId\tcategoryName\n30003\tF-003\t1\t3\tFattening\n30002\tF-002\t1\t3\tFattening\n30001\tF-001\t1\t3\tFattening\n",
+  "stderr": "",
+  "execution_time_ms": 2067
+}

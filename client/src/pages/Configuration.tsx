@@ -11,9 +11,11 @@ import { trpc } from "@/lib/trpc";
 import { Settings, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 // ── Species Tab ──────────────────────────────────────────────────────────────
 function SpeciesTab() {
+  const { t } = useTranslation();
   const { data: species, refetch } = trpc.config.getSpecies.useQuery();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -31,10 +33,10 @@ function SpeciesTab() {
         <h3 className="font-semibold">Species</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Species</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addSpecies")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Add Species</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("config.addSpecies")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Name *</Label>
@@ -46,14 +48,14 @@ function SpeciesTab() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={() => create.mutate({ name })} disabled={!name || create.isPending}>Save</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name })} disabled={!name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Code</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Code</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
         <TableBody>
           {(species ?? []).map((s: any) => (
             <TableRow key={s.id}>
@@ -70,6 +72,7 @@ function SpeciesTab() {
 
 // ── Categories Tab ───────────────────────────────────────────────────────────
 function CategoriesTab() {
+  const { t } = useTranslation();
   const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: species } = trpc.config.getSpecies.useQuery();
   const [open, setOpen] = useState(false);
@@ -87,10 +90,10 @@ function CategoriesTab() {
         <h3 className="font-semibold">Animal Categories</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Category</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Add Category</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("config.addCategory")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Name *</Label>
@@ -115,14 +118,14 @@ function CategoriesTab() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={() => create.mutate({ name: form.name, idPrefix: form.idPrefix, speciesId: Number(form.speciesId), targetWeightKg: form.targetWeightKg || undefined })} disabled={!form.name || !form.idPrefix || !form.speciesId || create.isPending}>Save</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, idPrefix: form.idPrefix, speciesId: Number(form.speciesId), targetWeightKg: form.targetWeightKg || undefined })} disabled={!form.name || !form.idPrefix || !form.speciesId || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>ID Prefix</TableHead><TableHead>Species</TableHead><TableHead>Target Weight</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>ID Prefix</TableHead><TableHead>Species</TableHead><TableHead>{t("config.targetWeight")}</TableHead></TableRow></TableHeader>
         <TableBody>
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
@@ -140,6 +143,7 @@ function CategoriesTab() {
 
 // ── Groups Tab ───────────────────────────────────────────────────────────────
 function GroupsTab() {
+  const { t } = useTranslation();
   const { data: groups } = trpc.config.getGroups.useQuery();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", groupCode: "", description: "" });
@@ -156,7 +160,7 @@ function GroupsTab() {
         <h3 className="font-semibold">Groups / Pens</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Group</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addGroup")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>Add Group / Pen</DialogTitle></DialogHeader>
@@ -175,14 +179,14 @@ function GroupsTab() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={() => create.mutate({ name: form.name, groupCode: form.groupCode || form.name.toUpperCase().replace(/\s+/g, '-'), description: form.description || undefined })} disabled={!form.name || create.isPending}>Save</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, groupCode: form.groupCode || form.name.toUpperCase().replace(/\s+/g, '-'), description: form.description || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Capacity</TableHead><TableHead>Location</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Capacity</TableHead><TableHead>Location</TableHead></TableRow></TableHeader>
         <TableBody>
           {(groups ?? []).map((g: any) => (
             <TableRow key={g.id}>
@@ -199,6 +203,7 @@ function GroupsTab() {
 
 // ── Feed Items Tab ───────────────────────────────────────────────────────────
 function FeedItemsTab() {
+  const { t } = useTranslation();
   const { data: feedItems } = trpc.config.getFeedItems.useQuery();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", unit: "", reorderLevel: "", currentPrice: "" });
@@ -215,10 +220,10 @@ function FeedItemsTab() {
         <h3 className="font-semibold">Feed Items</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Feed Item</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addFeedItem")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Add Feed Item</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("config.addFeedItem")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <Label>Name *</Label>
@@ -247,14 +252,14 @@ function FeedItemsTab() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={() => create.mutate({ name: form.name, unit: form.unit || undefined })} disabled={!form.name || create.isPending}>Save</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, unit: form.unit || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Unit</TableHead><TableHead>Current Price</TableHead><TableHead>Reorder Level</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Unit</TableHead><TableHead>Current Price</TableHead><TableHead>Reorder Level</TableHead></TableRow></TableHeader>
         <TableBody>
           {(feedItems ?? []).map((fi: any) => (
             <TableRow key={fi.id}>
@@ -272,6 +277,7 @@ function FeedItemsTab() {
 
 // ── Expense Categories Tab ───────────────────────────────────────────────────
 function ExpenseCategoriesTab() {
+  const { t } = useTranslation();
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -288,7 +294,7 @@ function ExpenseCategoriesTab() {
         <h3 className="font-semibold">Expense Categories</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Category</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>Add Expense Category</DialogTitle></DialogHeader>
@@ -299,14 +305,14 @@ function ExpenseCategoriesTab() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button onClick={() => create.mutate({ name })} disabled={!name || create.isPending}>Save</Button>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name })} disabled={!name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
       <Table>
-        <TableHeader><TableRow><TableHead>Name</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
         <TableBody>
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
@@ -321,6 +327,7 @@ function ExpenseCategoriesTab() {
 }
 
 export default function Configuration() {
+  const { t } = useTranslation();
   return (
     <div className="p-6 space-y-6">
       <div>

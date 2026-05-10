@@ -22,6 +22,7 @@ import { trpc } from "@/lib/trpc";
 import { AlertTriangle, Plus, Wheat, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 function StockStatusBadge({ status }: { status: string }) {
   if (status === "critical") return <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">Critical</Badge>;
@@ -30,6 +31,7 @@ function StockStatusBadge({ status }: { status: string }) {
 }
 
 function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     feedItemId: "",
@@ -109,17 +111,17 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
               <Input type="number" placeholder="0.0" value={form.qty} onChange={(e) => setForm((f) => ({ ...f, qty: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>Unit Cost</Label>
+              <Label>{t("feed.unitCost")}</Label>
               <Input type="number" placeholder="0.00" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Supplier</Label>
+            <Label>{t("feed.supplier")}</Label>
             <Input placeholder="Supplier name" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={addStock.isPending}>
             {addStock.isPending ? "Saving..." : "Save Entry"}
           </Button>
@@ -130,6 +132,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
 }
 
 export default function Feed() {
+  const { t } = useTranslation();
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
   const { data: stockLedger } = trpc.feed.getStockLedger.useQuery();
   const { data: rationPlans } = trpc.feed.getRationPlans.useQuery();
@@ -208,8 +211,8 @@ export default function Feed() {
 
       <Tabs defaultValue="ledger">
         <TabsList>
-          <TabsTrigger value="ledger">Stock Ledger</TabsTrigger>
-          <TabsTrigger value="rations">Ration Plans</TabsTrigger>
+          <TabsTrigger value="ledger">{t("feed.stockLedger")}</TabsTrigger>
+          <TabsTrigger value="rations">{t("feed.rationPlans")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ledger">
@@ -220,13 +223,13 @@ export default function Feed() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
-                      <TableHead>Feed Item</TableHead>
+                      <TableHead>{t("feed.feedItem")}</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Unit Cost</TableHead>
-                      <TableHead>Total Cost</TableHead>
-                      <TableHead>Supplier</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t("common.quantity")}</TableHead>
+                      <TableHead>{t("feed.unitCost")}</TableHead>
+                      <TableHead>{t("feed.totalCost")}</TableHead>
+                      <TableHead>{t("feed.supplier")}</TableHead>
+                      <TableHead className="text-right">{t("common.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -264,7 +267,7 @@ export default function Feed() {
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                   <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteFeedStock.mutate({ id: entry.id })}>
                                     Move to Bin
                                   </AlertDialogAction>
@@ -289,13 +292,13 @@ export default function Feed() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Feed Item</TableHead>
+                      <TableHead>{t("common.category")}</TableHead>
+                      <TableHead>{t("feed.feedItem")}</TableHead>
                       <TableHead>Qty / Head / Day</TableHead>
-                      <TableHead>Effective Date</TableHead>
+                      <TableHead>{t("feed.effectiveDate")}</TableHead>
                       <TableHead>End Date</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-right">{t("common.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -338,7 +341,7 @@ export default function Feed() {
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                   <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRationPlan.mutate({ id: plan.id })}>
                                     Move to Bin
                                   </AlertDialogAction>

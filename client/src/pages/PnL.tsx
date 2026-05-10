@@ -7,8 +7,10 @@ import { trpc } from "@/lib/trpc";
 import { Activity, Search } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 
 export default function PnL() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [filterSpecies, setFilterSpecies] = useState("all");
@@ -58,15 +60,15 @@ export default function PnL() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Animal ID</TableHead>
+                  <TableHead>{t("animals.animalId")}</TableHead>
                   <TableHead>Species</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Purchase Cost</TableHead>
-                  <TableHead className="text-right">Feed Cost</TableHead>
+                  <TableHead>{t("common.category")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead className="text-right">{t("animals.purchaseCost")}</TableHead>
+                  <TableHead className="text-right">{t("animals.totalFeedCost")}</TableHead>
                   <TableHead className="text-right">Other Costs</TableHead>
-                  <TableHead className="text-right">Revenue</TableHead>
-                  <TableHead className="text-right">Net P&L</TableHead>
+                  <TableHead className="text-right">{t("animals.totalRevenue")}</TableHead>
+                  <TableHead className="text-right">{t("animals.netPnL")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

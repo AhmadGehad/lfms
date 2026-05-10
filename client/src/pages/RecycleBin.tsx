@@ -35,7 +35,7 @@ import {
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const ENTITY_TYPES = [
-  { value: "", label: "All Types" },
+  { value: "all", label: "All Types" },
   { value: "animal", label: "Animals" },
   { value: "expense", label: "Expenses" },
   { value: "weightLog", label: "Weight Entries" },
@@ -84,11 +84,11 @@ export default function RecycleBin() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "owner";
-  const [filterType, setFilterType] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("all");
   const utils = trpc.useUtils();
 
   const { data: items = [], isLoading } = trpc.recycleBin.list.useQuery(
-    filterType ? { entityType: filterType } : {}
+    filterType && filterType !== "all" ? { entityType: filterType } : {}
   );
 
   // ─── RESTORE MUTATIONS ──────────────────────────────────────────────────────

@@ -11,8 +11,10 @@ import { Scale, Plus } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function Fattening() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [open, setOpen] = useState(false);
   const [animalId, setAnimalId] = useState("");
@@ -90,11 +92,11 @@ export default function Fattening() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Animal ID</TableHead>
-                  <TableHead>Category</TableHead>
+                  <TableHead>{t("animals.animalId")}</TableHead>
+                  <TableHead>{t("common.category")}</TableHead>
                   <TableHead>Group</TableHead>
                   <TableHead>Days on Farm</TableHead>
-                  <TableHead>Target Weight</TableHead>
+                  <TableHead>{t("fattening.targetWeight")}</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>

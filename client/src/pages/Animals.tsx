@@ -24,6 +24,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 
 function StatusBadge({ status }: { status: string }) {
   const lower = status?.toLowerCase() ?? "";
@@ -37,6 +38,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { control, handleSubmit, reset, watch } = useForm({
     defaultValues: {
@@ -67,7 +69,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   const utils = trpc.useUtils();
   const createAnimal = trpc.animals.create.useMutation({
     onSuccess: () => {
-      toast.success("Animal registered successfully");
+      toast.success(t("animals.title") + " registered");
       utils.animals.list.invalidate();
       setOpen(false);
       reset();
@@ -110,10 +112,10 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Species *</Label>
+              <Label>{t("common.species")} *</Label>
               <Controller name="speciesId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select species" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.species")} /></SelectTrigger>
                   <SelectContent>
                     {(species ?? []).map((s: any) => (
                       <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
@@ -123,10 +125,10 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Category *</Label>
+              <Label>{t("common.category")} *</Label>
               <Controller name="categoryId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange} disabled={!selectedSpeciesId}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.category")} /></SelectTrigger>
                   <SelectContent>
                     {(categories ?? []).map((c: any) => (
                       <SelectItem key={c.id} value={String(c.id)}>{c.name} ({c.idPrefix})</SelectItem>
@@ -139,7 +141,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>Group / Pen *</Label>
               <Controller name="groupId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.group")} /></SelectTrigger>
                   <SelectContent>
                     {(groups ?? []).map((g: any) => (
                       <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
@@ -149,10 +151,10 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Status *</Label>
+              <Label>{t("common.status")} *</Label>
               <Controller name="statusId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.status")} /></SelectTrigger>
                   <SelectContent>
                     {(statuses ?? []).map((s: any) => (
                       <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
@@ -162,10 +164,10 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Sex *</Label>
+              <Label>{t("common.sex")} *</Label>
               <Controller name="sex" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select sex" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.sex")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
                     <SelectItem value="female">Female</SelectItem>
@@ -174,10 +176,10 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Acquisition Type *</Label>
+              <Label>{t("animals.acquisitionType")} *</Label>
               <Controller name="acquisitionType" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.type")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="purchased">Purchased</SelectItem>
                     <SelectItem value="born">Born on Farm</SelectItem>
@@ -198,22 +200,22 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Purchase Cost</Label>
+              <Label>{t("animals.purchaseCost")}</Label>
               <Controller name="purchaseCost" control={control} render={({ field }) => (
                 <Input type="number" placeholder="0.00" {...field} />
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Weight at Acquisition (kg)</Label>
+              <Label>{t("common.weight")} ({t("common.kg")})</Label>
               <Controller name="weightAtAcquisition" control={control} render={({ field }) => (
                 <Input type="number" placeholder="0.0" {...field} />
               )} />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             <Button type="submit" disabled={createAnimal.isPending}>
-              {createAnimal.isPending ? "Registering..." : "Register Animal"}
+              {createAnimal.isPending ? "Registering..." : t("animals.addAnimal")}
             </Button>
           </DialogFooter>
         </form>
@@ -223,6 +225,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
 }
 
 export default function Animals() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [filterSpecies, setFilterSpecies] = useState<string>("all");
@@ -334,15 +337,15 @@ export default function Animals() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Animal ID</TableHead>
-                    <TableHead>Species</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Group</TableHead>
-                    <TableHead>Sex</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Acquisition</TableHead>
-                    <TableHead>Days on Farm</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t("animals.animalId")}</TableHead>
+                    <TableHead>{t("common.species")}</TableHead>
+                    <TableHead>{t("common.category")}</TableHead>
+                    <TableHead>{t("common.group")}</TableHead>
+                    <TableHead>{t("common.sex")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("animals.acquisitionDate")}</TableHead>
+                    <TableHead>{t("animals.daysOnFarm")}</TableHead>
+                    <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -400,7 +403,7 @@ export default function Animals() {
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-destructive hover:bg-destructive/90"
                                       onClick={(e) => { e.stopPropagation(); deleteAnimalMutation.mutate({ id: a.animal.id }); }}

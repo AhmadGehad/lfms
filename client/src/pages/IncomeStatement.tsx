@@ -7,8 +7,10 @@ import { trpc } from "@/lib/trpc";
 import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function IncomeStatement() {
+  const { t } = useTranslation();
   const now = new Date();
   const [fromDate, setFromDate] = useState(new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0]);
   const [toDate, setToDate] = useState(now.toISOString().split("T")[0]);
@@ -31,7 +33,7 @@ export default function IncomeStatement() {
       doc.text("Azal Farms - مزارع أزَل", 105, 20, { align: "center" });
       doc.setFontSize(14);
       doc.setTextColor(60, 60, 60);
-      doc.text("Farm Income Statement", 105, 30, { align: "center" });
+      doc.text(t("incomeStatement.title"), 105, 30, { align: "center" });
       doc.setFontSize(10);
       doc.setTextColor(120, 120, 120);
       doc.text(`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`, 105, 38, { align: "center" });
@@ -123,7 +125,7 @@ export default function IncomeStatement() {
       // Summary sheet
       const summaryData = [
         ["Azal Farms - مزارع أزَل"],
-        ["Farm Income Statement"],
+        [t("incomeStatement.title")],
         [`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`],
         [`Generated: ${new Date().toLocaleString()}`],
         [],

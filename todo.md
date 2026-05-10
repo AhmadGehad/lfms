@@ -116,3 +116,12 @@
 - [x] Final TypeScript check (0 errors)
 - [x] All 48 unit tests pass
 - [x] Save checkpoint and deploy
+
+## Bug Fixes (Phase 16)
+- [x] Fix Arabic translation: added useTranslation() + t() calls to all 14 page components
+- [x] Fix Dashboard "Unknown" category labels: d.categoryName → d.category (field name mismatch)
+- [x] Verified: database join works correctly (128 active animals with correct category names)
+- [x] Fix Recycle Bin crash: empty string SelectItem value="" → value="all"
+- [x] TypeScript: 0 errors
+- [x] All 48 unit tests pass
+- [ ] Save checkpoint and deploy

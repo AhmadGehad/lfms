@@ -2,8 +2,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 import { ClipboardList } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function AuditLog() {
+  const { t } = useTranslation();
   const { data: entries, isLoading } = trpc.audit.list.useQuery();
 
   return (
@@ -24,11 +26,11 @@ export default function AuditLog() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>Action</TableHead>
+                  <TableHead>{t("audit.timestamp")}</TableHead>
+                  <TableHead>{t("audit.action")}</TableHead>
                   <TableHead>Entity Type</TableHead>
-                  <TableHead>Entity ID</TableHead>
-                  <TableHead>User</TableHead>
+                  <TableHead>{t("audit.entityId")}</TableHead>
+                  <TableHead>{t("audit.user")}</TableHead>
                   <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>

@@ -20,8 +20,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     expenseDate: new Date().toISOString().split("T")[0],
@@ -68,7 +70,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><Plus className="h-4 w-4" />Add Expense</Button>
+        <Button className="gap-2"><Plus className="h-4 w-4" />{t("expenses.addExpense")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader><DialogTitle>Record Expense</DialogTitle></DialogHeader>
@@ -94,7 +96,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Sub-Category</Label>
+              <Label>{t("expenses.subCategory")}</Label>
               <Select value={form.subCategoryId} onValueChange={(v) => setForm((f) => ({ ...f, subCategoryId: v }))} disabled={!form.categoryId}>
                 <SelectTrigger><SelectValue placeholder="Select sub-category" /></SelectTrigger>
                 <SelectContent>
@@ -133,12 +135,12 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
             <Input placeholder="Vendor name" value={form.vendorName} onChange={(e) => setForm((f) => ({ ...f, vendorName: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
-            <Label>Notes</Label>
+            <Label>{t("common.notes")}</Label>
             <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={createExpense.isPending}>
             {createExpense.isPending ? "Saving..." : "Save Expense"}
           </Button>
@@ -149,6 +151,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
 }
 
 export default function Expenses() {
+  const { t } = useTranslation();
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1);
     return d.toISOString().split("T")[0];
@@ -193,14 +196,14 @@ export default function Expenses() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Sub-Category</TableHead>
+                  <TableHead>{t("common.date")}</TableHead>
+                  <TableHead>{t("common.category")}</TableHead>
+                  <TableHead>{t("expenses.subCategory")}</TableHead>
                   <TableHead>Amount (EGP)</TableHead>
                   <TableHead>Allocation</TableHead>
-                  <TableHead>Vendor</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("expenses.vendor")}</TableHead>
+                  <TableHead>{t("common.notes")}</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -238,7 +241,7 @@ export default function Expenses() {
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                               <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteExpense.mutate({ id: e.expense.id })}>
                                 Move to Bin
                               </AlertDialogAction>

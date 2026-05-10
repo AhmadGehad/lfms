@@ -5,8 +5,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { trpc } from "@/lib/trpc";
 import { Users } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function UserManagement() {
+  const { t } = useTranslation();
   const { data: users, isLoading } = trpc.userMgmt.listUsers.useQuery();
   const utils = trpc.useUtils();
 
@@ -33,12 +35,12 @@ export default function UserManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead>{t("common.name")}</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Last Sign In</TableHead>
+                  <TableHead>{t("users.role")}</TableHead>
+                  <TableHead>{t("users.lastSignIn")}</TableHead>
                   <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

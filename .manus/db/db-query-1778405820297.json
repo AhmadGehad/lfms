@@ -1,0 +1,83 @@
+{
+  "query": "SELECT id, name, idPrefix FROM animal_categories ORDER BY id LIMIT 20;\nSELECT DISTINCT categoryId, COUNT(*) as cnt FROM animals WHERE deletedAt IS NULL GROUP BY categoryId ORDER BY categoryId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT id, name, idPrefix FROM animal_categories ORDER BY id LIMIT 20;\nSELECT DISTINCT categoryId, COUNT(*) as cnt FROM animals WHERE deletedAt IS NULL GROUP BY categoryId ORDER BY categoryId;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Lamb",
+      "idPrefix": "L-"
+    },
+    {
+      "id": "2",
+      "name": "Weaner",
+      "idPrefix": "W-"
+    },
+    {
+      "id": "3",
+      "name": "Fattening",
+      "idPrefix": "F-"
+    },
+    {
+      "id": "4",
+      "name": "Ewe",
+      "idPrefix": "E-"
+    },
+    {
+      "id": "5",
+      "name": "Ram",
+      "idPrefix": "R-"
+    },
+    {
+      "id": "6",
+      "name": "Goat",
+      "idPrefix": "G-"
+    },
+    {
+      "id": "7",
+      "name": "Baby Goat",
+      "idPrefix": "BG-"
+    },
+    {
+      "id": "8",
+      "name": "Billy Goat",
+      "idPrefix": "BL-"
+    },
+    {
+      "id": "9",
+      "name": "Cow",
+      "idPrefix": "C-"
+    },
+    {
+      "id": "10",
+      "name": "Beef Calf",
+      "idPrefix": "BC-"
+    },
+    {
+      "id": "11",
+      "name": "Buffalo Calf",
+      "idPrefix": "BF-"
+    },
+    {
+      "id": "12",
+      "name": "Dog",
+      "idPrefix": "D-"
+    }
+  ],
+  "messages": [
+    "categoryId\tcnt",
+    "1\t8",
+    "3\t75",
+    "4\t31",
+    "5\t2",
+    "6\t6",
+    "7\t3",
+    "8\t1",
+    "9\t1",
+    "10\t1",
+    "11\t1",
+    "12\t2"
+  ],
+  "stdout": "id\tname\tidPrefix\n1\tLamb\tL-\n2\tWeaner\tW-\n3\tFattening\tF-\n4\tEwe\tE-\n5\tRam\tR-\n6\tGoat\tG-\n7\tBaby Goat\tBG-\n8\tBilly Goat\tBL-\n9\tCow\tC-\n10\tBeef Calf\tBC-\n11\tBuffalo Calf\tBF-\n12\tDog\tD-\ncategoryId\tcnt\n1\t8\n3\t75\n4\t31\n5\t2\n6\t6\n7\t3\n8\t1\n9\t1\n10\t1\n11\t1\n12\t2\n",
+  "stderr": "",
+  "execution_time_ms": 2122
+}

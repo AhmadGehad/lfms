@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, Egg, Leaf, Scale, TrendingUp } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Area,
   AreaChart,
@@ -72,12 +73,14 @@ function KPICard({
 }
 
 function StockStatusBadge({ status }: { status: string }) {
-  if (status === "critical") return <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">Critical</Badge>;
-  if (status === "low") return <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">Low</Badge>;
-  return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">OK</Badge>;
+  const { t } = useTranslation();
+  if (status === "critical") return <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{t("dashboard.critical")}</Badge>;
+  if (status === "low") return <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">{t("dashboard.lowStock")}</Badge>;
+  return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("dashboard.adequate")}</Badge>;
 }
 
 export default function Dashboard() {
+  const { t, i18n } = useTranslation();
   const [filterSpecies, setFilterSpecies] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterGroup, setFilterGroup] = useState<string>("all");
@@ -104,8 +107,9 @@ export default function Dashboard() {
   const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: groups } = trpc.config.getGroups.useQuery();
 
+  const locale = i18n.language === "ar" ? "ar-EG" : "en-EG";
   const fmt = (v: number) =>
-    new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
+    new Intl.NumberFormat(locale, { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
 
   const criticalAlerts = (feedStock ?? []).filter((s: any) => s.status === "critical").length;
   const lowAlerts = (feedStock ?? []).filter((s: any) => s.status === "low").length;
@@ -115,31 +119,31 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Farm Dashboard</h1>
+          <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {new Date().toLocaleDateString("en-EG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            {new Date().toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
         {/* Additive Filters */}
         <div className="flex gap-2 flex-wrap">
           <Select value={filterSpecies} onValueChange={setFilterSpecies}>
-            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="Species" /></SelectTrigger>
+            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder={t("common.species")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Species</SelectItem>
+              <SelectItem value="all">{t("common.all")} {t("common.species")}</SelectItem>
               {(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="Category" /></SelectTrigger>
+            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder={t("common.category")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="all">{t("common.all")} {t("common.category")}</SelectItem>
               {(categories ?? []).map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <Select value={filterGroup} onValueChange={setFilterGroup}>
-            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="Group" /></SelectTrigger>
+            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder={t("common.group")} /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Groups</SelectItem>
+              <SelectItem value="all">{t("common.all")} {t("common.group")}</SelectItem>
               {(groups ?? []).map((g: any) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -151,8 +155,8 @@ export default function Dashboard() {
         <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span className="text-sm font-medium">
-            {criticalAlerts > 0 && `${criticalAlerts} feed item(s) critically low. `}
-            {lowAlerts > 0 && `${lowAlerts} feed item(s) running low.`}
+            {criticalAlerts > 0 && `${criticalAlerts} ${t("dashboard.critical").toLowerCase()}. `}
+            {lowAlerts > 0 && `${lowAlerts} ${t("dashboard.lowStock").toLowerCase()}.`}
           </span>
         </div>
       )}
@@ -160,32 +164,32 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="Active Animals"
+          title={t("dashboard.activeAnimals")}
           value={kpis?.totalActiveHeads ?? 0}
-          sub={`${(kpis?.categoryBreakdown ?? []).length} categories`}
+          sub={`${(kpis?.categoryBreakdown ?? []).length} ${t("common.category").toLowerCase()}`}
           icon={Leaf}
           isLoading={kpisLoading}
         />
         <KPICard
-          title="Gross P&L"
+          title={t("dashboard.netPnL")}
           value={fmt(kpis?.grossPnL ?? 0)}
-          sub="Revenue minus costs"
+          sub={t("incomeStatement.revenue") + " - " + t("incomeStatement.expenses")}
           icon={Egg}
           color={(kpis?.grossPnL ?? 0) >= 0 ? "text-green-600" : "text-red-600"}
           isLoading={kpisLoading}
         />
         <KPICard
-          title="Total Revenue"
+          title={t("animals.totalRevenue")}
           value={fmt(kpis?.totalRevenue ?? 0)}
-          sub="All time sales"
+          sub={t("common.sold")}
           icon={TrendingUp}
           color="text-green-600"
           isLoading={kpisLoading}
         />
         <KPICard
-          title="Total Expenses"
+          title={t("dashboard.totalExpenses")}
           value={fmt(kpis?.totalExpenses ?? 0)}
-          sub="All time costs"
+          sub={t("common.total")}
           icon={Scale}
           color="text-red-600"
           isLoading={kpisLoading}
@@ -197,14 +201,14 @@ export default function Dashboard() {
         {/* Head Count by Category */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">Head Count by Category</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t("dashboard.headCount")}</CardTitle>
           </CardHeader>
           <CardContent>
             {(headCountByCategory ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
-                    data={(headCountByCategory ?? []).map((d: any) => ({ name: d.categoryName ?? "Unknown", value: d.count }))}
+                    data={(headCountByCategory ?? []).map((d: any) => ({ name: d.category ?? t("common.noData"), value: d.count }))}
                     cx="50%"
                     cy="50%"
                     innerRadius={50}
@@ -222,7 +226,7 @@ export default function Dashboard() {
               </ResponsiveContainer>
             ) : (
               <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-                No animals registered yet
+                {t("common.noData")}
               </div>
             )}
           </CardContent>
@@ -231,13 +235,13 @@ export default function Dashboard() {
         {/* Expense Trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">Expense Trend (90 days)</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t("dashboard.recentExpenses")} (90 {t("common.perDay").replace("/", "")})</CardTitle>
           </CardHeader>
           <CardContent>
             {(expenseTrend ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={(expenseTrend ?? []).map((d: any) => ({
-                  date: new Date(d.period).toLocaleDateString("en-EG", { month: "short", day: "numeric" }),
+                  date: new Date(d.period).toLocaleDateString(locale, { month: "short", day: "numeric" }),
                   amount: parseFloat(d.totalAmount),
                 }))}>
                   <defs>
@@ -249,13 +253,13 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(v: number) => [fmt(v), "Expenses"]} />
+                  <Tooltip formatter={(v: number) => [fmt(v), t("dashboard.totalExpenses")]} />
                   <Area type="monotone" dataKey="amount" stroke="hsl(var(--primary))" fill="url(#expenseGradient)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-                No expense data yet
+                {t("common.noData")}
               </div>
             )}
           </CardContent>
@@ -264,25 +268,25 @@ export default function Dashboard() {
         {/* Sales Trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">Sales Revenue (90 days)</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t("incomeStatement.salesRevenue")} (90 {t("common.perDay").replace("/", "")})</CardTitle>
           </CardHeader>
           <CardContent>
             {(salesTrend ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={(salesTrend ?? []).map((d: any) => ({
-                  date: new Date(d.saleDate).toLocaleDateString("en-EG", { month: "short", day: "numeric" }),
+                  date: new Date(d.saleDate).toLocaleDateString(locale, { month: "short", day: "numeric" }),
                   revenue: parseFloat(d.totalRevenue),
                 }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(v: number) => [fmt(v), "Revenue"]} />
+                  <Tooltip formatter={(v: number) => [fmt(v), t("incomeStatement.revenue")]} />
                   <Bar dataKey="revenue" fill="hsl(142, 76%, 36%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-                No sales data yet
+                {t("common.noData")}
               </div>
             )}
           </CardContent>
@@ -293,8 +297,8 @@ export default function Dashboard() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">Feed Stock Status</CardTitle>
-            <Badge variant="outline" className="text-xs">Always unfiltered</Badge>
+            <CardTitle className="text-sm font-semibold">{t("dashboard.feedStock")}</CardTitle>
+            <Badge variant="outline" className="text-xs">{t("dashboard.feedStockNote")}</Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -302,20 +306,20 @@ export default function Dashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Feed Item</TableHead>
-                  <TableHead>Stock on Hand</TableHead>
-                  <TableHead>Unit</TableHead>
-                  <TableHead>Daily Usage</TableHead>
-                  <TableHead>Days Remaining</TableHead>
+                  <TableHead>{t("feed.feedItem")}</TableHead>
+                  <TableHead>{t("feed.currentStock")}</TableHead>
+                  <TableHead>{t("common.type")}</TableHead>
+                  <TableHead>{t("feed.dailyConsumption")}</TableHead>
+                  <TableHead>{t("feed.daysRemaining")}</TableHead>
                   <TableHead>Reorder Level</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(feedStock ?? []).length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No feed items configured. Add feed items in Configuration.
+                      {t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (

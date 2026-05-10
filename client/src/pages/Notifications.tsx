@@ -4,8 +4,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { Bell, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function Notifications() {
+  const { t } = useTranslation();
   const { data: notifications, isLoading, refetch } = trpc.notifications.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -15,7 +17,7 @@ export default function Notifications() {
   });
 
   const markAllRead = trpc.notifications.markAllRead.useMutation({
-    onSuccess: () => { toast.success("All notifications marked as read"); utils.notifications.list.invalidate(); },
+    onSuccess: () => { toast.success(t("notifications.markAllRead")); utils.notifications.list.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -33,28 +35,28 @@ export default function Notifications() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Bell className="h-6 w-6 text-primary" />
-            Notifications
+            {t("notifications.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
+            {unreadCount > 0 ? `${unreadCount} ${t("notifications.markRead")}` : t("common.all")}
           </p>
         </div>
         {unreadCount > 0 && (
           <Button variant="outline" className="gap-2" onClick={() => markAllRead.mutate()}>
             <CheckCheck className="h-4 w-4" />
-            Mark All Read
+            {t("notifications.markAllRead")}
           </Button>
         )}
       </div>
 
       <div className="space-y-3">
         {isLoading ? (
-          <p className="text-center text-muted-foreground py-8">Loading...</p>
+          <p className="text-center text-muted-foreground py-8">{t("common.loading")}</p>
         ) : (notifications ?? []).length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <Bell className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-              No notifications yet.
+              {t("notifications.noNotifications")}
             </CardContent>
           </Card>
         ) : (
@@ -70,7 +72,7 @@ export default function Notifications() {
                     <Badge className={`text-xs ${severityColor(n.severity ?? "info")}`}>
                       {n.alertType?.replace(/_/g, " ") ?? "Alert"}
                     </Badge>
-                    {!n.isRead && <Badge className="bg-primary text-primary-foreground text-xs">New</Badge>}
+                    {!n.isRead && <Badge className="bg-primary text-primary-foreground text-xs">{t("common.active")}</Badge>}
                   </div>
                   <p className="text-sm font-medium">{n.message}</p>
                   <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleString()}</p>
