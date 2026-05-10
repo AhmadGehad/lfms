@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -224,8 +225,8 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
 export default function Feed() {
   const { t } = useTranslation();
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
-  const { data: stockLedger } = trpc.feed.getStockLedger.useQuery();
-  const { data: rationPlans } = trpc.feed.getRationPlans.useQuery();
+  const { data: stockLedger, isLoading: ledgerLoading } = trpc.feed.getStockLedger.useQuery();
+  const { data: rationPlans, isLoading: rationLoading } = trpc.feed.getRationPlans.useQuery();
   const utils = trpc.useUtils();
 
   const deleteFeedStock = trpc.recycleBin.deleteFeedStock.useMutation({
@@ -292,7 +293,16 @@ export default function Feed() {
 
       {/* Stock Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {(stockStatus ?? []).map((item: any) => (
+        {stockLoading && Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="border-l-4 border-l-muted">
+            <CardContent className="pt-4 pb-4 space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-8 w-16" />
+              <Skeleton className="h-3 w-10" />
+            </CardContent>
+          </Card>
+        ))}
+        {!stockLoading && (stockStatus ?? []).map((item: any) => (
           <Card key={item.feedItemId} className={`border-l-4 ${
             item.status === "critical" ? "border-l-red-500" :
             item.status === "low" ? "border-l-amber-500" : "border-l-green-500"
@@ -348,7 +358,15 @@ export default function Feed() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(stockLedger ?? []).length === 0 ? (
+                    {ledgerLoading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <TableRow key={i}>
+                          {Array.from({ length: 8 }).map((_, j) => (
+                            <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (stockLedger ?? []).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                           No stock entries yet.
@@ -417,7 +435,15 @@ export default function Feed() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(rationPlans ?? []).length === 0 ? (
+                    {rationLoading ? (
+                      Array.from({ length: 6 }).map((_, i) => (
+                        <TableRow key={i}>
+                          {Array.from({ length: 7 }).map((_, j) => (
+                            <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (rationPlans ?? []).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                           No ration plans configured.
