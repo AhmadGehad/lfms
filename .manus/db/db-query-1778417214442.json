@@ -1,0 +1,100 @@
+{
+  "query": "SELECT id, userId, title, isRead FROM notifications ORDER BY id LIMIT 15;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT id, userId, title, isRead FROM notifications ORDER BY id LIMIT 15;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "0"
+    },
+    {
+      "id": "2",
+      "userId": "NULL",
+      "title": "Low Feed Stock",
+      "isRead": "0"
+    },
+    {
+      "id": "30001",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "0"
+    },
+    {
+      "id": "30002",
+      "userId": "NULL",
+      "title": "Low Feed Stock",
+      "isRead": "0"
+    },
+    {
+      "id": "30003",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "0"
+    },
+    {
+      "id": "30004",
+      "userId": "NULL",
+      "title": "Low Feed Stock",
+      "isRead": "0"
+    },
+    {
+      "id": "30005",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "0"
+    },
+    {
+      "id": "30006",
+      "userId": "NULL",
+      "title": "Low Feed Stock",
+      "isRead": "0"
+    },
+    {
+      "id": "30007",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "0"
+    },
+    {
+      "id": "30008",
+      "userId": "NULL",
+      "title": "Low Feed Stock",
+      "isRead": "0"
+    },
+    {
+      "id": "30009",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "0"
+    },
+    {
+      "id": "30010",
+      "userId": "NULL",
+      "title": "Critical Feed Stock",
+      "isRead": "0"
+    },
+    {
+      "id": "60001",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "0"
+    },
+    {
+      "id": "60002",
+      "userId": "NULL",
+      "title": "Critical Feed Stock",
+      "isRead": "1"
+    },
+    {
+      "id": "60003",
+      "userId": "NULL",
+      "title": "Target Weight Reached",
+      "isRead": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\ttitle\tisRead\n1\tNULL\tTarget Weight Reached\t0\n2\tNULL\tLow Feed Stock\t0\n30001\tNULL\tTarget Weight Reached\t0\n30002\tNULL\tLow Feed Stock\t0\n30003\tNULL\tTarget Weight Reached\t0\n30004\tNULL\tLow Feed Stock\t0\n30005\tNULL\tTarget Weight Reached\t0\n30006\tNULL\tLow Feed Stock\t0\n30007\tNULL\tTarget Weight Reached\t0\n30008\tNULL\tLow Feed Stock\t0\n30009\tNULL\tTarget Weight Reached\t0\n30010\tNULL\tCritical Feed Stock\t0\n60001\tNULL\tTarget Weight Reached\t0\n60002\tNULL\tCritical Feed Stock\t1\n60003\tNULL\tTarget Weight Reached\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1875
+}

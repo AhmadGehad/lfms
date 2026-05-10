@@ -730,7 +730,10 @@ export async function markNotificationRead(id: number) {
 export async function markAllNotificationsRead(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
+  // Mark both user-specific notifications AND system notifications (userId IS NULL) as read
+  await db.update(notifications).set({ isRead: true }).where(
+    or(eq(notifications.userId, userId), isNull(notifications.userId))
+  );
 }
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────

@@ -212,3 +212,9 @@
 - [x] TypeScript: 0 errors
 - [x] 48/48 unit tests pass
 - [x] Save checkpoint
+
+## Phase 26: Mark-All-Read Bug Fix
+- [x] Debug: all notifications have userId=NULL (system-generated alerts); markAllRead used WHERE userId=? which matched nothing
+- [x] Fix: markAllNotificationsRead now uses OR(userId=?, userId IS NULL) to cover both user and system notifications
+- [x] TypeScript: 0 errors
+- [x] Save checkpoint
