@@ -277,8 +277,8 @@ function FeedHistoryTab({ animalId }: { animalId: number }) {
               <TableRow key={p.id}>
                 <TableCell className="font-medium">{p.feedItemName ?? p.feedItemId}</TableCell>
                 <TableCell>{parseFloat(p.qtyPerHeadPerDay).toFixed(2)} kg</TableCell>
-                <TableCell>{new Date(p.effectiveDate).toLocaleDateString()}</TableCell>
-                <TableCell>{p.endDate ? new Date(p.endDate).toLocaleDateString() : "—"}</TableCell>
+                <TableCell>{p.effectiveDate ? new Date(p.effectiveDate instanceof Date ? p.effectiveDate.toISOString() : p.effectiveDate).toLocaleDateString() : "—"}</TableCell>
+                <TableCell>{p.endDate ? new Date(p.endDate instanceof Date ? p.endDate.toISOString() : p.endDate).toLocaleDateString() : "—"}</TableCell>
                 <TableCell>
                   <Badge variant={p.isActive ? "default" : "secondary"}>
                     {p.isActive ? "Active" : "Inactive"}

@@ -577,9 +577,16 @@ export async function getRationPlans(categoryId?: number) {
   if (!db) return [];
   const query = db
     .select({
-      plan: rationPlans,
+      id: rationPlans.id,
+      categoryId: rationPlans.categoryId,
+      feedItemId: rationPlans.feedItemId,
+      qtyPerHeadPerDay: rationPlans.qtyPerHeadPerDay,
+      effectiveDate: rationPlans.effectiveDate,
+      endDate: rationPlans.endDate,
+      isActive: rationPlans.isActive,
+      createdAt: rationPlans.createdAt,
       feedItemName: feedItems.name,
-      feedItemUnit: feedItems.unit,
+      unit: feedItems.unit,
       categoryName: animalCategories.name,
     })
     .from(rationPlans)

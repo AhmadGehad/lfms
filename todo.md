@@ -220,11 +220,11 @@
 - [x] Save checkpoint
 
 ## Phase 27: Ration Plan Audit & Fix
-- [ ] Compare ration plan data in DB against original Excel
-- [ ] Audit days-remaining calculation in server/db.ts and Feed Management page
-- [ ] Fix any incorrect data or calculation bugs
-- [ ] TypeScript: 0 errors
-- [ ] Save checkpoint
+- [x] Compare ration plan data in DB against original Excel
+- [x] Audit days-remaining calculation in server/db.ts and Feed Management page
+- [x] Fix any incorrect data or calculation bugs (12 duplicate rows deleted, quantities corrected)
+- [x] TypeScript: 0 errors
+- [x] Save checkpoint (4cdb2cf4)
 
 ## Phase 27: Full Excel Import Audit
 - [x] Read all Excel sheets and extract raw data

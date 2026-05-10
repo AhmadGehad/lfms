@@ -314,8 +314,8 @@ export default function Feed() {
                           <TableCell>{plan.categoryName}</TableCell>
                           <TableCell>{plan.feedItemName}</TableCell>
                           <TableCell>{parseFloat(plan.qtyPerHeadPerDay).toFixed(2)} {plan.unit}</TableCell>
-                          <TableCell>{new Date(plan.effectiveDate).toLocaleDateString()}</TableCell>
-                          <TableCell>{plan.endDate ? new Date(plan.endDate).toLocaleDateString() : "Ongoing"}</TableCell>
+                          <TableCell>{plan.effectiveDate ? new Date(plan.effectiveDate instanceof Date ? plan.effectiveDate.toISOString() : plan.effectiveDate).toLocaleDateString() : "—"}</TableCell>
+                          <TableCell>{plan.endDate ? new Date(plan.endDate instanceof Date ? plan.endDate.toISOString() : plan.endDate).toLocaleDateString() : "Ongoing"}</TableCell>
                           <TableCell>
                             {plan.isActive ? (
                               <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Active</Badge>
