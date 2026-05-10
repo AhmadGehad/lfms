@@ -12,12 +12,21 @@ export default function Notifications() {
   const utils = trpc.useUtils();
 
   const markRead = trpc.notifications.markRead.useMutation({
-    onSuccess: () => { utils.notifications.list.invalidate(); },
+    onSuccess: () => {
+      // Invalidate both the full list (this page) and the unread-only list (sidebar badge)
+      utils.notifications.list.invalidate();
+      utils.notifications.list.invalidate({ unreadOnly: true });
+    },
     onError: (e) => toast.error(e.message),
   });
 
   const markAllRead = trpc.notifications.markAllRead.useMutation({
-    onSuccess: () => { toast.success(t("notifications.markAllRead")); utils.notifications.list.invalidate(); },
+    onSuccess: () => {
+      toast.success(t("notifications.markAllRead"));
+      // Invalidate both the full list (this page) and the unread-only list (sidebar badge)
+      utils.notifications.list.invalidate();
+      utils.notifications.list.invalidate({ unreadOnly: true });
+    },
     onError: (e) => toast.error(e.message),
   });
 

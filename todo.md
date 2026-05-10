@@ -170,12 +170,12 @@
 - [x] Save checkpoint
 
 ## Phase 21: Next Steps
-- [ ] Dashboard: add date-range picker (This Month / This Quarter / This Year / Custom) that drives all KPI cards and charts
-- [ ] Configuration Hub: add edit dialog for Animal Statuses tab
-- [ ] Configuration Hub: add edit dialog for Birth Types tab
-- [ ] Audit logging: add createAuditEntry to config update procedures (species, category, group, birthType, expenseCategory, expenseSubCategory)
-- [ ] Run full scenario test: 47+ pass, 0 fail
-- [ ] Save checkpoint
+- [x] Dashboard: add date-range picker (This Month / This Quarter / This Year / Custom) that drives all KPI cards and charts
+- [x] Configuration Hub: add edit dialog for Animal Statuses tab
+- [x] Configuration Hub: add edit dialog for Birth Types tab
+- [x] Audit logging: add createAuditEntry to all config create/update procedures (species, category, group, birthType, expenseCategory, expenseSubCategory, setting, user)
+- [x] Run full scenario test: 47+ pass, 0 fail
+- [x] Save checkpoint (9078537e)
 
 ## Phase 22: Dark Theme + Audit Log Completion
 - [x] Fix TypeScript errors in config router (entityId string cast, ResultSetHeader insertId)
@@ -186,4 +186,15 @@
 - [x] Add audit logging to all config create/update procedures
 - [x] TypeScript: 0 errors
 - [x] All 48 unit tests pass
+- [x] Save checkpoint
+
+## Phase 23: Notification Count Fix + Regression Test
+- [x] Fix mark-all-read: invalidate notifications.list (unreadOnly: true) query after mutation
+- [x] Fix mark-as-read single: same invalidation
+- [x] Move scripts/scenario-test.mjs into project as tests/regression.mjs
+- [x] Add "test:regression" npm script to package.json
+- [x] Update regression test to cover config mutations and audit log for config (species entity)
+- [x] TypeScript: 0 errors
+- [x] All 48 unit tests pass
+- [x] Regression test: 47 passed, 0 failed, 0 warnings
 - [x] Save checkpoint
