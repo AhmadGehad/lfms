@@ -8,6 +8,7 @@ import {
   createSale,
   createWeightEntry,
   getAnimalById,
+  getAllAnimalsPnL,
   getAnimalPnL,
   getAnimalStatusHistory,
   getAnimals,
@@ -270,6 +271,13 @@ export const animalsRouter = router({
   getPnL: protectedProcedure
     .input(z.object({ animalId: z.number() }))
     .query(({ input }) => getAnimalPnL(input.animalId)),
+
+  getAllPnL: protectedProcedure
+    .input(z.object({
+      speciesId: z.number().optional(),
+      categoryId: z.number().optional(),
+    }).optional())
+    .query(({ input }) => getAllAnimalsPnL(input ?? undefined)),
 
   // ─── FEED HISTORY ─────────────────────────────────────────────────────────
   getFeedHistory: protectedProcedure

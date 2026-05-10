@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Plus, Wheat, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Wheat, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -58,14 +58,13 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   });
 
   const handleSubmit = () => {
-    if (!form.feedItemId || !form.qty) { toast.error("Feed item and quantity required"); return; }
+    if (!form.feedItemId || !form.qty) return toast.error("Feed item and quantity are required");
     addStock.mutate({
-      feedItemId: Number(form.feedItemId),
+      feedItemId: parseInt(form.feedItemId),
       transactionDate: form.transactionDate,
       transactionType: form.transactionType as any,
       qty: form.qty,
       unitCost: form.unitCost || undefined,
-      totalCost: form.unitCost && form.qty ? String(parseFloat(form.unitCost) * parseFloat(form.qty)) : undefined,
       supplierName: form.supplierName || undefined,
       notes: form.notes || undefined,
     });
@@ -74,29 +73,29 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><Plus className="h-4 w-4" />Add Stock</Button>
+        <Button className="gap-2"><span className="text-lg leading-none">+</span> Add Stock</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
-        <DialogHeader><DialogTitle>Record Stock Entry</DialogTitle></DialogHeader>
-        <div className="space-y-4">
+      <DialogContent>
+        <DialogHeader><DialogTitle>Add Stock Entry</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label>Feed Item *</Label>
             <Select value={form.feedItemId} onValueChange={(v) => setForm((f) => ({ ...f, feedItemId: v }))}>
               <SelectTrigger><SelectValue placeholder="Select feed item" /></SelectTrigger>
               <SelectContent>
                 {(feedItems ?? []).map((fi: any) => (
-                  <SelectItem key={fi.id} value={String(fi.id)}>{fi.name} ({fi.unit})</SelectItem>
+                  <SelectItem key={fi.id} value={String(fi.id)}>{fi.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Date</Label>
+              <Label>Date *</Label>
               <Input type="date" value={form.transactionDate} onChange={(e) => setForm((f) => ({ ...f, transactionDate: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>Type</Label>
+              <Label>Type *</Label>
               <Select value={form.transactionType} onValueChange={(v) => setForm((f) => ({ ...f, transactionType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -131,6 +130,97 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    qtyPerHeadPerDay: String(parseFloat(plan.qtyPerHeadPerDay)),
+    effectiveDate: plan.effectiveDate instanceof Date
+      ? plan.effectiveDate.toISOString().split("T")[0]
+      : String(plan.effectiveDate ?? ""),
+    endDate: plan.endDate
+      ? (plan.endDate instanceof Date ? plan.endDate.toISOString().split("T")[0] : String(plan.endDate))
+      : "",
+  });
+
+  const { data: feedItems } = trpc.config.getFeedItems.useQuery();
+  const { data: categories } = trpc.config.getCategories.useQuery();
+
+  const updatePlan = trpc.feed.updateRationPlan.useMutation({
+    onSuccess: () => {
+      toast.success("Ration plan updated");
+      setOpen(false);
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleSubmit = () => {
+    if (!form.qtyPerHeadPerDay || !form.effectiveDate) {
+      return toast.error("Quantity and effective date are required");
+    }
+    updatePlan.mutate({
+      id: plan.id,
+      qtyPerHeadPerDay: form.qtyPerHeadPerDay,
+      effectiveDate: form.effectiveDate,
+      endDate: form.endDate || null,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Ration Plan</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            {plan.categoryName} — {plan.feedItemName}
+          </p>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Qty / Head / Day (kg) *</Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.qtyPerHeadPerDay}
+              onChange={(e) => setForm((f) => ({ ...f, qtyPerHeadPerDay: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Effective Date *</Label>
+              <Input
+                type="date"
+                value={form.effectiveDate}
+                onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>End Date (optional)</Label>
+              <Input
+                type="date"
+                value={form.endDate}
+                onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={updatePlan.isPending}>
+            {updatePlan.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Feed() {
   const { t } = useTranslation();
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
@@ -157,6 +247,7 @@ export default function Feed() {
 
   const criticalCount = (stockStatus ?? []).filter((s: any) => s.status === "critical").length;
   const lowCount = (stockStatus ?? []).filter((s: any) => s.status === "low").length;
+  const alertItems = (stockStatus ?? []).filter((s: any) => s.status === "critical" || s.status === "low");
 
   return (
     <div className="p-6 space-y-6">
@@ -174,6 +265,30 @@ export default function Feed() {
         </div>
         <AddStockDialog onSuccess={() => {}} />
       </div>
+
+      {/* Low Stock Alert Banner */}
+      {alertItems.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">Low Stock Alerts</p>
+              <div className="mt-2 space-y-1">
+                {alertItems.map((item: any) => (
+                  <div key={item.feedItemId} className="flex items-center gap-2 text-sm">
+                    <StockStatusBadge status={item.status} />
+                    <span className="font-medium">{item.feedItemName}</span>
+                    <span className="text-muted-foreground">
+                      — {parseFloat(item.stockOnHand).toFixed(0)} {item.unit} remaining
+                      {item.daysRemaining !== 999 && ` (${item.daysRemaining} days)`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stock Status Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -242,7 +357,7 @@ export default function Feed() {
                     ) : (
                       (stockLedger ?? []).map((entry: any) => (
                         <TableRow key={entry.id}>
-                          <TableCell>{new Date(entry.transactionDate).toLocaleDateString()}</TableCell>
+                          <TableCell>{new Date(entry.transactionDate instanceof Date ? entry.transactionDate.toISOString() : entry.transactionDate).toLocaleDateString()}</TableCell>
                           <TableCell className="font-medium">{entry.feedItemName}</TableCell>
                           <TableCell className="capitalize">{entry.transactionType.replace("_", " ")}</TableCell>
                           <TableCell>{parseFloat(entry.qty).toFixed(1)}</TableCell>
@@ -324,30 +439,36 @@ export default function Feed() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="flex items-center gap-2">
-                                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                                    Delete Ration Plan
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Move ration plan for <strong>{plan.categoryName}</strong> to the Recycle Bin? You can restore it anytime.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRationPlan.mutate({ id: plan.id })}>
-                                    Move to Bin
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <div className="flex items-center justify-end gap-1">
+                              <EditRationPlanDialog
+                                plan={plan}
+                                onSuccess={() => utils.feed.getRationPlans.invalidate()}
+                              />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2">
+                                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                                      Delete Ration Plan
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Move ration plan for <strong>{plan.categoryName}</strong> to the Recycle Bin? You can restore it anytime.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRationPlan.mutate({ id: plan.id })}>
+                                      Move to Bin
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))

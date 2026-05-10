@@ -239,3 +239,30 @@
 - [x] Fixed ration plan quantities: Ram 1.6 kg/day, Fattening 2.25 kg/day, Ewe 1.55 kg/day, Baby Goat 0.4 kg/day
 - [x] Regression test: 46 passed, 0 failed, 1 warning (expected)
 - [x] Save checkpoint and deliver audit report
+
+## Phase 28: Edit Ration Plan + Low Stock Notifications
+
+- [x] Fix Fattening category ration quantities in DB (0.75 kg Alfalfa Hay, 0.50 kg Hay, 1.00 kg Concentrate 16%)
+- [x] Add updateRationPlan procedure to feed router (qty, effectiveDate, endDate)
+- [x] Add Edit Ration Plan dialog to Feed Management page (pencil icon per row, pre-filled form)
+- [x] Add Low Stock Alerts banner to Feed Management page showing items below threshold
+- [x] Wire low stock check to run on server startup + every hour (lowStockCheck.ts)
+- [x] Deduplication: skip notification if unread alert exists for same item in last 24h
+- [x] TypeScript: 0 errors
+- [x] All 53 unit tests pass (5 new tests added)
+- [x] Save checkpoint
+
+## Phase 29: P&L per Animal Review & Fix
+
+- [x] Audit getAnimalPnL: logic is correct (purchaseCost, feedCost, directExpenseTotal, revenue, netPnL)
+- [x] Confirmed daysOnFarm uses exitDate (or today) minus acquisitionDate
+- [x] Confirmed feed cost uses ration plan qty × days × feed price on acquisition date
+- [x] Confirmed revenue from sales table, direct expenses from expenses.targetType='head'
+- [x] FIXED: PnL.tsx was showing all dashes — never called getPnL, only animals.list
+- [x] Added getAllAnimalsPnL bulk function to db.ts (avoids N+1 queries)
+- [x] Added animals.getAllPnL tRPC procedure with species/category filters
+- [x] Rewrote PnL.tsx to show real data: all cost columns, revenue, netPnL, cost/day, summary cards
+- [x] Added species, category, and active/inactive filters to PnL page
+- [x] TypeScript: 0 errors
+- [x] 57 unit tests pass (4 new P&L tests added)
+- [x] Save checkpoint

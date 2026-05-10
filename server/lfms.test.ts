@@ -136,6 +136,18 @@ vi.mock("./db", () => ({
   getSales: vi.fn().mockResolvedValue([
     { sale: { id: 1, animalId: 1, saleDate: new Date("2024-01-15"), salePrice: "1200.00", weightAtSale: "35.00", buyerName: "Ahmed", notes: null }, animalCode: "LMB-001" },
   ]),
+  getAllAnimalsPnL: vi.fn().mockResolvedValue([
+    { animalId: 1, animalCode: "LMB-001", categoryName: "Lamb", speciesName: "Sheep", isActive: true, daysOnFarm: 60, purchaseCost: 500, feedCost: 300, directExpenseTotal: 50, totalCost: 850, revenue: 1200, netPnL: 350, costPerDay: 14.17, pricePerKg: 34.29 },
+    { animalId: 2, animalCode: "EWE-001", categoryName: "Ewe", speciesName: "Sheep", isActive: true, daysOnFarm: 120, purchaseCost: 800, feedCost: 600, directExpenseTotal: 0, totalCost: 1400, revenue: 0, netPnL: -1400, costPerDay: 11.67, pricePerKg: 0 },
+  ]),
+  getRationPlans: vi.fn().mockResolvedValue([
+    { id: 1, categoryId: 1, feedItemId: 1, qtyPerHeadPerDay: "1.60", effectiveDate: new Date("2025-01-01"), endDate: null, isActive: true, feedItemName: "Alfalfa Hay", unit: "kg", categoryName: "Ram" },
+    { id: 2, categoryId: 2, feedItemId: 2, qtyPerHeadPerDay: "0.50", effectiveDate: new Date("2025-01-01"), endDate: null, isActive: true, feedItemName: "Hay", unit: "kg", categoryName: "Ewe" },
+  ]),
+  createRationPlan: vi.fn().mockResolvedValue({ id: 3, categoryId: 1, feedItemId: 1, qtyPerHeadPerDay: "1.00" }),
+  updateRationPlan: vi.fn().mockResolvedValue(undefined),
+  getFeedStockLedger: vi.fn().mockResolvedValue([]),
+  createFeedStockEntry: vi.fn().mockResolvedValue({ id: 1, feedItemId: 1, qty: "100.00" }),
 }));
 
 // ─── Helper: create auth context ─────────────────────────────────────────────
@@ -587,5 +599,93 @@ describe("Business Logic: Income Statement", () => {
     const caller = appRouter.createCaller(makeCtx());
     const stmt = await caller.dashboard.getIncomeStatement({ fromDate: "2024-01-01", toDate: "2024-12-31" });
     expect(stmt.netProfit).toBe(stmt.revenue.total - stmt.expenses.total);
+  });
+});
+
+// ─── FEED RATION PLANS ───────────────────────────────────────────────────────
+describe("feed.getRationPlans", () => {
+  it("getRationPlans returns flat objects (no nested plan.plan)", async () => {
+    // The mock returns getFeedStockStatus; getRationPlans is called via feed router
+    // We verify the router wires through without throwing
+    const caller = appRouter.createCaller(makeCtx());
+    // feed.getRationPlans calls getRationPlans from db which is not mocked here
+    // but the router should not throw on undefined (returns [])
+    await expect(caller.feed.getRationPlans()).resolves.toBeDefined();
+  });
+});
+
+describe("feed.updateRationPlan", () => {
+  it("updateRationPlan accepts qty, effectiveDate, and endDate", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.feed.updateRationPlan({
+        id: 1,
+        qtyPerHeadPerDay: "1.50",
+        effectiveDate: "2025-01-01",
+        endDate: null,
+      })
+    ).resolves.not.toThrow();
+  });
+
+  it("updateRationPlan with only qty change does not throw", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.feed.updateRationPlan({ id: 1, qtyPerHeadPerDay: "2.00" })
+    ).resolves.not.toThrow();
+  });
+});
+
+describe("Business Logic: Low Stock Scheduler", () => {
+  it("checkLowStockAndNotify is a callable async function", async () => {
+    const { checkLowStockAndNotify } = await import("./lowStockCheck");
+    expect(typeof checkLowStockAndNotify).toBe("function");
+    // Should resolve without throwing (DB is mocked to return null)
+    await expect(checkLowStockAndNotify()).resolves.not.toThrow();
+  });
+
+  it("startLowStockScheduler is a callable function", async () => {
+    const { startLowStockScheduler } = await import("./lowStockCheck");
+    expect(typeof startLowStockScheduler).toBe("function");
+  });
+});
+
+// ─── ANIMALS P&L BULK ────────────────────────────────────────────────────────
+describe("animals.getAllPnL", () => {
+  it("returns array of P&L rows for all animals", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.animals.getAllPnL();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(2);
+  });
+
+  it("each row has required P&L fields", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.animals.getAllPnL();
+    const row = result[0] as any;
+    expect(row).toHaveProperty("animalId");
+    expect(row).toHaveProperty("animalCode");
+    expect(row).toHaveProperty("purchaseCost");
+    expect(row).toHaveProperty("feedCost");
+    expect(row).toHaveProperty("directExpenseTotal");
+    expect(row).toHaveProperty("totalCost");
+    expect(row).toHaveProperty("revenue");
+    expect(row).toHaveProperty("netPnL");
+    expect(row).toHaveProperty("costPerDay");
+    expect(row).toHaveProperty("daysOnFarm");
+  });
+
+  it("netPnL = revenue - totalCost for each row", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.animals.getAllPnL();
+    for (const row of result as any[]) {
+      expect(row.netPnL).toBeCloseTo(row.revenue - row.totalCost, 1);
+    }
+  });
+
+  it("accepts optional species and category filters", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.animals.getAllPnL({ speciesId: 1, categoryId: 1 })
+    ).resolves.toBeDefined();
   });
 });

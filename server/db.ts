@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, or, sql, lte, gte } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   animalCategories,
@@ -848,6 +848,123 @@ export async function getAnimalPnL(animalId: number) {
     isActive: animal.isActive,
     saleRecord: saleRows[0] ?? null,
   };
+}
+
+/**
+ * Bulk P&L for all animals — runs in a single pass using pre-fetched lookup tables
+ * to avoid N+1 queries. Returns one row per animal.
+ */
+export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryId?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+
+  const today = new Date().toISOString().split("T")[0];
+
+  // 1. Fetch all animals with category + species + status names
+  const conditions = [isNotNull(animals.id)];
+  if (filters?.speciesId) conditions.push(eq(animals.speciesId, filters.speciesId));
+  if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
+
+  const allAnimals = await db
+    .select({
+      animal: animals,
+      categoryName: animalCategories.name,
+      speciesName: species.name,
+    })
+    .from(animals)
+    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
+    .leftJoin(species, eq(animals.speciesId, species.id))
+    .where(and(...conditions))
+    .orderBy(animals.animalId);
+
+  if (!allAnimals.length) return [];
+
+  // 2. Pre-fetch all sales (one query)
+  const allSales = await db.select().from(sales);
+  const saleByAnimal = new Map<number, typeof allSales[0]>();
+  for (const s of allSales) saleByAnimal.set(s.animalId, s);
+
+  // 3. Pre-fetch all direct expenses per animal (one query)
+  const allDirectExp = await db
+    .select({ headId: expenses.headId, total: sql<number>`SUM(amount)` })
+    .from(expenses)
+    .where(eq(expenses.targetType, "head"))
+    .groupBy(expenses.headId);
+  const directExpByAnimal = new Map<number, number>();
+  for (const e of allDirectExp) {
+    if (e.headId != null) directExpByAnimal.set(e.headId, parseFloat(String(e.total ?? 0)));
+  }
+
+  // 4. Pre-fetch all active ration plans (one query)
+  const allPlans = await db
+    .select()
+    .from(rationPlans)
+    .where(eq(rationPlans.isActive, true));
+  // Group plans by categoryId
+  const plansByCategory = new Map<number, typeof allPlans>();
+  for (const p of allPlans) {
+    if (!plansByCategory.has(p.categoryId)) plansByCategory.set(p.categoryId, []);
+    plansByCategory.get(p.categoryId)!.push(p);
+  }
+
+  // 5. Pre-fetch latest feed prices per feed item (one query per unique feed item)
+  const uniqueFeedItemIds = Array.from(new Set(allPlans.map((p) => p.feedItemId)));
+  const feedPriceMap = new Map<number, number>();
+  for (const feedItemId of uniqueFeedItemIds) {
+    const price = await getFeedPriceOnDate(feedItemId, today);
+    feedPriceMap.set(feedItemId, price);
+  }
+
+  // 6. Compute P&L per animal
+  const results = [];
+  for (const row of allAnimals) {
+    const animal = row.animal;
+    const exitDate = animal.exitDate ? String(animal.exitDate) : today;
+    const acquisitionDate = String(animal.acquisitionDate ?? today);
+    const daysOnFarm = Math.max(
+      1,
+      Math.floor((new Date(exitDate).getTime() - new Date(acquisitionDate).getTime()) / 86400000)
+    );
+
+    const purchaseCost = parseFloat(animal.purchaseCost ?? "0");
+    const directExpenseTotal = directExpByAnimal.get(animal.id) ?? 0;
+
+    const saleRow = saleByAnimal.get(animal.id);
+    const revenue = saleRow ? parseFloat(saleRow.salePrice) : 0;
+    const weightAtSale = saleRow ? parseFloat(saleRow.weightAtSale ?? "0") : 0;
+
+    // Feed cost: sum over active ration plans for this category
+    let feedCost = 0;
+    const plans = plansByCategory.get(animal.categoryId) ?? [];
+    for (const plan of plans) {
+      const price = feedPriceMap.get(plan.feedItemId) ?? 0;
+      feedCost += parseFloat(plan.qtyPerHeadPerDay) * daysOnFarm * price;
+    }
+
+    const totalCost = purchaseCost + feedCost + directExpenseTotal;
+    const netPnL = revenue - totalCost;
+    const costPerDay = daysOnFarm > 0 ? totalCost / daysOnFarm : 0;
+    const pricePerKg = weightAtSale > 0 ? revenue / weightAtSale : 0;
+
+    results.push({
+      animalId: animal.id,
+      animalCode: animal.animalId,
+      categoryName: row.categoryName ?? "",
+      speciesName: row.speciesName ?? "",
+      isActive: animal.isActive,
+      daysOnFarm,
+      purchaseCost,
+      feedCost,
+      directExpenseTotal,
+      totalCost,
+      revenue,
+      netPnL,
+      costPerDay,
+      pricePerKg,
+    });
+  }
+
+  return results;
 }
 
 export async function getDashboardKPIs(filters?: {

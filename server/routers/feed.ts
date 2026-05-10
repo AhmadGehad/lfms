@@ -48,13 +48,20 @@ export const feedRouter = router({
     .input(
       z.object({
         id: z.number(),
+        categoryId: z.number().optional(),
+        feedItemId: z.number().optional(),
         qtyPerHeadPerDay: z.string().optional(),
-        endDate: z.string().optional(),
+        effectiveDate: z.string().optional(),
+        endDate: z.string().nullable().optional(),
         isActive: z.boolean().optional(),
       })
     )
     .mutation(async ({ input: { id, ...data }, ctx }) => {
-      const result = await updateRationPlan(id, { ...data, endDate: data.endDate as any });
+      const result = await updateRationPlan(id, {
+        ...data,
+        effectiveDate: data.effectiveDate as any,
+        endDate: data.endDate as any,
+      });
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",

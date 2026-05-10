@@ -1,0 +1,28 @@
+{
+  "query": "\n-- Alfalfa Hay: 0.500 → 0.750\nUPDATE ration_plans SET qtyPerHeadPerDay = 0.750, updatedAt = NOW() WHERE id = 1;\n-- Hay: stays 0.500 (already correct)\n-- Concentrate 16%: 1.250 → 1.000\nUPDATE ration_plans SET qtyPerHeadPerDay = 1.000, updatedAt = NOW() WHERE id = 3;\n\n-- Verify\nSELECT rp.id, ac.name as category, fi.name as feedItem, rp.qtyPerHeadPerDay\nFROM ration_plans rp\nJOIN animal_categories ac ON ac.id = rp.categoryId\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE ac.name = 'Fattening' AND rp.deletedAt IS NULL\nORDER BY fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Alfalfa Hay: 0.500 → 0.750\nUPDATE ration_plans SET qtyPerHeadPerDay = 0.750, updatedAt = NOW() WHERE id = 1;\n-- Hay: stays 0.500 (already correct)\n-- Concentrate 16%: 1.250 → 1.000\nUPDATE ration_plans SET qtyPerHeadPerDay = 1.000, updatedAt = NOW() WHERE id = 3;\n\n-- Verify\nSELECT rp.id, ac.name as category, fi.name as feedItem, rp.qtyPerHeadPerDay\nFROM ration_plans rp\nJOIN animal_categories ac ON ac.id = rp.categoryId\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE ac.name = 'Fattening' AND rp.deletedAt IS NULL\nORDER BY fi.name;\n",
+  "rows": [
+    {
+      "id": "1",
+      "category": "Fattening",
+      "feedItem": "Alfalfa Hay",
+      "qtyPerHeadPerDay": "0.750"
+    },
+    {
+      "id": "3",
+      "category": "Fattening",
+      "feedItem": "Concentrate 16%",
+      "qtyPerHeadPerDay": "1.000"
+    },
+    {
+      "id": "2",
+      "category": "Fattening",
+      "feedItem": "Hay",
+      "qtyPerHeadPerDay": "0.500"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcategory\tfeedItem\tqtyPerHeadPerDay\n1\tFattening\tAlfalfa Hay\t0.750\n3\tFattening\tConcentrate 16%\t1.000\n2\tFattening\tHay\t0.500\n",
+  "stderr": "",
+  "execution_time_ms": 2344
+}
