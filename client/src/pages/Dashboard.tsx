@@ -1,11 +1,15 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, Egg, Leaf, Scale, TrendingUp } from "lucide-react";
-import { useState } from "react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Egg, Leaf, Scale, TrendingUp } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Area,
@@ -24,6 +28,33 @@ import {
 } from "recharts";
 
 const COLORS = ["#4ade80", "#86efac", "#bbf7d0", "#d1fae5", "#6ee7b7", "#34d399"];
+
+// ── Date range helpers ────────────────────────────────────────────────────────
+type Preset = "month" | "quarter" | "year" | "custom";
+
+function getPresetRange(preset: Preset, customFrom?: string, customTo?: string): { from: string; to: string } {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const today = fmt(now);
+
+  if (preset === "month") {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { from: fmt(from), to: today };
+  }
+  if (preset === "quarter") {
+    const q = Math.floor(now.getMonth() / 3);
+    const from = new Date(now.getFullYear(), q * 3, 1);
+    return { from: fmt(from), to: today };
+  }
+  if (preset === "year") {
+    const from = new Date(now.getFullYear(), 0, 1);
+    return { from: fmt(from), to: today };
+  }
+  // custom
+  const fallbackFrom = new Date(now); fallbackFrom.setFullYear(fallbackFrom.getFullYear() - 1);
+  return { from: customFrom || fmt(fallbackFrom), to: customTo || today };
+}
 
 function KPICard({
   title,
@@ -57,7 +88,7 @@ function KPICard({
               <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
               {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
             </div>
-            <div className={`p-2 rounded-lg bg-primary/10`}>
+            <div className="p-2 rounded-lg bg-primary/10">
               <Icon className={`h-5 w-5 ${color}`} />
             </div>
           </div>
@@ -79,13 +110,35 @@ function StockStatusBadge({ status }: { status: string }) {
   return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("dashboard.adequate")}</Badge>;
 }
 
+const PRESET_LABELS: Record<Preset, string> = {
+  month: "This Month",
+  quarter: "This Quarter",
+  year: "This Year",
+  custom: "Custom Range",
+};
+
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
   const [filterSpecies, setFilterSpecies] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterGroup, setFilterGroup] = useState<string>("all");
 
+  // Date range state
+  const [preset, setPreset] = useState<Preset>("year");
+  const [customFrom, setCustomFrom] = useState<string>("");
+  const [customTo, setCustomTo] = useState<string>("");
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [pendingFrom, setPendingFrom] = useState<string>("");
+  const [pendingTo, setPendingTo] = useState<string>("");
+
+  const dateRange = useMemo(
+    () => getPresetRange(preset, customFrom, customTo),
+    [preset, customFrom, customTo]
+  );
+
   const { data: kpis, isLoading: kpisLoading } = trpc.dashboard.getKPIs.useQuery({
+    fromDate: dateRange.from,
+    toDate: dateRange.to,
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
     groupId: filterGroup !== "all" ? Number(filterGroup) : undefined,
@@ -94,15 +147,14 @@ export default function Dashboard() {
   // Feed stock is ALWAYS unfiltered per business rules
   const { data: feedStock } = trpc.dashboard.getFeedStockStatus.useQuery();
   const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
-  const trendFromDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d.toISOString().split("T")[0]; })();
-  const trendToDate = new Date().toISOString().split("T")[0];
+
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
-    fromDate: trendFromDate,
-    toDate: trendToDate,
+    fromDate: dateRange.from,
+    toDate: dateRange.to,
   });
   const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery({
-    fromDate: trendFromDate,
-    toDate: trendToDate,
+    fromDate: dateRange.from,
+    toDate: dateRange.to,
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
@@ -116,6 +168,19 @@ export default function Dashboard() {
   const criticalAlerts = (feedStock ?? []).filter((s: any) => s.status === "critical").length;
   const lowAlerts = (feedStock ?? []).filter((s: any) => s.status === "low").length;
 
+  const presetLabel = preset === "custom"
+    ? `${customFrom || "?"} → ${customTo || "?"}`
+    : PRESET_LABELS[preset];
+
+  function applyCustomRange() {
+    if (pendingFrom && pendingTo) {
+      setCustomFrom(pendingFrom);
+      setCustomTo(pendingTo);
+      setPreset("custom");
+      setPopoverOpen(false);
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -126,8 +191,64 @@ export default function Dashboard() {
             {new Date().toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
         </div>
-        {/* Additive Filters */}
-        <div className="flex gap-2 flex-wrap">
+        {/* Filters Row */}
+        <div className="flex gap-2 flex-wrap items-center">
+          {/* Date Range Preset Picker */}
+          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {presetLabel}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-3 space-y-3" align="end">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date Range</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(["month", "quarter", "year"] as Preset[]).map((p) => (
+                  <Button
+                    key={p}
+                    size="sm"
+                    variant={preset === p ? "default" : "outline"}
+                    className="text-xs h-7"
+                    onClick={() => { setPreset(p); setPopoverOpen(false); }}
+                  >
+                    {PRESET_LABELS[p]}
+                  </Button>
+                ))}
+              </div>
+              <div className="border-t pt-2 space-y-2">
+                <p className="text-xs font-medium">Custom Range</p>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">From</Label>
+                  <Input
+                    type="date"
+                    className="h-7 text-xs"
+                    value={pendingFrom}
+                    onChange={(e) => setPendingFrom(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">To</Label>
+                  <Input
+                    type="date"
+                    className="h-7 text-xs"
+                    value={pendingTo}
+                    onChange={(e) => setPendingTo(e.target.value)}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  className="w-full h-7 text-xs"
+                  disabled={!pendingFrom || !pendingTo}
+                  onClick={applyCustomRange}
+                >
+                  Apply Custom Range
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Species / Category / Group filters */}
           <Select value={filterSpecies} onValueChange={setFilterSpecies}>
             <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder={t("common.species")} /></SelectTrigger>
             <SelectContent>
@@ -244,7 +365,9 @@ export default function Dashboard() {
         {/* Expense Trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">{t("dashboard.recentExpenses")} (12 {t("common.month")})</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              {t("dashboard.recentExpenses")} — {presetLabel}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {(expenseTrend ?? []).length > 0 ? (
@@ -277,7 +400,9 @@ export default function Dashboard() {
         {/* Sales Trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">{t("incomeStatement.salesRevenue")} (12 {t("common.month")})</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              {t("incomeStatement.salesRevenue")} — {presetLabel}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {(salesTrend ?? []).length > 0 ? (

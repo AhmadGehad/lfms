@@ -43,6 +43,8 @@ import {
   ShoppingCart,
   Trash2,
   Users,
+  Moon,
+  Sun,
   Wheat,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -51,6 +53,7 @@ import { useLocation } from "wouter";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const SIDEBAR_WIDTH_KEY = "lfms-sidebar-width";
 const DEFAULT_WIDTH = 260;
@@ -139,6 +142,7 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { t } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
 
   // Notification count
   const { data: notifications } = trpc.notifications.list.useQuery({ unreadOnly: true });
@@ -300,11 +304,37 @@ function DashboardLayoutContent({
 
           {/* Footer */}
           <SidebarFooter className="p-3 border-t border-sidebar-border">
-            {/* Language switcher */}
+            {/* Language + Theme row */}
             {!isCollapsed && (
-              <div className="flex justify-center mb-2">
+              <div className={`flex items-center justify-between mb-2 gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
                 <LanguageSwitcher />
+                <button
+                  onClick={toggleTheme}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors shrink-0"
+                  aria-label="Toggle theme"
+                  title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-4 w-4 text-sidebar-foreground/70" />
+                  ) : (
+                    <Moon className="h-4 w-4 text-sidebar-foreground/70" />
+                  )}
+                </button>
               </div>
+            )}
+            {/* Collapsed: show theme toggle icon only */}
+            {isCollapsed && (
+              <button
+                onClick={toggleTheme}
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors mx-auto mb-2"
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-4 w-4 text-sidebar-foreground/70" />
+                ) : (
+                  <Moon className="h-4 w-4 text-sidebar-foreground/70" />
+                )}
+              </button>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

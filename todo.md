@@ -168,3 +168,22 @@
 - [x] TypeScript: 0 errors
 - [x] All 48 unit tests pass
 - [x] Save checkpoint
+
+## Phase 21: Next Steps
+- [ ] Dashboard: add date-range picker (This Month / This Quarter / This Year / Custom) that drives all KPI cards and charts
+- [ ] Configuration Hub: add edit dialog for Animal Statuses tab
+- [ ] Configuration Hub: add edit dialog for Birth Types tab
+- [ ] Audit logging: add createAuditEntry to config update procedures (species, category, group, birthType, expenseCategory, expenseSubCategory)
+- [ ] Run full scenario test: 47+ pass, 0 fail
+- [ ] Save checkpoint
+
+## Phase 22: Dark Theme + Audit Log Completion
+- [x] Fix TypeScript errors in config router (entityId string cast, ResultSetHeader insertId)
+- [x] .dark CSS variables already existed in index.css
+- [x] Add theme toggle button (sun/moon) to DashboardLayout sidebar footer (expanded + collapsed states)
+- [x] Persist theme preference in localStorage (ThemeContext already handles this with switchable=true)
+- [x] Add Statuses and Birth Types edit dialogs to Configuration Hub
+- [x] Add audit logging to all config create/update procedures
+- [x] TypeScript: 0 errors
+- [x] All 48 unit tests pass
+- [x] Save checkpoint

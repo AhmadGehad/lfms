@@ -12,6 +12,7 @@ import {
   getAllExpenseSubCategories, createExpenseSubCategory, updateExpenseSubCategory,
   getAllSettings, upsertSetting,
   getAllUsers, updateUserRole,
+  createAuditEntry,
 } from "../db";
 
 export const configRouter = router({
@@ -20,11 +21,19 @@ export const configRouter = router({
 
   createSpecies: protectedProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
-    .mutation(({ input }) => createSpecies(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createSpecies(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateSpecies: protectedProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(({ input: { id, ...data } }) => updateSpecies(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateSpecies(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   // ─── CATEGORIES ─────────────────────────────────────────────────────────────
   getCategories: protectedProcedure
@@ -39,7 +48,11 @@ export const configRouter = router({
       targetWeightKg: z.string().optional(),
       expectedCycleDays: z.number().optional(),
     }))
-    .mutation(({ input }) => createCategory(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createCategory(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateCategory: protectedProcedure
     .input(z.object({
@@ -50,18 +63,30 @@ export const configRouter = router({
       expectedCycleDays: z.number().optional(),
       isActive: z.boolean().optional(),
     }))
-    .mutation(({ input: { id, ...data } }) => updateCategory(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateCategory(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   // ─── STATUSES ───────────────────────────────────────────────────────────────
   getStatuses: protectedProcedure.query(() => getAllStatuses()),
 
   createStatus: protectedProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional(), isExitStatus: z.boolean().optional() }))
-    .mutation(({ input }) => createStatus(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createStatus(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "status", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateStatus: protectedProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isExitStatus: z.boolean().optional(), isActive: z.boolean().optional() }))
-    .mutation(({ input: { id, ...data } }) => updateStatus(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateStatus(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "status", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   // ─── GROUPS ─────────────────────────────────────────────────────────────────
   getGroups: protectedProcedure
@@ -76,7 +101,11 @@ export const configRouter = router({
       categoryId: z.number().optional(),
       description: z.string().optional(),
     }))
-    .mutation(({ input }) => createGroup(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createGroup(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateGroup: protectedProcedure
     .input(z.object({
@@ -88,29 +117,49 @@ export const configRouter = router({
       description: z.string().optional(),
       isActive: z.boolean().optional(),
     }))
-    .mutation(({ input: { id, ...data } }) => updateGroup(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateGroup(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   // ─── BIRTH TYPES ────────────────────────────────────────────────────────────
   getBirthTypes: protectedProcedure.query(() => getAllBirthTypes()),
 
   createBirthType: protectedProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
-    .mutation(({ input }) => createBirthType(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createBirthType(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "birthType", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateBirthType: protectedProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(({ input: { id, ...data } }) => updateBirthType(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateBirthType(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "birthType", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   // ─── FEED ITEMS ─────────────────────────────────────────────────────────────
   getFeedItems: protectedProcedure.query(() => getAllFeedItems()),
 
   createFeedItem: protectedProcedure
     .input(z.object({ name: z.string().min(1), unit: z.string().optional() }))
-    .mutation(({ input }) => createFeedItem(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createFeedItem(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateFeedItem: protectedProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), unit: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(({ input: { id, ...data } }) => updateFeedItem(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateFeedItem(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   getFeedItemPriceHistory: protectedProcedure
     .input(z.object({ feedItemId: z.number() }))
@@ -123,18 +172,30 @@ export const configRouter = router({
       pricePerUnit: z.string(),
       notes: z.string().optional(),
     }))
-    .mutation(({ input }) => addFeedItemPrice(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await addFeedItemPrice(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(input.feedItemId), action: "create", newValues: input });
+      return result;
+    }),
 
   // ─── EXPENSE CATEGORIES ─────────────────────────────────────────────────────
   getExpenseCategories: protectedProcedure.query(() => getAllExpenseCategories()),
 
   createExpenseCategory: protectedProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
-    .mutation(({ input }) => createExpenseCategory(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createExpenseCategory(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseCategory", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateExpenseCategory: protectedProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(({ input: { id, ...data } }) => updateExpenseCategory(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateExpenseCategory(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseCategory", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   getExpenseSubCategories: protectedProcedure
     .input(z.object({ categoryId: z.number().optional() }).optional())
@@ -142,23 +203,39 @@ export const configRouter = router({
 
   createExpenseSubCategory: protectedProcedure
     .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))
-    .mutation(({ input }) => createExpenseSubCategory(input)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await createExpenseSubCategory(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String((result as any).insertId), action: "create", newValues: input });
+      return result;
+    }),
 
   updateExpenseSubCategory: protectedProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(({ input: { id, ...data } }) => updateExpenseSubCategory(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateExpenseSubCategory(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String(id), action: "update", newValues: data });
+      return result;
+    }),
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
   getSettings: protectedProcedure.query(() => getAllSettings()),
 
   upsertSetting: protectedProcedure
     .input(z.object({ key: z.string(), value: z.string() }))
-    .mutation(({ input, ctx }) => upsertSetting(input.key, input.value, ctx.user?.id)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await upsertSetting(input.key, input.value, ctx.user?.id);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "setting", entityId: input.key, action: "update", newValues: { value: input.value } });
+      return result;
+    }),
 
   // ─── USER MANAGEMENT ────────────────────────────────────────────────────────
   getUsers: protectedProcedure.query(() => getAllUsers()),
 
   updateUserRole: protectedProcedure
     .input(z.object({ userId: z.number(), role: z.enum(["owner", "supervisor", "staff", "admin", "user"]) }))
-    .mutation(({ input }) => updateUserRole(input.userId, input.role)),
+    .mutation(async ({ input, ctx }) => {
+      const result = await updateUserRole(input.userId, input.role);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "user", entityId: String(input.userId), action: "update", newValues: { role: input.role } });
+      return result;
+    }),
 });

@@ -251,6 +251,128 @@ function GroupsTab() {
   );
 }
 
+// ── Statuses Tab ────────────────────────────────────────────────────────────
+function StatusesTab() {
+  const { t } = useTranslation();
+  const { data: statuses } = trpc.config.getStatuses.useQuery();
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [form, setForm] = useState({ name: "", description: "" });
+  const utils = trpc.useUtils();
+  const create = trpc.config.createStatus.useMutation({
+    onSuccess: () => { toast.success("Status created"); utils.config.getStatuses.invalidate(); setOpen(false); setForm({ name: "", description: "" }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const update = trpc.config.updateStatus.useMutation({
+    onSuccess: () => { toast.success("Status updated"); utils.config.getStatuses.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  function openEdit(s: any) { setEditItem({ ...s }); setEditOpen(true); }
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">Animal Statuses</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Status</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Add Animal Status</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Quarantine" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, description: form.description || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      {editItem && (
+        <EditDialog title="Edit Animal Status" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+        </EditDialog>
+      )}
+      <Table>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableBody>
+          {(statuses ?? []).map((s: any) => (
+            <TableRow key={s.id}>
+              <TableCell className="font-medium">{s.name}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{s.description ?? "—"}</TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+// ── Birth Types Tab ──────────────────────────────────────────────────────────
+function BirthTypesTab() {
+  const { t } = useTranslation();
+  const { data: birthTypes } = trpc.config.getBirthTypes.useQuery();
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [form, setForm] = useState({ name: "", description: "" });
+  const utils = trpc.useUtils();
+  const create = trpc.config.createBirthType.useMutation({
+    onSuccess: () => { toast.success("Birth type created"); utils.config.getBirthTypes.invalidate(); setOpen(false); setForm({ name: "", description: "" }); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const update = trpc.config.updateBirthType.useMutation({
+    onSuccess: () => { toast.success("Birth type updated"); utils.config.getBirthTypes.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  function openEdit(b: any) { setEditItem({ ...b }); setEditOpen(true); }
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">Birth Types</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Birth Type</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Add Birth Type</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Natural" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, description: form.description || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      {editItem && (
+        <EditDialog title="Edit Birth Type" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+        </EditDialog>
+      )}
+      <Table>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableBody>
+          {(birthTypes ?? []).map((b: any) => (
+            <TableRow key={b.id}>
+              <TableCell className="font-medium">{b.name}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{b.description ?? "—"}</TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(b)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 // ── Feed Items Tab ───────────────────────────────────────────────────────────
 function FeedItemsTab() {
   const { t } = useTranslation();
@@ -425,6 +547,8 @@ export default function Configuration() {
               <TabsTrigger value="groups">Groups / Pens</TabsTrigger>
               <TabsTrigger value="feed">Feed Items</TabsTrigger>
               <TabsTrigger value="expenses">Expense Categories</TabsTrigger>
+              <TabsTrigger value="statuses">Statuses</TabsTrigger>
+              <TabsTrigger value="birthtypes">Birth Types</TabsTrigger>
             </TabsList>
 
             <TabsContent value="species"><SpeciesTab /></TabsContent>
@@ -432,6 +556,8 @@ export default function Configuration() {
             <TabsContent value="groups"><GroupsTab /></TabsContent>
             <TabsContent value="feed"><FeedItemsTab /></TabsContent>
             <TabsContent value="expenses"><ExpenseCategoriesTab /></TabsContent>
+            <TabsContent value="statuses"><StatusesTab /></TabsContent>
+            <TabsContent value="birthtypes"><BirthTypesTab /></TabsContent>
           </Tabs>
         </CardContent>
       </Card>
