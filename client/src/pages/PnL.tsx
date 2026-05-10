@@ -35,12 +35,23 @@ export default function PnL() {
     return true;
   });
 
-  // Summary stats
-  const totalRevenue = filtered.reduce((s: number, a: any) => s + (a.revenue ?? 0), 0);
-  const totalCost = filtered.reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
+  // For active animals: revenue=0 so netPnL = -totalCost (misleading as "loss")
+  // Show as "Ongoing" with neutral color; only show profit/loss for inactive (sold/dead) animals
+  const getPnLDisplay = (a: any) => {
+    if (a.isActive) return { label: "Ongoing", color: "text-muted-foreground", icon: null };
+    if (a.netPnL > 0) return { label: fmt(a.netPnL), color: "text-green-600", icon: "up" };
+    return { label: fmt(a.netPnL), color: "text-red-600", icon: "down" };
+  };
+
+  // Summary stats — only count inactive (sold/dead) animals for P&L totals
+  const closedAnimals = filtered.filter((a: any) => !a.isActive);
+  const totalRevenue = closedAnimals.reduce((s: number, a: any) => s + (a.revenue ?? 0), 0);
+  const totalCost = closedAnimals.reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
   const totalNetPnL = totalRevenue - totalCost;
-  const profitableCount = filtered.filter((a: any) => a.netPnL > 0).length;
-  const lossCount = filtered.filter((a: any) => a.netPnL < 0).length;
+  const profitableCount = closedAnimals.filter((a: any) => a.netPnL > 0).length;
+  const lossCount = closedAnimals.filter((a: any) => a.netPnL < 0).length;
+  const activeCount = filtered.filter((a: any) => a.isActive).length;
+  const runningCost = filtered.filter((a: any) => a.isActive).reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
 
   return (
     <div className="p-6 space-y-6">
@@ -59,23 +70,26 @@ export default function PnL() {
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">Total Animals</p>
               <p className="text-2xl font-bold">{filtered.length}</p>
+              <p className="text-xs text-muted-foreground mt-1">{activeCount} active · {closedAnimals.length} closed</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Total Revenue</p>
+              <p className="text-xs text-muted-foreground">Realised Revenue</p>
               <p className="text-2xl font-bold text-green-600">{fmt(totalRevenue)}</p>
+              <p className="text-xs text-muted-foreground mt-1">From sold animals</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Total Cost</p>
-              <p className="text-2xl font-bold text-red-600">{fmt(totalCost)}</p>
+              <p className="text-xs text-muted-foreground">Running Cost (Active)</p>
+              <p className="text-2xl font-bold text-amber-600">{fmt(runningCost)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{activeCount} animals ongoing</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Net P&L</p>
+              <p className="text-xs text-muted-foreground">Realised Net P&L</p>
               <p className={`text-2xl font-bold ${totalNetPnL >= 0 ? "text-green-600" : "text-red-600"}`}>
                 {fmt(totalNetPnL)}
               </p>
@@ -164,7 +178,6 @@ export default function PnL() {
                     </TableRow>
                   ) : (
                     filtered.map((a: any) => {
-                      const isProfit = a.netPnL >= 0;
                       return (
                         <TableRow
                           key={a.animalId}
@@ -199,12 +212,11 @@ export default function PnL() {
                           <TableCell className="text-right tabular-nums text-green-600">
                             {a.revenue > 0 ? fmt(a.revenue) : "—"}
                           </TableCell>
-                          <TableCell className={`text-right tabular-nums font-bold ${isProfit ? "text-green-600" : "text-red-600"}`}>
+                          <TableCell className={`text-right tabular-nums font-bold ${getPnLDisplay(a).color}`}>
                             <span className="flex items-center justify-end gap-1">
-                              {isProfit
-                                ? <TrendingUp className="h-3 w-3" />
-                                : <TrendingDown className="h-3 w-3" />}
-                              {fmt(a.netPnL)}
+                              {getPnLDisplay(a).icon === "up" && <TrendingUp className="h-3 w-3" />}
+                              {getPnLDisplay(a).icon === "down" && <TrendingDown className="h-3 w-3" />}
+                              {getPnLDisplay(a).label}
                             </span>
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground text-xs">

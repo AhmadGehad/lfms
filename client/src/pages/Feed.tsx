@@ -131,6 +131,111 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    transactionDate: entry.transactionDate instanceof Date
+      ? entry.transactionDate.toISOString().split("T")[0]
+      : String(entry.transactionDate ?? "").split("T")[0],
+    transactionType: entry.transactionType as string,
+    qty: String(parseFloat(entry.qty)),
+    unitCost: entry.unitCost ? String(parseFloat(entry.unitCost)) : "",
+    totalCost: entry.totalCost ? String(parseFloat(entry.totalCost)) : "",
+    supplierName: entry.supplierName ?? "",
+    notes: entry.notes ?? "",
+  });
+
+  const { data: feedItems } = trpc.config.getFeedItems.useQuery();
+  const utils = trpc.useUtils();
+
+  const updateStock = trpc.feed.updateStockEntry.useMutation({
+    onSuccess: () => {
+      toast.success("Stock entry updated");
+      utils.feed.getStockLedger.invalidate();
+      utils.feed.getStockStatus.invalidate();
+      setOpen(false);
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleSubmit = () => {
+    if (!form.qty) return toast.error("Quantity is required");
+    updateStock.mutate({
+      id: entry.id,
+      transactionDate: form.transactionDate,
+      transactionType: form.transactionType as any,
+      qty: form.qty,
+      unitCost: form.unitCost || null,
+      totalCost: form.totalCost || null,
+      supplierName: form.supplierName || null,
+      notes: form.notes || null,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Stock Entry</DialogTitle>
+          <p className="text-sm text-muted-foreground mt-1">{entry.feedItemName}</p>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Date *</Label>
+              <Input type="date" value={form.transactionDate} onChange={(e) => setForm((f) => ({ ...f, transactionDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Type *</Label>
+              <Select value={form.transactionType} onValueChange={(v) => setForm((f) => ({ ...f, transactionType: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="purchase">Purchase</SelectItem>
+                  <SelectItem value="stock_count">Stock Count</SelectItem>
+                  <SelectItem value="adjustment">Adjustment</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Quantity (kg) *</Label>
+              <Input type="number" step="0.1" value={form.qty} onChange={(e) => setForm((f) => ({ ...f, qty: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("feed.unitCost")}</Label>
+              <Input type="number" step="0.01" placeholder="0.00" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("feed.totalCost")}</Label>
+              <Input type="number" step="0.01" placeholder="0.00" value={form.totalCost} onChange={(e) => setForm((f) => ({ ...f, totalCost: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("feed.supplier")}</Label>
+              <Input placeholder="Supplier name" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Notes</Label>
+            <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+          <Button onClick={handleSubmit} disabled={updateStock.isPending}>
+            {updateStock.isPending ? "Saving..." : "Save Changes"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -383,30 +488,36 @@ export default function Feed() {
                           <TableCell>{entry.totalCost ? `EGP ${parseFloat(entry.totalCost).toFixed(2)}` : "—"}</TableCell>
                           <TableCell className="text-muted-foreground">{entry.supplierName ?? "—"}</TableCell>
                           <TableCell className="text-right">
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="flex items-center gap-2">
-                                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                                    Delete Feed Stock Entry
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Move this <strong>{entry.feedItemName}</strong> entry to the Recycle Bin? You can restore it anytime.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteFeedStock.mutate({ id: entry.id })}>
-                                    Move to Bin
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <div className="flex items-center justify-end gap-1">
+                              <EditStockDialog
+                                entry={entry}
+                                onSuccess={() => {}}
+                              />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2">
+                                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                                      Delete Feed Stock Entry
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Move this <strong>{entry.feedItemName}</strong> entry to the Recycle Bin? You can restore it anytime.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteFeedStock.mutate({ id: entry.id })}>
+                                      Move to Bin
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))

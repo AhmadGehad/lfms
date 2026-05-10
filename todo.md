@@ -266,3 +266,19 @@
 - [x] TypeScript: 0 errors
 - [x] 57 unit tests pass (4 new P&L tests added)
 - [x] Save checkpoint
+
+## Phase 30: Edit & Delete for Fattening Tracker and Stock Ledger
+
+- [x] Add Edit Animal dialog to Fattening Tracker rows (group, notes)
+- [x] Add Delete (to Recycle Bin) action to Fattening Tracker rows
+- [x] Add Record Weight per-row button to Fattening Tracker
+- [x] Add Current Weight, % to Target columns to Fattening Tracker table
+- [x] Add updateFeedStockEntry helper to db.ts
+- [x] Add updateStockEntry tRPC procedure to feed router
+- [x] Add Edit Stock Entry dialog to Stock Ledger rows (date, type, qty, unit cost, total cost, supplier, notes)
+- [x] Delete action verified working on Stock Ledger
+- [x] Animal P&L: active animals show Ongoing (neutral) instead of red loss
+- [x] Animal P&L: summary cards split into Realised Revenue, Running Cost (Active), Realised Net P&L
+- [x] TypeScript: 0 errors
+- [x] 57 tests pass
+- [x] Save checkpoint

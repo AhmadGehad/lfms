@@ -8,6 +8,7 @@ import {
   getFeedStockLedger,
   getFeedStockStatus,
   getRationPlans,
+  updateFeedStockEntry,
   updateRationPlan,
 } from "../db";
 
@@ -133,6 +134,32 @@ export const feedRouter = router({
       return result;
     }),
 
-  // ─── STOCK STATUS (always unfiltered per requirements) ──────────────────────
+  updateStockEntry: protectedProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        feedItemId: z.number().optional(),
+        transactionDate: z.string().optional(),
+        transactionType: z.enum(["purchase", "stock_count", "adjustment"]).optional(),
+        qty: z.string().optional(),
+        unitCost: z.string().nullable().optional(),
+        totalCost: z.string().nullable().optional(),
+        supplierName: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+      })
+    )
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const result = await updateFeedStockEntry(id, data);
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        entityType: "feedStock",
+        entityId: String(id),
+        newValues: data as any,
+      });
+      return result;
+    }),
+
+  // ─── STOCK STATUS (always unfiltered per requirements) ──────────────────────────────────────────────
   getStockStatus: protectedProcedure.query(() => getFeedStockStatus()),
 });

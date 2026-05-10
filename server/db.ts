@@ -657,7 +657,28 @@ export async function createFeedStockEntry(data: typeof feedStockLedger.$inferIn
   return result;
 }
 
-// ─── EXPENSES ─────────────────────────────────────────────────────────────────
+export async function updateFeedStockEntry(
+  id: number,
+  data: Partial<{
+    feedItemId: number;
+    transactionDate: string;
+    transactionType: string;
+    qty: string;
+    unitCost: string | null;
+    totalCost: string | null;
+    supplierName: string | null;
+    notes: string | null;
+  }>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const updateData: Record<string, any> = { ...data };
+  if (data.transactionDate) updateData.transactionDate = data.transactionDate as any;
+  const [result] = await db.update(feedStockLedger).set(updateData).where(eq(feedStockLedger.id, id));
+  return result;
+}
+
+// ─── EXPENSESS ─────────────────────────────────────────────────────────────────
 
 export async function getExpenses(filters?: {
   fromDate?: string;
