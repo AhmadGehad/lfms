@@ -124,4 +124,11 @@
 - [x] Fix Recycle Bin crash: empty string SelectItem value="" → value="all"
 - [x] TypeScript: 0 errors
 - [x] All 48 unit tests pass
-- [ ] Save checkpoint and deploy
+- [x] Save checkpoint and deploy
+
+## Bug Fixes (Phase 17)
+- [x] Fix Dashboard expense trend chart: d.period/d.totalAmount → d.month/d.total
+- [x] Fix Dashboard sales trend chart: d.saleDate/d.totalRevenue → d.month/d.revenue
+- [x] TypeScript: 0 errors
+- [x] All 48 unit tests pass
+- [x] Save checkpoint and deploy

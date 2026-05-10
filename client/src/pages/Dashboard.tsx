@@ -241,8 +241,8 @@ export default function Dashboard() {
             {(expenseTrend ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={(expenseTrend ?? []).map((d: any) => ({
-                  date: new Date(d.period).toLocaleDateString(locale, { month: "short", day: "numeric" }),
-                  amount: parseFloat(d.totalAmount),
+                  date: d.month ? new Date(d.month + "-01").toLocaleDateString(locale, { month: "short", year: "2-digit" }) : "—",
+                  amount: parseFloat(String(d.total ?? 0)),
                 }))}>
                   <defs>
                     <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
@@ -274,8 +274,8 @@ export default function Dashboard() {
             {(salesTrend ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={(salesTrend ?? []).map((d: any) => ({
-                  date: new Date(d.saleDate).toLocaleDateString(locale, { month: "short", day: "numeric" }),
-                  revenue: parseFloat(d.totalRevenue),
+                  date: d.month ? new Date(d.month + "-01").toLocaleDateString(locale, { month: "short", year: "2-digit" }) : "—",
+                  revenue: parseFloat(String(d.revenue ?? 0)),
                 }))}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
