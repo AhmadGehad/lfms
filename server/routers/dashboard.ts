@@ -7,6 +7,7 @@ import {
   getAnimals,
   getExpenses,
   getSales,
+  updateSale,
   getNotifications,
   createNotification,
   markNotificationRead,
@@ -132,6 +133,17 @@ export const salesRouter = router({
       }).optional()
     )
     .query(({ input }) => getSales(input ?? {})),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      salePrice: z.string().optional(),
+      weightAtSale: z.string().optional(),
+      saleDate: z.string().optional(),
+      buyerName: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(({ input: { id, ...data } }) => updateSale(id, data)),
 });
 
 export const auditRouter = router({

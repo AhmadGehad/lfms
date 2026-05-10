@@ -491,7 +491,11 @@ export async function createSale(data: typeof sales.$inferInsert) {
   const [result] = await db.insert(sales).values(data);
   return result;
 }
-
+export async function updateSale(id: number, data: Partial<{ salePrice: string; weightAtSale: string; saleDate: string; buyerName: string; notes: string }>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(sales).set(data as any).where(eq(sales.id, id));
+}
 // ─── LAMBING LOG ──────────────────────────────────────────────────────────────
 
 export async function getLambingLog(filters?: { isPromoted?: boolean }) {

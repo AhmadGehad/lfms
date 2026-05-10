@@ -159,3 +159,12 @@
 - [x] TypeScript: 0 errors
 - [x] All 48 unit tests pass
 - [x] Save checkpoint and deploy
+
+## Feature: Edit Sale Price (Phase 20)
+- [x] Add updateSale procedure to db.ts (salePrice, weightAtSale, saleDate, notes)
+- [x] Wire updateSale in sales router
+- [x] Add edit button + dialog to Sales Records page (pre-fill current values)
+- [x] Insert placeholder sale records for O-001 and B-001 (price=0, pending)
+- [x] TypeScript: 0 errors
+- [x] All 48 unit tests pass
+- [x] Save checkpoint

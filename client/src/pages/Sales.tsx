@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
-import { Plus, ShoppingCart, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, AlertTriangle, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -115,6 +116,121 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+// ── Edit Sale Dialog ──────────────────────────────────────────────────────────
+function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    salePrice: String(sale.salePrice ?? ""),
+    weightAtSale: String(sale.weightAtSale ?? ""),
+    saleDate: sale.saleDate ? String(sale.saleDate).substring(0, 10) : "",
+    buyerName: sale.buyerName ?? "",
+    notes: sale.notes ?? "",
+  });
+  const utils = trpc.useUtils();
+
+  const update = trpc.sales.update.useMutation({
+    onSuccess: () => {
+      toast.success("Sale updated");
+      utils.sales.list.invalidate();
+      setOpen(false);
+      onSuccess();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  // Reset form when dialog opens with fresh data
+  const handleOpen = (v: boolean) => {
+    if (v) {
+      setForm({
+        salePrice: String(sale.salePrice ?? ""),
+        weightAtSale: String(sale.weightAtSale ?? ""),
+        saleDate: sale.saleDate ? String(sale.saleDate).substring(0, 10) : "",
+        buyerName: sale.buyerName ?? "",
+        notes: sale.notes ?? "",
+      });
+    }
+    setOpen(v);
+  };
+
+  const handleSave = () => {
+    if (!form.salePrice) { toast.error("Sale price is required"); return; }
+    const pricePerKg = form.weightAtSale && parseFloat(form.weightAtSale) > 0
+      ? String(parseFloat(form.salePrice) / parseFloat(form.weightAtSale))
+      : undefined;
+    update.mutate({
+      id: sale.id,
+      salePrice: form.salePrice,
+      weightAtSale: form.weightAtSale || undefined,
+      saleDate: form.saleDate || undefined,
+      buyerName: form.buyerName || undefined,
+      notes: form.notes || undefined,
+    });
+  };
+
+  const isPending = parseFloat(String(sale.salePrice)) === 0;
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="gap-1.5 h-8">
+          <Pencil className="h-3.5 w-3.5" />
+          {isPending ? <span className="text-xs text-amber-600 font-medium">Enter Price</span> : null}
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Sale — {sale.animalCode ?? sale.animalId}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Sale Price (EGP) *</Label>
+              <Input
+                type="number"
+                placeholder="0.00"
+                value={form.salePrice}
+                onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value }))}
+                className={isPending ? "border-amber-400 focus-visible:ring-amber-400" : ""}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Weight at Sale (kg)</Label>
+              <Input type="number" placeholder="0.0" value={form.weightAtSale} onChange={(e) => setForm((f) => ({ ...f, weightAtSale: e.target.value }))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Sale Date</Label>
+              <Input type="date" value={form.saleDate} onChange={(e) => setForm((f) => ({ ...f, saleDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Buyer Name</Label>
+              <Input placeholder="Buyer" value={form.buyerName} onChange={(e) => setForm((f) => ({ ...f, buyerName: e.target.value }))} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("common.notes")}</Label>
+            <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          </div>
+          {form.salePrice && form.weightAtSale && parseFloat(form.weightAtSale) > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Price per kg: <strong>EGP {(parseFloat(form.salePrice) / parseFloat(form.weightAtSale)).toFixed(2)}</strong>
+            </p>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+          <Button onClick={handleSave} disabled={update.isPending}>
+            {update.isPending ? "Saving..." : t("common.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Sales() {
   const { t } = useTranslation();
   const { data: sales, isLoading, refetch } = trpc.sales.list.useQuery();
@@ -128,7 +244,8 @@ export default function Sales() {
     onError: (e) => toast.error(e.message),
   });
 
-  const totalRevenue = (sales ?? []).reduce((sum: number, s: any) => sum + parseFloat(String(s.salePrice)), 0);
+  const totalRevenue = (sales ?? []).reduce((sum: number, s: any) => sum + parseFloat(String(s.sale?.salePrice ?? s.salePrice ?? 0)), 0);
+  const pendingCount = (sales ?? []).filter((s: any) => parseFloat(String(s.sale?.salePrice ?? s.salePrice ?? 0)) === 0).length;
 
   return (
     <div className="p-6 space-y-6">
@@ -140,10 +257,18 @@ export default function Sales() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {(sales ?? []).length} sales · Total Revenue: EGP {totalRevenue.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
+            {pendingCount > 0 && <span className="ml-2 text-amber-600 font-medium">· {pendingCount} pending price entry</span>}
           </p>
         </div>
         <RecordSaleDialog onSuccess={refetch} />
       </div>
+
+      {pendingCount > 0 && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{pendingCount} sale record{pendingCount > 1 ? "s" : ""} have no sale price yet. Click the <strong>pencil icon</strong> to enter the price.</span>
+        </div>
+      )}
 
       <Card>
         <CardContent className="p-0">
@@ -152,6 +277,7 @@ export default function Sales() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("animals.animalId")}</TableHead>
+                  <TableHead>Species / Category</TableHead>
                   <TableHead>{t("common.date")}</TableHead>
                   <TableHead>Sale Price (EGP)</TableHead>
                   <TableHead>{t("pnl.weightAtSale")}</TableHead>
@@ -163,50 +289,80 @@ export default function Sales() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-8">Loading...</TableCell></TableRow>
                 ) : (sales ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">No sales recorded yet.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No sales recorded yet.</TableCell></TableRow>
                 ) : (
                   (sales ?? []).map((s: any) => {
-                    const pricePerKg = s.weightAtSale
-                      ? (parseFloat(String(s.salePrice)) / parseFloat(String(s.weightAtSale))).toFixed(2)
+                    // Support both flat and nested response shapes
+                    const saleId = s.sale?.id ?? s.id;
+                    const animalCode = s.animalCode ?? s.sale?.animalCode ?? s.animalId;
+                    const salePrice = parseFloat(String(s.sale?.salePrice ?? s.salePrice ?? 0));
+                    const weightAtSale = s.sale?.weightAtSale ?? s.weightAtSale;
+                    const saleDate = s.sale?.saleDate ?? s.saleDate;
+                    const buyerName = s.sale?.buyerName ?? s.buyerName;
+                    const notes = s.sale?.notes ?? s.notes;
+                    const speciesName = s.speciesName ?? "—";
+                    const categoryName = s.categoryName ?? "—";
+                    const isPending = salePrice === 0;
+                    const pricePerKg = weightAtSale && salePrice > 0
+                      ? (salePrice / parseFloat(String(weightAtSale))).toFixed(2)
                       : "—";
+
+                    // Build a flat sale object for the edit dialog
+                    const saleForEdit = {
+                      id: saleId,
+                      animalCode,
+                      salePrice: String(salePrice),
+                      weightAtSale: weightAtSale ? String(weightAtSale) : "",
+                      saleDate: saleDate ? String(saleDate).substring(0, 10) : "",
+                      buyerName: buyerName ?? "",
+                      notes: notes ?? "",
+                    };
+
                     return (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-mono font-semibold text-primary">{s.animalId}</TableCell>
-                        <TableCell>{new Date(s.saleDate).toLocaleDateString()}</TableCell>
-                        <TableCell className="font-semibold text-green-600">
-                          {parseFloat(String(s.salePrice)).toLocaleString("en-EG", { minimumFractionDigits: 2 })}
+                      <TableRow key={saleId} className={isPending ? "bg-amber-50/40" : ""}>
+                        <TableCell className="font-mono font-semibold text-primary">{animalCode}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{speciesName} / {categoryName}</TableCell>
+                        <TableCell>{saleDate ? new Date(saleDate).toLocaleDateString() : "—"}</TableCell>
+                        <TableCell>
+                          {isPending
+                            ? <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">Pending</Badge>
+                            : <span className="font-semibold text-green-600">{salePrice.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>
+                          }
                         </TableCell>
-                        <TableCell>{s.weightAtSale ? `${parseFloat(String(s.weightAtSale)).toFixed(1)} kg` : "—"}</TableCell>
+                        <TableCell>{weightAtSale ? `${parseFloat(String(weightAtSale)).toFixed(1)} kg` : "—"}</TableCell>
                         <TableCell>{pricePerKg !== "—" ? `EGP ${pricePerKg}` : "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.buyerName ?? "—"}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{s.notes ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground">{buyerName ?? "—"}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">{notes ?? "—"}</TableCell>
                         <TableCell className="text-right">
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle className="flex items-center gap-2">
-                                  <AlertTriangle className="h-5 w-5 text-destructive" />
-                                  Delete Sale Record
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Move sale record for <strong>{s.animalId}</strong> to the Recycle Bin? You can restore it anytime.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteSale.mutate({ id: s.id })}>
-                                  Move to Bin
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          <div className="flex items-center justify-end gap-1">
+                            <EditSaleDialog sale={saleForEdit} onSuccess={refetch} />
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                                    Delete Sale Record
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Move sale record for <strong>{animalCode}</strong> to the Recycle Bin? You can restore it anytime.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteSale.mutate({ id: saleId })}>
+                                    Move to Bin
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
