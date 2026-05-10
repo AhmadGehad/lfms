@@ -41,54 +41,16 @@ import {
   PanelLeft,
   Scale,
   ShoppingCart,
+  Trash2,
   Users,
   Wheat,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
-
-const navGroups = [
-  {
-    label: "Overview",
-    items: [
-      { icon: BarChart3, label: "Dashboard", path: "/" },
-    ],
-  },
-  {
-    label: "Livestock",
-    items: [
-      { icon: Leaf, label: "Animal Registry", path: "/animals" },
-      { icon: Egg, label: "Breeding & Lambing", path: "/breeding" },
-      { icon: Scale, label: "Fattening Tracker", path: "/fattening" },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { icon: Wheat, label: "Feed Management", path: "/feed" },
-      { icon: DollarSign, label: "Expense Log", path: "/expenses" },
-    ],
-  },
-  {
-    label: "Finance",
-    items: [
-      { icon: Activity, label: "P&L per Animal", path: "/pnl" },
-      { icon: FileText, label: "Income Statement", path: "/income-statement" },
-      { icon: ShoppingCart, label: "Sales Records", path: "/sales" },
-    ],
-  },
-  {
-    label: "System",
-    items: [
-      { icon: Bell, label: "Notifications", path: "/notifications" },
-      { icon: BookOpen, label: "Audit Log", path: "/audit" },
-      { icon: Users, label: "User Management", path: "/users" },
-      { icon: Cog, label: "Configuration", path: "/config" },
-    ],
-  },
-];
 
 const SIDEBAR_WIDTH_KEY = "lfms-sidebar-width";
 const DEFAULT_WIDTH = 260;
@@ -101,6 +63,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  // Apply RTL direction based on language
+  useEffect(() => {
+    const isAr = i18n.language === "ar";
+    document.documentElement.dir = isAr ? "rtl" : "ltr";
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -113,16 +83,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-4">
-            <div className="h-16 w-16 rounded-2xl bg-primary flex items-center justify-center">
-              <Leaf className="h-8 w-8 text-primary-foreground" />
+            <div className="h-20 w-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+              <Leaf className="h-10 w-10 text-primary-foreground" />
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-center">LFMS</h1>
-            <p className="text-sm text-muted-foreground text-center">
-              Livestock Farm Management System
-            </p>
-            <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Sign in to access your farm management dashboard.
-            </p>
+            <div className="text-center">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                {t("appName")}
+              </h1>
+              <p className="text-lg text-muted-foreground mt-1" dir="rtl">
+                {t("appNameAr")}
+              </p>
+              <p className="text-sm text-muted-foreground mt-3">
+                {t("appTagline")}
+              </p>
+            </div>
           </div>
           <Button
             onClick={() => { window.location.href = getLoginUrl(); }}
@@ -131,6 +105,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             Sign in to continue
           </Button>
+          <div className="mt-2">
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
     );
@@ -159,10 +136,53 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
 
   // Notification count
   const { data: notifications } = trpc.notifications.list.useQuery({ unreadOnly: true });
   const unreadCount = Array.isArray(notifications) ? notifications.length : 0;
+
+  const navGroups = [
+    {
+      label: "Overview",
+      items: [
+        { icon: BarChart3, label: t("nav.dashboard"), path: "/" },
+      ],
+    },
+    {
+      label: "Livestock",
+      items: [
+        { icon: Leaf, label: t("nav.animals"), path: "/animals" },
+        { icon: Egg, label: t("nav.breeding"), path: "/breeding" },
+        { icon: Scale, label: t("nav.fattening"), path: "/fattening" },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { icon: Wheat, label: t("nav.feed"), path: "/feed" },
+        { icon: DollarSign, label: t("nav.expenses"), path: "/expenses" },
+      ],
+    },
+    {
+      label: "Finance",
+      items: [
+        { icon: Activity, label: t("nav.pnl"), path: "/pnl" },
+        { icon: FileText, label: t("nav.incomeStatement"), path: "/income-statement" },
+        { icon: ShoppingCart, label: t("nav.sales"), path: "/sales" },
+      ],
+    },
+    {
+      label: "System",
+      items: [
+        { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
+        { icon: BookOpen, label: t("nav.auditLog"), path: "/audit" },
+        { icon: Users, label: t("nav.users"), path: "/users" },
+        { icon: Cog, label: t("nav.configuration"), path: "/config" },
+        { icon: Trash2, label: t("nav.recycleBin") ?? "Recycle Bin", path: "/recycle-bin" },
+      ],
+    },
+  ];
 
   useEffect(() => {
     if (isCollapsed) setIsResizing(false);
@@ -192,7 +212,7 @@ function DashboardLayoutContent({
 
   const activeLabel = navGroups
     .flatMap((g) => g.items)
-    .find((item) => item.path === location)?.label ?? "LFMS";
+    .find((item) => item.path === location)?.label ?? "Azal Farms";
 
   return (
     <>
@@ -210,12 +230,12 @@ function DashboardLayoutContent({
               </button>
               {!isCollapsed && (
                 <div className="flex items-center gap-2 min-w-0">
-                  <div className="h-7 w-7 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
+                  <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
                     <Leaf className="h-4 w-4 text-sidebar-primary-foreground" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-sidebar-foreground truncate leading-none">LFMS</p>
-                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5">Farm Manager</p>
+                    <p className="text-sm font-bold text-sidebar-foreground truncate leading-none">Azal Farms</p>
+                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5" dir="rtl">مزارع أزَل</p>
                   </div>
                 </div>
               )}
@@ -266,6 +286,12 @@ function DashboardLayoutContent({
 
           {/* Footer */}
           <SidebarFooter className="p-3 border-t border-sidebar-border">
+            {/* Language switcher */}
+            {!isCollapsed && (
+              <div className="flex justify-center mb-2">
+                <LanguageSwitcher />
+              </div>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors w-full text-left focus:outline-none">
@@ -295,11 +321,11 @@ function DashboardLayoutContent({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setLocation("/users")} className="cursor-pointer">
                   <Users className="mr-2 h-4 w-4" />
-                  User Management
+                  {t("nav.users")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setLocation("/config")} className="cursor-pointer">
                   <Cog className="mr-2 h-4 w-4" />
-                  Configuration
+                  {t("nav.configuration")}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
@@ -327,12 +353,15 @@ function DashboardLayoutContent({
               <SidebarTrigger className="h-9 w-9 rounded-lg" />
               <span className="font-semibold text-sm">{activeLabel}</span>
             </div>
-            <button onClick={() => setLocation("/notifications")} className="relative p-2 rounded-lg hover:bg-muted">
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <button onClick={() => setLocation("/notifications")} className="relative p-2 rounded-lg hover:bg-muted">
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                )}
+              </button>
+            </div>
           </div>
         )}
 

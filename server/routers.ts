@@ -8,6 +8,7 @@ import { breedingRouter } from "./routers/breeding";
 import { feedRouter } from "./routers/feed";
 import { expensesRouter } from "./routers/expenses";
 import { dashboardRouter, notificationsRouter, salesRouter, auditRouter, userManagementRouter } from "./routers/dashboard";
+import { recycleBinRouter } from "./routers/softDelete";
 
 export const appRouter = router({
   system: systemRouter,
@@ -31,6 +32,7 @@ export const appRouter = router({
   sales: salesRouter,
   audit: auditRouter,
   userMgmt: userManagementRouter,
+  recycleBin: recycleBinRouter,
 });
 
 export type AppRouter = typeof appRouter;

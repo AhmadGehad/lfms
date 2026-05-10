@@ -96,7 +96,7 @@ export async function updateUserRole(userId: number, role: "owner" | "supervisor
 export async function getAllSpecies() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(species).orderBy(species.name);
+  return db.select().from(species).where(isNull(species.deletedAt)).orderBy(species.name);
 }
 
 export async function createSpecies(data: { name: string; description?: string }) {
@@ -117,11 +117,10 @@ export async function updateSpecies(id: number, data: Partial<{ name: string; de
 export async function getAllCategories(speciesId?: number) {
   const db = await getDb();
   if (!db) return [];
-  const query = db.select().from(animalCategories);
   if (speciesId) {
-    return query.where(eq(animalCategories.speciesId, speciesId));
+    return db.select().from(animalCategories).where(and(eq(animalCategories.speciesId, speciesId), isNull(animalCategories.deletedAt))).orderBy(animalCategories.name);
   }
-  return query.orderBy(animalCategories.name);
+  return db.select().from(animalCategories).where(isNull(animalCategories.deletedAt)).orderBy(animalCategories.name);
 }
 
 export async function createCategory(data: {
@@ -159,7 +158,7 @@ export async function incrementCategorySequence(categoryId: number): Promise<num
 export async function getAllStatuses() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(animalStatuses).orderBy(animalStatuses.name);
+  return db.select().from(animalStatuses).where(isNull(animalStatuses.deletedAt)).orderBy(animalStatuses.name);
 }
 
 export async function createStatus(data: { name: string; description?: string; isExitStatus?: boolean }) {
@@ -181,9 +180,9 @@ export async function getAllGroups(speciesId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (speciesId) {
-    return db.select().from(groups).where(or(eq(groups.speciesId, speciesId), isNull(groups.speciesId)));
+    return db.select().from(groups).where(and(or(eq(groups.speciesId, speciesId), isNull(groups.speciesId)), isNull(groups.deletedAt)));
   }
-  return db.select().from(groups).orderBy(groups.groupCode);
+  return db.select().from(groups).where(isNull(groups.deletedAt)).orderBy(groups.groupCode);
 }
 
 export async function createGroup(data: { groupCode: string; name: string; speciesId?: number; categoryId?: number; description?: string }) {
@@ -204,7 +203,7 @@ export async function updateGroup(id: number, data: Partial<typeof groups.$infer
 export async function getAllBirthTypes() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(birthTypes).orderBy(birthTypes.name);
+  return db.select().from(birthTypes).where(isNull(birthTypes.deletedAt)).orderBy(birthTypes.name);
 }
 
 export async function createBirthType(data: { name: string; description?: string }) {
@@ -219,7 +218,7 @@ export async function createBirthType(data: { name: string; description?: string
 export async function getAllFeedItems() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(feedItems).orderBy(feedItems.name);
+  return db.select().from(feedItems).where(isNull(feedItems.deletedAt)).orderBy(feedItems.name);
 }
 
 export async function createFeedItem(data: { name: string; unit?: string }) {
@@ -274,7 +273,7 @@ export async function getFeedPriceOnDate(feedItemId: number, dateStr: string): P
 export async function getAllExpenseCategories() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(expenseCategories).orderBy(expenseCategories.name);
+  return db.select().from(expenseCategories).where(isNull(expenseCategories.deletedAt)).orderBy(expenseCategories.name);
 }
 
 export async function createExpenseCategory(data: { name: string; description?: string }) {
@@ -337,6 +336,7 @@ export async function getAnimals(filters?: {
   const db = await getDb();
   if (!db) return [];
   const conditions: ReturnType<typeof eq>[] = [];
+  conditions.push(isNull(animals.deletedAt));
   if (filters?.speciesId) conditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
   if (filters?.groupId) conditions.push(eq(animals.groupId, filters.groupId));
@@ -469,8 +469,8 @@ export async function getSales(filters?: { animalId?: number; fromDate?: string;
     .leftJoin(animals, eq(sales.animalId, animals.id))
     .leftJoin(species, eq(animals.speciesId, species.id))
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id));
-  if (conditions.length > 0) return query.where(and(...conditions)).orderBy(desc(sales.saleDate));
-  return query.orderBy(desc(sales.saleDate));
+  conditions.push(isNull(sales.deletedAt));
+  return query.where(and(...conditions)).orderBy(desc(sales.saleDate));
 }
 
 export async function createSale(data: typeof sales.$inferInsert) {
@@ -506,10 +506,9 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
     .from(lambingLog)
     .leftJoin(birthTypes, eq(lambingLog.birthTypeId, birthTypes.id))
     .leftJoin(groups, eq(lambingLog.groupId, groups.id));
-  if (filters?.isPromoted !== undefined) {
-    return query.where(eq(lambingLog.isPromoted, filters.isPromoted)).orderBy(desc(lambingLog.birthDate));
-  }
-  return query.orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
+  const lambingConditions = [isNull(lambingLog.deletedAt)];
+  if (filters?.isPromoted !== undefined) lambingConditions.push(eq(lambingLog.isPromoted, filters.isPromoted) as any);
+  return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
 }
 
 export async function createLambingRecord(data: typeof lambingLog.$inferInsert) {
@@ -530,7 +529,7 @@ export async function updateLambingRecord(id: number, data: Partial<typeof lambi
 export async function getWeightLog(animalId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(weightLog).where(eq(weightLog.animalId, animalId)).orderBy(weightLog.weighDate);
+  return db.select().from(weightLog).where(and(eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt))).orderBy(weightLog.weighDate);
 }
 
 export async function createWeightEntry(data: typeof weightLog.$inferInsert) {
@@ -570,8 +569,8 @@ export async function getRationPlans(categoryId?: number) {
     .from(rationPlans)
     .leftJoin(feedItems, eq(rationPlans.feedItemId, feedItems.id))
     .leftJoin(animalCategories, eq(rationPlans.categoryId, animalCategories.id));
-  if (categoryId) return query.where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true)));
-  return query.where(eq(rationPlans.isActive, true));
+  if (categoryId) return query.where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
+  return query.where(and(eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
 }
 
 export async function createRationPlan(data: typeof rationPlans.$inferInsert) {
@@ -624,8 +623,8 @@ export async function getFeedStockLedger(feedItemId?: number) {
     })
     .from(feedStockLedger)
     .leftJoin(feedItems, eq(feedStockLedger.feedItemId, feedItems.id));
-  if (feedItemId) return query.where(eq(feedStockLedger.feedItemId, feedItemId)).orderBy(desc(feedStockLedger.transactionDate));
-  return query.orderBy(desc(feedStockLedger.transactionDate));
+  if (feedItemId) return query.where(and(eq(feedStockLedger.feedItemId, feedItemId), isNull(feedStockLedger.deletedAt))).orderBy(desc(feedStockLedger.transactionDate));
+  return query.where(isNull(feedStockLedger.deletedAt)).orderBy(desc(feedStockLedger.transactionDate));
 }
 
 export async function createFeedStockEntry(data: typeof feedStockLedger.$inferInsert) {
@@ -663,8 +662,8 @@ export async function getExpenses(filters?: {
     .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
     .leftJoin(expenseSubCategories, eq(expenses.subCategoryId, expenseSubCategories.id))
     .leftJoin(animals, eq(expenses.headId, animals.id));
-  if (conditions.length > 0) return query.where(and(...conditions)).orderBy(desc(expenses.expenseDate));
-  return query.orderBy(desc(expenses.expenseDate));
+  conditions.push(isNull(expenses.deletedAt));
+  return query.where(and(...conditions)).orderBy(desc(expenses.expenseDate));
 }
 
 export async function createExpense(data: typeof expenses.$inferInsert) {
@@ -680,10 +679,10 @@ export async function updateExpense(id: number, data: Partial<typeof expenses.$i
   await db.update(expenses).set(data).where(eq(expenses.id, id));
 }
 
-export async function deleteExpense(id: number) {
+export async function deleteExpense(id: number, deletedBy?: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.delete(expenses).where(eq(expenses.id, id));
+  await db.update(expenses).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(expenses.id, id));
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────

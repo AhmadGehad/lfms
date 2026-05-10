@@ -7,8 +7,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Plus, Wheat } from "lucide-react";
+import { AlertTriangle, Plus, Wheat, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -122,6 +133,24 @@ export default function Feed() {
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
   const { data: stockLedger } = trpc.feed.getStockLedger.useQuery();
   const { data: rationPlans } = trpc.feed.getRationPlans.useQuery();
+  const utils = trpc.useUtils();
+
+  const deleteFeedStock = trpc.recycleBin.deleteFeedStock.useMutation({
+    onSuccess: () => {
+      toast.success("Feed stock entry moved to Recycle Bin");
+      utils.feed.getStockLedger.invalidate();
+      utils.feed.getStockStatus.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteRationPlan = trpc.recycleBin.deleteRationPlan.useMutation({
+    onSuccess: () => {
+      toast.success("Ration plan moved to Recycle Bin");
+      utils.feed.getRationPlans.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const criticalCount = (stockStatus ?? []).filter((s: any) => s.status === "critical").length;
   const lowCount = (stockStatus ?? []).filter((s: any) => s.status === "low").length;
@@ -197,12 +226,13 @@ export default function Feed() {
                       <TableHead>Unit Cost</TableHead>
                       <TableHead>Total Cost</TableHead>
                       <TableHead>Supplier</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {(stockLedger ?? []).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                           No stock entries yet.
                         </TableCell>
                       </TableRow>
@@ -216,6 +246,32 @@ export default function Feed() {
                           <TableCell>{entry.unitCost ? `EGP ${parseFloat(entry.unitCost).toFixed(2)}` : "—"}</TableCell>
                           <TableCell>{entry.totalCost ? `EGP ${parseFloat(entry.totalCost).toFixed(2)}` : "—"}</TableCell>
                           <TableCell className="text-muted-foreground">{entry.supplierName ?? "—"}</TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                                    Delete Feed Stock Entry
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Move this <strong>{entry.feedItemName}</strong> entry to the Recycle Bin? You can restore it anytime.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteFeedStock.mutate({ id: entry.id })}>
+                                    Move to Bin
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
                         </TableRow>
                       ))
                     )}
@@ -239,12 +295,13 @@ export default function Feed() {
                       <TableHead>Effective Date</TableHead>
                       <TableHead>End Date</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {(rationPlans ?? []).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                        <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                           No ration plans configured.
                         </TableCell>
                       </TableRow>
@@ -262,6 +319,32 @@ export default function Feed() {
                             ) : (
                               <Badge variant="outline" className="text-xs">Inactive</Badge>
                             )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                                    Delete Ration Plan
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Move ration plan for <strong>{plan.categoryName}</strong> to the Recycle Bin? You can restore it anytime.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRationPlan.mutate({ id: plan.id })}>
+                                    Move to Bin
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </TableCell>
                         </TableRow>
                       ))

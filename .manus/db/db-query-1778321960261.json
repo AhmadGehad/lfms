@@ -1,0 +1,31 @@
+{
+  "query": "\nINSERT IGNORE INTO birth_types (name, description) VALUES \n('Single', 'Single birth'),\n('Twin', 'Twin birth'),\n('Triplet', 'Triplet birth'),\n('Quadruplet', 'Quadruplet birth');\n\nSELECT COUNT(*) as animal_count FROM animals;\nSELECT COUNT(*) as lambing_count FROM lambing_log;\nSELECT COUNT(*) as weight_count FROM weight_log;\nSELECT COUNT(*) as expense_count FROM expenses;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nINSERT IGNORE INTO birth_types (name, description) VALUES \n('Single', 'Single birth'),\n('Twin', 'Twin birth'),\n('Triplet', 'Triplet birth'),\n('Quadruplet', 'Quadruplet birth');\n\nSELECT COUNT(*) as animal_count FROM animals;\nSELECT COUNT(*) as lambing_count FROM lambing_log;\nSELECT COUNT(*) as weight_count FROM weight_log;\nSELECT COUNT(*) as expense_count FROM expenses;\n",
+  "rows": [
+    {
+      "animal_count": "1"
+    },
+    {
+      "animal_count": "lambing_count"
+    },
+    {
+      "animal_count": "0"
+    },
+    {
+      "animal_count": "weight_count"
+    },
+    {
+      "animal_count": "1"
+    },
+    {
+      "animal_count": "expense_count"
+    },
+    {
+      "animal_count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "animal_count\n1\nlambing_count\n0\nweight_count\n1\nexpense_count\n0\n",
+  "stderr": "",
+  "execution_time_ms": 2788
+}

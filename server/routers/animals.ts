@@ -68,7 +68,7 @@ export const animalsRouter = router({
       // Get category prefix from DB
       const { getAllCategories } = await import("../db");
       const cats = await getAllCategories(input.speciesId);
-      const cat = cats.find((c) => c.id === input.categoryId);
+      const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
       const prefix = cat?.idPrefix ?? "A-";
       const animalId = `${prefix}${String(seq).padStart(4, "0")}`;
 

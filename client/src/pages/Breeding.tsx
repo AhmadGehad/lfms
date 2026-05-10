@@ -7,7 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Egg, Plus } from "lucide-react";
+import { Egg, Plus, Trash2, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
@@ -171,6 +182,10 @@ export default function Breeding() {
   const { data: lambingLog, isLoading, refetch } = trpc.breeding.listLambing.useQuery();
   const utils = trpc.useUtils();
 
+  const deleteLambingLog = trpc.recycleBin.deleteLambingLog.useMutation({
+    onSuccess: () => { toast.success("Birth record moved to Recycle Bin"); utils.breeding.listLambing.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
   const promoteLamb = trpc.breeding.promoteLamb.useMutation({
     onSuccess: (data) => {
       toast.success(`Lamb promoted as ${data.animalId}`);
@@ -262,15 +277,37 @@ export default function Breeding() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        {!l.isPromoted && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setPromoteDialog({ open: true, lambId: l.id })}
-                          >
-                            Promote
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {!l.isPromoted && (
+                            <Button size="sm" variant="outline" onClick={() => setPromoteDialog({ open: true, lambId: l.id })}>
+                              Promote
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  Delete Birth Record
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Move birth record <strong>{l.lambId}</strong> to the Recycle Bin? You can restore it anytime.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteLambingLog.mutate({ id: l.id })}>
+                                  Move to Bin
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

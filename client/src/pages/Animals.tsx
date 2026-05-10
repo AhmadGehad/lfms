@@ -8,7 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Eye, Leaf, Plus, Search } from "lucide-react";
+import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -217,6 +228,14 @@ export default function Animals() {
   const [filterSpecies, setFilterSpecies] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterActive, setFilterActive] = useState<string>("active");
+  const utils = trpc.useUtils();
+  const deleteAnimalMutation = trpc.recycleBin.deleteAnimal.useMutation({
+    onSuccess: () => {
+      toast.success("Animal moved to Recycle Bin");
+      utils.animals.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const { data: animals, isLoading, refetch } = trpc.animals.list.useQuery({
     isActive: filterActive === "active" ? true : filterActive === "inactive" ? false : undefined,
@@ -351,13 +370,47 @@ export default function Animals() {
                           </TableCell>
                           <TableCell>{days}</TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => { e.stopPropagation(); setLocation(`/animals/${a.animal.id}`); }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => { e.stopPropagation(); setLocation(`/animals/${a.animal.id}`); }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:bg-destructive/10"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2">
+                                      <AlertTriangle className="h-5 w-5 text-destructive" />
+                                      Delete Animal
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Move <strong>{a.animal.animalId}</strong> and all related records to the Recycle Bin? You can restore it anytime.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-destructive hover:bg-destructive/90"
+                                      onClick={(e) => { e.stopPropagation(); deleteAnimalMutation.mutate({ id: a.animal.id }); }}
+                                    >
+                                      Move to Bin
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

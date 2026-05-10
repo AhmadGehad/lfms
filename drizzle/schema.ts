@@ -37,6 +37,8 @@ export const species = mysqlTable("species", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const animalCategories = mysqlTable("animal_categories", {
@@ -52,6 +54,8 @@ export const animalCategories = mysqlTable("animal_categories", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const animalStatuses = mysqlTable("animal_statuses", {
@@ -63,6 +67,8 @@ export const animalStatuses = mysqlTable("animal_statuses", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const groups = mysqlTable("groups", {
@@ -76,6 +82,8 @@ export const groups = mysqlTable("groups", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const birthTypes = mysqlTable("birth_types", {
@@ -86,6 +94,8 @@ export const birthTypes = mysqlTable("birth_types", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const feedItems = mysqlTable("feed_items", {
@@ -96,6 +106,8 @@ export const feedItems = mysqlTable("feed_items", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const feedItemPriceHistory = mysqlTable("feed_item_price_history", {
@@ -116,6 +128,8 @@ export const expenseCategories = mysqlTable("expense_categories", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const expenseSubCategories = mysqlTable("expense_sub_categories", {
@@ -162,6 +176,8 @@ export const animals = mysqlTable("animals", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const animalStatusHistory = mysqlTable("animal_status_history", {
@@ -187,6 +203,8 @@ export const sales = mysqlTable("sales", {
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 // ─── BREEDING & LAMBING ───────────────────────────────────────────────────────
@@ -206,6 +224,8 @@ export const lambingLog = mysqlTable("lambing_log", {
   promotedHeadId: int("promotedHeadId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 // ─── FATTENING / WEIGHT LOG ───────────────────────────────────────────────────
@@ -219,6 +239,8 @@ export const weightLog = mysqlTable("weight_log", {
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 // ─── FEED MANAGEMENT ──────────────────────────────────────────────────────────
@@ -234,6 +256,8 @@ export const rationPlans = mysqlTable("ration_plans", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 export const feedStockLedger = mysqlTable("feed_stock_ledger", {
@@ -248,6 +272,8 @@ export const feedStockLedger = mysqlTable("feed_stock_ledger", {
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 // ─── EXPENSE LOG ──────────────────────────────────────────────────────────────
@@ -266,6 +292,8 @@ export const expenses = mysqlTable("expenses", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
 });
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────

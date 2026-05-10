@@ -89,3 +89,30 @@
 - [x] TypeScript: 0 errors
 - [x] Save checkpoint
 - [x] Deploy on Manus server
+
+## Phase 10: Excel Import & Export + Rename + i18n
+- [x] Fix SQL schema mismatches (targetType field name, etc.)
+- [x] Execute full Excel data import (132 animals, weight logs, expenses, ration plans, feed stock)
+- [x] Verify import counts in database
+- [x] Rename app to "Azal Farms - مزارع أزَل" (title, branding, logo, favicon)
+- [x] Add Arabic/English i18n system (react-i18next) with language switcher
+- [x] Translate all UI labels, navigation, page headings to Arabic
+- [x] Support RTL layout when Arabic is selected
+- [x] Add PDF export to Income Statement page (jsPDF + jspdf-autotable)
+- [x] Add Excel export to Income Statement page (xlsx)
+
+## Phase 12: Soft-Delete with Restore
+- [x] Add deletedAt + deletedBy columns to all 14 entity tables via migration
+- [x] Update all list queries to exclude soft-deleted records by default
+- [x] Add softDelete and restore procedures for all entities (recycleBin router)
+- [x] Cascade soft-delete: deleting an animal also soft-deletes related records
+- [x] Add Recycle Bin page showing all soft-deleted records grouped by type
+- [x] Add delete button (with confirmation dialog) to Animals, Expenses, Feed, Breeding, Sales pages
+- [x] Add restore button in Recycle Bin with cascade restore
+- [x] Add permanent delete option in Recycle Bin (admin only)
+- [x] Wire Recycle Bin route in App.tsx and navigation
+- [x] Add Recycle Bin to sidebar navigation with Trash2 icon
+- [x] Add recycleBin i18n keys (English + Arabic)
+- [x] Final TypeScript check (0 errors)
+- [x] All 48 unit tests pass
+- [x] Save checkpoint and deploy

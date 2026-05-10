@@ -6,7 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { DollarSign, Plus, Trash2 } from "lucide-react";
+import { DollarSign, Plus, Trash2, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -147,8 +158,8 @@ export default function Expenses() {
   const { data: expenses, isLoading, refetch } = trpc.expenses.list.useQuery({ fromDate, toDate });
   const utils = trpc.useUtils();
 
-  const deleteExpense = trpc.expenses.delete.useMutation({
-    onSuccess: () => { toast.success("Expense deleted"); utils.expenses.list.invalidate(); },
+  const deleteExpense = trpc.recycleBin.deleteExpense.useMutation({
+    onSuccess: () => { toast.success("Expense moved to Recycle Bin"); utils.expenses.list.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -210,14 +221,30 @@ export default function Expenses() {
                       <TableCell className="text-muted-foreground">{e.expense.vendorName ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm max-w-32 truncate">{e.expense.notes ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => deleteExpense.mutate({ id: e.expense.id })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-destructive" />
+                                Delete Expense
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Move this <strong>EGP {parseFloat(String(e.expense.amount)).toLocaleString()}</strong> expense to the Recycle Bin? You can restore it anytime.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteExpense.mutate({ id: e.expense.id })}>
+                                Move to Bin
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     </TableRow>
                   ))

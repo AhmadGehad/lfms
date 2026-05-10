@@ -40,7 +40,7 @@ export const breedingRouter = router({
 
       // Get lamb category (first category with "Lamb" in name, or speciesId from dam)
       const allCats = await getAllCategories();
-      const lambCat = allCats.find((c) => c.name.toLowerCase().includes("lamb") || c.name.toLowerCase().includes("baby"));
+      const lambCat = allCats.find((c: { id: number; name: string; idPrefix: string }) => c.name.toLowerCase().includes("lamb") || c.name.toLowerCase().includes("baby"));
 
       for (let i = 0; i < input.count; i++) {
         let lambId = `LAMB-${Date.now()}-${i}`;
@@ -97,7 +97,7 @@ export const breedingRouter = router({
 
       const seq = await incrementCategorySequence(input.categoryId);
       const cats = await getAllCategories();
-      const cat = cats.find((c) => c.id === input.categoryId);
+      const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
       const prefix = cat?.idPrefix ?? "A-";
       const animalId = `${prefix}${String(seq).padStart(4, "0")}`;
 

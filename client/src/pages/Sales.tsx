@@ -5,8 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
-import { Plus, ShoppingCart } from "lucide-react";
+import { Plus, ShoppingCart, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -104,6 +115,15 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
 
 export default function Sales() {
   const { data: sales, isLoading, refetch } = trpc.sales.list.useQuery();
+  const utils = trpc.useUtils();
+
+  const deleteSale = trpc.recycleBin.deleteSale.useMutation({
+    onSuccess: () => {
+      toast.success("Sale record moved to Recycle Bin");
+      utils.sales.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const totalRevenue = (sales ?? []).reduce((sum: number, s: any) => sum + parseFloat(String(s.salePrice)), 0);
 
@@ -135,13 +155,14 @@ export default function Sales() {
                   <TableHead>Price / kg</TableHead>
                   <TableHead>Buyer</TableHead>
                   <TableHead>Notes</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow>
                 ) : (sales ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">No sales recorded yet.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">No sales recorded yet.</TableCell></TableRow>
                 ) : (
                   (sales ?? []).map((s: any) => {
                     const pricePerKg = s.weightAtSale
@@ -158,6 +179,32 @@ export default function Sales() {
                         <TableCell>{pricePerKg !== "—" ? `EGP ${pricePerKg}` : "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{s.buyerName ?? "—"}</TableCell>
                         <TableCell className="text-muted-foreground text-sm">{s.notes ?? "—"}</TableCell>
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  Delete Sale Record
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Move sale record for <strong>{s.animalId}</strong> to the Recycle Bin? You can restore it anytime.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteSale.mutate({ id: s.id })}>
+                                  Move to Bin
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
                       </TableRow>
                     );
                   })

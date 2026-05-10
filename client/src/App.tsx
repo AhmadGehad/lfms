@@ -21,6 +21,7 @@ import Notifications from "./pages/Notifications";
 import AuditLog from "./pages/AuditLog";
 import UserManagement from "./pages/UserManagement";
 import Configuration from "./pages/Configuration";
+import RecycleBin from "./pages/RecycleBin";
 
 function Router() {
   return (
@@ -40,6 +41,7 @@ function Router() {
         <Route path="/audit" component={AuditLog} />
         <Route path="/users" component={UserManagement} />
         <Route path="/config" component={Configuration} />
+        <Route path="/recycle-bin" component={RecycleBin} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
