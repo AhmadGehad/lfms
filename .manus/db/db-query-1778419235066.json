@@ -1,0 +1,122 @@
+{
+  "query": "\nSELECT id, feedItemId, transactionDate, transactionType, qty, notes FROM feed_stock_ledger WHERE notes LIKE '%Scenario%' OR notes LIKE '%scenario%' OR notes LIKE '%test%' ORDER BY id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, feedItemId, transactionDate, transactionType, qty, notes FROM feed_stock_ledger WHERE notes LIKE '%Scenario%' OR notes LIKE '%scenario%' OR notes LIKE '%test%' ORDER BY id;\n",
+  "rows": [
+    {
+      "id": "30001",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "30002",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "30003",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "30004",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "30005",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "30006",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "60001",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "90001",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "90002",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "90003",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "90004",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "90005",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "120001",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "id": "120002",
+      "feedItemId": "1",
+      "transactionDate": "2026-05-01",
+      "transactionType": "purchase",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfeedItemId\ttransactionDate\ttransactionType\tqty\tnotes\n30001\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n30002\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n30003\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n30004\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n30005\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n30006\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n60001\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n90001\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n90002\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n90003\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n90004\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n90005\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n120001\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n120002\t1\t2026-05-01\tpurchase\t100.000\tScenario test stock\n",
+  "stderr": "",
+  "execution_time_ms": 1848
+}

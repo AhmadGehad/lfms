@@ -1,0 +1,22 @@
+{
+  "query": "\n-- E-049: Sheep, Female, Purchased 2024-11-04, Acquired 2025-11-04, Group F1 (Fattening Pen 1=1), Category Ewe=4, Dead 2026-03-31\n-- Weight at acquisition: 18 kg, Purchase cost: 546 EGP\nINSERT INTO animals (animalId, speciesId, categoryId, groupId, statusId, sex, acquisitionType, acquisitionDate, birthDate, purchaseCost, weightAtAcquisition, exitDate, exitReason, isActive, createdAt, updatedAt)\nVALUES ('E-049', 1, 4, 1, 3, 'female', 'purchased', '2025-11-04', '2024-11-04', 546, 18, '2026-03-31', 'dead', 0, NOW(), NOW());\n\n-- K-009: Goat, Male, Purchased 2025-01-15, Acquired 2026-01-24, Group B2 (Breeding Unit B=8), Category Baby Goat=7, Dead 2026-02-25\n-- Weight at acquisition: 15 kg, Purchase cost: 474 EGP\nINSERT INTO animals (animalId, speciesId, categoryId, groupId, statusId, sex, acquisitionType, acquisitionDate, birthDate, purchaseCost, weightAtAcquisition, exitDate, exitReason, isActive, createdAt, updatedAt)\nVALUES ('K-009', 2, 7, 8, 3, 'male', 'purchased', '2026-01-24', '2025-01-15', 474, 15, '2026-02-25', 'Dead', 0, NOW(), NOW());\n\n-- Verify\nSELECT animalId, isActive, exitDate, exitReason FROM animals WHERE animalId IN ('E-049', 'K-009');\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- E-049: Sheep, Female, Purchased 2024-11-04, Acquired 2025-11-04, Group F1 (Fattening Pen 1=1), Category Ewe=4, Dead 2026-03-31\n-- Weight at acquisition: 18 kg, Purchase cost: 546 EGP\nINSERT INTO animals (animalId, speciesId, categoryId, groupId, statusId, sex, acquisitionType, acquisitionDate, birthDate, purchaseCost, weightAtAcquisition, exitDate, exitReason, isActive, createdAt, updatedAt)\nVALUES ('E-049', 1, 4, 1, 3, 'female', 'purchased', '2025-11-04', '2024-11-04', 546, 18, '2026-03-31', 'dead', 0, NOW(), NOW());\n\n-- K-009: Goat, Male, Purchased 2025-01-15, Acquired 2026-01-24, Group B2 (Breeding Unit B=8), Category Baby Goat=7, Dead 2026-02-25\n-- Weight at acquisition: 15 kg, Purchase cost: 474 EGP\nINSERT INTO animals (animalId, speciesId, categoryId, groupId, statusId, sex, acquisitionType, acquisitionDate, birthDate, purchaseCost, weightAtAcquisition, exitDate, exitReason, isActive, createdAt, updatedAt)\nVALUES ('K-009', 2, 7, 8, 3, 'male', 'purchased', '2026-01-24', '2025-01-15', 474, 15, '2026-02-25', 'Dead', 0, NOW(), NOW());\n\n-- Verify\nSELECT animalId, isActive, exitDate, exitReason FROM animals WHERE animalId IN ('E-049', 'K-009');\n",
+  "rows": [
+    {
+      "animalId": "E-049",
+      "isActive": "0",
+      "exitDate": "2026-03-31",
+      "exitReason": "dead"
+    },
+    {
+      "animalId": "K-009",
+      "isActive": "0",
+      "exitDate": "2026-02-25",
+      "exitReason": "Dead"
+    }
+  ],
+  "messages": [],
+  "stdout": "animalId\tisActive\texitDate\texitReason\nE-049\t0\t2026-03-31\tdead\nK-009\t0\t2026-02-25\tDead\n",
+  "stderr": "",
+  "execution_time_ms": 2411
+}

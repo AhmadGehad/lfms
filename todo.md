@@ -218,3 +218,24 @@
 - [x] Fix: markAllNotificationsRead now uses OR(userId=?, userId IS NULL) to cover both user and system notifications
 - [x] TypeScript: 0 errors
 - [x] Save checkpoint
+
+## Phase 27: Ration Plan Audit & Fix
+- [ ] Compare ration plan data in DB against original Excel
+- [ ] Audit days-remaining calculation in server/db.ts and Feed Management page
+- [ ] Fix any incorrect data or calculation bugs
+- [ ] TypeScript: 0 errors
+- [ ] Save checkpoint
+
+## Phase 27: Full Excel Import Audit
+- [x] Read all Excel sheets and extract raw data
+- [x] Compare animals (tag, species, category, status, dates) against DB
+- [x] Compare ration plans (category, feed item, qty) against DB
+- [x] Compare feed stock ledger (purchases, stock counts) against DB
+- [x] Compare expenses against DB
+- [x] Compare sales against DB
+- [x] Delete all test-generated data (14 scenario test stock entries, 12 duplicate ration plan rows)
+- [x] Re-import missing records: E-049, K-009 (animals), 3 Chicken Feed stock entries, 25 real expenses (EGP 67,017)
+- [x] Fixed sale prices: O-001=27,000 EGP, B-001=15,000 EGP
+- [x] Fixed ration plan quantities: Ram 1.6 kg/day, Fattening 2.25 kg/day, Ewe 1.55 kg/day, Baby Goat 0.4 kg/day
+- [x] Regression test: 46 passed, 0 failed, 1 warning (expected)
+- [x] Save checkpoint and deliver audit report

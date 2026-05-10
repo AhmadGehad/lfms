@@ -1,0 +1,14 @@
+{
+  "query": "\nSELECT id, name FROM species ORDER BY name;\nSELECT id, name FROM animal_groups ORDER BY name;\nSELECT id, name FROM animal_statuses ORDER BY name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, name FROM species ORDER BY name;\nSELECT id, name FROM animal_groups ORDER BY name;\nSELECT id, name FROM animal_statuses ORDER BY name;\n",
+  "returncode": 1,
+  "logs": [
+    "id\tname",
+    "4\tBuffalo",
+    "3\tCow",
+    "5\tDog",
+    "2\tGoat",
+    "1\tSheep",
+    "ERROR 1146 (42S02) at line 3: Table 'boywmbm5odtbpptclrtk7n.animal_groups' doesn't exist"
+  ]
+}

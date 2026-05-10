@@ -1,0 +1,30 @@
+{
+  "query": "\nSELECT fsl.id, fi.name as feedItem, fsl.transactionType, fsl.qty, fsl.unitCost, fsl.totalCost, fsl.transactionDate, fsl.notes\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fi.id = fsl.feedItemId\nWHERE fsl.deletedAt IS NULL AND fsl.id >= 17\nORDER BY fsl.transactionDate, fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fsl.id, fi.name as feedItem, fsl.transactionType, fsl.qty, fsl.unitCost, fsl.totalCost, fsl.transactionDate, fsl.notes\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fi.id = fsl.feedItemId\nWHERE fsl.deletedAt IS NULL AND fsl.id >= 17\nORDER BY fsl.transactionDate, fi.name;\n",
+  "rows": [
+    {
+      "id": "17",
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "qty": "1500.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-03-11",
+      "notes": "Batch purchase 10500 SAR"
+    },
+    {
+      "id": "18",
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "qty": "1600.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-04-30",
+      "notes": "Batch purchase 10000 SAR"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfeedItem\ttransactionType\tqty\tunitCost\ttotalCost\ttransactionDate\tnotes\n17\tHay\tpurchase\t1500.000\tNULL\tNULL\t2026-03-11\tBatch purchase 10500 SAR\n18\tHay\tpurchase\t1600.000\tNULL\tNULL\t2026-04-30\tBatch purchase 10000 SAR\n",
+  "stderr": "",
+  "execution_time_ms": 1780
+}

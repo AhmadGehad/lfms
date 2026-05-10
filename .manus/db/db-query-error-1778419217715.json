@@ -1,0 +1,10 @@
+{
+  "query": "\nSELECT COUNT(*) as total_expenses, SUM(amount) as total_amount FROM expenses WHERE deletedAt IS NULL;\nSELECT COUNT(*) as test_stock_entries, SUM(quantityKg) as test_qty FROM feed_stock_ledger WHERE notes LIKE '%Scenario test%' OR notes LIKE '%scenario%';\nSELECT id, feedItemId, quantityKg, notes, entryDate FROM feed_stock_ledger WHERE notes LIKE '%Scenario%' OR notes LIKE '%scenario%' OR notes LIKE '%test%' ORDER BY id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT COUNT(*) as total_expenses, SUM(amount) as total_amount FROM expenses WHERE deletedAt IS NULL;\nSELECT COUNT(*) as test_stock_entries, SUM(quantityKg) as test_qty FROM feed_stock_ledger WHERE notes LIKE '%Scenario test%' OR notes LIKE '%scenario%';\nSELECT id, feedItemId, quantityKg, notes, entryDate FROM feed_stock_ledger WHERE notes LIKE '%Scenario%' OR notes LIKE '%scenario%' OR notes LIKE '%test%' ORDER BY id;\n",
+  "returncode": 1,
+  "logs": [
+    "total_expenses\ttotal_amount",
+    "25\t38160.00",
+    "ERROR 1054 (42S22) at line 3: Unknown column 'quantitykg' in 'where clause'"
+  ]
+}

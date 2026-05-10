@@ -1,0 +1,266 @@
+{
+  "query": "\nSELECT \n  rp.id,\n  ac.name AS category,\n  fi.name AS feedItem,\n  rp.qtyPerHeadPerDay AS qty,\n  rp.isActive,\n  rp.deletedAt\nFROM ration_plans rp\nJOIN animal_categories ac ON ac.id = rp.categoryId\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.deletedAt IS NULL\nORDER BY ac.name, fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT \n  rp.id,\n  ac.name AS category,\n  fi.name AS feedItem,\n  rp.qtyPerHeadPerDay AS qty,\n  rp.isActive,\n  rp.deletedAt\nFROM ration_plans rp\nJOIN animal_categories ac ON ac.id = rp.categoryId\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.deletedAt IS NULL\nORDER BY ac.name, fi.name;\n",
+  "rows": [
+    {
+      "id": "30001",
+      "category": "Baby Goat",
+      "feedItem": "Alfalfa",
+      "qty": "2.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "24",
+      "category": "Beef Calf",
+      "feedItem": "Hay",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "30",
+      "category": "Billy Goat",
+      "feedItem": "Alfalfa Hay",
+      "qty": "1.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "29",
+      "category": "Billy Goat",
+      "feedItem": "Concentrate 14%",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "31",
+      "category": "Billy Goat",
+      "feedItem": "Hay",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "25",
+      "category": "Buffalo Calf",
+      "feedItem": "Hay",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "20",
+      "category": "Cow",
+      "feedItem": "Alfalfa Hay",
+      "qty": "3.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "22",
+      "category": "Cow",
+      "feedItem": "Concentrate 16%",
+      "qty": "4.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "21",
+      "category": "Cow",
+      "feedItem": "Hay",
+      "qty": "2.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "23",
+      "category": "Cow",
+      "feedItem": "Milking Concentrate",
+      "qty": "5.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "9",
+      "category": "Ewe",
+      "feedItem": "Alfalfa Hay",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "11",
+      "category": "Ewe",
+      "feedItem": "Concentrate 16%",
+      "qty": "0.750",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "10",
+      "category": "Ewe",
+      "feedItem": "Hay",
+      "qty": "0.300",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "12",
+      "category": "Ewe",
+      "feedItem": "Milking Concentrate",
+      "qty": "1.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "1",
+      "category": "Fattening",
+      "feedItem": "Alfalfa Hay",
+      "qty": "1.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "3",
+      "category": "Fattening",
+      "feedItem": "Concentrate 16%",
+      "qty": "1.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "2",
+      "category": "Fattening",
+      "feedItem": "Hay",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "4",
+      "category": "Fattening",
+      "feedItem": "Milking Concentrate",
+      "qty": "2.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "27",
+      "category": "Goat",
+      "feedItem": "Alfalfa Hay",
+      "qty": "1.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "26",
+      "category": "Goat",
+      "feedItem": "Concentrate 14%",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "28",
+      "category": "Goat",
+      "feedItem": "Hay",
+      "qty": "0.300",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "17",
+      "category": "Lamb",
+      "feedItem": "Alfalfa Hay",
+      "qty": "0.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "19",
+      "category": "Lamb",
+      "feedItem": "Concentrate 16%",
+      "qty": "0.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "18",
+      "category": "Lamb",
+      "feedItem": "Hay",
+      "qty": "0.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "5",
+      "category": "Ram",
+      "feedItem": "Alfalfa Hay",
+      "qty": "2.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "7",
+      "category": "Ram",
+      "feedItem": "Concentrate 16%",
+      "qty": "1.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "6",
+      "category": "Ram",
+      "feedItem": "Hay",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "8",
+      "category": "Ram",
+      "feedItem": "Milking Concentrate",
+      "qty": "3.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "13",
+      "category": "Weaner",
+      "feedItem": "Alfalfa Hay",
+      "qty": "1.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "15",
+      "category": "Weaner",
+      "feedItem": "Concentrate 16%",
+      "qty": "0.500",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "14",
+      "category": "Weaner",
+      "feedItem": "Hay",
+      "qty": "0.300",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    },
+    {
+      "id": "16",
+      "category": "Weaner",
+      "feedItem": "Milking Concentrate",
+      "qty": "1.000",
+      "isActive": "1",
+      "deletedAt": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcategory\tfeedItem\tqty\tisActive\tdeletedAt\n30001\tBaby Goat\tAlfalfa\t2.500\t1\tNULL\n24\tBeef Calf\tHay\t0.500\t1\tNULL\n30\tBilly Goat\tAlfalfa Hay\t1.000\t1\tNULL\n29\tBilly Goat\tConcentrate 14%\t0.500\t1\tNULL\n31\tBilly Goat\tHay\t0.500\t1\tNULL\n25\tBuffalo Calf\tHay\t0.500\t1\tNULL\n20\tCow\tAlfalfa Hay\t3.000\t1\tNULL\n22\tCow\tConcentrate 16%\t4.000\t1\tNULL\n21\tCow\tHay\t2.000\t1\tNULL\n23\tCow\tMilking Concentrate\t5.000\t1\tNULL\n9\tEwe\tAlfalfa Hay\t0.500\t1\tNULL\n11\tEwe\tConcentrate 16%\t0.750\t1\tNULL\n10\tEwe\tHay\t0.300\t1\tNULL\n12\tEwe\tMilking Concentrate\t1.500\t1\tNULL\n1\tFattening\tAlfalfa Hay\t1.500\t1\tNULL\n3\tFattening\tConcentrate 16%\t1.000\t1\tNULL\n2\tFattening\tHay\t0.500\t1\tNULL\n4\tFattening\tMilking Concentrate\t2.000\t1\tNULL\n27\tGoat\tAlfalfa Hay\t1.000\t1\tNULL\n26\tGoat\tConcentrate 14%\t0.500\t1\tNULL\n28\tGoat\tHay\t0.300\t1\tNULL\n17\tLamb\tAlfalfa Hay\t0.000\t1\tNULL\n19\tLamb\tConcentrate 16%\t0.000\t1\tNULL\n18\tLamb\tHay\t0.000\t1\tNULL\n5\tRam\tAlfalfa Hay\t2.000\t1\tNULL\n7\tRam\tConcentrate 16%\t1.500\t1\tNULL\n6\tRam\tHay\t0.500\t1\tNULL\n8\tRam\tMilking Concentrate\t3.000\t1\tNULL\n13\tWeaner\tAlfalfa Hay\t1.000\t1\tNULL\n15\tWeaner\tConcentrate 16%\t0.500\t1\tNULL\n14\tWeaner\tHay\t0.300\t1\tNULL\n16\tWeaner\tMilking Concentrate\t1.000\t1\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 2797
+}

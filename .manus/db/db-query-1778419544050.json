@@ -1,0 +1,208 @@
+{
+  "query": "\nSELECT fsl.id, fi.name as feedItem, fsl.transactionType, fsl.qty, fsl.unitCost, fsl.totalCost, fsl.transactionDate, fsl.supplierName, fsl.notes\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fi.id = fsl.feedItemId\nWHERE fsl.deletedAt IS NULL\nORDER BY fsl.transactionDate, fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fsl.id, fi.name as feedItem, fsl.transactionType, fsl.qty, fsl.unitCost, fsl.totalCost, fsl.transactionDate, fsl.supplierName, fsl.notes\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fi.id = fsl.feedItemId\nWHERE fsl.deletedAt IS NULL\nORDER BY fsl.transactionDate, fi.name;\n",
+  "rows": [
+    {
+      "id": "6",
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "qty": "50.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-01",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "1",
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "qty": "288.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-01",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "2",
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "qty": "175.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-01",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "4",
+      "feedItem": "Corn",
+      "transactionType": "purchase",
+      "qty": "60.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-01",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "5",
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "qty": "90.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-01",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "3",
+      "feedItem": "Milking Concentrate",
+      "transactionType": "purchase",
+      "qty": "175.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-01",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "7",
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "qty": "500.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-07",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "8",
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "qty": "1600.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-07",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "9",
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "qty": "1000.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-13",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 12000 SAR"
+    },
+    {
+      "id": "11",
+      "feedItem": "Concentrate 14%",
+      "transactionType": "purchase",
+      "qty": "500.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-16",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 7450 SAR"
+    },
+    {
+      "id": "10",
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "qty": "2000.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-16",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 30800 SAR"
+    },
+    {
+      "id": "12",
+      "feedItem": "Milking Concentrate",
+      "transactionType": "purchase",
+      "qty": "250.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-02-16",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "13",
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "qty": "2000.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-03-03",
+      "supplierName": "NULL",
+      "notes": "Imported from Excel"
+    },
+    {
+      "id": "16",
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "qty": "1000.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-03-11",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 12500 SAR"
+    },
+    {
+      "id": "15",
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "qty": "2500.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-03-11",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 40000 SAR"
+    },
+    {
+      "id": "17",
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "qty": "1500.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-03-11",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 10500 SAR"
+    },
+    {
+      "id": "14",
+      "feedItem": "Milking Concentrate",
+      "transactionType": "purchase",
+      "qty": "250.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-03-11",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 5000 SAR"
+    },
+    {
+      "id": "18",
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "qty": "1600.000",
+      "unitCost": "NULL",
+      "totalCost": "NULL",
+      "transactionDate": "2026-04-30",
+      "supplierName": "NULL",
+      "notes": "Batch purchase 10000 SAR"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tfeedItem\ttransactionType\tqty\tunitCost\ttotalCost\ttransactionDate\tsupplierName\tnotes\n6\tAlfalfa\tpurchase\t50.000\tNULL\tNULL\t2026-02-01\tNULL\tImported from Excel\n1\tAlfalfa Hay\tpurchase\t288.000\tNULL\tNULL\t2026-02-01\tNULL\tImported from Excel\n2\tConcentrate 16%\tpurchase\t175.000\tNULL\tNULL\t2026-02-01\tNULL\tImported from Excel\n4\tCorn\tpurchase\t60.000\tNULL\tNULL\t2026-02-01\tNULL\tImported from Excel\n5\tHay\tpurchase\t90.000\tNULL\tNULL\t2026-02-01\tNULL\tImported from Excel\n3\tMilking Concentrate\tpurchase\t175.000\tNULL\tNULL\t2026-02-01\tNULL\tImported from Excel\n7\tConcentrate 16%\tpurchase\t500.000\tNULL\tNULL\t2026-02-07\tNULL\tImported from Excel\n8\tHay\tpurchase\t1600.000\tNULL\tNULL\t2026-02-07\tNULL\tImported from Excel\n9\tAlfalfa Hay\tpurchase\t1000.000\tNULL\tNULL\t2026-02-13\tNULL\tBatch purchase 12000 SAR\n11\tConcentrate 14%\tpurchase\t500.000\tNULL\tNULL\t2026-02-16\tNULL\tBatch purchase 7450 SAR\n10\tConcentrate 16%\tpurchase\t2000.000\tNULL\tNULL\t2026-02-16\tNULL\tBatch purchase 30800 SAR\n12\tMilking Concentrate\tpurchase\t250.000\tNULL\tNULL\t2026-02-16\tNULL\tImported from Excel\n13\tAlfalfa Hay\tpurchase\t2000.000\tNULL\tNULL\t2026-03-03\tNULL\tImported from Excel\n16\tAlfalfa Hay\tpurchase\t1000.000\tNULL\tNULL\t2026-03-11\tNULL\tBatch purchase 12500 SAR\n15\tConcentrate 16%\tpurchase\t2500.000\tNULL\tNULL\t2026-03-11\tNULL\tBatch purchase 40000 SAR\n17\tHay\tpurchase\t1500.000\tNULL\tNULL\t2026-03-11\tNULL\tBatch purchase 10500 SAR\n14\tMilking Concentrate\tpurchase\t250.000\tNULL\tNULL\t2026-03-11\tNULL\tBatch purchase 5000 SAR\n18\tHay\tpurchase\t1600.000\tNULL\tNULL\t2026-04-30\tNULL\tBatch purchase 10000 SAR\n",
+  "stderr": "",
+  "execution_time_ms": 1789
+}

@@ -1,0 +1,114 @@
+{
+  "query": "\nSELECT id, name FROM expense_categories ORDER BY name;\nSELECT id, name FROM expense_sub_categories ORDER BY name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, name FROM expense_categories ORDER BY name;\nSELECT id, name FROM expense_sub_categories ORDER BY name;\n",
+  "rows": [
+    {
+      "id": "6",
+      "name": "Bedding"
+    },
+    {
+      "id": "8",
+      "name": "Electricity"
+    },
+    {
+      "id": "4",
+      "name": "Labor"
+    },
+    {
+      "id": "3",
+      "name": "Minerals"
+    },
+    {
+      "id": "7",
+      "name": "Repairs"
+    },
+    {
+      "id": "5",
+      "name": "Transport"
+    },
+    {
+      "id": "2",
+      "name": "Vaccine"
+    },
+    {
+      "id": "1",
+      "name": "Vet"
+    },
+    {
+      "id": "9",
+      "name": "Water"
+    },
+    {
+      "id": "id",
+      "name": "name"
+    },
+    {
+      "id": "12",
+      "name": "Animal Transport"
+    },
+    {
+      "id": "6",
+      "name": "Emergency"
+    },
+    {
+      "id": "15",
+      "name": "Equipment"
+    },
+    {
+      "id": "11",
+      "name": "Feed Delivery"
+    },
+    {
+      "id": "14",
+      "name": "Fencing"
+    },
+    {
+      "id": "16",
+      "name": "Infrastructure"
+    },
+    {
+      "id": "5",
+      "name": "Lab Tests"
+    },
+    {
+      "id": "2",
+      "name": "Mandatory"
+    },
+    {
+      "id": "13",
+      "name": "Other"
+    },
+    {
+      "id": "8",
+      "name": "Permanent Staff"
+    },
+    {
+      "id": "1",
+      "name": "Routine Checkup"
+    },
+    {
+      "id": "9",
+      "name": "Seasonal"
+    },
+    {
+      "id": "3",
+      "name": "Seasonal"
+    },
+    {
+      "id": "4",
+      "name": "Surgery"
+    },
+    {
+      "id": "7",
+      "name": "Treatment"
+    },
+    {
+      "id": "10",
+      "name": "Veterinary Labor"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n6\tBedding\n8\tElectricity\n4\tLabor\n3\tMinerals\n7\tRepairs\n5\tTransport\n2\tVaccine\n1\tVet\n9\tWater\nid\tname\n12\tAnimal Transport\n6\tEmergency\n15\tEquipment\n11\tFeed Delivery\n14\tFencing\n16\tInfrastructure\n5\tLab Tests\n2\tMandatory\n13\tOther\n8\tPermanent Staff\n1\tRoutine Checkup\n9\tSeasonal\n3\tSeasonal\n4\tSurgery\n7\tTreatment\n10\tVeterinary Labor\n",
+  "stderr": "",
+  "execution_time_ms": 2017
+}

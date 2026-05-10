@@ -1,0 +1,66 @@
+{
+  "query": "\n-- Stock on hand per feed item (last count + purchases since last count)\nSELECT \n  fi.name AS feedItem,\n  fi.unit,\n  -- Total ration plans (should be 1 per category now)\n  (SELECT COUNT(*) FROM ration_plans rp2 WHERE rp2.feedItemId = fi.id AND rp2.deletedAt IS NULL AND rp2.isActive = 1) AS rationPlanCount,\n  -- Daily consumption = SUM(qtyPerHeadPerDay * headCount per category)\n  ROUND(\n    (SELECT COALESCE(SUM(rp.qtyPerHeadPerDay * \n      (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL)\n    ), 0)\n    FROM ration_plans rp \n    WHERE rp.feedItemId = fi.id AND rp.deletedAt IS NULL AND rp.isActive = 1\n    ), 2\n  ) AS dailyConsumptionKg,\n  -- Latest stock count\n  (SELECT COALESCE(fsl.qty, 0) FROM feed_stock_ledger fsl \n   WHERE fsl.feedItemId = fi.id AND fsl.transactionType = 'stock_count' \n   ORDER BY fsl.transactionDate DESC LIMIT 1) AS lastCountQty\nFROM feed_items fi\nWHERE fi.deletedAt IS NULL\nORDER BY fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Stock on hand per feed item (last count + purchases since last count)\nSELECT \n  fi.name AS feedItem,\n  fi.unit,\n  -- Total ration plans (should be 1 per category now)\n  (SELECT COUNT(*) FROM ration_plans rp2 WHERE rp2.feedItemId = fi.id AND rp2.deletedAt IS NULL AND rp2.isActive = 1) AS rationPlanCount,\n  -- Daily consumption = SUM(qtyPerHeadPerDay * headCount per category)\n  ROUND(\n    (SELECT COALESCE(SUM(rp.qtyPerHeadPerDay * \n      (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL)\n    ), 0)\n    FROM ration_plans rp \n    WHERE rp.feedItemId = fi.id AND rp.deletedAt IS NULL AND rp.isActive = 1\n    ), 2\n  ) AS dailyConsumptionKg,\n  -- Latest stock count\n  (SELECT COALESCE(fsl.qty, 0) FROM feed_stock_ledger fsl \n   WHERE fsl.feedItemId = fi.id AND fsl.transactionType = 'stock_count' \n   ORDER BY fsl.transactionDate DESC LIMIT 1) AS lastCountQty\nFROM feed_items fi\nWHERE fi.deletedAt IS NULL\nORDER BY fi.name;\n",
+  "rows": [
+    {
+      "feedItem": "Alfalfa",
+      "unit": "kg",
+      "rationPlanCount": "1",
+      "dailyConsumptionKg": "30.00",
+      "lastCountQty": "NULL"
+    },
+    {
+      "feedItem": "Alfalfa Hay",
+      "unit": "kg",
+      "rationPlanCount": "8",
+      "dailyConsumptionKg": "140.50",
+      "lastCountQty": "NULL"
+    },
+    {
+      "feedItem": "Chicken Feed",
+      "unit": "kg",
+      "rationPlanCount": "0",
+      "dailyConsumptionKg": "0.00",
+      "lastCountQty": "NULL"
+    },
+    {
+      "feedItem": "Concentrate 14%",
+      "unit": "kg",
+      "rationPlanCount": "2",
+      "dailyConsumptionKg": "3.50",
+      "lastCountQty": "NULL"
+    },
+    {
+      "feedItem": "Concentrate 16%",
+      "unit": "kg",
+      "rationPlanCount": "6",
+      "dailyConsumptionKg": "104.25",
+      "lastCountQty": "NULL"
+    },
+    {
+      "feedItem": "Corn",
+      "unit": "kg",
+      "rationPlanCount": "0",
+      "dailyConsumptionKg": "0.00",
+      "lastCountQty": "NULL"
+    },
+    {
+      "feedItem": "Hay",
+      "unit": "kg",
+      "rationPlanCount": "10",
+      "dailyConsumptionKg": "51.60",
+      "lastCountQty": "NULL"
+    },
+    {
+      "feedItem": "Milking Concentrate",
+      "unit": "kg",
+      "rationPlanCount": "5",
+      "dailyConsumptionKg": "205.50",
+      "lastCountQty": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "feedItem\tunit\trationPlanCount\tdailyConsumptionKg\tlastCountQty\nAlfalfa\tkg\t1\t30.00\tNULL\nAlfalfa Hay\tkg\t8\t140.50\tNULL\nChicken Feed\tkg\t0\t0.00\tNULL\nConcentrate 14%\tkg\t2\t3.50\tNULL\nConcentrate 16%\tkg\t6\t104.25\tNULL\nCorn\tkg\t0\t0.00\tNULL\nHay\tkg\t10\t51.60\tNULL\nMilking Concentrate\tkg\t5\t205.50\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1887
+}

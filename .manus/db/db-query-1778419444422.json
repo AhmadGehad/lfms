@@ -1,0 +1,42 @@
+{
+  "query": "\nSELECT id, name FROM animal_statuses ORDER BY name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, name FROM animal_statuses ORDER BY name;\n",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Active"
+    },
+    {
+      "id": "8",
+      "name": "Breeding"
+    },
+    {
+      "id": "3",
+      "name": "Dead"
+    },
+    {
+      "id": "7",
+      "name": "Fattening"
+    },
+    {
+      "id": "5",
+      "name": "Lamb Stage"
+    },
+    {
+      "id": "2",
+      "name": "Sold"
+    },
+    {
+      "id": "4",
+      "name": "Transported"
+    },
+    {
+      "id": "6",
+      "name": "Weaner Stage"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\tActive\n8\tBreeding\n3\tDead\n7\tFattening\n5\tLamb Stage\n2\tSold\n4\tTransported\n6\tWeaner Stage\n",
+  "stderr": "",
+  "execution_time_ms": 1856
+}

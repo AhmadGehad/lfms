@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Fix Baby Goat: change feedItemId from 1 (Alfalfa) to 2 (Alfalfa Hay) and set qty to 0.0\nUPDATE ration_plans SET feedItemId = 2, qtyPerHeadPerDay = 0.0 WHERE id = 30001;\n\n-- Add missing Baby Goat rows with effectiveDate\nINSERT INTO ration_plans (categoryId, feedItemId, qtyPerHeadPerDay, effectiveDate, isActive, createdAt, updatedAt)\nVALUES \n  (7, 7, 0.2, '2025-11-01', 1, NOW(), NOW()),\n  (7, 5, 0.2, '2025-11-01', 1, NOW(), NOW());\n\n-- Add missing Dog + Chicken Feed row\nINSERT INTO ration_plans (categoryId, feedItemId, qtyPerHeadPerDay, effectiveDate, isActive, createdAt, updatedAt)\nVALUES (12, 8, 2.0, '2025-11-01', 1, NOW(), NOW());\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Fix Baby Goat: change feedItemId from 1 (Alfalfa) to 2 (Alfalfa Hay) and set qty to 0.0\nUPDATE ration_plans SET feedItemId = 2, qtyPerHeadPerDay = 0.0 WHERE id = 30001;\n\n-- Add missing Baby Goat rows with effectiveDate\nINSERT INTO ration_plans (categoryId, feedItemId, qtyPerHeadPerDay, effectiveDate, isActive, createdAt, updatedAt)\nVALUES \n  (7, 7, 0.2, '2025-11-01', 1, NOW(), NOW()),\n  (7, 5, 0.2, '2025-11-01', 1, NOW(), NOW());\n\n-- Add missing Dog + Chicken Feed row\nINSERT INTO ration_plans (categoryId, feedItemId, qtyPerHeadPerDay, effectiveDate, isActive, createdAt, updatedAt)\nVALUES (12, 8, 2.0, '2025-11-01', 1, NOW(), NOW());\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2284
+}

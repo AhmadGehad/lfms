@@ -1,0 +1,31 @@
+{
+  "query": "\nSELECT id, animalId, isActive, exitDate, exitReason FROM animals WHERE animalId IN ('F-009','E-049','K-009','O-001','B-001');\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, animalId, isActive, exitDate, exitReason FROM animals WHERE animalId IN ('F-009','E-049','K-009','O-001','B-001');\n",
+  "rows": [
+    {
+      "id": "30009",
+      "animalId": "F-009",
+      "isActive": "0",
+      "exitDate": "2026-04-07",
+      "exitReason": "Ill/Slaughter"
+    },
+    {
+      "id": "30128",
+      "animalId": "O-001",
+      "isActive": "0",
+      "exitDate": "2026-03-09",
+      "exitReason": "Sell 27k"
+    },
+    {
+      "id": "30129",
+      "animalId": "B-001",
+      "isActive": "0",
+      "exitDate": "2026-03-09",
+      "exitReason": "Sell 15k"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tanimalId\tisActive\texitDate\texitReason\n30009\tF-009\t0\t2026-04-07\tIll/Slaughter\n30128\tO-001\t0\t2026-03-09\tSell 27k\n30129\tB-001\t0\t2026-03-09\tSell 15k\n",
+  "stderr": "",
+  "execution_time_ms": 1833
+}

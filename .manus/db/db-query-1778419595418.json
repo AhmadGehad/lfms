@@ -1,0 +1,13 @@
+{
+  "query": "\n-- Chicken Feed id=8\n-- 2026-02-01: 100 kg (opening stock)\nINSERT INTO feed_stock_ledger (feedItemId, transactionDate, transactionType, qty, notes, createdAt)\nVALUES (8, '2026-02-01', 'purchase', 100, 'Imported from Excel', NOW());\n\n-- 2026-02-07: 180 kg\nINSERT INTO feed_stock_ledger (feedItemId, transactionDate, transactionType, qty, notes, createdAt)\nVALUES (8, '2026-02-07', 'purchase', 180, 'Imported from Excel', NOW());\n\n-- 2026-03-11: 200 kg (total cost 2000)\nINSERT INTO feed_stock_ledger (feedItemId, transactionDate, transactionType, qty, totalCost, notes, createdAt)\nVALUES (8, '2026-03-11', 'purchase', 200, 2000, 'Batch purchase 2000 EGP', NOW());\n\n-- Verify total count\nSELECT COUNT(*) as total FROM feed_stock_ledger WHERE deletedAt IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Chicken Feed id=8\n-- 2026-02-01: 100 kg (opening stock)\nINSERT INTO feed_stock_ledger (feedItemId, transactionDate, transactionType, qty, notes, createdAt)\nVALUES (8, '2026-02-01', 'purchase', 100, 'Imported from Excel', NOW());\n\n-- 2026-02-07: 180 kg\nINSERT INTO feed_stock_ledger (feedItemId, transactionDate, transactionType, qty, notes, createdAt)\nVALUES (8, '2026-02-07', 'purchase', 180, 'Imported from Excel', NOW());\n\n-- 2026-03-11: 200 kg (total cost 2000)\nINSERT INTO feed_stock_ledger (feedItemId, transactionDate, transactionType, qty, totalCost, notes, createdAt)\nVALUES (8, '2026-03-11', 'purchase', 200, 2000, 'Batch purchase 2000 EGP', NOW());\n\n-- Verify total count\nSELECT COUNT(*) as total FROM feed_stock_ledger WHERE deletedAt IS NULL;\n",
+  "rows": [
+    {
+      "total": "21"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n21\n",
+  "stderr": "",
+  "execution_time_ms": 2582
+}

@@ -1,0 +1,185 @@
+{
+  "query": "\nSELECT e.expenseDate, ec.name as category, e.amount, e.notes, e.vendorName\nFROM expenses e\nJOIN expense_categories ec ON ec.id = e.categoryId\nWHERE e.deletedAt IS NULL\nORDER BY e.expenseDate, ec.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT e.expenseDate, ec.name as category, e.amount, e.notes, e.vendorName\nFROM expenses e\nJOIN expense_categories ec ON ec.id = e.categoryId\nWHERE e.deletedAt IS NULL\nORDER BY e.expenseDate, ec.name;\n",
+  "rows": [
+    {
+      "expenseDate": "2025-11-01",
+      "category": "Labor",
+      "amount": "5000.00",
+      "notes": "Pen construction",
+      "vendorName": "Contractor"
+    },
+    {
+      "expenseDate": "2025-11-01",
+      "category": "Transport",
+      "amount": "3000.00",
+      "notes": "Farm worker salary Nov",
+      "vendorName": "Staff"
+    },
+    {
+      "expenseDate": "2025-12-01",
+      "category": "Labor",
+      "amount": "2000.00",
+      "notes": "Water system repair",
+      "vendorName": "Contractor"
+    },
+    {
+      "expenseDate": "2025-12-01",
+      "category": "Transport",
+      "amount": "3000.00",
+      "notes": "Farm worker salary Dec",
+      "vendorName": "Staff"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Bedding",
+      "amount": "500.00",
+      "notes": "Electricity Jan",
+      "vendorName": "Utility Co"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Labor",
+      "amount": "1000.00",
+      "notes": "Fence repair",
+      "vendorName": "Contractor"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Minerals",
+      "amount": "1500.00",
+      "notes": "Straw bedding",
+      "vendorName": "Farm Supplies"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Minerals",
+      "amount": "500.00",
+      "notes": "Cleaning supplies",
+      "vendorName": "Farm Supplies"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Transport",
+      "amount": "3000.00",
+      "notes": "Farm worker salary Jan",
+      "vendorName": "Staff"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Vaccine",
+      "amount": "60.00",
+      "notes": "Re-Vaccine 3/2/2026",
+      "vendorName": "Dr. Ehab"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Vaccine",
+      "amount": "300.00",
+      "notes": "Re-Vaccine 3/2/2026",
+      "vendorName": "Dr. Ehab"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Vaccine",
+      "amount": "1800.00",
+      "notes": "Vaccine 4/11/2025",
+      "vendorName": "Dr. Ehab"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Vaccine",
+      "amount": "600.00",
+      "notes": "Vaccine 4/11/2025",
+      "vendorName": "Dr. Ehab"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Vaccine",
+      "amount": "900.00",
+      "notes": "Re-Vaccine 3/2/2026",
+      "vendorName": "Dr. Ehab"
+    },
+    {
+      "expenseDate": "2026-01-01",
+      "category": "Vaccine",
+      "amount": "120.00",
+      "notes": "Vaccine 4/11/2025",
+      "vendorName": "Dr. Ehab"
+    },
+    {
+      "expenseDate": "2026-02-01",
+      "category": "Bedding",
+      "amount": "480.00",
+      "notes": "Electricity Feb",
+      "vendorName": "Utility Co"
+    },
+    {
+      "expenseDate": "2026-02-01",
+      "category": "Labor",
+      "amount": "800.00",
+      "notes": "Roof maintenance",
+      "vendorName": "Contractor"
+    },
+    {
+      "expenseDate": "2026-02-01",
+      "category": "Minerals",
+      "amount": "500.00",
+      "notes": "Cleaning supplies",
+      "vendorName": "Farm Supplies"
+    },
+    {
+      "expenseDate": "2026-02-01",
+      "category": "Minerals",
+      "amount": "1500.00",
+      "notes": "Straw bedding",
+      "vendorName": "Farm Supplies"
+    },
+    {
+      "expenseDate": "2026-02-01",
+      "category": "Transport",
+      "amount": "3000.00",
+      "notes": "Farm worker salary Feb",
+      "vendorName": "Staff"
+    },
+    {
+      "expenseDate": "2026-03-01",
+      "category": "Labor",
+      "amount": "600.00",
+      "notes": "Gate repair",
+      "vendorName": "Contractor"
+    },
+    {
+      "expenseDate": "2026-03-01",
+      "category": "Minerals",
+      "amount": "1500.00",
+      "notes": "Straw bedding",
+      "vendorName": "Farm Supplies"
+    },
+    {
+      "expenseDate": "2026-03-01",
+      "category": "Minerals",
+      "amount": "500.00",
+      "notes": "Cleaning supplies",
+      "vendorName": "Farm Supplies"
+    },
+    {
+      "expenseDate": "2026-03-01",
+      "category": "Transport",
+      "amount": "3000.00",
+      "notes": "Farm worker salary Mar",
+      "vendorName": "Staff"
+    },
+    {
+      "expenseDate": "2026-04-01",
+      "category": "Transport",
+      "amount": "3000.00",
+      "notes": "Farm worker salary Apr",
+      "vendorName": "Staff"
+    }
+  ],
+  "messages": [],
+  "stdout": "expenseDate\tcategory\tamount\tnotes\tvendorName\n2025-11-01\tLabor\t5000.00\tPen construction\tContractor\n2025-11-01\tTransport\t3000.00\tFarm worker salary Nov\tStaff\n2025-12-01\tLabor\t2000.00\tWater system repair\tContractor\n2025-12-01\tTransport\t3000.00\tFarm worker salary Dec\tStaff\n2026-01-01\tBedding\t500.00\tElectricity Jan\tUtility Co\n2026-01-01\tLabor\t1000.00\tFence repair\tContractor\n2026-01-01\tMinerals\t1500.00\tStraw bedding\tFarm Supplies\n2026-01-01\tMinerals\t500.00\tCleaning supplies\tFarm Supplies\n2026-01-01\tTransport\t3000.00\tFarm worker salary Jan\tStaff\n2026-01-01\tVaccine\t60.00\tRe-Vaccine 3/2/2026\tDr. Ehab\n2026-01-01\tVaccine\t300.00\tRe-Vaccine 3/2/2026\tDr. Ehab\n2026-01-01\tVaccine\t1800.00\tVaccine 4/11/2025\tDr. Ehab\n2026-01-01\tVaccine\t600.00\tVaccine 4/11/2025\tDr. Ehab\n2026-01-01\tVaccine\t900.00\tRe-Vaccine 3/2/2026\tDr. Ehab\n2026-01-01\tVaccine\t120.00\tVaccine 4/11/2025\tDr. Ehab\n2026-02-01\tBedding\t480.00\tElectricity Feb\tUtility Co\n2026-02-01\tLabor\t800.00\tRoof maintenance\tContractor\n2026-02-01\tMinerals\t500.00\tCleaning supplies\tFarm Supplies\n2026-02-01\tMinerals\t1500.00\tStraw bedding\tFarm Supplies\n2026-02-01\tTransport\t3000.00\tFarm worker salary Feb\tStaff\n2026-03-01\tLabor\t600.00\tGate repair\tContractor\n2026-03-01\tMinerals\t1500.00\tStraw bedding\tFarm Supplies\n2026-03-01\tMinerals\t500.00\tCleaning supplies\tFarm Supplies\n2026-03-01\tTransport\t3000.00\tFarm worker salary Mar\tStaff\n2026-04-01\tTransport\t3000.00\tFarm worker salary Apr\tStaff\n",
+  "stderr": "",
+  "execution_time_ms": 1863
+}

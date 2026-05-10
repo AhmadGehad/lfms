@@ -1,0 +1,234 @@
+{
+  "query": "\nSELECT \n  fi.name AS feedItem,\n  fsl.transactionType,\n  fsl.transactionDate,\n  fsl.qty,\n  fsl.notes\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fi.id = fsl.feedItemId\nORDER BY fi.name, fsl.transactionDate DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT \n  fi.name AS feedItem,\n  fsl.transactionType,\n  fsl.transactionDate,\n  fsl.qty,\n  fsl.notes\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fi.id = fsl.feedItemId\nORDER BY fi.name, fsl.transactionDate DESC;\n",
+  "rows": [
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-05-01",
+      "qty": "100.000",
+      "notes": "Scenario test stock"
+    },
+    {
+      "feedItem": "Alfalfa",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-01",
+      "qty": "50.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-03-11",
+      "qty": "1000.000",
+      "notes": "Batch purchase 12500 SAR"
+    },
+    {
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-03-03",
+      "qty": "2000.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-13",
+      "qty": "1000.000",
+      "notes": "Batch purchase 12000 SAR"
+    },
+    {
+      "feedItem": "Alfalfa Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-01",
+      "qty": "288.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Concentrate 14%",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-16",
+      "qty": "500.000",
+      "notes": "Batch purchase 7450 SAR"
+    },
+    {
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "transactionDate": "2026-03-11",
+      "qty": "2500.000",
+      "notes": "Batch purchase 40000 SAR"
+    },
+    {
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-16",
+      "qty": "2000.000",
+      "notes": "Batch purchase 30800 SAR"
+    },
+    {
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-07",
+      "qty": "500.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Concentrate 16%",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-01",
+      "qty": "175.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Corn",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-01",
+      "qty": "60.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-04-30",
+      "qty": "1600.000",
+      "notes": "Batch purchase 10000 SAR"
+    },
+    {
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-03-11",
+      "qty": "1500.000",
+      "notes": "Batch purchase 10500 SAR"
+    },
+    {
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-07",
+      "qty": "1600.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Hay",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-01",
+      "qty": "90.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Milking Concentrate",
+      "transactionType": "purchase",
+      "transactionDate": "2026-03-11",
+      "qty": "250.000",
+      "notes": "Batch purchase 5000 SAR"
+    },
+    {
+      "feedItem": "Milking Concentrate",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-16",
+      "qty": "250.000",
+      "notes": "Imported from Excel"
+    },
+    {
+      "feedItem": "Milking Concentrate",
+      "transactionType": "purchase",
+      "transactionDate": "2026-02-01",
+      "qty": "175.000",
+      "notes": "Imported from Excel"
+    }
+  ],
+  "messages": [],
+  "stdout": "feedItem\ttransactionType\ttransactionDate\tqty\tnotes\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-05-01\t100.000\tScenario test stock\nAlfalfa\tpurchase\t2026-02-01\t50.000\tImported from Excel\nAlfalfa Hay\tpurchase\t2026-03-11\t1000.000\tBatch purchase 12500 SAR\nAlfalfa Hay\tpurchase\t2026-03-03\t2000.000\tImported from Excel\nAlfalfa Hay\tpurchase\t2026-02-13\t1000.000\tBatch purchase 12000 SAR\nAlfalfa Hay\tpurchase\t2026-02-01\t288.000\tImported from Excel\nConcentrate 14%\tpurchase\t2026-02-16\t500.000\tBatch purchase 7450 SAR\nConcentrate 16%\tpurchase\t2026-03-11\t2500.000\tBatch purchase 40000 SAR\nConcentrate 16%\tpurchase\t2026-02-16\t2000.000\tBatch purchase 30800 SAR\nConcentrate 16%\tpurchase\t2026-02-07\t500.000\tImported from Excel\nConcentrate 16%\tpurchase\t2026-02-01\t175.000\tImported from Excel\nCorn\tpurchase\t2026-02-01\t60.000\tImported from Excel\nHay\tpurchase\t2026-04-30\t1600.000\tBatch purchase 10000 SAR\nHay\tpurchase\t2026-03-11\t1500.000\tBatch purchase 10500 SAR\nHay\tpurchase\t2026-02-07\t1600.000\tImported from Excel\nHay\tpurchase\t2026-02-01\t90.000\tImported from Excel\nMilking Concentrate\tpurchase\t2026-03-11\t250.000\tBatch purchase 5000 SAR\nMilking Concentrate\tpurchase\t2026-02-16\t250.000\tImported from Excel\nMilking Concentrate\tpurchase\t2026-02-01\t175.000\tImported from Excel\n",
+  "stderr": "",
+  "execution_time_ms": 1879
+}

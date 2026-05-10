@@ -1,0 +1,19 @@
+{
+  "query": "\nSELECT animalId, speciesId, categoryId, statusId, isActive, exitDate, exitReason FROM animals WHERE animalId = 'F-009';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT animalId, speciesId, categoryId, statusId, isActive, exitDate, exitReason FROM animals WHERE animalId = 'F-009';\n",
+  "rows": [
+    {
+      "animalId": "F-009",
+      "speciesId": "1",
+      "categoryId": "3",
+      "statusId": "3",
+      "isActive": "0",
+      "exitDate": "2026-04-07",
+      "exitReason": "Ill/Slaughter"
+    }
+  ],
+  "messages": [],
+  "stdout": "animalId\tspeciesId\tcategoryId\tstatusId\tisActive\texitDate\texitReason\nF-009\t1\t3\t3\t0\t2026-04-07\tIll/Slaughter\n",
+  "stderr": "",
+  "execution_time_ms": 1769
+}

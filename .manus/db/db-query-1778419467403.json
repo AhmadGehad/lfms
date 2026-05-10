@@ -1,0 +1,43 @@
+{
+  "query": "\n-- Animal counts\nSELECT isActive, COUNT(*) as count FROM animals WHERE deletedAt IS NULL GROUP BY isActive;\n\n-- Expense total\nSELECT COUNT(*) as records, SUM(amount) as total FROM expenses WHERE deletedAt IS NULL;\n\n-- Ration plans per category\nSELECT ac.name as category, COUNT(*) as plans, SUM(rp.qtyPerHeadPerDay) as total_daily_kg\nFROM ration_plans rp\nJOIN animal_categories ac ON ac.id = rp.categoryId\nWHERE rp.isActive = 1\nGROUP BY ac.name ORDER BY ac.name;\n\n-- Sales\nSELECT a.animalId, s.salePrice, s.saleDate FROM sales s JOIN animals a ON a.id = s.animalId;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Animal counts\nSELECT isActive, COUNT(*) as count FROM animals WHERE deletedAt IS NULL GROUP BY isActive;\n\n-- Expense total\nSELECT COUNT(*) as records, SUM(amount) as total FROM expenses WHERE deletedAt IS NULL;\n\n-- Ration plans per category\nSELECT ac.name as category, COUNT(*) as plans, SUM(rp.qtyPerHeadPerDay) as total_daily_kg\nFROM ration_plans rp\nJOIN animal_categories ac ON ac.id = rp.categoryId\nWHERE rp.isActive = 1\nGROUP BY ac.name ORDER BY ac.name;\n\n-- Sales\nSELECT a.animalId, s.salePrice, s.saleDate FROM sales s JOIN animals a ON a.id = s.animalId;\n",
+  "rows": [
+    {
+      "isActive": "1",
+      "count": "137"
+    },
+    {
+      "isActive": "0",
+      "count": "5"
+    },
+    {
+      "isActive": "records",
+      "count": "total"
+    },
+    {
+      "isActive": "25",
+      "count": "67017.00"
+    }
+  ],
+  "messages": [
+    "category\tplans\ttotal_daily_kg",
+    "Baby Goat\t3\t0.400",
+    "Beef Calf\t1\t0.500",
+    "Billy Goat\t3\t2.000",
+    "Buffalo Calf\t1\t0.500",
+    "Cow\t4\t14.000",
+    "Dog\t1\t2.000",
+    "Ewe\t3\t1.550",
+    "Fattening\t3\t2.250",
+    "Goat\t3\t1.800",
+    "Lamb\t3\t0.000",
+    "Ram\t3\t1.600",
+    "Weaner\t4\t2.800",
+    "animalId\tsalePrice\tsaleDate",
+    "O-001\t27000.00\t2026-03-09",
+    "B-001\t15000.00\t2026-03-09"
+  ],
+  "stdout": "isActive\tcount\n1\t137\n0\t5\nrecords\ttotal\n25\t67017.00\ncategory\tplans\ttotal_daily_kg\nBaby Goat\t3\t0.400\nBeef Calf\t1\t0.500\nBilly Goat\t3\t2.000\nBuffalo Calf\t1\t0.500\nCow\t4\t14.000\nDog\t1\t2.000\nEwe\t3\t1.550\nFattening\t3\t2.250\nGoat\t3\t1.800\nLamb\t3\t0.000\nRam\t3\t1.600\nWeaner\t4\t2.800\nanimalId\tsalePrice\tsaleDate\nO-001\t27000.00\t2026-03-09\nB-001\t15000.00\t2026-03-09\n",
+  "stderr": "",
+  "execution_time_ms": 2554
+}

@@ -1,0 +1,8 @@
+{
+  "query": "\n-- Baby Goat currently has: Alfalfa (id=1) at 2.5 kg - WRONG (should be Alfalfa Hay at 0.0)\n-- Fix: change feedItemId from 1 (Alfalfa) to 2 (Alfalfa Hay) and set qty to 0.0\nUPDATE ration_plans SET feedItemId = 2, qtyPerHeadPerDay = 0.0 WHERE id = 30001;\n\n-- Add missing Baby Goat rows: Hay (0.2), Concentrate 14% (0.2)\nINSERT INTO ration_plans (categoryId, feedItemId, qtyPerHeadPerDay, isActive, createdAt, updatedAt)\nVALUES \n  (7, 7, 0.2, 1, NOW(), NOW()),   -- Baby Goat + Hay\n  (7, 5, 0.2, 1, NOW(), NOW());   -- Baby Goat + Concentrate 14%\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Baby Goat currently has: Alfalfa (id=1) at 2.5 kg - WRONG (should be Alfalfa Hay at 0.0)\n-- Fix: change feedItemId from 1 (Alfalfa) to 2 (Alfalfa Hay) and set qty to 0.0\nUPDATE ration_plans SET feedItemId = 2, qtyPerHeadPerDay = 0.0 WHERE id = 30001;\n\n-- Add missing Baby Goat rows: Hay (0.2), Concentrate 14% (0.2)\nINSERT INTO ration_plans (categoryId, feedItemId, qtyPerHeadPerDay, isActive, createdAt, updatedAt)\nVALUES \n  (7, 7, 0.2, 1, NOW(), NOW()),   -- Baby Goat + Hay\n  (7, 5, 0.2, 1, NOW(), NOW());   -- Baby Goat + Concentrate 14%\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1364 (HY000) at line 7: Field 'effectiveDate' doesn't have a default value"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "query": "\nSELECT id, name FROM `groups` ORDER BY name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, name FROM `groups` ORDER BY name;\n",
+  "rows": [
+    {
+      "id": "7",
+      "name": "Breeding Unit A"
+    },
+    {
+      "id": "8",
+      "name": "Breeding Unit B"
+    },
+    {
+      "id": "1",
+      "name": "Fattening Pen 1"
+    },
+    {
+      "id": "2",
+      "name": "Fattening Pen 2"
+    },
+    {
+      "id": "3",
+      "name": "Fattening Pen 3"
+    },
+    {
+      "id": "4",
+      "name": "Fattening Pen 4"
+    },
+    {
+      "id": "5",
+      "name": "Fattening Pen 5"
+    },
+    {
+      "id": "6",
+      "name": "Fattening Pen 6"
+    },
+    {
+      "id": "9",
+      "name": "Guard Zone 1"
+    },
+    {
+      "id": "10",
+      "name": "Guard Zone 2"
+    },
+    {
+      "id": "11",
+      "name": "Guard Zone 3"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n7\tBreeding Unit A\n8\tBreeding Unit B\n1\tFattening Pen 1\n2\tFattening Pen 2\n3\tFattening Pen 3\n4\tFattening Pen 4\n5\tFattening Pen 5\n6\tFattening Pen 6\n9\tGuard Zone 1\n10\tGuard Zone 2\n11\tGuard Zone 3\n",
+  "stderr": "",
+  "execution_time_ms": 1852
+}

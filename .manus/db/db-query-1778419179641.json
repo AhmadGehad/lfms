@@ -1,0 +1,42 @@
+{
+  "query": "\nSELECT id, name FROM feed_items ORDER BY name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, name FROM feed_items ORDER BY name;\n",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Alfalfa"
+    },
+    {
+      "id": "2",
+      "name": "Alfalfa Hay"
+    },
+    {
+      "id": "8",
+      "name": "Chicken Feed"
+    },
+    {
+      "id": "5",
+      "name": "Concentrate 14%"
+    },
+    {
+      "id": "4",
+      "name": "Concentrate 16%"
+    },
+    {
+      "id": "6",
+      "name": "Corn"
+    },
+    {
+      "id": "7",
+      "name": "Hay"
+    },
+    {
+      "id": "3",
+      "name": "Milking Concentrate"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\tAlfalfa\n2\tAlfalfa Hay\n8\tChicken Feed\n5\tConcentrate 14%\n4\tConcentrate 16%\n6\tCorn\n7\tHay\n3\tMilking Concentrate\n",
+  "stderr": "",
+  "execution_time_ms": 1863
+}

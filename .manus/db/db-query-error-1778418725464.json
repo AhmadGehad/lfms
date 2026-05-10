@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  rp.id,\n  rp.name,\n  rp.qtyPerHeadPerDay,\n  fi.name AS feedItem,\n  fi.unit,\n  ac.name AS category,\n  rp.speciesId,\n  rp.categoryId,\n  rp.isActive\nFROM ration_plans rp\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nLEFT JOIN animal_categories ac ON ac.id = rp.categoryId\nORDER BY rp.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT \n  rp.id,\n  rp.name,\n  rp.qtyPerHeadPerDay,\n  fi.name AS feedItem,\n  fi.unit,\n  ac.name AS category,\n  rp.speciesId,\n  rp.categoryId,\n  rp.isActive\nFROM ration_plans rp\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nLEFT JOIN animal_categories ac ON ac.id = rp.categoryId\nORDER BY rp.id;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'rp.name' in 'field list'"
+  ]
+}
