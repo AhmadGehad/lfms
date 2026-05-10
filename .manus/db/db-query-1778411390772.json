@@ -1,0 +1,40 @@
+{
+  "query": "\nSELECT DATE_FORMAT(expenseDate, '%Y-%m') as month, COUNT(*) as records, SUM(amount) as total\nFROM expenses WHERE deletedAt IS NULL\nGROUP BY month ORDER BY month;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT DATE_FORMAT(expenseDate, '%Y-%m') as month, COUNT(*) as records, SUM(amount) as total\nFROM expenses WHERE deletedAt IS NULL\nGROUP BY month ORDER BY month;\n",
+  "rows": [
+    {
+      "month": "2025-11",
+      "records": "2",
+      "total": "8000.00"
+    },
+    {
+      "month": "2025-12",
+      "records": "2",
+      "total": "5000.00"
+    },
+    {
+      "month": "2026-01",
+      "records": "11",
+      "total": "10280.00"
+    },
+    {
+      "month": "2026-02",
+      "records": "5",
+      "total": "6280.00"
+    },
+    {
+      "month": "2026-03",
+      "records": "4",
+      "total": "5600.00"
+    },
+    {
+      "month": "2026-04",
+      "records": "1",
+      "total": "3000.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "month\trecords\ttotal\n2025-11\t2\t8000.00\n2025-12\t2\t5000.00\n2026-01\t11\t10280.00\n2026-02\t5\t6280.00\n2026-03\t4\t5600.00\n2026-04\t1\t3000.00\n",
+  "stderr": "",
+  "execution_time_ms": 1850
+}

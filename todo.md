@@ -142,3 +142,20 @@
 - [x] TypeScript: 0 errors
 - [x] All 48 unit tests pass
 - [x] Save checkpoint and deploy
+
+## Feature: Configuration Edit/Update (Phase 19)
+- [x] Add updateSpecies procedure (name, description)
+- [x] Add updateCategory procedure (name, prefix, targetWeight, speciesId)
+- [x] Add updateGroup procedure (name, description)
+- [x] Add updateBirthType procedure (name, description) — db.ts
+- [x] Add updateFeedItem procedure (name, unit) — already existed
+- [x] Add updateExpenseCategory procedure (name, description)
+- [x] Add updateExpenseSubCategory procedure (name)
+- [x] Add edit button + inline edit dialog to Species tab in Configuration Hub
+- [x] Add edit button + inline edit dialog to Categories tab
+- [x] Add edit button + inline edit dialog to Groups tab
+- [x] Add edit button + inline edit dialog to Feed Items tab
+- [x] Add edit button + inline edit dialog to Expense Categories tab
+- [x] TypeScript: 0 errors
+- [x] All 48 unit tests pass
+- [x] Save checkpoint and deploy

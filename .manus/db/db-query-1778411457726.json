@@ -1,0 +1,17 @@
+{
+  "query": "\nSELECT \n  COUNT(*) as animals_with_purchase_cost,\n  SUM(purchaseCost) as total_purchase_cost,\n  AVG(purchaseCost) as avg_purchase_cost,\n  MIN(purchaseCost) as min_cost,\n  MAX(purchaseCost) as max_cost\nFROM animals WHERE deletedAt IS NULL AND purchaseCost IS NOT NULL AND purchaseCost > 0;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT \n  COUNT(*) as animals_with_purchase_cost,\n  SUM(purchaseCost) as total_purchase_cost,\n  AVG(purchaseCost) as avg_purchase_cost,\n  MIN(purchaseCost) as min_cost,\n  MAX(purchaseCost) as max_cost\nFROM animals WHERE deletedAt IS NULL AND purchaseCost IS NOT NULL AND purchaseCost > 0;\n",
+  "rows": [
+    {
+      "animals_with_purchase_cost": "0",
+      "total_purchase_cost": "NULL",
+      "avg_purchase_cost": "NULL",
+      "min_cost": "NULL",
+      "max_cost": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "animals_with_purchase_cost\ttotal_purchase_cost\tavg_purchase_cost\tmin_cost\tmax_cost\n0\tNULL\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1763
+}

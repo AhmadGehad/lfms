@@ -1,0 +1,54 @@
+{
+  "query": "\nSELECT ac.name as category, COUNT(*) as count \nFROM animals a \nJOIN animal_categories ac ON a.categoryId = ac.id \nWHERE a.deletedAt IS NULL \nGROUP BY ac.name ORDER BY count DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT ac.name as category, COUNT(*) as count \nFROM animals a \nJOIN animal_categories ac ON a.categoryId = ac.id \nWHERE a.deletedAt IS NULL \nGROUP BY ac.name ORDER BY count DESC;\n",
+  "rows": [
+    {
+      "category": "Fattening",
+      "count": "75"
+    },
+    {
+      "category": "Ewe",
+      "count": "31"
+    },
+    {
+      "category": "Lamb",
+      "count": "8"
+    },
+    {
+      "category": "Goat",
+      "count": "6"
+    },
+    {
+      "category": "Baby Goat",
+      "count": "3"
+    },
+    {
+      "category": "Ram",
+      "count": "2"
+    },
+    {
+      "category": "Dog",
+      "count": "2"
+    },
+    {
+      "category": "Buffalo Calf",
+      "count": "1"
+    },
+    {
+      "category": "Cow",
+      "count": "1"
+    },
+    {
+      "category": "Billy Goat",
+      "count": "1"
+    },
+    {
+      "category": "Beef Calf",
+      "count": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "category\tcount\nFattening\t75\nEwe\t31\nLamb\t8\nGoat\t6\nBaby Goat\t3\nRam\t2\nDog\t2\nBuffalo Calf\t1\nCow\t1\nBilly Goat\t1\nBeef Calf\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1760
+}

@@ -1,0 +1,58 @@
+{
+  "query": "\nSELECT fi.name, fi.unit, fph.pricePerUnit, fph.effectiveDate\nFROM feed_item_price_history fph\nJOIN feed_items fi ON fph.feedItemId = fi.id\nORDER BY fi.name, fph.effectiveDate DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fi.name, fi.unit, fph.pricePerUnit, fph.effectiveDate\nFROM feed_item_price_history fph\nJOIN feed_items fi ON fph.feedItemId = fi.id\nORDER BY fi.name, fph.effectiveDate DESC;\n",
+  "rows": [
+    {
+      "name": "Alfalfa",
+      "unit": "kg",
+      "pricePerUnit": "4.50",
+      "effectiveDate": "2025-01-01"
+    },
+    {
+      "name": "Alfalfa Hay",
+      "unit": "kg",
+      "pricePerUnit": "5.00",
+      "effectiveDate": "2025-01-01"
+    },
+    {
+      "name": "Chicken Feed",
+      "unit": "kg",
+      "pricePerUnit": "8.00",
+      "effectiveDate": "2025-01-01"
+    },
+    {
+      "name": "Concentrate 14%",
+      "unit": "kg",
+      "pricePerUnit": "9.50",
+      "effectiveDate": "2025-01-01"
+    },
+    {
+      "name": "Concentrate 16%",
+      "unit": "kg",
+      "pricePerUnit": "10.50",
+      "effectiveDate": "2025-01-01"
+    },
+    {
+      "name": "Corn",
+      "unit": "kg",
+      "pricePerUnit": "6.00",
+      "effectiveDate": "2025-01-01"
+    },
+    {
+      "name": "Hay",
+      "unit": "kg",
+      "pricePerUnit": "3.50",
+      "effectiveDate": "2025-01-01"
+    },
+    {
+      "name": "Milking Concentrate",
+      "unit": "kg",
+      "pricePerUnit": "12.00",
+      "effectiveDate": "2025-01-01"
+    }
+  ],
+  "messages": [],
+  "stdout": "name\tunit\tpricePerUnit\teffectiveDate\nAlfalfa\tkg\t4.50\t2025-01-01\nAlfalfa Hay\tkg\t5.00\t2025-01-01\nChicken Feed\tkg\t8.00\t2025-01-01\nConcentrate 14%\tkg\t9.50\t2025-01-01\nConcentrate 16%\tkg\t10.50\t2025-01-01\nCorn\tkg\t6.00\t2025-01-01\nHay\tkg\t3.50\t2025-01-01\nMilking Concentrate\tkg\t12.00\t2025-01-01\n",
+  "stderr": "",
+  "execution_time_ms": 1855
+}

@@ -1,0 +1,130 @@
+{
+  "query": "\nSELECT \n  fi.name as feed_item,\n  rp.qtyPerHeadPerDay,\n  fph.pricePerUnit,\n  rp.qtyPerHeadPerDay * fph.pricePerUnit as cost_per_head_per_day,\n  (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as active_heads,\n  rp.qtyPerHeadPerDay * fph.pricePerUnit * (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as daily_feed_cost\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nJOIN feed_item_price_history fph ON fph.feedItemId = fi.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\n  AND fph.effectiveDate = (SELECT MAX(fph2.effectiveDate) FROM feed_item_price_history fph2 WHERE fph2.feedItemId = fi.id)\nORDER BY daily_feed_cost DESC\nLIMIT 15;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT \n  fi.name as feed_item,\n  rp.qtyPerHeadPerDay,\n  fph.pricePerUnit,\n  rp.qtyPerHeadPerDay * fph.pricePerUnit as cost_per_head_per_day,\n  (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as active_heads,\n  rp.qtyPerHeadPerDay * fph.pricePerUnit * (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as daily_feed_cost\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nJOIN feed_item_price_history fph ON fph.feedItemId = fi.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\n  AND fph.effectiveDate = (SELECT MAX(fph2.effectiveDate) FROM feed_item_price_history fph2 WHERE fph2.feedItemId = fi.id)\nORDER BY daily_feed_cost DESC\nLIMIT 15;\n",
+  "rows": [
+    {
+      "feed_item": "Milking Concentrate",
+      "qtyPerHeadPerDay": "2.000",
+      "pricePerUnit": "12.00",
+      "cost_per_head_per_day": "24.00000",
+      "active_heads": "74",
+      "daily_feed_cost": "1776.00000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "qtyPerHeadPerDay": "1.000",
+      "pricePerUnit": "10.50",
+      "cost_per_head_per_day": "10.50000",
+      "active_heads": "74",
+      "daily_feed_cost": "777.00000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "qtyPerHeadPerDay": "1.500",
+      "pricePerUnit": "12.00",
+      "cost_per_head_per_day": "18.00000",
+      "active_heads": "31",
+      "daily_feed_cost": "558.00000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "qtyPerHeadPerDay": "1.500",
+      "pricePerUnit": "5.00",
+      "cost_per_head_per_day": "7.50000",
+      "active_heads": "74",
+      "daily_feed_cost": "555.00000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "qtyPerHeadPerDay": "0.750",
+      "pricePerUnit": "10.50",
+      "cost_per_head_per_day": "7.87500",
+      "active_heads": "31",
+      "daily_feed_cost": "244.12500"
+    },
+    {
+      "feed_item": "Hay",
+      "qtyPerHeadPerDay": "0.500",
+      "pricePerUnit": "3.50",
+      "cost_per_head_per_day": "1.75000",
+      "active_heads": "74",
+      "daily_feed_cost": "129.50000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "qtyPerHeadPerDay": "0.500",
+      "pricePerUnit": "5.00",
+      "cost_per_head_per_day": "2.50000",
+      "active_heads": "31",
+      "daily_feed_cost": "77.50000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "qtyPerHeadPerDay": "3.000",
+      "pricePerUnit": "12.00",
+      "cost_per_head_per_day": "36.00000",
+      "active_heads": "2",
+      "daily_feed_cost": "72.00000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "qtyPerHeadPerDay": "5.000",
+      "pricePerUnit": "12.00",
+      "cost_per_head_per_day": "60.00000",
+      "active_heads": "1",
+      "daily_feed_cost": "60.00000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "qtyPerHeadPerDay": "4.000",
+      "pricePerUnit": "10.50",
+      "cost_per_head_per_day": "42.00000",
+      "active_heads": "1",
+      "daily_feed_cost": "42.00000"
+    },
+    {
+      "feed_item": "Hay",
+      "qtyPerHeadPerDay": "0.300",
+      "pricePerUnit": "3.50",
+      "cost_per_head_per_day": "1.05000",
+      "active_heads": "31",
+      "daily_feed_cost": "32.55000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "qtyPerHeadPerDay": "1.500",
+      "pricePerUnit": "10.50",
+      "cost_per_head_per_day": "15.75000",
+      "active_heads": "2",
+      "daily_feed_cost": "31.50000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "qtyPerHeadPerDay": "1.000",
+      "pricePerUnit": "5.00",
+      "cost_per_head_per_day": "5.00000",
+      "active_heads": "6",
+      "daily_feed_cost": "30.00000"
+    },
+    {
+      "feed_item": "Concentrate 14%",
+      "qtyPerHeadPerDay": "0.500",
+      "pricePerUnit": "9.50",
+      "cost_per_head_per_day": "4.75000",
+      "active_heads": "6",
+      "daily_feed_cost": "28.50000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "qtyPerHeadPerDay": "2.000",
+      "pricePerUnit": "5.00",
+      "cost_per_head_per_day": "10.00000",
+      "active_heads": "2",
+      "daily_feed_cost": "20.00000"
+    }
+  ],
+  "messages": [],
+  "stdout": "feed_item\tqtyPerHeadPerDay\tpricePerUnit\tcost_per_head_per_day\tactive_heads\tdaily_feed_cost\nMilking Concentrate\t2.000\t12.00\t24.00000\t74\t1776.00000\nConcentrate 16%\t1.000\t10.50\t10.50000\t74\t777.00000\nMilking Concentrate\t1.500\t12.00\t18.00000\t31\t558.00000\nAlfalfa Hay\t1.500\t5.00\t7.50000\t74\t555.00000\nConcentrate 16%\t0.750\t10.50\t7.87500\t31\t244.12500\nHay\t0.500\t3.50\t1.75000\t74\t129.50000\nAlfalfa Hay\t0.500\t5.00\t2.50000\t31\t77.50000\nMilking Concentrate\t3.000\t12.00\t36.00000\t2\t72.00000\nMilking Concentrate\t5.000\t12.00\t60.00000\t1\t60.00000\nConcentrate 16%\t4.000\t10.50\t42.00000\t1\t42.00000\nHay\t0.300\t3.50\t1.05000\t31\t32.55000\nConcentrate 16%\t1.500\t10.50\t15.75000\t2\t31.50000\nAlfalfa Hay\t1.000\t5.00\t5.00000\t6\t30.00000\nConcentrate 14%\t0.500\t9.50\t4.75000\t6\t28.50000\nAlfalfa Hay\t2.000\t5.00\t10.00000\t2\t20.00000\n",
+  "stderr": "",
+  "execution_time_ms": 1860
+}

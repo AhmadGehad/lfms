@@ -1,0 +1,37 @@
+{
+  "query": "\nSELECT a.animalId, a.acquisitionType, a.exitReason, a.exitDate, a.isActive, ac.name as category, sp.name as species\nFROM animals a \nJOIN animal_categories ac ON a.categoryId = ac.id\nJOIN species sp ON a.speciesId = sp.id\nWHERE a.deletedAt IS NULL AND a.isActive = 0;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT a.animalId, a.acquisitionType, a.exitReason, a.exitDate, a.isActive, ac.name as category, sp.name as species\nFROM animals a \nJOIN animal_categories ac ON a.categoryId = ac.id\nJOIN species sp ON a.speciesId = sp.id\nWHERE a.deletedAt IS NULL AND a.isActive = 0;\n",
+  "rows": [
+    {
+      "animalId": "F-009",
+      "acquisitionType": "purchased",
+      "exitReason": "Ill/Slaughter",
+      "exitDate": "2026-04-07",
+      "isActive": "0",
+      "category": "Fattening",
+      "species": "Sheep"
+    },
+    {
+      "animalId": "O-001",
+      "acquisitionType": "purchased",
+      "exitReason": "Sell 27k",
+      "exitDate": "2026-03-09",
+      "isActive": "0",
+      "category": "Beef Calf",
+      "species": "Cow"
+    },
+    {
+      "animalId": "B-001",
+      "acquisitionType": "purchased",
+      "exitReason": "Sell 15k",
+      "exitDate": "2026-03-09",
+      "isActive": "0",
+      "category": "Buffalo Calf",
+      "species": "Cow"
+    }
+  ],
+  "messages": [],
+  "stdout": "animalId\tacquisitionType\texitReason\texitDate\tisActive\tcategory\tspecies\nF-009\tpurchased\tIll/Slaughter\t2026-04-07\t0\tFattening\tSheep\nO-001\tpurchased\tSell 27k\t2026-03-09\t0\tBeef Calf\tCow\nB-001\tpurchased\tSell 15k\t2026-03-09\t0\tBuffalo Calf\tCow\n",
+  "stderr": "",
+  "execution_time_ms": 1798
+}

@@ -1,0 +1,59 @@
+{
+  "query": "\nSELECT fi.name as feed_item, fi.unit,\n       SUM(CASE WHEN fsl.transactionType = 'purchase' THEN fsl.qty ELSE 0 END) as total_purchased,\n       SUM(CASE WHEN fsl.transactionType = 'consumption' THEN fsl.qty ELSE 0 END) as total_consumed,\n       COUNT(*) as transactions\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fsl.feedItemId = fi.id\nGROUP BY fi.name, fi.unit ORDER BY fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fi.name as feed_item, fi.unit,\n       SUM(CASE WHEN fsl.transactionType = 'purchase' THEN fsl.qty ELSE 0 END) as total_purchased,\n       SUM(CASE WHEN fsl.transactionType = 'consumption' THEN fsl.qty ELSE 0 END) as total_consumed,\n       COUNT(*) as transactions\nFROM feed_stock_ledger fsl\nJOIN feed_items fi ON fsl.feedItemId = fi.id\nGROUP BY fi.name, fi.unit ORDER BY fi.name;\n",
+  "rows": [
+    {
+      "feed_item": "Alfalfa",
+      "unit": "kg",
+      "total_purchased": "50.000",
+      "total_consumed": "0.000",
+      "transactions": "1"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "total_purchased": "4288.000",
+      "total_consumed": "0.000",
+      "transactions": "4"
+    },
+    {
+      "feed_item": "Concentrate 14%",
+      "unit": "kg",
+      "total_purchased": "500.000",
+      "total_consumed": "0.000",
+      "transactions": "1"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "total_purchased": "5175.000",
+      "total_consumed": "0.000",
+      "transactions": "4"
+    },
+    {
+      "feed_item": "Corn",
+      "unit": "kg",
+      "total_purchased": "60.000",
+      "total_consumed": "0.000",
+      "transactions": "1"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "total_purchased": "4790.000",
+      "total_consumed": "0.000",
+      "transactions": "4"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "unit": "kg",
+      "total_purchased": "675.000",
+      "total_consumed": "0.000",
+      "transactions": "3"
+    }
+  ],
+  "messages": [],
+  "stdout": "feed_item\tunit\ttotal_purchased\ttotal_consumed\ttransactions\nAlfalfa\tkg\t50.000\t0.000\t1\nAlfalfa Hay\tkg\t4288.000\t0.000\t4\nConcentrate 14%\tkg\t500.000\t0.000\t1\nConcentrate 16%\tkg\t5175.000\t0.000\t4\nCorn\tkg\t60.000\t0.000\t1\nHay\tkg\t4790.000\t0.000\t4\nMilking Concentrate\tkg\t675.000\t0.000\t3\n",
+  "stderr": "",
+  "execution_time_ms": 1789
+}

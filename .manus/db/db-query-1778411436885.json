@@ -1,0 +1,40 @@
+{
+  "query": "\nSELECT fi.name as feed_item, fi.unit,\n  ROUND(SUM(rp.qtyPerHeadPerDay * (\n    SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL\n  )), 3) as daily_consumption_kg,\n  (SELECT COALESCE(SUM(CASE WHEN fsl2.transactionType IN ('purchase','stock_count') THEN fsl2.qty WHEN fsl2.transactionType = 'consumption' THEN -fsl2.qty ELSE 0 END),0)\n   FROM feed_stock_ledger fsl2 WHERE fsl2.feedItemId = fi.id) as stock_on_hand\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\nGROUP BY fi.id, fi.name, fi.unit\nORDER BY fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fi.name as feed_item, fi.unit,\n  ROUND(SUM(rp.qtyPerHeadPerDay * (\n    SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL\n  )), 3) as daily_consumption_kg,\n  (SELECT COALESCE(SUM(CASE WHEN fsl2.transactionType IN ('purchase','stock_count') THEN fsl2.qty WHEN fsl2.transactionType = 'consumption' THEN -fsl2.qty ELSE 0 END),0)\n   FROM feed_stock_ledger fsl2 WHERE fsl2.feedItemId = fi.id) as stock_on_hand\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\nGROUP BY fi.id, fi.name, fi.unit\nORDER BY fi.name;\n",
+  "rows": [
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "daily_consumption_kg": "140.500",
+      "stock_on_hand": "4288.000"
+    },
+    {
+      "feed_item": "Concentrate 14%",
+      "unit": "kg",
+      "daily_consumption_kg": "3.500",
+      "stock_on_hand": "500.000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "daily_consumption_kg": "104.250",
+      "stock_on_hand": "5175.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "daily_consumption_kg": "51.600",
+      "stock_on_hand": "4790.000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "unit": "kg",
+      "daily_consumption_kg": "205.500",
+      "stock_on_hand": "675.000"
+    }
+  ],
+  "messages": [],
+  "stdout": "feed_item\tunit\tdaily_consumption_kg\tstock_on_hand\nAlfalfa Hay\tkg\t140.500\t4288.000\nConcentrate 14%\tkg\t3.500\t500.000\nConcentrate 16%\tkg\t104.250\t5175.000\nHay\tkg\t51.600\t4790.000\nMilking Concentrate\tkg\t205.500\t675.000\n",
+  "stderr": "",
+  "execution_time_ms": 1822
+}

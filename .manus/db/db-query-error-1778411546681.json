@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT fi.name, fi.unit, fph.unitCost, fph.effectiveDate, fph.supplier\nFROM feed_item_price_history fph\nJOIN feed_items fi ON fph.feedItemId = fi.id\nORDER BY fi.name, fph.effectiveDate DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fi.name, fi.unit, fph.unitCost, fph.effectiveDate, fph.supplier\nFROM feed_item_price_history fph\nJOIN feed_items fi ON fph.feedItemId = fi.id\nORDER BY fi.name, fph.effectiveDate DESC;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'fph.unitcost' in 'field list'"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "query": "\n-- Total animals\nSELECT COUNT(*) as total_animals FROM animals WHERE deleted_at IS NULL;\n\n-- Active vs inactive\nSELECT is_active, COUNT(*) as count FROM animals WHERE deleted_at IS NULL GROUP BY is_active;\n\n-- By acquisition type\nSELECT acquisition_type, COUNT(*) as count FROM animals WHERE deleted_at IS NULL GROUP BY acquisition_type;\n\n-- By species\nSELECT sp.name as species, COUNT(*) as count \nFROM animals a \nJOIN species sp ON a.species_id = sp.id \nWHERE a.deleted_at IS NULL \nGROUP BY sp.name ORDER BY count DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Total animals\nSELECT COUNT(*) as total_animals FROM animals WHERE deleted_at IS NULL;\n\n-- Active vs inactive\nSELECT is_active, COUNT(*) as count FROM animals WHERE deleted_at IS NULL GROUP BY is_active;\n\n-- By acquisition type\nSELECT acquisition_type, COUNT(*) as count FROM animals WHERE deleted_at IS NULL GROUP BY acquisition_type;\n\n-- By species\nSELECT sp.name as species, COUNT(*) as count \nFROM animals a \nJOIN species sp ON a.species_id = sp.id \nWHERE a.deleted_at IS NULL \nGROUP BY sp.name ORDER BY count DESC;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 3: Unknown column 'deleted_at' in 'where clause'"
+  ]
+}

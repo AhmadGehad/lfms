@@ -212,7 +212,11 @@ export async function createBirthType(data: { name: string; description?: string
   const [result] = await db.insert(birthTypes).values(data);
   return result;
 }
-
+export async function updateBirthType(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(birthTypes).set(data).where(eq(birthTypes.id, id));
+}
 // ─── FEED ITEMS ───────────────────────────────────────────────────────────────
 
 export async function getAllFeedItems() {
@@ -282,7 +286,11 @@ export async function createExpenseCategory(data: { name: string; description?: 
   const [result] = await db.insert(expenseCategories).values(data);
   return result;
 }
-
+export async function updateExpenseCategory(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(expenseCategories).set(data).where(eq(expenseCategories.id, id));
+}
 export async function getAllExpenseSubCategories(categoryId?: number) {
   const db = await getDb();
   if (!db) return [];
@@ -298,7 +306,11 @@ export async function createExpenseSubCategory(data: { categoryId: number; name:
   const [result] = await db.insert(expenseSubCategories).values(data);
   return result;
 }
-
+export async function updateExpenseSubCategory(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(expenseSubCategories).set(data).where(eq(expenseSubCategories.id, id));
+}
 // ─── SYSTEM SETTINGS ──────────────────────────────────────────────────────────
 
 export async function getAllSettings() {

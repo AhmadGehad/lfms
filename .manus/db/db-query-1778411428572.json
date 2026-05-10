@@ -1,0 +1,289 @@
+{
+  "query": "\nSELECT fi.name as feed_item, fi.unit,\n       rp.qtyPerHeadPerDay, rp.effectiveDate,\n       ac.name as category,\n       (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as active_animals,\n       rp.qtyPerHeadPerDay * (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as daily_total_kg\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nJOIN animal_categories ac ON rp.categoryId = ac.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\nORDER BY fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fi.name as feed_item, fi.unit,\n       rp.qtyPerHeadPerDay, rp.effectiveDate,\n       ac.name as category,\n       (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as active_animals,\n       rp.qtyPerHeadPerDay * (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL) as daily_total_kg\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nJOIN animal_categories ac ON rp.categoryId = ac.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\nORDER BY fi.name;\n",
+  "rows": [
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Billy Goat",
+      "active_animals": "1",
+      "daily_total_kg": "1.000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Goat",
+      "active_animals": "6",
+      "daily_total_kg": "6.000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "3.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Cow",
+      "active_animals": "1",
+      "daily_total_kg": "3.000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Lamb",
+      "active_animals": "8",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Weaner",
+      "active_animals": "0",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Ewe",
+      "active_animals": "31",
+      "daily_total_kg": "15.500"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "2.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Ram",
+      "active_animals": "2",
+      "daily_total_kg": "4.000"
+    },
+    {
+      "feed_item": "Alfalfa Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Fattening",
+      "active_animals": "74",
+      "daily_total_kg": "111.000"
+    },
+    {
+      "feed_item": "Concentrate 14%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Goat",
+      "active_animals": "6",
+      "daily_total_kg": "3.000"
+    },
+    {
+      "feed_item": "Concentrate 14%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Billy Goat",
+      "active_animals": "1",
+      "daily_total_kg": "0.500"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Lamb",
+      "active_animals": "8",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.750",
+      "effectiveDate": "2025-01-01",
+      "category": "Ewe",
+      "active_animals": "31",
+      "daily_total_kg": "23.250"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Fattening",
+      "active_animals": "74",
+      "daily_total_kg": "74.000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "4.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Cow",
+      "active_animals": "1",
+      "daily_total_kg": "4.000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Ram",
+      "active_animals": "2",
+      "daily_total_kg": "3.000"
+    },
+    {
+      "feed_item": "Concentrate 16%",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Weaner",
+      "active_animals": "0",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Billy Goat",
+      "active_animals": "1",
+      "daily_total_kg": "0.500"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Lamb",
+      "active_animals": "8",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Fattening",
+      "active_animals": "74",
+      "daily_total_kg": "37.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Ram",
+      "active_animals": "2",
+      "daily_total_kg": "1.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.300",
+      "effectiveDate": "2025-01-01",
+      "category": "Ewe",
+      "active_animals": "31",
+      "daily_total_kg": "9.300"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.300",
+      "effectiveDate": "2025-01-01",
+      "category": "Weaner",
+      "active_animals": "0",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.300",
+      "effectiveDate": "2025-01-01",
+      "category": "Goat",
+      "active_animals": "6",
+      "daily_total_kg": "1.800"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Buffalo Calf",
+      "active_animals": "0",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "0.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Beef Calf",
+      "active_animals": "0",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Hay",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "2.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Cow",
+      "active_animals": "1",
+      "daily_total_kg": "2.000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.500",
+      "effectiveDate": "2025-01-01",
+      "category": "Ewe",
+      "active_animals": "31",
+      "daily_total_kg": "46.500"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "3.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Ram",
+      "active_animals": "2",
+      "daily_total_kg": "6.000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "5.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Cow",
+      "active_animals": "1",
+      "daily_total_kg": "5.000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "1.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Weaner",
+      "active_animals": "0",
+      "daily_total_kg": "0.000"
+    },
+    {
+      "feed_item": "Milking Concentrate",
+      "unit": "kg",
+      "qtyPerHeadPerDay": "2.000",
+      "effectiveDate": "2025-01-01",
+      "category": "Fattening",
+      "active_animals": "74",
+      "daily_total_kg": "148.000"
+    }
+  ],
+  "messages": [],
+  "stdout": "feed_item\tunit\tqtyPerHeadPerDay\teffectiveDate\tcategory\tactive_animals\tdaily_total_kg\nAlfalfa Hay\tkg\t1.000\t2025-01-01\tBilly Goat\t1\t1.000\nAlfalfa Hay\tkg\t1.000\t2025-01-01\tGoat\t6\t6.000\nAlfalfa Hay\tkg\t3.000\t2025-01-01\tCow\t1\t3.000\nAlfalfa Hay\tkg\t0.000\t2025-01-01\tLamb\t8\t0.000\nAlfalfa Hay\tkg\t1.000\t2025-01-01\tWeaner\t0\t0.000\nAlfalfa Hay\tkg\t0.500\t2025-01-01\tEwe\t31\t15.500\nAlfalfa Hay\tkg\t2.000\t2025-01-01\tRam\t2\t4.000\nAlfalfa Hay\tkg\t1.500\t2025-01-01\tFattening\t74\t111.000\nConcentrate 14%\tkg\t0.500\t2025-01-01\tGoat\t6\t3.000\nConcentrate 14%\tkg\t0.500\t2025-01-01\tBilly Goat\t1\t0.500\nConcentrate 16%\tkg\t0.000\t2025-01-01\tLamb\t8\t0.000\nConcentrate 16%\tkg\t0.750\t2025-01-01\tEwe\t31\t23.250\nConcentrate 16%\tkg\t1.000\t2025-01-01\tFattening\t74\t74.000\nConcentrate 16%\tkg\t4.000\t2025-01-01\tCow\t1\t4.000\nConcentrate 16%\tkg\t1.500\t2025-01-01\tRam\t2\t3.000\nConcentrate 16%\tkg\t0.500\t2025-01-01\tWeaner\t0\t0.000\nHay\tkg\t0.500\t2025-01-01\tBilly Goat\t1\t0.500\nHay\tkg\t0.000\t2025-01-01\tLamb\t8\t0.000\nHay\tkg\t0.500\t2025-01-01\tFattening\t74\t37.000\nHay\tkg\t0.500\t2025-01-01\tRam\t2\t1.000\nHay\tkg\t0.300\t2025-01-01\tEwe\t31\t9.300\nHay\tkg\t0.300\t2025-01-01\tWeaner\t0\t0.000\nHay\tkg\t0.300\t2025-01-01\tGoat\t6\t1.800\nHay\tkg\t0.500\t2025-01-01\tBuffalo Calf\t0\t0.000\nHay\tkg\t0.500\t2025-01-01\tBeef Calf\t0\t0.000\nHay\tkg\t2.000\t2025-01-01\tCow\t1\t2.000\nMilking Concentrate\tkg\t1.500\t2025-01-01\tEwe\t31\t46.500\nMilking Concentrate\tkg\t3.000\t2025-01-01\tRam\t2\t6.000\nMilking Concentrate\tkg\t5.000\t2025-01-01\tCow\t1\t5.000\nMilking Concentrate\tkg\t1.000\t2025-01-01\tWeaner\t0\t0.000\nMilking Concentrate\tkg\t2.000\t2025-01-01\tFattening\t74\t148.000\n",
+  "stderr": "",
+  "execution_time_ms": 1786
+}

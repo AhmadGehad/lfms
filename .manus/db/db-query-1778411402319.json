@@ -1,0 +1,22 @@
+{
+  "query": "\nSELECT a.animalId, a.exitReason, a.exitDate, a.isActive FROM animals a WHERE a.animalId IN ('O-001', 'B-001');\nSELECT * FROM sales WHERE deletedAt IS NULL LIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT a.animalId, a.exitReason, a.exitDate, a.isActive FROM animals a WHERE a.animalId IN ('O-001', 'B-001');\nSELECT * FROM sales WHERE deletedAt IS NULL LIMIT 10;\n",
+  "rows": [
+    {
+      "animalId": "O-001",
+      "exitReason": "Sell 27k",
+      "exitDate": "2026-03-09",
+      "isActive": "0"
+    },
+    {
+      "animalId": "B-001",
+      "exitReason": "Sell 15k",
+      "exitDate": "2026-03-09",
+      "isActive": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "animalId\texitReason\texitDate\tisActive\nO-001\tSell 27k\t2026-03-09\t0\nB-001\tSell 15k\t2026-03-09\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1999
+}

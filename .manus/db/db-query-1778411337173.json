@@ -1,0 +1,26 @@
+{
+  "query": "\nSELECT sp.name as species, COUNT(*) as count \nFROM animals a \nJOIN species sp ON a.speciesId = sp.id \nWHERE a.deletedAt IS NULL \nGROUP BY sp.name ORDER BY count DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT sp.name as species, COUNT(*) as count \nFROM animals a \nJOIN species sp ON a.speciesId = sp.id \nWHERE a.deletedAt IS NULL \nGROUP BY sp.name ORDER BY count DESC;\n",
+  "rows": [
+    {
+      "species": "Sheep",
+      "count": "116"
+    },
+    {
+      "species": "Goat",
+      "count": "10"
+    },
+    {
+      "species": "Cow",
+      "count": "3"
+    },
+    {
+      "species": "Dog",
+      "count": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "species\tcount\nSheep\t116\nGoat\t10\nCow\t3\nDog\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1772
+}

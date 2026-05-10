@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,24 +8,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Settings, Plus } from "lucide-react";
+import { Settings, Plus, Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
+// ── Reusable inline edit dialog ───────────────────────────────────────────────
+function EditDialog({ title, open, onOpenChange, onSave, isPending, children }: {
+  title: string; open: boolean; onOpenChange: (v: boolean) => void;
+  onSave: () => void; isPending: boolean; children: React.ReactNode;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader><DialogTitle>{title}</DialogTitle></DialogHeader>
+        <div className="space-y-4">{children}</div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+          <Button onClick={onSave} disabled={isPending}>{t("common.save")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ── Species Tab ──────────────────────────────────────────────────────────────
 function SpeciesTab() {
   const { t } = useTranslation();
-  const { data: species, refetch } = trpc.config.getSpecies.useQuery();
+  const { data: species } = trpc.config.getSpecies.useQuery();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
   const [name, setName] = useState("");
-  const [code, setCode] = useState("");
+  const [description, setDescription] = useState("");
   const utils = trpc.useUtils();
 
   const create = trpc.config.createSpecies.useMutation({
-    onSuccess: () => { toast.success("Species created"); utils.config.getSpecies.invalidate(); setOpen(false); setName(""); setCode(""); },
+    onSuccess: () => { toast.success("Species created"); utils.config.getSpecies.invalidate(); setOpen(false); setName(""); setDescription(""); },
     onError: (e: any) => toast.error(e.message),
   });
+  const update = trpc.config.updateSpecies.useMutation({
+    onSuccess: () => { toast.success("Species updated"); utils.config.getSpecies.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  function openEdit(s: any) { setEditItem({ ...s }); setEditOpen(true); }
 
   return (
     <div className="space-y-4">
@@ -38,30 +66,34 @@ function SpeciesTab() {
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addSpecies")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Name *</Label>
-                <Input placeholder="e.g. Sheep" value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Description</Label>
-                <Input placeholder="Optional description" value={code} onChange={(e) => setCode(e.target.value)} />
-              </div>
+              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Sheep" value={name} onChange={(e) => setName(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name })} disabled={!name || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name, description: description || undefined })} disabled={!name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {editItem && (
+        <EditDialog title="Edit Species" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description })}>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+        </EditDialog>
+      )}
+
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Code</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(species ?? []).map((s: any) => (
             <TableRow key={s.id}>
               <TableCell className="font-medium">{s.name}</TableCell>
-              <TableCell className="font-mono">{s.code}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{s.description ?? "—"}</TableCell>
               <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Active</Badge></TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -76,6 +108,8 @@ function CategoriesTab() {
   const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: species } = trpc.config.getSpecies.useQuery();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
   const [form, setForm] = useState({ name: "", idPrefix: "", speciesId: "", targetWeightKg: "" });
   const utils = trpc.useUtils();
 
@@ -83,6 +117,12 @@ function CategoriesTab() {
     onSuccess: () => { toast.success("Category created"); utils.config.getCategories.invalidate(); setOpen(false); setForm({ name: "", idPrefix: "", speciesId: "", targetWeightKg: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
+  const update = trpc.config.updateCategory.useMutation({
+    onSuccess: () => { toast.success("Category updated"); utils.config.getCategories.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  function openEdit(c: any) { setEditItem({ ...c, speciesId: String(c.speciesId), targetWeightKg: c.targetWeightKg ?? "" }); setEditOpen(true); }
 
   return (
     <div className="space-y-4">
@@ -95,27 +135,16 @@ function CategoriesTab() {
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addCategory")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Name *</Label>
-                <Input placeholder="e.g. Lamb" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>ID Prefix *</Label>
-                <Input placeholder="e.g. LMB" value={form.idPrefix} onChange={(e) => setForm((f) => ({ ...f, idPrefix: e.target.value.toUpperCase() }))} maxLength={6} />
-              </div>
+              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Lamb" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>ID Prefix *</Label><Input placeholder="e.g. LMB" value={form.idPrefix} onChange={(e) => setForm((f) => ({ ...f, idPrefix: e.target.value.toUpperCase() }))} maxLength={6} /></div>
               <div className="space-y-1.5">
                 <Label>Species *</Label>
                 <Select value={form.speciesId} onValueChange={(v) => setForm((f) => ({ ...f, speciesId: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select species" /></SelectTrigger>
-                  <SelectContent>
-                    {(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label>Target Weight (kg)</Label>
-                <Input type="number" placeholder="0.0" value={form.targetWeightKg} onChange={(e) => setForm((f) => ({ ...f, targetWeightKg: e.target.value }))} />
-              </div>
+              <div className="space-y-1.5"><Label>Target Weight (kg)</Label><Input type="number" placeholder="0.0" value={form.targetWeightKg} onChange={(e) => setForm((f) => ({ ...f, targetWeightKg: e.target.value }))} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -124,8 +153,18 @@ function CategoriesTab() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {editItem && (
+        <EditDialog title="Edit Category" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, idPrefix: editItem.idPrefix, targetWeightKg: editItem.targetWeightKg || undefined })}>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>ID Prefix</Label><Input value={editItem.idPrefix} onChange={(e) => setEditItem((p: any) => ({ ...p, idPrefix: e.target.value.toUpperCase() }))} maxLength={6} /></div>
+          <div className="space-y-1.5"><Label>Target Weight (kg)</Label><Input type="number" value={editItem.targetWeightKg} onChange={(e) => setEditItem((p: any) => ({ ...p, targetWeightKg: e.target.value }))} /></div>
+        </EditDialog>
+      )}
+
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>ID Prefix</TableHead><TableHead>Species</TableHead><TableHead>{t("config.targetWeight")}</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>ID Prefix</TableHead><TableHead>Species</TableHead><TableHead>{t("config.targetWeight")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
@@ -133,6 +172,7 @@ function CategoriesTab() {
               <TableCell className="font-mono font-bold text-primary">{c.idPrefix}</TableCell>
               <TableCell>{c.speciesName}</TableCell>
               <TableCell>{c.targetWeightKg ? `${parseFloat(c.targetWeightKg).toFixed(1)} kg` : "—"}</TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -146,6 +186,8 @@ function GroupsTab() {
   const { t } = useTranslation();
   const { data: groups } = trpc.config.getGroups.useQuery();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
   const [form, setForm] = useState({ name: "", groupCode: "", description: "" });
   const utils = trpc.useUtils();
 
@@ -153,6 +195,12 @@ function GroupsTab() {
     onSuccess: () => { toast.success("Group created"); utils.config.getGroups.invalidate(); setOpen(false); setForm({ name: "", groupCode: "", description: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
+  const update = trpc.config.updateGroup.useMutation({
+    onSuccess: () => { toast.success("Group updated"); utils.config.getGroups.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  function openEdit(g: any) { setEditItem({ ...g }); setEditOpen(true); }
 
   return (
     <div className="space-y-4">
@@ -165,18 +213,9 @@ function GroupsTab() {
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>Add Group / Pen</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Name *</Label>
-                <Input placeholder="e.g. Pen A" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Group Code *</Label>
-                <Input placeholder="e.g. PEN-A" value={form.groupCode} onChange={(e) => setForm((f) => ({ ...f, groupCode: e.target.value.toUpperCase() }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Description</Label>
-                <Input placeholder="Optional description" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
-              </div>
+              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Pen A" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Group Code *</Label><Input placeholder="e.g. PEN-A" value={form.groupCode} onChange={(e) => setForm((f) => ({ ...f, groupCode: e.target.value.toUpperCase() }))} /></div>
+              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -185,14 +224,25 @@ function GroupsTab() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {editItem && (
+        <EditDialog title="Edit Group / Pen" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined })}>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>Group Code</Label><Input value={editItem.groupCode ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, groupCode: e.target.value.toUpperCase() }))} /></div>
+          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+        </EditDialog>
+      )}
+
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Capacity</TableHead><TableHead>Location</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Code</TableHead><TableHead>Description</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(groups ?? []).map((g: any) => (
             <TableRow key={g.id}>
               <TableCell className="font-medium">{g.name}</TableCell>
-              <TableCell>{g.capacity ?? "—"}</TableCell>
-              <TableCell className="text-muted-foreground">{g.location ?? "—"}</TableCell>
+              <TableCell className="font-mono text-sm">{g.groupCode ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{g.description ?? "—"}</TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(g)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -206,13 +256,23 @@ function FeedItemsTab() {
   const { t } = useTranslation();
   const { data: feedItems } = trpc.config.getFeedItems.useQuery();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", unit: "", reorderLevel: "", currentPrice: "" });
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [form, setForm] = useState({ name: "", unit: "kg" });
   const utils = trpc.useUtils();
 
   const create = trpc.config.createFeedItem.useMutation({
-    onSuccess: () => { toast.success("Feed item created"); utils.config.getFeedItems.invalidate(); setOpen(false); setForm({ name: "", unit: "", reorderLevel: "", currentPrice: "" }); },
+    onSuccess: () => { toast.success("Feed item created"); utils.config.getFeedItems.invalidate(); setOpen(false); setForm({ name: "", unit: "kg" }); },
     onError: (e: any) => toast.error(e.message),
   });
+  const update = trpc.config.updateFeedItem.useMutation({
+    onSuccess: () => { toast.success("Feed item updated"); utils.config.getFeedItems.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  function openEdit(fi: any) { setEditItem({ ...fi }); setEditOpen(true); }
+
+  const unitOptions = ["kg", "ton", "bale", "bag", "liter"];
 
   return (
     <div className="space-y-4">
@@ -225,48 +285,46 @@ function FeedItemsTab() {
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addFeedItem")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
+              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Alfalfa Hay" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
               <div className="space-y-1.5">
-                <Label>Name *</Label>
-                <Input placeholder="e.g. Hay" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Unit *</Label>
+                <Label>Unit</Label>
                 <Select value={form.unit} onValueChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select unit" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="kg">kg</SelectItem>
-                    <SelectItem value="ton">ton</SelectItem>
-                    <SelectItem value="bale">bale</SelectItem>
-                    <SelectItem value="bag">bag</SelectItem>
-                    <SelectItem value="liter">liter</SelectItem>
-                  </SelectContent>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{unitOptions.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                 </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Reorder Level</Label>
-                <Input type="number" placeholder="0" value={form.reorderLevel} onChange={(e) => setForm((f) => ({ ...f, reorderLevel: e.target.value }))} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Current Price (EGP)</Label>
-                <Input type="number" placeholder="0.00" value={form.currentPrice} onChange={(e) => setForm((f) => ({ ...f, currentPrice: e.target.value }))} />
               </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name: form.name, unit: form.unit || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, unit: form.unit })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {editItem && (
+        <EditDialog title="Edit Feed Item" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, unit: editItem.unit })}>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5">
+            <Label>Unit</Label>
+            <Select value={editItem.unit} onValueChange={(v) => setEditItem((p: any) => ({ ...p, unit: v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{unitOptions.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </EditDialog>
+      )}
+
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Unit</TableHead><TableHead>Current Price</TableHead><TableHead>Reorder Level</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Unit</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(feedItems ?? []).map((fi: any) => (
             <TableRow key={fi.id}>
               <TableCell className="font-medium">{fi.name}</TableCell>
               <TableCell>{fi.unit}</TableCell>
-              <TableCell>{fi.currentPrice ? `EGP ${parseFloat(fi.currentPrice).toFixed(2)}` : "—"}</TableCell>
-              <TableCell>{fi.reorderLevel ?? "—"}</TableCell>
+              <TableCell><Badge className={fi.isActive ? "bg-green-100 text-green-800 border-green-200 text-xs" : "bg-gray-100 text-gray-600 text-xs"}>{fi.isActive ? "Active" : "Inactive"}</Badge></TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(fi)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -280,13 +338,22 @@ function ExpenseCategoriesTab() {
   const { t } = useTranslation();
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const utils = trpc.useUtils();
 
   const create = trpc.config.createExpenseCategory.useMutation({
-    onSuccess: () => { toast.success("Category created"); utils.config.getExpenseCategories.invalidate(); setOpen(false); setName(""); },
+    onSuccess: () => { toast.success("Category created"); utils.config.getExpenseCategories.invalidate(); setOpen(false); setName(""); setDescription(""); },
     onError: (e: any) => toast.error(e.message),
   });
+  const update = trpc.config.updateExpenseCategory.useMutation({
+    onSuccess: () => { toast.success("Category updated"); utils.config.getExpenseCategories.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  function openEdit(c: any) { setEditItem({ ...c }); setEditOpen(true); }
 
   return (
     <div className="space-y-4">
@@ -299,25 +366,34 @@ function ExpenseCategoriesTab() {
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>Add Expense Category</DialogTitle></DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Name *</Label>
-                <Input placeholder="e.g. Veterinary" value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
+              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Veterinary" value={name} onChange={(e) => setName(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name })} disabled={!name || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name, description: description || undefined })} disabled={!name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
+
+      {editItem && (
+        <EditDialog title="Edit Expense Category" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+        </EditDialog>
+      )}
+
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
               <TableCell className="font-medium">{c.name}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{c.description ?? "—"}</TableCell>
               <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Active</Badge></TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}
         </TableBody>

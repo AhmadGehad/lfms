@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT COUNT(*) as weight_logs FROM animal_weight_log WHERE deletedAt IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT COUNT(*) as weight_logs FROM animal_weight_log WHERE deletedAt IS NULL;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 2: Table 'boywmbm5odtbpptclrtk7n.animal_weight_log' doesn't exist"
+  ]
+}

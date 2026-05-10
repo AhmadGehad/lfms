@@ -1,0 +1,14 @@
+{
+  "query": "\nSELECT \n  SUM(rp.qtyPerHeadPerDay * fph.pricePerUnit * \n    (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL)\n  ) as total_daily_feed_cost_sar,\n  SUM(rp.qtyPerHeadPerDay * fph.pricePerUnit * \n    (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL)\n  ) * 30 as monthly_feed_cost_sar\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nJOIN feed_item_price_history fph ON fph.feedItemId = fi.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\n  AND fph.effectiveDate = (SELECT MAX(fph2.effectiveDate) FROM feed_item_price_history fph2 WHERE fph2.feedItemId = fi.id);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT \n  SUM(rp.qtyPerHeadPerDay * fph.pricePerUnit * \n    (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL)\n  ) as total_daily_feed_cost_sar,\n  SUM(rp.qtyPerHeadPerDay * fph.pricePerUnit * \n    (SELECT COUNT(*) FROM animals a WHERE a.categoryId = rp.categoryId AND a.isActive = 1 AND a.deletedAt IS NULL)\n  ) * 30 as monthly_feed_cost_sar\nFROM ration_plans rp\nJOIN feed_items fi ON rp.feedItemId = fi.id\nJOIN feed_item_price_history fph ON fph.feedItemId = fi.id\nWHERE rp.deletedAt IS NULL AND rp.isActive = 1\n  AND fph.effectiveDate = (SELECT MAX(fph2.effectiveDate) FROM feed_item_price_history fph2 WHERE fph2.feedItemId = fi.id);\n",
+  "rows": [
+    {
+      "total_daily_feed_cost_sar": "4476.97500",
+      "monthly_feed_cost_sar": "134309.25000"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_daily_feed_cost_sar\tmonthly_feed_cost_sar\n4476.97500\t134309.25000\n",
+  "stderr": "",
+  "execution_time_ms": 1933
+}

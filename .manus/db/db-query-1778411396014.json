@@ -1,0 +1,16 @@
+{
+  "query": "\nSELECT COUNT(*) as total_sales, SUM(salePrice) as total_revenue, MIN(saleDate) as earliest, MAX(saleDate) as latest FROM sales WHERE deletedAt IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT COUNT(*) as total_sales, SUM(salePrice) as total_revenue, MIN(saleDate) as earliest, MAX(saleDate) as latest FROM sales WHERE deletedAt IS NULL;\n",
+  "rows": [
+    {
+      "total_sales": "0",
+      "total_revenue": "NULL",
+      "earliest": "NULL",
+      "latest": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_sales\ttotal_revenue\tearliest\tlatest\n0\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1806
+}

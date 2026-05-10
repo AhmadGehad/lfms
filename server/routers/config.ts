@@ -5,11 +5,11 @@ import {
   getAllCategories, createCategory, updateCategory,
   getAllStatuses, createStatus, updateStatus,
   getAllGroups, createGroup, updateGroup,
-  getAllBirthTypes, createBirthType,
+  getAllBirthTypes, createBirthType, updateBirthType,
   getAllFeedItems, createFeedItem, updateFeedItem,
   getFeedItemPriceHistory, addFeedItemPrice,
-  getAllExpenseCategories, createExpenseCategory,
-  getAllExpenseSubCategories, createExpenseSubCategory,
+  getAllExpenseCategories, createExpenseCategory, updateExpenseCategory,
+  getAllExpenseSubCategories, createExpenseSubCategory, updateExpenseSubCategory,
   getAllSettings, upsertSetting,
   getAllUsers, updateUserRole,
 } from "../db";
@@ -82,6 +82,7 @@ export const configRouter = router({
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
+      groupCode: z.string().optional(),
       speciesId: z.number().optional(),
       categoryId: z.number().optional(),
       description: z.string().optional(),
@@ -95,6 +96,10 @@ export const configRouter = router({
   createBirthType: protectedProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(({ input }) => createBirthType(input)),
+
+  updateBirthType: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .mutation(({ input: { id, ...data } }) => updateBirthType(id, data)),
 
   // ─── FEED ITEMS ─────────────────────────────────────────────────────────────
   getFeedItems: protectedProcedure.query(() => getAllFeedItems()),
@@ -127,6 +132,10 @@ export const configRouter = router({
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(({ input }) => createExpenseCategory(input)),
 
+  updateExpenseCategory: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .mutation(({ input: { id, ...data } }) => updateExpenseCategory(id, data)),
+
   getExpenseSubCategories: protectedProcedure
     .input(z.object({ categoryId: z.number().optional() }).optional())
     .query(({ input }) => getAllExpenseSubCategories(input?.categoryId)),
@@ -134,6 +143,10 @@ export const configRouter = router({
   createExpenseSubCategory: protectedProcedure
     .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))
     .mutation(({ input }) => createExpenseSubCategory(input)),
+
+  updateExpenseSubCategory: protectedProcedure
+    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .mutation(({ input: { id, ...data } }) => updateExpenseSubCategory(id, data)),
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
   getSettings: protectedProcedure.query(() => getAllSettings()),

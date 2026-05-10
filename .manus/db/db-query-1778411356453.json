@@ -1,0 +1,16 @@
+{
+  "query": "\nSELECT COUNT(*) as total_expense_records, \n       SUM(amount) as total_amount,\n       MIN(expenseDate) as earliest_date,\n       MAX(expenseDate) as latest_date\nFROM expenses WHERE deletedAt IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT COUNT(*) as total_expense_records, \n       SUM(amount) as total_amount,\n       MIN(expenseDate) as earliest_date,\n       MAX(expenseDate) as latest_date\nFROM expenses WHERE deletedAt IS NULL;\n",
+  "rows": [
+    {
+      "total_expense_records": "25",
+      "total_amount": "38160.00",
+      "earliest_date": "2025-11-01",
+      "latest_date": "2026-04-01"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_expense_records\ttotal_amount\tearliest_date\tlatest_date\n25\t38160.00\t2025-11-01\t2026-04-01\n",
+  "stderr": "",
+  "execution_time_ms": 1799
+}

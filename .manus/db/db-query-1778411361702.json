@@ -1,0 +1,35 @@
+{
+  "query": "\nSELECT ec.name as category, COUNT(*) as records, SUM(e.amount) as total\nFROM expenses e\nJOIN expense_categories ec ON e.categoryId = ec.id\nWHERE e.deletedAt IS NULL\nGROUP BY ec.name ORDER BY total DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT ec.name as category, COUNT(*) as records, SUM(e.amount) as total\nFROM expenses e\nJOIN expense_categories ec ON e.categoryId = ec.id\nWHERE e.deletedAt IS NULL\nGROUP BY ec.name ORDER BY total DESC;\n",
+  "rows": [
+    {
+      "category": "Transport",
+      "records": "6",
+      "total": "18000.00"
+    },
+    {
+      "category": "Labor",
+      "records": "5",
+      "total": "9400.00"
+    },
+    {
+      "category": "Minerals",
+      "records": "6",
+      "total": "6000.00"
+    },
+    {
+      "category": "Vaccine",
+      "records": "6",
+      "total": "3780.00"
+    },
+    {
+      "category": "Bedding",
+      "records": "2",
+      "total": "980.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "category\trecords\ttotal\nTransport\t6\t18000.00\nLabor\t5\t9400.00\nMinerals\t6\t6000.00\nVaccine\t6\t3780.00\nBedding\t2\t980.00\n",
+  "stderr": "",
+  "execution_time_ms": 1855
+}
