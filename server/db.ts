@@ -835,7 +835,9 @@ export async function getDashboardKPIs(filters?: {
   if (!db) return null;
 
   const today = new Date().toISOString().split("T")[0];
-  const fromDate = filters?.fromDate ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
+  const twelveMonthsAgo = new Date();
+  twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+  const fromDate = filters?.fromDate ?? twelveMonthsAgo.toISOString().split("T")[0];
   const toDate = filters?.toDate ?? today;
 
   // Active head count

@@ -64,13 +64,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   });
   const { loading, user } = useAuth();
   const { t, i18n } = useTranslation();
+  const isAr = i18n.language === "ar";
 
   // Apply RTL direction based on language
   useEffect(() => {
-    const isAr = i18n.language === "ar";
     document.documentElement.dir = isAr ? "rtl" : "ltr";
     document.documentElement.lang = i18n.language;
-  }, [i18n.language]);
+  }, [i18n.language, isAr]);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -90,7 +90,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <h1 className="text-3xl font-bold tracking-tight text-foreground">
                 {t("appName")}
               </h1>
-              <p className="text-lg text-muted-foreground mt-1" dir="rtl">
+              <p className="text-lg text-muted-foreground mt-1">
                 {t("appNameAr")}
               </p>
               <p className="text-sm text-muted-foreground mt-3">
@@ -103,7 +103,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             size="lg"
             className="w-full"
           >
-            Sign in to continue
+            {t("auth.signIn")}
           </Button>
           <div className="mt-2">
             <LanguageSwitcher />
@@ -115,7 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} isAr={isAr}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -125,9 +125,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
+  isAr,
 }: {
   children: React.ReactNode;
   setSidebarWidth: (w: number) => void;
+  isAr: boolean;
 }) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
@@ -144,13 +146,13 @@ function DashboardLayoutContent({
 
   const navGroups = [
     {
-      label: "Overview",
+      label: t("nav.groups.overview"),
       items: [
         { icon: BarChart3, label: t("nav.dashboard"), path: "/" },
       ],
     },
     {
-      label: "Livestock",
+      label: t("nav.groups.livestock"),
       items: [
         { icon: Leaf, label: t("nav.animals"), path: "/animals" },
         { icon: Egg, label: t("nav.breeding"), path: "/breeding" },
@@ -158,14 +160,14 @@ function DashboardLayoutContent({
       ],
     },
     {
-      label: "Operations",
+      label: t("nav.groups.operations"),
       items: [
         { icon: Wheat, label: t("nav.feed"), path: "/feed" },
         { icon: DollarSign, label: t("nav.expenses"), path: "/expenses" },
       ],
     },
     {
-      label: "Finance",
+      label: t("nav.groups.finance"),
       items: [
         { icon: Activity, label: t("nav.pnl"), path: "/pnl" },
         { icon: FileText, label: t("nav.incomeStatement"), path: "/income-statement" },
@@ -173,7 +175,7 @@ function DashboardLayoutContent({
       ],
     },
     {
-      label: "System",
+      label: t("nav.groups.system"),
       items: [
         { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
         { icon: BookOpen, label: t("nav.auditLog"), path: "/audit" },
@@ -190,9 +192,15 @@ function DashboardLayoutContent({
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      const left = sidebarRef.current?.getBoundingClientRect().left ?? 0;
-      const newWidth = e.clientX - left;
+      if (!isResizing || !sidebarRef.current) return;
+      const rect = sidebarRef.current.getBoundingClientRect();
+      let newWidth: number;
+      if (isAr) {
+        // In RTL the sidebar is on the right; width grows leftward
+        newWidth = rect.right - e.clientX;
+      } else {
+        newWidth = e.clientX - rect.left;
+      }
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) setSidebarWidth(newWidth);
     };
     const handleMouseUp = () => setIsResizing(false);
@@ -208,7 +216,7 @@ function DashboardLayoutContent({
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [isResizing, setSidebarWidth]);
+  }, [isResizing, setSidebarWidth, isAr]);
 
   const activeLabel = navGroups
     .flatMap((g) => g.items)
@@ -216,26 +224,32 @@ function DashboardLayoutContent({
 
   return (
     <>
+      {/* Sidebar wrapper — side prop switches between left (LTR) and right (RTL) */}
       <div className="relative" ref={sidebarRef}>
-        <Sidebar collapsible="icon" className="border-r-0" disableTransition={isResizing}>
+        <Sidebar
+          side={isAr ? "right" : "left"}
+          collapsible="icon"
+          className={isAr ? "border-l-0" : "border-r-0"}
+          disableTransition={isResizing}
+        >
           {/* Header */}
           <SidebarHeader className="h-16 justify-center border-b border-sidebar-border">
-            <div className="flex items-center gap-3 px-2 w-full">
+            <div className={`flex items-center gap-3 px-2 w-full ${isAr ? "flex-row-reverse" : ""}`}>
               <button
                 onClick={toggleSidebar}
                 className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors shrink-0"
                 aria-label="Toggle navigation"
               >
-                <PanelLeft className="h-4 w-4 text-sidebar-foreground/70" />
+                <PanelLeft className={`h-4 w-4 text-sidebar-foreground/70 ${isAr ? "rotate-180" : ""}`} />
               </button>
               {!isCollapsed && (
-                <div className="flex items-center gap-2 min-w-0">
+                <div className={`flex items-center gap-2 min-w-0 ${isAr ? "flex-row-reverse" : ""}`}>
                   <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
                     <Leaf className="h-4 w-4 text-sidebar-primary-foreground" />
                   </div>
-                  <div className="min-w-0">
+                  <div className={`min-w-0 ${isAr ? "text-right" : ""}`}>
                     <p className="text-sm font-bold text-sidebar-foreground truncate leading-none">Azal Farms</p>
-                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5" dir="rtl">مزارع أزَل</p>
+                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5">مزارع أزَل</p>
                   </div>
                 </div>
               )}
@@ -247,7 +261,7 @@ function DashboardLayoutContent({
             {navGroups.map((group) => (
               <SidebarGroup key={group.label} className="py-0">
                 {!isCollapsed && (
-                  <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 px-4 py-2">
+                  <SidebarGroupLabel className={`text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 px-4 py-2 ${isAr ? "text-right" : ""}`}>
                     {group.label}
                   </SidebarGroupLabel>
                 )}
@@ -261,19 +275,19 @@ function DashboardLayoutContent({
                           isActive={isActive}
                           onClick={() => setLocation(item.path)}
                           tooltip={item.label}
-                          className="h-9 font-normal relative"
+                          className={`h-9 font-normal relative ${isAr ? "flex-row-reverse" : ""}`}
                         >
                           <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} />
                           <span className={isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground"}>
                             {item.label}
                           </span>
                           {item.path === "/notifications" && unreadCount > 0 && !isCollapsed && (
-                            <Badge className="ml-auto h-5 min-w-5 text-xs bg-red-500 text-white border-0 px-1.5">
+                            <Badge className={`${isAr ? "mr-auto" : "ml-auto"} h-5 min-w-5 text-xs bg-red-500 text-white border-0 px-1.5`}>
                               {unreadCount > 99 ? "99+" : unreadCount}
                             </Badge>
                           )}
                           {item.path === "/notifications" && unreadCount > 0 && isCollapsed && (
-                            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                            <span className={`absolute top-1 ${isAr ? "left-1" : "right-1"} h-2 w-2 rounded-full bg-red-500`} />
                           )}
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -294,7 +308,7 @@ function DashboardLayoutContent({
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors w-full text-left focus:outline-none">
+                <button className={`flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors w-full ${isAr ? "flex-row-reverse text-right" : "text-left"} focus:outline-none`}>
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarFallback className="text-xs font-semibold bg-sidebar-primary text-sidebar-primary-foreground">
                       {user?.name?.charAt(0).toUpperCase() ?? "U"}
@@ -310,11 +324,11 @@ function DashboardLayoutContent({
                       </p>
                     </div>
                   )}
-                  {!isCollapsed && <ChevronRight className="h-3 w-3 text-sidebar-foreground/40 shrink-0" />}
+                  {!isCollapsed && <ChevronRight className={`h-3 w-3 text-sidebar-foreground/40 shrink-0 ${isAr ? "rotate-180" : ""}`} />}
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <div className="px-2 py-1.5">
+              <DropdownMenuContent align={isAr ? "start" : "end"} className="w-52">
+                <div className={`px-2 py-1.5 ${isAr ? "text-right" : ""}`}>
                   <p className="text-sm font-medium">{user?.name}</p>
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
@@ -330,16 +344,16 @@ function DashboardLayoutContent({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
+                  {t("auth.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarFooter>
         </Sidebar>
 
-        {/* Resize handle */}
+        {/* Resize handle — left edge in RTL, right edge in LTR */}
         <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors ${isCollapsed ? "hidden" : ""}`}
+          className={`absolute top-0 ${isAr ? "left-0" : "right-0"} w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors ${isCollapsed ? "hidden" : ""}`}
           onMouseDown={() => { if (!isCollapsed) setIsResizing(true); }}
           style={{ zIndex: 50 }}
         />
@@ -348,17 +362,17 @@ function DashboardLayoutContent({
       <SidebarInset>
         {/* Mobile top bar */}
         {isMobile && (
-          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-4 backdrop-blur sticky top-0 z-40">
-            <div className="flex items-center gap-3">
+          <div className={`flex border-b h-14 items-center justify-between bg-background/95 px-4 backdrop-blur sticky top-0 z-40 ${isAr ? "flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-3 ${isAr ? "flex-row-reverse" : ""}`}>
               <SidebarTrigger className="h-9 w-9 rounded-lg" />
               <span className="font-semibold text-sm">{activeLabel}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
               <LanguageSwitcher />
               <button onClick={() => setLocation("/notifications")} className="relative p-2 rounded-lg hover:bg-muted">
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+                  <span className={`absolute top-1 ${isAr ? "left-1" : "right-1"} h-2 w-2 rounded-full bg-red-500`} />
                 )}
               </button>
             </div>

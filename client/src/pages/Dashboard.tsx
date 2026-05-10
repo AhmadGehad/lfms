@@ -94,13 +94,15 @@ export default function Dashboard() {
   // Feed stock is ALWAYS unfiltered per business rules
   const { data: feedStock } = trpc.dashboard.getFeedStockStatus.useQuery();
   const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
+  const trendFromDate = (() => { const d = new Date(); d.setFullYear(d.getFullYear() - 1); return d.toISOString().split("T")[0]; })();
+  const trendToDate = new Date().toISOString().split("T")[0];
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
-    fromDate: new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0],
-    toDate: new Date().toISOString().split("T")[0],
+    fromDate: trendFromDate,
+    toDate: trendToDate,
   });
   const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery({
-    fromDate: new Date(Date.now() - 90 * 86400000).toISOString().split("T")[0],
-    toDate: new Date().toISOString().split("T")[0],
+    fromDate: trendFromDate,
+    toDate: trendToDate,
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
@@ -210,18 +212,25 @@ export default function Dashboard() {
                   <Pie
                     data={(headCountByCategory ?? []).map((d: any) => ({ name: d.category ?? t("common.noData"), value: d.count }))}
                     cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    cy="45%"
+                    innerRadius={45}
+                    outerRadius={72}
                     paddingAngle={3}
                     dataKey="value"
+                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
                   >
                     {(headCountByCategory ?? []).map((_: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
                   <Tooltip formatter={(v: number, name: string) => [v, name]} />
-                  <Legend iconType="circle" iconSize={8} />
+                  <Legend
+                    iconType="circle"
+                    iconSize={7}
+                    wrapperStyle={{ fontSize: "10px", lineHeight: "16px", paddingTop: "4px" }}
+                    formatter={(value: string) => value.length > 12 ? value.slice(0, 12) + "…" : value}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -235,7 +244,7 @@ export default function Dashboard() {
         {/* Expense Trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">{t("dashboard.recentExpenses")} (90 {t("common.perDay").replace("/", "")})</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t("dashboard.recentExpenses")} (12 {t("common.month")})</CardTitle>
           </CardHeader>
           <CardContent>
             {(expenseTrend ?? []).length > 0 ? (
@@ -268,7 +277,7 @@ export default function Dashboard() {
         {/* Sales Trend */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">{t("incomeStatement.salesRevenue")} (90 {t("common.perDay").replace("/", "")})</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t("incomeStatement.salesRevenue")} (12 {t("common.month")})</CardTitle>
           </CardHeader>
           <CardContent>
             {(salesTrend ?? []).length > 0 ? (

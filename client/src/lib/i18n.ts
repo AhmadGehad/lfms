@@ -24,6 +24,18 @@ const en = {
     users: "User Management",
     configuration: "Configuration",
     recycleBin: "Recycle Bin",
+    groups: {
+      overview: "Overview",
+      livestock: "Livestock",
+      operations: "Operations",
+      finance: "Finance",
+      system: "System",
+    },
+  },
+
+  auth: {
+    signIn: "Sign in to continue",
+    signOut: "Sign out",
   },
 
   // Common
@@ -313,6 +325,18 @@ const ar = {
     users: "إدارة المستخدمين",
     configuration: "الإعدادات",
     recycleBin: "سلة المحذوفات",
+    groups: {
+      overview: "نظرة عامة",
+      livestock: "المواشي",
+      operations: "العمليات",
+      finance: "المالية",
+      system: "النظام",
+    },
+  },
+
+  auth: {
+    signIn: "تسجيل الدخول للمتابعة",
+    signOut: "تسجيل الخروج",
   },
 
   common: {
@@ -382,7 +406,7 @@ const ar = {
     weightProgress: "تقدم الأوزان",
     filters: "فلاتر لوحة التحكم",
     kpiCards: "مؤشرات الأداء الرئيسية",
-    feedStockNote: "مخزون الأعلاف يُعرض دائماً بدون فلترة",
+    feedStockNote: "يُعرض مخزون الأعلاف دائماً بدون فلتر",
     lowStock: "مخزون منخفض",
     adequate: "كافٍ",
     critical: "حرج",

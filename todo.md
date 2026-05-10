@@ -132,3 +132,13 @@
 - [x] TypeScript: 0 errors
 - [x] All 48 unit tests pass
 - [x] Save checkpoint and deploy
+
+## Bug Fixes (Phase 18)
+- [x] Fix RTL layout: sidebar must move to right side when Arabic is selected (DashboardLayout rewritten with side={isAr ? 'right' : 'left'})
+- [x] Fix RTL: content area must not overflow/clip off-screen in Arabic mode
+- [x] Fix Dashboard chart legends: compact donut with percentage labels + truncated legend text (max 12 chars)
+- [x] Fix expenses showing 0: getDashboardKPIs default date range changed from current-month to last 12 months; Dashboard.tsx trend charts also updated to 12-month window
+- [x] Add missing nav.groups and auth i18n keys to both EN and AR translations
+- [x] TypeScript: 0 errors
+- [x] All 48 unit tests pass
+- [x] Save checkpoint and deploy
