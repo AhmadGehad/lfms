@@ -302,19 +302,19 @@ export default function Dashboard() {
           isLoading={kpisLoading}
         />
         <KPICard
-          title={t("animals.totalRevenue")}
-          value={fmt(kpis?.totalRevenue ?? 0)}
-          sub={t("common.sold")}
-          icon={TrendingUp}
-          color="text-green-600"
+          title={t("dashboard.totalExpenses")}
+          value={fmt(kpis?.totalExpenses ?? 0)}
+          sub={kpis ? `Feed: ${fmt(kpis.feedExpenses ?? 0)} · Other: ${fmt(kpis.otherExpenses ?? 0)}` : ""}
+          icon={Scale}
+          color="text-red-600"
           isLoading={kpisLoading}
         />
         <KPICard
-          title={t("dashboard.totalExpenses")}
-          value={fmt(kpis?.totalExpenses ?? 0)}
-          sub={t("common.total")}
-          icon={Scale}
-          color="text-red-600"
+          title="Cost / Head / Day"
+          value={kpis ? `EGP ${(kpis.costPerHeadPerDay ?? 0).toFixed(2)}` : "—"}
+          sub={`${kpis?.totalActiveHeads ?? 0} heads · ${Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / 86400000)} days`}
+          icon={TrendingUp}
+          color="text-amber-600"
           isLoading={kpisLoading}
         />
       </div>

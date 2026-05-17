@@ -166,6 +166,7 @@ export default function PnL() {
                     <TableHead className="text-right">{t("animals.purchaseCost")}</TableHead>
                     <TableHead className="text-right">Feed Cost</TableHead>
                     <TableHead className="text-right">Direct Exp.</TableHead>
+                    <TableHead className="text-right">Cat. Exp.</TableHead>
                     <TableHead className="text-right">Total Cost</TableHead>
                     <TableHead className="text-right">Revenue</TableHead>
                     <TableHead className="text-right">Net P&L</TableHead>
@@ -175,7 +176,7 @@ export default function PnL() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={12} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
                         No animals found.
                       </TableCell>
                     </TableRow>
@@ -220,6 +221,9 @@ export default function PnL() {
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-red-600">
                             {a.directExpenseTotal > 0 ? fmt(a.directExpenseTotal) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-orange-600 text-xs">
+                            {a.categoryExpenseAllocation > 0 ? fmt(a.categoryExpenseAllocation) : "—"}
                           </TableCell>
                           <TableCell className="text-right tabular-nums font-medium text-red-600">
                             {fmt(a.totalCost)}
