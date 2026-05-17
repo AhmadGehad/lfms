@@ -122,7 +122,28 @@ function CategoriesTab() {
     onError: (e: any) => toast.error(e.message),
   });
 
-  function openEdit(c: any) { setEditItem({ ...c, speciesId: String(c.speciesId), targetWeightKg: c.targetWeightKg ?? "" }); setEditOpen(true); }
+  function openEdit(c: any) {
+    setEditItem({
+      ...c,
+      speciesId: String(c.speciesId),
+      targetWeightKg: c.targetWeightKg ?? "",
+      autoStageWeightKg: c.autoStageWeightKg ?? "",
+      autoStageTargetCategoryId: c.autoStageTargetCategoryId ? String(c.autoStageTargetCategoryId) : "",
+    });
+    setEditOpen(true);
+  }
+
+  function handleSave() {
+    if (!editItem) return;
+    update.mutate({
+      id: editItem.id,
+      name: editItem.name,
+      idPrefix: editItem.idPrefix,
+      targetWeightKg: editItem.targetWeightKg || undefined,
+      autoStageWeightKg: editItem.autoStageWeightKg || null,
+      autoStageTargetCategoryId: editItem.autoStageTargetCategoryId ? parseInt(editItem.autoStageTargetCategoryId) : null,
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -156,15 +177,53 @@ function CategoriesTab() {
 
       {editItem && (
         <EditDialog title="Edit Category" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, idPrefix: editItem.idPrefix, targetWeightKg: editItem.targetWeightKg || undefined })}>
+          onSave={handleSave}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>ID Prefix</Label><Input value={editItem.idPrefix} onChange={(e) => setEditItem((p: any) => ({ ...p, idPrefix: e.target.value.toUpperCase() }))} maxLength={6} /></div>
           <div className="space-y-1.5"><Label>Target Weight (kg)</Label><Input type="number" value={editItem.targetWeightKg} onChange={(e) => setEditItem((p: any) => ({ ...p, targetWeightKg: e.target.value }))} /></div>
+          <div className="border-t pt-3 mt-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Auto-Stage Settings</p>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Auto-stage when weight ≥ (kg)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  placeholder="e.g. 25 (leave blank to disable)"
+                  value={editItem.autoStageWeightKg}
+                  onChange={(e) => setEditItem((p: any) => ({ ...p, autoStageWeightKg: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Move to category</Label>
+                <Select
+                  value={editItem.autoStageTargetCategoryId}
+                  onValueChange={(v) => setEditItem((p: any) => ({ ...p, autoStageTargetCategoryId: v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select target category" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None (disable auto-stage)</SelectItem>
+                    {(categories ?? []).filter((c: any) => c.id !== editItem.id).map((c: any) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
         </EditDialog>
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>ID Prefix</TableHead><TableHead>Species</TableHead><TableHead>{t("config.targetWeight")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow>
+          <TableHead>{t("common.name")}</TableHead>
+          <TableHead>ID Prefix</TableHead>
+          <TableHead>Species</TableHead>
+          <TableHead>{t("config.targetWeight")}</TableHead>
+          <TableHead>Auto-stage at</TableHead>
+          <TableHead className="w-16"></TableHead>
+        </TableRow></TableHeader>
         <TableBody>
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
@@ -172,6 +231,11 @@ function CategoriesTab() {
               <TableCell className="font-mono font-bold text-primary">{c.idPrefix}</TableCell>
               <TableCell>{c.speciesName}</TableCell>
               <TableCell>{c.targetWeightKg ? `${parseFloat(c.targetWeightKg).toFixed(1)} kg` : "—"}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {c.autoStageWeightKg
+                  ? `≥${parseFloat(c.autoStageWeightKg).toFixed(0)} kg → ${(categories ?? []).find((x: any) => x.id === c.autoStageTargetCategoryId)?.name ?? `cat #${c.autoStageTargetCategoryId}`}`
+                  : "—"}
+              </TableCell>
               <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}

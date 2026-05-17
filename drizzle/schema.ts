@@ -49,6 +49,8 @@ export const animalCategories = mysqlTable("animal_categories", {
   idSequence: int("idSequence").default(0).notNull(),
   targetWeightKg: decimal("targetWeightKg", { precision: 8, scale: 2 }),
   expectedCycleDays: int("expectedCycleDays"),
+  autoStageWeightKg: decimal("autoStageWeightKg", { precision: 8, scale: 2 }),
+  autoStageTargetCategoryId: int("autoStageTargetCategoryId"),
   isExitStatus: boolean("isExitStatus").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

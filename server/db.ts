@@ -117,10 +117,57 @@ export async function updateSpecies(id: number, data: Partial<{ name: string; de
 export async function getAllCategories(speciesId?: number) {
   const db = await getDb();
   if (!db) return [];
-  if (speciesId) {
-    return db.select().from(animalCategories).where(and(eq(animalCategories.speciesId, speciesId), isNull(animalCategories.deletedAt))).orderBy(animalCategories.name);
-  }
-  return db.select().from(animalCategories).where(isNull(animalCategories.deletedAt)).orderBy(animalCategories.name);
+
+  // Use alias for self-join on auto-stage target category
+  const targetCat = db.$with("targetCat").as(
+    db.select({ id: animalCategories.id, name: animalCategories.name }).from(animalCategories)
+  );
+
+  const baseQuery = db
+    .select({
+      id: animalCategories.id,
+      name: animalCategories.name,
+      speciesId: animalCategories.speciesId,
+      speciesName: species.name,
+      idPrefix: animalCategories.idPrefix,
+      idSequence: animalCategories.idSequence,
+      targetWeightKg: animalCategories.targetWeightKg,
+      expectedCycleDays: animalCategories.expectedCycleDays,
+      autoStageWeightKg: animalCategories.autoStageWeightKg,
+      autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
+      isExitStatus: animalCategories.isExitStatus,
+      isActive: animalCategories.isActive,
+      createdAt: animalCategories.createdAt,
+    })
+    .from(animalCategories)
+    .leftJoin(species, eq(animalCategories.speciesId, species.id))
+    .where(isNull(animalCategories.deletedAt))
+    .orderBy(animalCategories.name);
+
+  const rows = speciesId
+    ? await db
+        .select({
+          id: animalCategories.id,
+          name: animalCategories.name,
+          speciesId: animalCategories.speciesId,
+          speciesName: species.name,
+          idPrefix: animalCategories.idPrefix,
+          idSequence: animalCategories.idSequence,
+          targetWeightKg: animalCategories.targetWeightKg,
+          expectedCycleDays: animalCategories.expectedCycleDays,
+          autoStageWeightKg: animalCategories.autoStageWeightKg,
+          autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
+          isExitStatus: animalCategories.isExitStatus,
+          isActive: animalCategories.isActive,
+          createdAt: animalCategories.createdAt,
+        })
+        .from(animalCategories)
+        .leftJoin(species, eq(animalCategories.speciesId, species.id))
+        .where(and(eq(animalCategories.speciesId, speciesId), isNull(animalCategories.deletedAt)))
+        .orderBy(animalCategories.name)
+    : await baseQuery;
+
+  return rows;
 }
 
 export async function createCategory(data: {
@@ -419,7 +466,7 @@ export async function updateAnimal(id: number, data: Partial<typeof animals.$inf
 export async function getActiveHeadCountByCategory(dateStr?: string): Promise<Record<number, number>> {
   const db = await getDb();
   if (!db) return {};
-  const conditions = [eq(animals.isActive, true)];
+  const conditions = [eq(animals.isActive, true), isNull(animals.deletedAt)];
   if (dateStr) {
     const exitCond = or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${dateStr}`);
     if (exitCond) conditions.push(exitCond as any);
@@ -989,6 +1036,73 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   }
   return results;
 }
+
+/**
+ * Check if an animal should be auto-staged to another category based on its latest weight.
+ * Called after every weight log entry. Returns the new categoryId if staged, null otherwise.
+ */
+export async function checkAndStageAnimal(
+  animalId: number,
+  currentWeightKg: number,
+  changedBy?: number
+): Promise<{ staged: boolean; newCategoryId?: number; newAnimalId?: string }> {
+  const db = await getDb();
+  if (!db) return { staged: false };
+
+  const animal = await getAnimalById(animalId);
+  if (!animal) return { staged: false };
+
+  // Get current category's auto-stage config
+  const [catRow] = await db
+    .select({
+      autoStageWeightKg: animalCategories.autoStageWeightKg,
+      autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
+    })
+    .from(animalCategories)
+    .where(eq(animalCategories.id, animal.animal.categoryId))
+    .limit(1);
+
+  if (!catRow?.autoStageWeightKg || !catRow?.autoStageTargetCategoryId) return { staged: false };
+
+  const threshold = parseFloat(catRow.autoStageWeightKg);
+  if (currentWeightKg < threshold) return { staged: false };
+
+  // Get target category
+  const [targetCat] = await db
+    .select({ id: animalCategories.id, idPrefix: animalCategories.idPrefix, idSequence: animalCategories.idSequence })
+    .from(animalCategories)
+    .where(eq(animalCategories.id, catRow.autoStageTargetCategoryId))
+    .limit(1);
+
+  if (!targetCat) return { staged: false };
+
+  // Generate new animal ID in target category
+  const newSeq = await incrementCategorySequence(targetCat.id);
+  const newAnimalId = `${targetCat.idPrefix}${String(newSeq).padStart(4, "0")}`;
+
+  // Update the animal — change category and update animalId
+  await db
+    .update(animals)
+    .set({
+      categoryId: targetCat.id,
+      animalId: newAnimalId,
+      updatedAt: new Date(),
+    })
+    .where(eq(animals.id, animalId));
+
+  // Record status history as a note
+  await createAuditEntry({
+    userId: changedBy,
+    action: "update",
+    entityType: "animal",
+    entityId: String(animalId),
+    oldValues: { categoryId: animal.animal.categoryId, animalId: animal.animal.animalId } as any,
+    newValues: { categoryId: targetCat.id, animalId: newAnimalId, autoStagedAtWeightKg: currentWeightKg } as any,
+  });
+
+  return { staged: true, newCategoryId: targetCat.id, newAnimalId };
+}
+
 export async function getDashboardKPIs(filters?: {
   fromDate?: string;
   toDate?: string;
@@ -1050,11 +1164,79 @@ export async function getDashboardKPIs(filters?: {
   };
 }
 
+/** Calculate feed consumed by doomed/exited animals between their exit date and today.
+ *  "Doomed stock" = feed already issued/consumed for animals that have since exited
+ *  (status isExitStatus=true, exitDate set). Used to show true remaining stock.
+ */
+export async function getDoomedFeedConsumption(): Promise<Record<number, number>> {
+  const db = await getDb();
+  if (!db) return {};
+
+  const today = new Date().toISOString().split("T")[0];
+
+  // Animals that exited within the last 90 days (recently doomed)
+  const recentlyExited = await db
+    .select({
+      categoryId: animals.categoryId,
+      exitDate: animals.exitDate,
+      acquisitionDate: animals.acquisitionDate,
+    })
+    .from(animals)
+    .where(
+      and(
+        eq(animals.isActive, false),
+        isNotNull(animals.exitDate),
+        isNull(animals.deletedAt),
+        sql`${animals.exitDate} >= DATE_SUB(${today}, INTERVAL 90 DAY)`
+      )
+    );
+
+  if (recentlyExited.length === 0) return {};
+
+  // Get all active ration plans
+  const allPlans = await db
+    .select({
+      feedItemId: rationPlans.feedItemId,
+      categoryId: rationPlans.categoryId,
+      qty: rationPlans.qtyPerHeadPerDay,
+    })
+    .from(rationPlans)
+    .where(eq(rationPlans.isActive, true));
+
+  // For each recently-exited animal, compute how many days of feed were consumed
+  const feedConsumed: Record<number, number> = {};
+  for (const animal of recentlyExited) {
+    if (!animal.exitDate) continue;
+    const exitDateStr = animal.exitDate instanceof Date
+      ? animal.exitDate.toISOString().split("T")[0]
+      : String(animal.exitDate).split("T")[0];
+    const acqDateStr = animal.acquisitionDate instanceof Date
+      ? animal.acquisitionDate.toISOString().split("T")[0]
+      : String(animal.acquisitionDate).split("T")[0];
+
+    const exitMs = new Date(exitDateStr).getTime();
+    const todayMs = new Date(today).getTime();
+    // Days the animal was consuming feed but is now gone (excess allocated stock)
+    const daysAfterExit = Math.max(0, Math.floor((todayMs - exitMs) / 86400000));
+    if (daysAfterExit === 0) continue;
+
+    const plansForCategory = allPlans.filter((p) => p.categoryId === animal.categoryId);
+    for (const plan of plansForCategory) {
+      const qty = parseFloat(plan.qty) * daysAfterExit;
+      feedConsumed[plan.feedItemId] = (feedConsumed[plan.feedItemId] ?? 0) + qty;
+    }
+  }
+
+  return feedConsumed;
+}
+
 export async function getFeedStockStatus() {
   const db = await getDb();
   if (!db) return [];
 
   const allFeedItems = await getAllFeedItems();
+  const headCounts = await getActiveHeadCountByCategory();
+  const doomedConsumed = await getDoomedFeedConsumption();
   const result = [];
 
   for (const item of allFeedItems) {
@@ -1062,14 +1244,20 @@ export async function getFeedStockStatus() {
     const lastCount = await db
       .select({ qty: feedStockLedger.qty, transactionDate: feedStockLedger.transactionDate })
       .from(feedStockLedger)
-      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "stock_count")))
+      .where(
+        and(
+          eq(feedStockLedger.feedItemId, item.id),
+          eq(feedStockLedger.transactionType, "stock_count"),
+          isNull(feedStockLedger.deletedAt)
+        )
+      )
       .orderBy(desc(feedStockLedger.transactionDate))
       .limit(1);
 
     const lastCountDate = lastCount[0]?.transactionDate ?? "2020-01-01";
     const lastCountQty = parseFloat(lastCount[0]?.qty ?? "0");
 
-    // Purchases since last count
+    // Purchases since last count (excluding soft-deleted)
     const purchases = await db
       .select({ total: sql<number>`SUM(qty)` })
       .from(feedStockLedger)
@@ -1077,26 +1265,55 @@ export async function getFeedStockStatus() {
         and(
           eq(feedStockLedger.feedItemId, item.id),
           eq(feedStockLedger.transactionType, "purchase"),
+          isNull(feedStockLedger.deletedAt),
           sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`
         )
       );
     const purchasedQty = parseFloat(String(purchases[0]?.total ?? 0));
 
-    // Daily consumption from ration plans
-  const plans = await db
-    .select({ qty: rationPlans.qtyPerHeadPerDay, categoryId: rationPlans.categoryId })
-    .from(rationPlans)
-    .where(and(eq(rationPlans.feedItemId, item.id), eq(rationPlans.isActive, true)));
+    // Adjustments since last count
+    const adjustments = await db
+      .select({ total: sql<number>`SUM(qty)` })
+      .from(feedStockLedger)
+      .where(
+        and(
+          eq(feedStockLedger.feedItemId, item.id),
+          eq(feedStockLedger.transactionType, "adjustment"),
+          isNull(feedStockLedger.deletedAt),
+          sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`
+        )
+      );
+    const adjustmentQty = parseFloat(String(adjustments[0]?.total ?? 0));
+
+    // Daily consumption from ration plans (using fresh head counts)
+    const plans = await db
+      .select({ qty: rationPlans.qtyPerHeadPerDay, categoryId: rationPlans.categoryId })
+      .from(rationPlans)
+      .where(
+        and(
+          eq(rationPlans.feedItemId, item.id),
+          eq(rationPlans.isActive, true),
+          isNull(rationPlans.deletedAt)
+        )
+      );
 
     let dailyConsumption = 0;
-    const headCounts = await getActiveHeadCountByCategory();
+    const consumptionByCategory: Array<{ categoryId: number; categoryDailyKg: number; heads: number }> = [];
     for (const plan of plans) {
       const heads = headCounts[plan.categoryId] ?? 0;
-      dailyConsumption += parseFloat(plan.qty) * heads;
+      const categoryDailyKg = parseFloat(plan.qty) * heads;
+      dailyConsumption += categoryDailyKg;
+      if (heads > 0) {
+        consumptionByCategory.push({ categoryId: plan.categoryId, categoryDailyKg, heads });
+      }
     }
 
-    const stockOnHand = lastCountQty + purchasedQty;
-    const daysRemaining = dailyConsumption > 0 ? Math.floor(stockOnHand / dailyConsumption) : 999;
+    // Doomed stock: feed that was allocated for now-exited animals
+    const doomedKg = doomedConsumed[item.id] ?? 0;
+
+    const stockOnHand = Math.max(0, lastCountQty + purchasedQty + adjustmentQty);
+    const adjustedStock = Math.max(0, stockOnHand - doomedKg);
+    const daysRemaining = dailyConsumption > 0 ? Math.floor(adjustedStock / dailyConsumption) : 999;
     const runOutDate = dailyConsumption > 0
       ? new Date(Date.now() + daysRemaining * 86400000).toISOString().split("T")[0]
       : null;
@@ -1106,7 +1323,10 @@ export async function getFeedStockStatus() {
       feedItemName: item.name,
       unit: item.unit,
       stockOnHand,
+      adjustedStock,
+      doomedKg: Math.round(doomedKg * 100) / 100,
       dailyConsumption,
+      consumptionByCategory,
       daysRemaining,
       runOutDate,
       status: daysRemaining <= 3 ? "critical" : daysRemaining <= 7 ? "low" : "ok",

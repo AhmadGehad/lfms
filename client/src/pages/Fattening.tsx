@@ -42,9 +42,16 @@ function RecordWeightDialog({
   const utils = trpc.useUtils();
 
   const addWeight = trpc.animals.addWeight.useMutation({
-    onSuccess: () => {
-      toast.success("Weight recorded");
+    onSuccess: (result: any) => {
+      if (result?.autoStaged && result?.newAnimalId) {
+        toast.success(`Weight recorded — animal auto-staged to ${result.newAnimalId}`);
+      } else {
+        toast.success("Weight recorded");
+      }
       utils.animals.list.invalidate();
+      utils.feed.getStockStatus.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.dashboard.getHeadCountByCategory.invalidate();
       setOpen(false);
       setWeight("");
       onSuccess();
@@ -120,6 +127,7 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
     onSuccess: () => {
       toast.success("Animal updated");
       utils.animals.list.invalidate();
+      utils.animals.getAllPnL.invalidate();
       setOpen(false);
       onSuccess();
     },
@@ -197,6 +205,10 @@ export default function Fattening() {
     onSuccess: () => {
       toast.success("Animal moved to Recycle Bin");
       utils.animals.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.dashboard.getHeadCountByCategory.invalidate();
+      utils.feed.getStockStatus.invalidate();
+      utils.animals.getAllPnL.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });

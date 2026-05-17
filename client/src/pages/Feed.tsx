@@ -239,6 +239,8 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
 function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
+    categoryId: String(plan.categoryId),
+    feedItemId: String(plan.feedItemId),
     qtyPerHeadPerDay: String(parseFloat(plan.qtyPerHeadPerDay)),
     effectiveDate: plan.effectiveDate instanceof Date
       ? plan.effectiveDate.toISOString().split("T")[0]
@@ -246,14 +248,18 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
     endDate: plan.endDate
       ? (plan.endDate instanceof Date ? plan.endDate.toISOString().split("T")[0] : String(plan.endDate))
       : "",
+    isActive: plan.isActive !== false,
   });
 
   const { data: feedItems } = trpc.config.getFeedItems.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
+  const utils = trpc.useUtils();
 
   const updatePlan = trpc.feed.updateRationPlan.useMutation({
     onSuccess: () => {
       toast.success("Ration plan updated");
+      utils.feed.getRationPlans.invalidate();
+      utils.feed.getStockStatus.invalidate();
       setOpen(false);
       onSuccess();
     },
@@ -261,14 +267,17 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
   });
 
   const handleSubmit = () => {
-    if (!form.qtyPerHeadPerDay || !form.effectiveDate) {
-      return toast.error("Quantity and effective date are required");
+    if (!form.qtyPerHeadPerDay || !form.effectiveDate || !form.categoryId || !form.feedItemId) {
+      return toast.error("Category, feed item, quantity and effective date are required");
     }
     updatePlan.mutate({
       id: plan.id,
+      categoryId: parseInt(form.categoryId),
+      feedItemId: parseInt(form.feedItemId),
       qtyPerHeadPerDay: form.qtyPerHeadPerDay,
       effectiveDate: form.effectiveDate,
       endDate: form.endDate || null,
+      isActive: form.isActive,
     });
   };
 
@@ -287,11 +296,35 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
           </p>
         </DialogHeader>
         <div className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Category *</Label>
+              <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {(categories ?? []).map((c: any) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Feed Item *</Label>
+              <Select value={form.feedItemId} onValueChange={(v) => setForm((f) => ({ ...f, feedItemId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select feed item" /></SelectTrigger>
+                <SelectContent>
+                  {(feedItems ?? []).map((fi: any) => (
+                    <SelectItem key={fi.id} value={String(fi.id)}>{fi.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label>Qty / Head / Day (kg) *</Label>
             <Input
               type="number"
-              step="0.01"
+              step="0.001"
               min="0"
               value={form.qtyPerHeadPerDay}
               onChange={(e) => setForm((f) => ({ ...f, qtyPerHeadPerDay: e.target.value }))}
@@ -314,6 +347,16 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
                 onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))}
               />
             </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={form.isActive}
+              onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
+              className="h-4 w-4"
+            />
+            <Label htmlFor="isActive">Active</Label>
           </div>
         </div>
         <DialogFooter>
@@ -416,13 +459,21 @@ export default function Feed() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold text-sm">{item.feedItemName}</p>
-                  <p className="text-2xl font-bold mt-1">{parseFloat(item.stockOnHand).toFixed(0)}</p>
+                  <p className="text-2xl font-bold mt-1">{parseFloat(item.adjustedStock ?? item.stockOnHand).toFixed(0)}</p>
                   <p className="text-xs text-muted-foreground">{item.unit}</p>
+                  {item.doomedKg > 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      −{parseFloat(item.doomedKg).toFixed(0)} kg doomed stock
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <StockStatusBadge status={item.status} />
                   <p className="text-xs text-muted-foreground mt-2">
                     {item.daysRemaining === 999 ? "∞" : item.daysRemaining} days
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {parseFloat(item.dailyConsumption ?? 0).toFixed(1)} {item.unit}/day
                   </p>
                 </div>
               </div>

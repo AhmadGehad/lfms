@@ -47,6 +47,8 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
     onSuccess: () => {
       toast.success("Expense recorded");
       utils.expenses.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.animals.getAllPnL.invalidate();
       setOpen(false);
       onSuccess();
     },
@@ -162,7 +164,12 @@ export default function Expenses() {
   const utils = trpc.useUtils();
 
   const deleteExpense = trpc.recycleBin.deleteExpense.useMutation({
-    onSuccess: () => { toast.success("Expense moved to Recycle Bin"); utils.expenses.list.invalidate(); },
+    onSuccess: () => {
+      toast.success("Expense moved to Recycle Bin");
+      utils.expenses.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.animals.getAllPnL.invalidate();
+    },
     onError: (e) => toast.error(e.message),
   });
 

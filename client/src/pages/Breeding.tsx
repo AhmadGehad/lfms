@@ -195,6 +195,9 @@ export default function Breeding() {
       toast.success(`Lamb promoted as ${data.animalId}`);
       utils.breeding.listLambing.invalidate();
       utils.animals.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.dashboard.getHeadCountByCategory.invalidate();
+      utils.feed.getStockStatus.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });

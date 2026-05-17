@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
+  checkAndStageAnimal,
   createAnimal,
   createAuditEntry,
   createNotification,
@@ -264,7 +265,14 @@ export const animalsRouter = router({
         }
       }
 
-      return result;
+      // ─── Auto-stage check ──────────────────────────────────────────────────
+      const stageResult = await checkAndStageAnimal(
+        input.animalId,
+        parseFloat(input.weightKg),
+        ctx.user?.id
+      );
+
+      return { ...result, autoStaged: stageResult.staged, newAnimalId: stageResult.newAnimalId };
     }),
 
   // ─── P&L ────────────────────────────────────────────────────────────────────

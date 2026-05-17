@@ -61,10 +61,12 @@ export const configRouter = router({
       idPrefix: z.string().optional(),
       targetWeightKg: z.string().optional(),
       expectedCycleDays: z.number().optional(),
+      autoStageWeightKg: z.string().nullable().optional(),
+      autoStageTargetCategoryId: z.number().nullable().optional(),
       isActive: z.boolean().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
-      const result = await updateCategory(id, data);
+      const result = await updateCategory(id, data as any);
       await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String(id), action: "update", newValues: data });
       return result;
     }),

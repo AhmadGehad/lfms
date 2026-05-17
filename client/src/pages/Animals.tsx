@@ -71,6 +71,9 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
     onSuccess: () => {
       toast.success(t("animals.title") + " registered");
       utils.animals.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.dashboard.getHeadCountByCategory.invalidate();
+      utils.feed.getStockStatus.invalidate();
       setOpen(false);
       reset();
       onSuccess();
@@ -236,6 +239,10 @@ export default function Animals() {
     onSuccess: () => {
       toast.success("Animal moved to Recycle Bin");
       utils.animals.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.dashboard.getHeadCountByCategory.invalidate();
+      utils.feed.getStockStatus.invalidate();
+      utils.animals.getAllPnL.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });

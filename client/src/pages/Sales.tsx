@@ -43,6 +43,9 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
       toast.success("Sale recorded successfully");
       utils.animals.list.invalidate();
       utils.sales.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.animals.getAllPnL.invalidate();
+      utils.feed.getStockStatus.invalidate();
       setOpen(false);
       onSuccess();
     },
@@ -133,6 +136,8 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
     onSuccess: () => {
       toast.success("Sale updated");
       utils.sales.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.animals.getAllPnL.invalidate();
       setOpen(false);
       onSuccess();
     },
@@ -240,6 +245,8 @@ export default function Sales() {
     onSuccess: () => {
       toast.success("Sale record moved to Recycle Bin");
       utils.sales.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      utils.animals.getAllPnL.invalidate();
     },
     onError: (e) => toast.error(e.message),
   });

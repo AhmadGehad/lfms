@@ -83,6 +83,7 @@ vi.mock("./db", () => ({
     { id: 1, animalId: 1, weightKg: "15.50", recordedAt: new Date(), notes: null },
   ]),
   createWeightEntry: vi.fn().mockResolvedValue({ id: 2, animalId: 1, weightKg: "18.00" }),
+  checkAndStageAnimal: vi.fn().mockResolvedValue({ staged: false }),
   getAnimalPnL: vi.fn().mockResolvedValue({
     animalId: 1, animalCode: "LMB-001", purchaseCost: 500, feedCost: 200, directExpenses: 50,
     allocatedExpenses: 30, totalCost: 780, totalRevenue: 0, netPnL: -780, daysOnFarm: 60,
