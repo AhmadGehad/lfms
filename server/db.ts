@@ -843,9 +843,7 @@ export async function getAnimalPnL(animalId: number) {
     })
     .from(animals)
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .where(eq(animals.id, animalId))
-    .limit(1);
-  if (!animalRows.length) return null;
+    .where(and(eq(animals.id, animalId), isNull(animals.deletedAt)))
 
   const animal = animalRows[0].animal;
   const category = animalRows[0].category;
@@ -863,15 +861,46 @@ export async function getAnimalPnL(animalId: number) {
   // Purchase cost
   const purchaseCost = parseFloat(animal.purchaseCost ?? "0");
 
-  // Direct expenses
+  // Direct expenses (head-level only, exclude soft-deleted)
   const directExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(eq(expenses.headId, animalId), eq(expenses.targetType, "head")));
+    .where(and(
+      eq(expenses.headId, animalId),
+      eq(expenses.targetType, "head"),
+      isNull(expenses.deletedAt)
+    ));
   const directExpenseTotal = parseFloat(String(directExpenses[0]?.total ?? 0));
 
-  // Sale revenue
-  const saleRows = await db.select().from(sales).where(eq(sales.animalId, animalId)).limit(1);
+  // Category-level expense allocation: animal's share of vet/vaccine bills etc
+  // targeting the animal's category during its time on farm
+  const acqDateStr = acquisitionDate.split("T")[0];
+  const exitDateStr = exitDate.split("T")[0];
+  const catExpensesRows = await db
+    .select({ total: sql<number>`SUM(amount)` })
+    .from(expenses)
+    .where(and(
+      eq(expenses.targetType, "category"),
+      eq(expenses.categoryTarget, animal.categoryId),
+      isNull(expenses.deletedAt),
+      sql`${expenses.expenseDate} >= ${acqDateStr}`,
+      sql`${expenses.expenseDate} <= ${exitDateStr}`
+    ));
+  const catExpTotal = parseFloat(String(catExpensesRows[0]?.total ?? 0));
+
+  // Divide by total head count in that category (all animals, incl. exited) for fair allocation
+  const catHeadCountRows = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(animals)
+    .where(and(eq(animals.categoryId, animal.categoryId), isNull(animals.deletedAt)));
+  const catHeadCount = Math.max(1, Number(catHeadCountRows[0]?.count ?? 1));
+  const categoryExpenseAllocation = catExpTotal / catHeadCount;
+
+  // Sale revenue (exclude soft-deleted sales)
+  const saleRows = await db.select().from(sales).where(and(
+    eq(sales.animalId, animalId),
+    isNull(sales.deletedAt)
+  )).limit(1);
   const revenue = saleRows.length > 0 ? parseFloat(saleRows[0].salePrice) : 0;
   const weightAtSale = saleRows.length > 0 ? parseFloat(saleRows[0].weightAtSale ?? "0") : 0;
 
@@ -883,7 +912,7 @@ export async function getAnimalPnL(animalId: number) {
     feedCost += parseFloat(plan.qtyPerHeadPerDay) * daysOnFarm * price;
   }
 
-  const totalCost = purchaseCost + feedCost + directExpenseTotal;
+  const totalCost = purchaseCost + feedCost + directExpenseTotal + categoryExpenseAllocation;
   const netPnL = revenue - totalCost;
   const costPerDay = daysOnFarm > 0 ? totalCost / daysOnFarm : 0;
   const pricePerKg = weightAtSale > 0 ? revenue / weightAtSale : 0;
@@ -893,12 +922,12 @@ export async function getAnimalPnL(animalId: number) {
   const latestWeight = await db
     .select({ weightKg: weightLog.weightKg })
     .from(weightLog)
-    .where(eq(weightLog.animalId, animalId))
+    .where(and(eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt)))
     .orderBy(desc(weightLog.weighDate))
     .limit(1);
   const currentWeight = latestWeight.length > 0 ? parseFloat(latestWeight[0].weightKg) : parseFloat(animal.weightAtAcquisition ?? "0");
   const projectedCost = animal.isActive && targetWeight > currentWeight && costPerDay > 0
-    ? totalCost + costPerDay * 30 // rough estimate
+    ? totalCost + costPerDay * 30 // rough estimate: 30 more days
     : null;
 
   return {
@@ -907,6 +936,7 @@ export async function getAnimalPnL(animalId: number) {
     purchaseCost,
     feedCost,
     directExpenseTotal,
+    categoryExpenseAllocation: Math.round(categoryExpenseAllocation * 100) / 100,
     totalCost,
     revenue,
     netPnL,
@@ -1183,8 +1213,8 @@ export async function getDashboardKPIs(filters?: {
   const fromDate = filters?.fromDate ?? twelveMonthsAgo.toISOString().split("T")[0];
   const toDate = filters?.toDate ?? today;
 
-  // Active head count
-  const headConditions = [eq(animals.isActive, true)];
+  // Active head count (exclude soft-deleted)
+  const headConditions = [eq(animals.isActive, true), isNull(animals.deletedAt)];
   if (filters?.speciesId) headConditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) headConditions.push(eq(animals.categoryId, filters.categoryId));
   if (filters?.groupId) headConditions.push(eq(animals.groupId, filters.groupId));
@@ -1297,7 +1327,7 @@ export async function getDoomedFeedConsumption(): Promise<Record<number, number>
       qty: rationPlans.qtyPerHeadPerDay,
     })
     .from(rationPlans)
-    .where(eq(rationPlans.isActive, true));
+    .where(and(eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
 
   // For each recently-exited animal, compute how many days of feed were consumed
   const feedConsumed: Record<number, number> = {};
@@ -1452,19 +1482,27 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const db = await getDb();
   if (!db) return null;
 
-  // Revenue: animal sales
+  // Revenue: animal sales (exclude soft-deleted)
   const salesData = await db
     .select({ total: sql<number>`SUM(salePrice)` })
     .from(sales)
-    .where(and(sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`));
+    .where(and(
+      sql`${sales.saleDate} >= ${filters.fromDate}`,
+      sql`${sales.saleDate} <= ${filters.toDate}`,
+      isNull(sales.deletedAt)
+    ));
 
-  // Animal purchase costs
+  // Animal purchase costs (exclude soft-deleted)
   const purchaseCosts = await db
     .select({ total: sql<number>`SUM(purchaseCost)` })
     .from(animals)
-    .where(and(sql`${animals.acquisitionDate} >= ${filters.fromDate}`, sql`${animals.acquisitionDate} <= ${filters.toDate}`));
+    .where(and(
+      sql`${animals.acquisitionDate} >= ${filters.fromDate}`,
+      sql`${animals.acquisitionDate} <= ${filters.toDate}`,
+      isNull(animals.deletedAt)
+    ));
 
-  // Expenses by category
+  // Expenses by category (exclude soft-deleted)
   const expensesByCategory = await db
     .select({
       categoryName: expenseCategories.name,
@@ -1472,10 +1510,14 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
     })
     .from(expenses)
     .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`))
+    .where(and(
+      sql`${expenses.expenseDate} >= ${filters.fromDate}`,
+      sql`${expenses.expenseDate} <= ${filters.toDate}`,
+      isNull(expenses.deletedAt)
+    ))
     .groupBy(expenseCategories.name);
 
-   // Feed stock purchases in period
+   // Feed stock purchases in period (exclude soft-deleted)
   const feedPurchases = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
@@ -1483,7 +1525,8 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       and(
         eq(feedStockLedger.transactionType, "purchase"),
         sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`,
-        sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`
+        sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`,
+        isNull(feedStockLedger.deletedAt)
       )
     );
   const totalFeedCost = parseFloat(String(feedPurchases[0]?.total ?? 0));
