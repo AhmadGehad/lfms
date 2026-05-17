@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, GitBranch, Plus, Scale, TrendingUp } from "lucide-react";
+import { ArrowLeft, DollarSign, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -94,9 +94,18 @@ function WeightChart({ animalId }: { animalId: number }) {
   const utils = trpc.useUtils();
 
   const addWeight = trpc.animals.addWeight.useMutation({
-    onSuccess: () => {
-      toast.success("Weight recorded");
+    onSuccess: (result: any) => {
+      if (result?.autoStaged && result?.newAnimalId) {
+        toast.success(`Weight recorded — auto-staged to ${result.newAnimalId}`);
+      } else {
+        toast.success("Weight recorded");
+      }
       utils.animals.getWeightLog.invalidate({ animalId });
+      utils.animals.getPnL.invalidate({ animalId });
+      utils.animals.getById.invalidate({ id: animalId });
+      utils.animals.getAllPnL.invalidate();
+      utils.feed.getStockStatus.invalidate();
+      utils.dashboard.getKPIs.invalidate();
       setOpen(false);
       setWeight("");
     },
@@ -436,7 +445,7 @@ export default function AnimalProfile() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => setLocation("/animals")} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
           Back
@@ -451,6 +460,23 @@ export default function AnimalProfile() {
           <p className="text-sm text-muted-foreground mt-1">
             {animal.speciesName} · {animal.categoryName} · {animal.groupName} · {animal.animal.sex} · {daysOnFarm} days on farm
           </p>
+        </div>
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
+            <DollarSign className="h-3.5 w-3.5" />
+            Add Expense
+          </Button>
+          {animal.animal.isActive && (
+            <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/sales?animalId=${animal.animal.id}`)}>
+              <ShoppingCart className="h-3.5 w-3.5" />
+              Record Sale
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/animals?edit=${animal.animal.id}`)}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </Button>
         </div>
       </div>
 

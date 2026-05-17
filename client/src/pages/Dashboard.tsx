@@ -144,8 +144,8 @@ export default function Dashboard() {
     groupId: filterGroup !== "all" ? Number(filterGroup) : undefined,
   });
 
-  // Feed stock is ALWAYS unfiltered per business rules
-  const { data: feedStock } = trpc.dashboard.getFeedStockStatus.useQuery();
+  // Feed stock - use shared feed.getStockStatus so it updates when Feed page changes stock
+  const { data: feedStock } = trpc.feed.getStockStatus.useQuery();
   const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
 
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
@@ -460,7 +460,7 @@ export default function Dashboard() {
                   (feedStock ?? []).map((item: any) => (
                     <TableRow key={item.feedItemId} className={item.status === "critical" ? "bg-red-50/50" : item.status === "low" ? "bg-amber-50/50" : ""}>
                       <TableCell className="font-medium">{item.feedItemName}</TableCell>
-                      <TableCell className="font-semibold">{parseFloat(item.stockOnHand).toFixed(1)}</TableCell>
+                      <TableCell className="font-semibold">{parseFloat(item.adjustedStock ?? item.stockOnHand).toFixed(1)}</TableCell>
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>{parseFloat(item.dailyUsage ?? 0).toFixed(2)}</TableCell>
                       <TableCell>

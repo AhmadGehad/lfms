@@ -236,6 +236,102 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
   );
 }
 
+function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({
+    categoryId: "",
+    feedItemId: "",
+    qtyPerHeadPerDay: "",
+    effectiveDate: new Date().toISOString().split("T")[0],
+    endDate: "",
+  });
+  const { data: feedItems } = trpc.config.getFeedItems.useQuery();
+  const { data: categories } = trpc.config.getCategories.useQuery();
+  const utils = trpc.useUtils();
+
+  const createPlan = trpc.feed.createRationPlan.useMutation({
+    onSuccess: () => {
+      toast.success("Ration plan created");
+      utils.feed.getRationPlans.invalidate();
+      utils.feed.getStockStatus.invalidate();
+      setOpen(false);
+      setForm({ categoryId: "", feedItemId: "", qtyPerHeadPerDay: "", effectiveDate: new Date().toISOString().split("T")[0], endDate: "" });
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleSubmit = () => {
+    if (!form.categoryId || !form.feedItemId || !form.qtyPerHeadPerDay || !form.effectiveDate) {
+      return toast.error("Category, feed item, quantity and effective date are required");
+    }
+    createPlan.mutate({
+      categoryId: parseInt(form.categoryId),
+      feedItemId: parseInt(form.feedItemId),
+      qtyPerHeadPerDay: form.qtyPerHeadPerDay,
+      effectiveDate: form.effectiveDate,
+      endDate: form.endDate || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="gap-2"><span className="text-lg leading-none">+</span> Add Ration Plan</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>Add Ration Plan</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Category *</Label>
+              <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {(categories ?? []).map((c: any) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Feed Item *</Label>
+              <Select value={form.feedItemId} onValueChange={(v) => setForm((f) => ({ ...f, feedItemId: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select feed item" /></SelectTrigger>
+                <SelectContent>
+                  {(feedItems ?? []).map((fi: any) => (
+                    <SelectItem key={fi.id} value={String(fi.id)}>{fi.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Qty / Head / Day (kg) *</Label>
+            <Input type="number" step="0.001" min="0" placeholder="0.000" value={form.qtyPerHeadPerDay} onChange={(e) => setForm((f) => ({ ...f, qtyPerHeadPerDay: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Effective Date *</Label>
+              <Input type="date" value={form.effectiveDate} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>End Date (optional)</Label>
+              <Input type="date" value={form.endDate} onChange={(e) => setForm((f) => ({ ...f, endDate: e.target.value }))} />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={handleSubmit} disabled={createPlan.isPending}>
+            {createPlan.isPending ? "Saving..." : "Create Plan"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () => void }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
@@ -586,6 +682,9 @@ export default function Feed() {
         </TabsContent>
 
         <TabsContent value="rations">
+          <div className="flex justify-end mb-3">
+            <AddRationPlanDialog onSuccess={() => {}} />
+          </div>
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
