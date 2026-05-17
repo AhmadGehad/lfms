@@ -1311,7 +1311,20 @@ export async function getFeedStockStatus() {
     // Doomed stock: feed that was allocated for now-exited animals
     const doomedKg = doomedConsumed[item.id] ?? 0;
 
-    const stockOnHand = Math.max(0, lastCountQty + purchasedQty + adjustmentQty);
+    // Excel formula: StockToday = LastCountQty + PurchSinceCount + Adjustments - (DailyUse × daysSinceCount)
+    const lastCountDateStr = lastCount[0]?.transactionDate
+      ? (lastCount[0].transactionDate instanceof Date
+          ? lastCount[0].transactionDate.toISOString().split("T")[0]
+          : String(lastCount[0].transactionDate).split("T")[0])
+      : "2020-01-01";
+    const today = new Date().toISOString().split("T")[0];
+    const daysSinceCount = Math.max(
+      0,
+      Math.floor((new Date(today).getTime() - new Date(lastCountDateStr).getTime()) / 86400000)
+    );
+    const consumedSinceCount = dailyConsumption * daysSinceCount;
+
+    const stockOnHand = Math.max(0, lastCountQty + purchasedQty + adjustmentQty - consumedSinceCount);
     const adjustedStock = Math.max(0, stockOnHand - doomedKg);
     const daysRemaining = dailyConsumption > 0 ? Math.floor(adjustedStock / dailyConsumption) : 999;
     const runOutDate = dailyConsumption > 0
@@ -1325,6 +1338,9 @@ export async function getFeedStockStatus() {
       stockOnHand,
       adjustedStock,
       doomedKg: Math.round(doomedKg * 100) / 100,
+      consumedSinceCount: Math.round(consumedSinceCount * 100) / 100,
+      daysSinceCount,
+      lastCountDate: lastCountDateStr,
       dailyConsumption,
       consumptionByCategory,
       daysRemaining,

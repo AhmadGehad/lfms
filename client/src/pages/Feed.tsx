@@ -466,6 +466,11 @@ export default function Feed() {
                       −{parseFloat(item.doomedKg).toFixed(0)} kg doomed stock
                     </p>
                   )}
+                  {item.consumedSinceCount > 0 && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      −{parseFloat(item.consumedSinceCount).toFixed(0)} kg used ({item.daysSinceCount}d since count)
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <StockStatusBadge status={item.status} />
