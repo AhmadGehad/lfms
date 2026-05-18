@@ -294,11 +294,11 @@ export default function Dashboard() {
           isLoading={kpisLoading}
         />
         <KPICard
-          title={t("dashboard.netPnL")}
-          value={fmt(kpis?.grossPnL ?? 0)}
-          sub={t("incomeStatement.revenue") + " - " + t("incomeStatement.expenses")}
-          icon={Egg}
-          color={(kpis?.grossPnL ?? 0) >= 0 ? "text-green-600" : "text-red-600"}
+          title={t("animals.totalRevenue")}
+          value={fmt(kpis?.totalRevenue ?? 0)}
+          sub={t("common.sold")}
+          icon={TrendingUp}
+          color="text-green-600"
           isLoading={kpisLoading}
         />
         <KPICard
@@ -318,6 +318,15 @@ export default function Dashboard() {
           isLoading={kpisLoading}
         />
       </div>
+      {/* Net P&L summary bar */}
+      {kpis && (
+        <div className={`rounded-lg border px-4 py-3 flex items-center justify-between text-sm ${(kpis.grossPnL ?? 0) >= 0 ? "border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800" : "border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800"}`}>
+          <span className="text-muted-foreground">Net P&L for period</span>
+          <span className={`text-lg font-bold ${(kpis.grossPnL ?? 0) >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+            {fmt(kpis.grossPnL ?? 0)}
+          </span>
+        </div>
+      )}
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

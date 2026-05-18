@@ -408,10 +408,16 @@ export async function getAnimals(filters?: {
       speciesName: species.name,
       categoryName: animalCategories.name,
       categoryPrefix: animalCategories.idPrefix,
+      targetWeightKg: animalCategories.targetWeightKg,
       groupCode: groups.groupCode,
       groupName: groups.name,
       statusName: animalStatuses.name,
       isExitStatus: animalStatuses.isExitStatus,
+      latestWeightKg: sql<string | null>`(
+        SELECT wl.weightKg FROM weight_log wl
+        WHERE wl.animalId = ${animals.id} AND wl.deletedAt IS NULL
+        ORDER BY wl.weighDate DESC LIMIT 1
+      )`,
     })
     .from(animals)
     .leftJoin(species, eq(animals.speciesId, species.id))

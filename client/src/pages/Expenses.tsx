@@ -32,6 +32,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
     amount: "",
     targetType: "general",
     headId: "",
+    categoryTarget: "",
     vendorName: "",
     notes: "",
   });
@@ -41,6 +42,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
     { categoryId: form.categoryId ? Number(form.categoryId) : undefined }
   );
   const { data: animals } = trpc.animals.list.useQuery({ isActive: true });
+  const { data: animalCategories } = trpc.config.getCategories.useQuery();
   const utils = trpc.useUtils();
 
   const createExpense = trpc.expenses.create.useMutation({
@@ -57,6 +59,8 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = () => {
     if (!form.categoryId || !form.amount) { toast.error("Category and amount required"); return; }
+    if (form.targetType === "head" && !form.headId) { toast.error("Select an animal for HEAD expense"); return; }
+    if (form.targetType === "category" && !form.categoryTarget) { toast.error("Select a category for CATEGORY expense"); return; }
     createExpense.mutate({
       expenseDate: form.expenseDate,
       categoryId: Number(form.categoryId),
@@ -64,6 +68,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
       amount: form.amount,
       targetType: form.targetType as any,
       headId: form.headId ? Number(form.headId) : undefined,
+      categoryTarget: form.categoryTarget ? Number(form.categoryTarget) : undefined,
       vendorName: form.vendorName || undefined,
       notes: form.notes || undefined,
     });
@@ -110,17 +115,31 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
             </div>
             <div className="space-y-1.5">
               <Label>Allocation Type *</Label>
-              <Select value={form.targetType} onValueChange={(v) => setForm((f) => ({ ...f, targetType: v }))}>
+              <Select value={form.targetType} onValueChange={(v) => setForm((f) => ({ ...f, targetType: v, headId: "", categoryTarget: "" }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="general">General (Farm-wide)</SelectItem>
+                  <SelectItem value="category">Category (shared by group)</SelectItem>
                   <SelectItem value="head">Specific Animal</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            {form.targetType === "category" && (
+              <div className="space-y-1.5">
+                <Label>Animal Category *</Label>
+                <Select value={form.categoryTarget} onValueChange={(v) => setForm((f) => ({ ...f, categoryTarget: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectContent>
+                    {(animalCategories ?? []).map((c: any) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             {form.targetType === "head" && (
               <div className="space-y-1.5">
-                <Label>Animal</Label>
+                <Label>Animal *</Label>
                 <Select value={form.headId} onValueChange={(v) => setForm((f) => ({ ...f, headId: v }))}>
                   <SelectTrigger><SelectValue placeholder="Select animal" /></SelectTrigger>
                   <SelectContent>

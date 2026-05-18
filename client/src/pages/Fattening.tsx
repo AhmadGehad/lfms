@@ -273,9 +273,10 @@ export default function Fattening() {
                         ? parseFloat(a.animal.weightAtAcquisition)
                         : null;
                     const targetWeight = a.targetWeightKg ? parseFloat(a.targetWeightKg) : null;
+                    const acqWeight = a.animal.weightAtAcquisition ? parseFloat(a.animal.weightAtAcquisition) : null;
                     const pctToTarget =
-                      currentWeight && targetWeight && targetWeight > 0
-                        ? Math.min(100, Math.round((currentWeight / targetWeight) * 100))
+                      currentWeight != null && targetWeight && acqWeight != null && (targetWeight - acqWeight) > 0
+                        ? Math.min(100, Math.round(((currentWeight - acqWeight) / (targetWeight - acqWeight)) * 100))
                         : null;
 
                     return (

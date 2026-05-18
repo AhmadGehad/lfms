@@ -573,6 +573,11 @@ export default function Feed() {
                   <p className="text-xs text-muted-foreground mt-2">
                     {item.daysRemaining === 999 ? "∞" : item.daysRemaining} days
                   </p>
+                  {item.runOutDate && item.daysRemaining !== 999 && (
+                    <p className="text-xs text-muted-foreground">
+                      out {new Date(item.runOutDate).toLocaleDateString()}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground">
                     {parseFloat(item.dailyConsumption ?? 0).toFixed(1)} {item.unit}/day
                   </p>
