@@ -1,0 +1,22 @@
+{
+  "query": "SET FOREIGN_KEY_CHECKS = 0;\n\n-- Keep only sales IDs 1-3 (first import), delete duplicates 4-9\nDELETE FROM sales WHERE id > 3;\n\n-- Keep only ration_plan IDs 1-24 (first import), delete duplicates\nDELETE FROM ration_plans WHERE id > 24;\n\n-- Keep only feed_stock_ledger IDs 1-28 (first import), delete duplicates\nDELETE FROM feed_stock_ledger WHERE id > 28;\n\nSET FOREIGN_KEY_CHECKS = 1;\n\n-- Verify final counts\nSELECT 'sales' AS tbl, COUNT(*) AS cnt FROM sales WHERE deletedAt IS NULL\nUNION ALL SELECT 'ration_plans', COUNT(*) FROM ration_plans WHERE deletedAt IS NULL\nUNION ALL SELECT 'feed_stock_ledger', COUNT(*) FROM feed_stock_ledger WHERE deletedAt IS NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SET FOREIGN_KEY_CHECKS = 0;\n\n-- Keep only sales IDs 1-3 (first import), delete duplicates 4-9\nDELETE FROM sales WHERE id > 3;\n\n-- Keep only ration_plan IDs 1-24 (first import), delete duplicates\nDELETE FROM ration_plans WHERE id > 24;\n\n-- Keep only feed_stock_ledger IDs 1-28 (first import), delete duplicates\nDELETE FROM feed_stock_ledger WHERE id > 28;\n\nSET FOREIGN_KEY_CHECKS = 1;\n\n-- Verify final counts\nSELECT 'sales' AS tbl, COUNT(*) AS cnt FROM sales WHERE deletedAt IS NULL\nUNION ALL SELECT 'ration_plans', COUNT(*) FROM ration_plans WHERE deletedAt IS NULL\nUNION ALL SELECT 'feed_stock_ledger', COUNT(*) FROM feed_stock_ledger WHERE deletedAt IS NULL;",
+  "rows": [
+    {
+      "tbl": "sales",
+      "cnt": "3"
+    },
+    {
+      "tbl": "feed_stock_ledger",
+      "cnt": "28"
+    },
+    {
+      "tbl": "ration_plans",
+      "cnt": "24"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nsales\t3\nfeed_stock_ledger\t28\nration_plans\t24\n",
+  "stderr": "",
+  "execution_time_ms": 3002
+}

@@ -1,0 +1,76 @@
+{
+  "query": "-- Check sales\nSELECT id, animalId, saleDate, salePrice FROM sales WHERE deletedAt IS NULL ORDER BY id;\n\n-- Check ration_plans count per categoryId\nSELECT categoryId, COUNT(*) FROM ration_plans WHERE deletedAt IS NULL GROUP BY categoryId ORDER BY categoryId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute -- Check sales\nSELECT id, animalId, saleDate, salePrice FROM sales WHERE deletedAt IS NULL ORDER BY id;\n\n-- Check ration_plans count per categoryId\nSELECT categoryId, COUNT(*) FROM ration_plans WHERE deletedAt IS NULL GROUP BY categoryId ORDER BY categoryId;",
+  "rows": [
+    {
+      "id": "1",
+      "animalId": "42",
+      "saleDate": "2026-03-09",
+      "salePrice": "27000.00"
+    },
+    {
+      "id": "2",
+      "animalId": "43",
+      "saleDate": "2026-03-09",
+      "salePrice": "15000.00"
+    },
+    {
+      "id": "3",
+      "animalId": "9",
+      "saleDate": "2026-04-07",
+      "salePrice": "4400.00"
+    },
+    {
+      "id": "4",
+      "animalId": "42",
+      "saleDate": "2026-03-09",
+      "salePrice": "27000.00"
+    },
+    {
+      "id": "5",
+      "animalId": "43",
+      "saleDate": "2026-03-09",
+      "salePrice": "15000.00"
+    },
+    {
+      "id": "6",
+      "animalId": "9",
+      "saleDate": "2026-04-07",
+      "salePrice": "4400.00"
+    },
+    {
+      "id": "7",
+      "animalId": "42",
+      "saleDate": "2026-03-09",
+      "salePrice": "27000.00"
+    },
+    {
+      "id": "8",
+      "animalId": "43",
+      "saleDate": "2026-03-09",
+      "salePrice": "15000.00"
+    },
+    {
+      "id": "9",
+      "animalId": "9",
+      "saleDate": "2026-04-07",
+      "salePrice": "4400.00"
+    }
+  ],
+  "messages": [
+    "categoryId\tCOUNT(*)",
+    "2\t9",
+    "3\t9",
+    "4\t9",
+    "5\t12",
+    "6\t3",
+    "7\t3",
+    "8\t9",
+    "9\t9",
+    "10\t6",
+    "11\t3"
+  ],
+  "stdout": "id\tanimalId\tsaleDate\tsalePrice\n1\t42\t2026-03-09\t27000.00\n2\t43\t2026-03-09\t15000.00\n3\t9\t2026-04-07\t4400.00\n4\t42\t2026-03-09\t27000.00\n5\t43\t2026-03-09\t15000.00\n6\t9\t2026-04-07\t4400.00\n7\t42\t2026-03-09\t27000.00\n8\t43\t2026-03-09\t15000.00\n9\t9\t2026-04-07\t4400.00\ncategoryId\tCOUNT(*)\n2\t9\n3\t9\n4\t9\n5\t12\n6\t3\n7\t3\n8\t9\n9\t9\n10\t6\n11\t3\n",
+  "stderr": "",
+  "execution_time_ms": 2112
+}

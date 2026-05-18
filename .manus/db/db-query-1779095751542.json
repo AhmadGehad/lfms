@@ -1,0 +1,50 @@
+{
+  "query": "SELECT 'animals' AS tbl, COUNT(*) AS cnt FROM animals WHERE deletedAt IS NULL\nUNION ALL SELECT 'sales', COUNT(*) FROM sales WHERE deletedAt IS NULL\nUNION ALL SELECT 'weight_log', COUNT(*) FROM weight_log WHERE deletedAt IS NULL\nUNION ALL SELECT 'ration_plans', COUNT(*) FROM ration_plans WHERE deletedAt IS NULL\nUNION ALL SELECT 'feed_stock_ledger', COUNT(*) FROM feed_stock_ledger WHERE deletedAt IS NULL\nUNION ALL SELECT 'lambing_log', COUNT(*) FROM lambing_log WHERE deletedAt IS NULL\nUNION ALL SELECT 'expenses', COUNT(*) FROM expenses WHERE deletedAt IS NULL\nUNION ALL SELECT 'feed_items', COUNT(*) FROM feed_items WHERE deletedAt IS NULL\nUNION ALL SELECT 'animal_categories', COUNT(*) FROM animal_categories\nUNION ALL SELECT 'species', COUNT(*) FROM species;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT 'animals' AS tbl, COUNT(*) AS cnt FROM animals WHERE deletedAt IS NULL\nUNION ALL SELECT 'sales', COUNT(*) FROM sales WHERE deletedAt IS NULL\nUNION ALL SELECT 'weight_log', COUNT(*) FROM weight_log WHERE deletedAt IS NULL\nUNION ALL SELECT 'ration_plans', COUNT(*) FROM ration_plans WHERE deletedAt IS NULL\nUNION ALL SELECT 'feed_stock_ledger', COUNT(*) FROM feed_stock_ledger WHERE deletedAt IS NULL\nUNION ALL SELECT 'lambing_log', COUNT(*) FROM lambing_log WHERE deletedAt IS NULL\nUNION ALL SELECT 'expenses', COUNT(*) FROM expenses WHERE deletedAt IS NULL\nUNION ALL SELECT 'feed_items', COUNT(*) FROM feed_items WHERE deletedAt IS NULL\nUNION ALL SELECT 'animal_categories', COUNT(*) FROM animal_categories\nUNION ALL SELECT 'species', COUNT(*) FROM species;",
+  "rows": [
+    {
+      "tbl": "sales",
+      "cnt": "9"
+    },
+    {
+      "tbl": "weight_log",
+      "cnt": "213"
+    },
+    {
+      "tbl": "animals",
+      "cnt": "97"
+    },
+    {
+      "tbl": "ration_plans",
+      "cnt": "72"
+    },
+    {
+      "tbl": "feed_stock_ledger",
+      "cnt": "56"
+    },
+    {
+      "tbl": "lambing_log",
+      "cnt": "15"
+    },
+    {
+      "tbl": "expenses",
+      "cnt": "25"
+    },
+    {
+      "tbl": "species",
+      "cnt": "4"
+    },
+    {
+      "tbl": "feed_items",
+      "cnt": "8"
+    },
+    {
+      "tbl": "animal_categories",
+      "cnt": "12"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tcnt\nsales\t9\nweight_log\t213\nanimals\t97\nration_plans\t72\nfeed_stock_ledger\t56\nlambing_log\t15\nexpenses\t25\nspecies\t4\nfeed_items\t8\nanimal_categories\t12\n",
+  "stderr": "",
+  "execution_time_ms": 1810
+}
