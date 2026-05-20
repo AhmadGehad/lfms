@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Egg, Leaf, Scale, TrendingUp } from "lucide-react";
+import { toast } from "sonner";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, Leaf, Scale, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -193,6 +194,7 @@ export default function Dashboard() {
         </div>
         {/* Filters Row */}
         <div className="flex gap-2 flex-wrap items-center">
+          <ExportButton />
           {/* Date Range Preset Picker */}
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
@@ -490,3 +492,43 @@ export default function Dashboard() {
     </div>
   );
 }
+
+
+// ── Export to Excel ──────────────────────────────────────────────────────────
+function ExportButton() {
+  const [loading, setLoading] = useState(false);
+  const utils = trpc.useUtils();
+
+  const handleExport = async () => {
+    try {
+      setLoading(true);
+      const result = await utils.client.export.full.query();
+      // Decode base64 → Blob → trigger download
+      const byteChars = atob(result.base64);
+      const bytes = new Uint8Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([bytes], { type: result.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = result.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Export downloaded');
+    } catch (e: any) {
+      toast.error(e.message ?? 'Export failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background" onClick={handleExport} disabled={loading}>
+      <Download className="h-3.5 w-3.5" />
+      {loading ? 'Generating…' : 'Export Excel'}
+    </Button>
+  );
+}
+
