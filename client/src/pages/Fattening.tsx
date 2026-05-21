@@ -75,7 +75,7 @@ function RecordWeightDialog({
           <Button className="gap-2"><Plus className="h-4 w-4" />Record Weight</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm w-[95vw] sm:w-auto">
         <DialogHeader><DialogTitle>Record Weight</DialogTitle></DialogHeader>
         <div className="space-y-4">
           {!preselectedId && (
@@ -141,7 +141,7 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm w-[95vw] sm:w-auto">
         <DialogHeader>
           <DialogTitle>Edit Animal</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">{animal.animal.animalId}</p>
@@ -215,10 +215,10 @@ export default function Fattening() {
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Scale className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Scale className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Fattening Tracker
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

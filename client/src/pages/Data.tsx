@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
-import { Database, Download, FileUp, HardDriveDownload, History, Upload } from "lucide-react";
+import { Database, Download, FileDown, FileUp, HardDriveDownload, History, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -20,12 +20,63 @@ export default function Data() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
+        <ExportCard />
         <ImportCard />
-        <BackupCard />
       </div>
 
-      <RestoreCard />
+      <div className="grid md:grid-cols-2 gap-4">
+        <BackupCard />
+        <RestoreCard />
+      </div>
     </div>
+  );
+}
+
+// ── Export Excel ────────────────────────────────────────────────────────────
+function ExportCard() {
+  const [loading, setLoading] = useState(false);
+  const utils = trpc.useUtils();
+
+  const handleExport = async () => {
+    try {
+      setLoading(true);
+      const res = await utils.client.export.full.query();
+      const bytes = Uint8Array.from(atob(res.base64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: res.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("Excel export downloaded successfully");
+    } catch (e: any) {
+      toast.error(e.message ?? "Export failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <FileDown className="h-4 w-4 text-primary" />
+          Export to Excel
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Download all farm data as a structured Excel workbook (.xlsx). Includes animals, sales, lambing records, weight logs, ration plans, feed stock, and expenses.
+        </p>
+        <Button onClick={handleExport} disabled={loading} className="gap-2">
+          <Download className="h-4 w-4" />
+          {loading ? "Generating…" : "Download Excel export"}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 

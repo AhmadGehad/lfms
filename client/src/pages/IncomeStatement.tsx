@@ -177,10 +177,10 @@ export default function IncomeStatement() {
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Farm Income Statement
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Financial performance summary for Azal Farms</p>
@@ -201,18 +201,18 @@ export default function IncomeStatement() {
         </div>
       </div>
 
-      <div className="flex gap-4 items-end no-print flex-wrap">
+      <div className="flex flex-wrap gap-3 items-end no-print">
         <div className="space-y-1.5">
           <Label>From Date</Label>
-          <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-40" />
+          <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-36" />
         </div>
         <div className="space-y-1.5">
           <Label>To Date</Label>
-          <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-40" />
+          <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-36" />
         </div>
       </div>
 
-      <Card className="max-w-2xl print:shadow-none print:border-0">
+      <Card className="w-full max-w-2xl print:shadow-none print:border-0">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">
             Azal Farms — Farm Income Statement

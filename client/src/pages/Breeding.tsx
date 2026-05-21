@@ -82,10 +82,10 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" />{t("breeding.recordBirth")}</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Record New Birth</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>{t("breeding.birthDate")} *</Label>
               <Controller name="birthDate" control={control} render={({ field }) => (
@@ -228,10 +228,10 @@ export default function Breeding() {
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Egg className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Egg className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Breeding & Lambing
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,10 +80,10 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" />{t("expenses.addExpense")}</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Record Expense</DialogTitle></DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Date *</Label>
               <Input type="date" value={form.expenseDate} onChange={(e) => setForm((f) => ({ ...f, expenseDate: e.target.value }))} />
@@ -196,10 +197,10 @@ export default function Expenses() {
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <DollarSign className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Expense Log
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -209,11 +210,11 @@ export default function Expenses() {
         <AddExpenseDialog onSuccess={refetch} />
       </div>
 
-      <div className="flex gap-3 items-center">
+      <div className="flex flex-wrap gap-2 items-center">
         <Label className="text-sm">From:</Label>
-        <Input type="date" className="w-40" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+        <Input type="date" className="w-36" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         <Label className="text-sm">To:</Label>
-        <Input type="date" className="w-40" value={toDate} readOnly />
+        <Input type="date" className="w-36" value={toDate} readOnly />
       </div>
 
       <Card>
@@ -234,7 +235,13 @@ export default function Expenses() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-8">Loading...</TableCell></TableRow>
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 8 }).map((_, j) => (
+                        <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                      ))}
+                    </TableRow>
+                  ))
                 ) : (expenses ?? []).length === 0 ? (
                   <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">No expenses found for this period.</TableCell></TableRow>
                 ) : (

@@ -76,7 +76,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2"><span className="text-lg leading-none">+</span> Add Stock</Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Add Stock Entry</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
@@ -90,7 +90,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Date *</Label>
               <Input type="date" value={form.transactionDate} onChange={(e) => setForm((f) => ({ ...f, transactionDate: e.target.value }))} />
@@ -187,7 +187,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
           <p className="text-sm text-muted-foreground mt-1">{entry.feedItemName}</p>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Date *</Label>
               <Input type="date" value={form.transactionDate} onChange={(e) => setForm((f) => ({ ...f, transactionDate: e.target.value }))} />
@@ -496,10 +496,10 @@ export default function Feed() {
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wheat className="h-6 w-6 text-primary" />
+          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+            <Wheat className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             Feed Management
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

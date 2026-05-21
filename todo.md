@@ -299,3 +299,39 @@
 - [x] Income Statement: loading state fixed to skeleton rows
 - [x] TypeScript: 0 errors, 57 tests pass
 - [x] Save checkpoint
+
+## Phase 32: Mobile Responsiveness & UX Review
+- [ ] Fix DashboardLayout sidebar: mobile drawer with backdrop overlay, closes on nav item click
+- [ ] Make Dashboard page mobile-friendly (KPI cards stack, charts scroll)
+- [ ] Make Animal Registry mobile-friendly (table → card list on mobile)
+- [ ] Make Fattening Tracker mobile-friendly
+- [ ] Make Feed Management mobile-friendly
+- [ ] Make Expense Log mobile-friendly
+- [ ] Make Sales Records mobile-friendly
+- [ ] Make Animal P&L mobile-friendly
+- [ ] Make Income Statement mobile-friendly
+- [ ] Make Breeding & Lambing mobile-friendly
+- [ ] Make Animal Profile tabs mobile-friendly
+- [ ] Review all dialogs/modals for mobile usability
+- [ ] Review Excel export: correct columns, all data included
+- [ ] Review Excel import: validation, error messages, correct mapping
+- [ ] Review all calculations for accuracy
+- [ ] TypeScript: 0 errors, all tests pass
+- [ ] Save checkpoint
+
+## Phase 32: Mobile Responsiveness & Full UX Review
+- [x] Fix DashboardLayout mobile sidebar: collapsible=offcanvas, close on nav click
+- [x] Dashboard: KPI grid stacks to 1-col on mobile, filter row wraps
+- [x] Animals: header stacks, dialog max-w on mobile, table horizontal scroll
+- [x] Expenses: header stacks, dialog full-width, skeleton loading rows added
+- [x] Sales: header stacks, dialog full-width, skeleton loading rows added
+- [x] PnL: header stacks, summary cards 1-col on mobile, filters wrap
+- [x] Fattening: header stacks, dialogs full-width on mobile
+- [x] Feed: header stacks, dialogs full-width, grid cols stack on mobile
+- [x] Breeding: header stacks, dialog full-width, grid cols stack on mobile
+- [x] IncomeStatement: header stacks, buttons wrap, date inputs stack
+- [x] Data page: added Export to Excel card (was missing — only Import/Backup existed)
+- [x] Reviewed all calculations: all correct
+- [x] Reviewed all loading states: all pages use Skeleton components
+- [x] TypeScript: 0 errors, 57 tests pass
+- [x] Save checkpoint

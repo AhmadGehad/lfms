@@ -59,8 +59,8 @@ export default function PnL() {
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Activity className="h-6 w-6 text-primary" />
+        <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           {t("nav.pnl") || "P&L per Animal"}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">Lifetime profitability for each animal</p>
@@ -68,32 +68,32 @@ export default function PnL() {
 
       {/* Summary cards */}
       {!isLoading && filtered.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card>
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">Total Animals</p>
-              <p className="text-2xl font-bold">{filtered.length}</p>
+              <p className="text-xl sm:text-2xl font-bold">{filtered.length}</p>
               <p className="text-xs text-muted-foreground mt-1">{activeCount} active · {closedAnimals.length} closed</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">Realised Revenue</p>
-              <p className="text-2xl font-bold text-green-600">{fmt(totalRevenue)}</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{fmt(totalRevenue)}</p>
               <p className="text-xs text-muted-foreground mt-1">From sold animals</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">Running Cost (Active)</p>
-              <p className="text-2xl font-bold text-amber-600">{fmt(runningCost)}</p>
+              <p className="text-xl sm:text-2xl font-bold text-amber-600">{fmt(runningCost)}</p>
               <p className="text-xs text-muted-foreground mt-1">{activeCount} animals ongoing</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">Realised Net P&L</p>
-              <p className={`text-2xl font-bold ${totalNetPnL >= 0 ? "text-green-600" : "text-red-600"}`}>
+              <p className={`text-xl sm:text-2xl font-bold ${totalNetPnL >= 0 ? "text-green-600" : "text-red-600"}`}>
                 {fmt(totalNetPnL)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">

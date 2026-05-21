@@ -186,9 +186,9 @@ export default function Dashboard() {
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">{t("dashboard.title")}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t("dashboard.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {new Date().toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
           </p>
@@ -289,7 +289,7 @@ export default function Dashboard() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <KPICard
           title={t("dashboard.activeAnimals")}
           value={kpis?.totalActiveHeads ?? 0}
@@ -333,7 +333,7 @@ export default function Dashboard() {
       )}
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Head Count by Category */}
         <Card>
           <CardHeader className="pb-2">

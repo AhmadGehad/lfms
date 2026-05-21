@@ -118,7 +118,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <SidebarProvider style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
+    <SidebarProvider
+      style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
+      defaultOpen={true}
+    >
       <DashboardLayoutContent setSidebarWidth={setSidebarWidth} isAr={isAr}>
         {children}
       </DashboardLayoutContent>
@@ -234,7 +237,7 @@ function DashboardLayoutContent({
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           side={isAr ? "right" : "left"}
-          collapsible="icon"
+          collapsible={isMobile ? "offcanvas" : "icon"}
           className={isAr ? "border-l-0" : "border-r-0"}
           disableTransition={isResizing}
         >
@@ -279,7 +282,10 @@ function DashboardLayoutContent({
                       <SidebarMenuItem key={item.path}>
                         <SidebarMenuButton
                           isActive={isActive}
-                          onClick={() => setLocation(item.path)}
+                          onClick={() => {
+                            setLocation(item.path);
+                            if (isMobile) toggleSidebar();
+                          }}
                           tooltip={item.label}
                           className={`h-9 font-normal relative ${isAr ? "flex-row-reverse" : ""}`}
                         >
@@ -383,12 +389,14 @@ function DashboardLayoutContent({
           </SidebarFooter>
         </Sidebar>
 
-        {/* Resize handle — left edge in RTL, right edge in LTR */}
-        <div
-          className={`absolute top-0 ${isAr ? "left-0" : "right-0"} w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors ${isCollapsed ? "hidden" : ""}`}
-          onMouseDown={() => { if (!isCollapsed) setIsResizing(true); }}
-          style={{ zIndex: 50 }}
-        />
+        {/* Resize handle — desktop only, left edge in RTL, right edge in LTR */}
+        {!isMobile && (
+          <div
+            className={`absolute top-0 ${isAr ? "left-0" : "right-0"} w-1 h-full cursor-col-resize hover:bg-primary/30 transition-colors ${isCollapsed ? "hidden" : ""}`}
+            onMouseDown={() => { if (!isCollapsed) setIsResizing(true); }}
+            style={{ zIndex: 50 }}
+          />
+        )}
       </div>
 
       <SidebarInset>
