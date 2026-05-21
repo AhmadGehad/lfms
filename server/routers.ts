@@ -10,6 +10,8 @@ import { expensesRouter } from "./routers/expenses";
 import { dashboardRouter, notificationsRouter, salesRouter, auditRouter, userManagementRouter } from "./routers/dashboard";
 import { recycleBinRouter } from "./routers/softDelete";
 import { exportRouter } from "./routers/export";
+import { importRouter } from "./routers/import";
+import { backupRouter } from "./routers/backup";
 
 export const appRouter = router({
   system: systemRouter,
@@ -35,6 +37,8 @@ export const appRouter = router({
   userMgmt: userManagementRouter,
   recycleBin: recycleBinRouter,
   export: exportRouter,
+  import: importRouter,
+  backup: backupRouter,
 });
 
 export type AppRouter = typeof appRouter;
