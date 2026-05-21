@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { useCurrency } from "@/hooks/useCurrency";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, Leaf, Scale, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -183,7 +184,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
@@ -195,6 +196,7 @@ export default function Dashboard() {
         {/* Filters Row */}
         <div className="flex gap-2 flex-wrap items-center">
           <ExportButton />
+          <PdfReportButton dateRange={dateRange} kpis={kpis} />
           {/* Date Range Preset Picker */}
           <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
             <PopoverTrigger asChild>
@@ -532,3 +534,50 @@ function ExportButton() {
   );
 }
 
+
+// ── PDF Report Button — Farm Summary ────────────────────────────────────────
+function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: string }; kpis: any }) {
+  const { data: pnlData } = trpc.animals.getAllPnL.useQuery({});
+  const { data: settings } = trpc.config.getSettings.useQuery();
+  const { currency } = useCurrency();
+  const [generating, setGenerating] = useState(false);
+
+  const farmName = (settings as any[] | undefined)?.find((s) => s.settingKey === "farmName")?.settingValue;
+
+  const handleClick = async () => {
+    if (!kpis || !pnlData) {
+      toast.error("Data still loading, try again in a moment");
+      return;
+    }
+    setGenerating(true);
+    try {
+      const { generateFarmSummaryPdf } = await import("@/lib/pdfReports");
+      generateFarmSummaryPdf({
+        fromDate: dateRange.from,
+        toDate: dateRange.to,
+        kpis,
+        pnlData,
+        currency,
+        farmName,
+      });
+      toast.success("PDF report downloaded");
+    } catch (e: any) {
+      toast.error(e.message ?? "PDF generation failed");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 text-xs gap-1.5 bg-background"
+      onClick={handleClick}
+      disabled={generating || !kpis}
+    >
+      <FileText className="h-3.5 w-3.5" />
+      {generating ? "Generating…" : "PDF Report"}
+    </Button>
+  );
+}

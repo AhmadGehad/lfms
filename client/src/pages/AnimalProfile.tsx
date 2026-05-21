@@ -9,7 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, DollarSign, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp } from "lucide-react";
+import { ArrowLeft, DollarSign, FileDown, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp } from "lucide-react";
+import { generateAnimalPnLPdf } from "@/lib/pdfReports";
+import { useCurrency } from "@/hooks/useCurrency";
 import { useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
@@ -433,7 +435,7 @@ export default function AnimalProfile() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
+      <div className="p-3 md:p-6 space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-40 w-full" />
         <Skeleton className="h-64 w-full" />
@@ -443,7 +445,7 @@ export default function AnimalProfile() {
 
   if (!animal) {
     return (
-      <div className="p-6">
+      <div className="p-3 md:p-6">
         <p className="text-muted-foreground">Animal not found.</p>
         <Button variant="link" onClick={() => setLocation("/animals")}>{t("animals.title")}</Button>
       </div>
@@ -455,7 +457,7 @@ export default function AnimalProfile() {
   const daysOnFarm = Math.floor((exitDate.getTime() - acqDate.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => setLocation("/animals")} className="gap-2">
@@ -489,6 +491,7 @@ export default function AnimalProfile() {
             <Pencil className="h-3.5 w-3.5" />
             Edit
           </Button>
+          <DownloadPdfButton animal={animal} animalId={animalId} />
         </div>
       </div>
 
@@ -572,5 +575,37 @@ export default function AnimalProfile() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// ── Download PDF button (fetches pnl + weight log, generates PDF) ────────────
+function DownloadPdfButton({ animal, animalId }: { animal: any; animalId: number }) {
+  const { data: pnl } = trpc.animals.getPnL.useQuery({ animalId });
+  const { data: weights } = trpc.animals.getWeightLog.useQuery({ animalId });
+  const { data: settings } = trpc.config.getSettings.useQuery();
+  const { currency } = useCurrency();
+
+  const farmName = (settings as any[] | undefined)?.find((s) => s.settingKey === "farmName")?.settingValue;
+
+  const handleDownload = () => {
+    if (!pnl) {
+      toast.error("Loading data, try again in a moment");
+      return;
+    }
+    generateAnimalPnLPdf({
+      animal,
+      pnl,
+      weights: weights ?? [],
+      currency,
+      farmName,
+    });
+    toast.success("PDF downloaded");
+  };
+
+  return (
+    <Button size="sm" variant="outline" className="gap-2" onClick={handleDownload} disabled={!pnl}>
+      <FileDown className="h-3.5 w-3.5" />
+      Download PDF
+    </Button>
   );
 }

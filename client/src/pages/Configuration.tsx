@@ -591,7 +591,7 @@ function ExpenseCategoriesTab() {
 export default function Configuration() {
   const { t } = useTranslation();
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Settings className="h-6 w-6 text-primary" />
@@ -613,6 +613,7 @@ export default function Configuration() {
               <TabsTrigger value="expenses">Expense Categories</TabsTrigger>
               <TabsTrigger value="statuses">Statuses</TabsTrigger>
               <TabsTrigger value="birthtypes">Birth Types</TabsTrigger>
+              <TabsTrigger value="settings">Settings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="species"><SpeciesTab /></TabsContent>
@@ -622,9 +623,83 @@ export default function Configuration() {
             <TabsContent value="expenses"><ExpenseCategoriesTab /></TabsContent>
             <TabsContent value="statuses"><StatusesTab /></TabsContent>
             <TabsContent value="birthtypes"><BirthTypesTab /></TabsContent>
+            <TabsContent value="settings"><SettingsTab /></TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ── Settings Tab ─────────────────────────────────────────────────────────────
+function SettingsTab() {
+  const { data: settings } = trpc.config.getSettings.useQuery();
+  const utils = trpc.useUtils();
+  const [currency, setCurrency] = useState("");
+  const [farmName, setFarmName] = useState("");
+  const [initialized, setInitialized] = useState(false);
+
+  // Populate state once settings load
+  if (!initialized && settings) {
+    const cur = (settings as any[]).find((s) => s.settingKey === "currency");
+    const name = (settings as any[]).find((s) => s.settingKey === "farmName");
+    setCurrency((cur?.settingValue ?? "EGP").trim());
+    setFarmName((name?.settingValue ?? "").trim());
+    setInitialized(true);
+  }
+
+  const upsert = trpc.config.upsertSetting.useMutation({
+    onSuccess: () => {
+      toast.success("Setting saved");
+      utils.config.getSettings.invalidate();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const handleSave = (key: string, value: string) => {
+    if (!value.trim()) return toast.error("Value cannot be empty");
+    upsert.mutate({ key, value: value.trim() });
+  };
+
+  return (
+    <div className="space-y-6 max-w-xl">
+      <h3 className="font-semibold">System Settings</h3>
+
+      <div className="space-y-1.5">
+        <Label>Currency code</Label>
+        <div className="flex gap-2">
+          <Input
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value.toUpperCase())}
+            placeholder="EGP"
+            maxLength={5}
+            className="font-mono"
+          />
+          <Button onClick={() => handleSave("currency", currency)} disabled={upsert.isPending}>
+            Save
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          The 3-letter code used throughout the app (e.g. EGP, USD, EUR, SAR).
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label>Farm name</Label>
+        <div className="flex gap-2">
+          <Input
+            value={farmName}
+            onChange={(e) => setFarmName(e.target.value)}
+            placeholder="e.g. Azal Farms"
+          />
+          <Button onClick={() => handleSave("farmName", farmName)} disabled={upsert.isPending}>
+            Save
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Used in report headers, PDF exports, and the dashboard title.
+        </p>
+      </div>
     </div>
   );
 }

@@ -495,7 +495,7 @@ export default function Feed() {
   const alertItems = (stockStatus ?? []).filter((s: any) => s.status === "critical" || s.status === "low");
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">

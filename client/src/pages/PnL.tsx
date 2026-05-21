@@ -5,10 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Activity, Search, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, Search, TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 export default function PnL() {
   const { t } = useTranslation();
@@ -56,7 +57,7 @@ export default function PnL() {
   const runningCost = filtered.filter((a: any) => a.isActive).reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Activity className="h-6 w-6 text-primary" />
@@ -144,6 +145,21 @@ export default function PnL() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Net P&L by Animal Chart — shows top 20 best/worst performers */}
+      {filtered.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Net P&L by Animal (top 20 closed animals)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PnLChart data={filtered} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardContent className="p-0">
@@ -251,6 +267,45 @@ export default function PnL() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ── PnL Chart — bar chart sorted by netPnL ──────────────────────────────────
+function PnLChart({ data }: { data: any[] }) {
+  // Take only closed animals (have revenue), sort by netPnL, show top 20
+  const closed = data
+    .filter((a) => !a.isActive && a.revenue > 0)
+    .sort((a, b) => b.netPnL - a.netPnL)
+    .slice(0, 20);
+
+  if (closed.length === 0) {
+    return <p className="text-sm text-muted-foreground py-8 text-center">No closed animals to chart yet.</p>;
+  }
+
+  const chartData = closed.map((a) => ({
+    name: a.animalCode,
+    netPnL: Math.round(a.netPnL),
+  }));
+
+  return (
+    <div className="h-72 w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
+          <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+          <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-40} textAnchor="end" interval={0} height={70} />
+          <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+          <Tooltip
+            formatter={(v: number) => [`EGP ${v.toLocaleString()}`, "Net P&L"]}
+            contentStyle={{ borderRadius: 8, fontSize: 12 }}
+          />
+          <Bar dataKey="netPnL" radius={[3, 3, 0, 0]}>
+            {chartData.map((d, i) => (
+              <Cell key={i} fill={d.netPnL >= 0 ? "#1D9E75" : "#E24B4A"} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
