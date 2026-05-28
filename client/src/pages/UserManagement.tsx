@@ -13,7 +13,7 @@ export default function UserManagement() {
   const utils = trpc.useUtils();
 
   const updateRole = trpc.userMgmt.updateUserRole.useMutation({
-    onSuccess: () => { toast.success("User role updated"); utils.userMgmt.listUsers.invalidate(); },
+    onSuccess: () => { toast.success(t("users.roleUpdated")); utils.userMgmt.listUsers.invalidate(); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -22,10 +22,10 @@ export default function UserManagement() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Users className="h-6 w-6 text-primary" />
-          User Management
+          {t("users.title")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage user roles and access control
+          {t("users.subtitle")}
         </p>
       </div>
 
@@ -36,18 +36,18 @@ export default function UserManagement() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("common.name")}</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>{t("users.email")}</TableHead>
                   <TableHead>{t("users.role")}</TableHead>
                   <TableHead>{t("users.lastSignIn")}</TableHead>
-                  <TableHead>Joined</TableHead>
+                  <TableHead>{t("users.joined")}</TableHead>
                   <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-8">{t("common.loading")}</TableCell></TableRow>
                 ) : (users ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">No users found.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">{t("users.noUsers")}</TableCell></TableRow>
                 ) : (
                   (users ?? []).map((u: any) => (
                     <TableRow key={u.id}>

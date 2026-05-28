@@ -35,6 +35,7 @@ function RecordWeightDialog({
   preselectedId?: number;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [animalId, setAnimalId] = useState(preselectedId ? String(preselectedId) : "");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -46,7 +47,7 @@ function RecordWeightDialog({
       if (result?.autoStaged && result?.newAnimalId) {
         toast.success(`Weight recorded — animal auto-staged to ${result.newAnimalId}`);
       } else {
-        toast.success("Weight recorded");
+        toast.success(t("fattening.weightRecorded"));
       }
       utils.animals.list.invalidate();
       utils.feed.getStockStatus.invalidate();
@@ -72,17 +73,17 @@ function RecordWeightDialog({
             <Scale className="h-4 w-4" />
           </Button>
         ) : (
-          <Button className="gap-2"><Plus className="h-4 w-4" />Record Weight</Button>
+          <Button className="gap-2"><Plus className="h-4 w-4" />{t("fattening.recordWeight")}</Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-sm w-[95vw] sm:w-auto">
-        <DialogHeader><DialogTitle>Record Weight</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("fattening.recordWeight")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           {!preselectedId && (
             <div className="space-y-1.5">
               <Label>Animal</Label>
               <Select value={animalId} onValueChange={setAnimalId}>
-                <SelectTrigger><SelectValue placeholder="Select animal" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("fattening.selectAnimal")} /></SelectTrigger>
                 <SelectContent>
                   {animals.map((a: any) => (
                     <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
@@ -92,7 +93,7 @@ function RecordWeightDialog({
             </div>
           )}
           <div className="space-y-1.5">
-            <Label>Date</Label>
+            <Label>{t("common.date")}</Label>
             <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -101,7 +102,7 @@ function RecordWeightDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button
             onClick={() => addWeight.mutate({ animalId: Number(animalId), weighDate: date, weightKg: weight })}
             disabled={!animalId || !weight || addWeight.isPending}
@@ -116,6 +117,7 @@ function RecordWeightDialog({
 
 // ─── Edit Animal Dialog ──────────────────────────────────────────────────────
 function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: any[]; onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     groupId: animal.animal.groupId ? String(animal.animal.groupId) : "",
@@ -125,7 +127,7 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
 
   const updateAnimal = trpc.animals.update.useMutation({
     onSuccess: () => {
-      toast.success("Animal updated");
+      toast.success(t("fattening.animalUpdated"));
       utils.animals.list.invalidate();
       utils.animals.getAllPnL.invalidate();
       setOpen(false);
@@ -143,14 +145,14 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
       </DialogTrigger>
       <DialogContent className="max-w-sm w-[95vw] sm:w-auto">
         <DialogHeader>
-          <DialogTitle>Edit Animal</DialogTitle>
+          <DialogTitle>{t("fattening.editAnimal")}</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">{animal.animal.animalId}</p>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
-            <Label>Group</Label>
+            <Label>{t("common.group")}</Label>
             <Select value={form.groupId} onValueChange={(v) => setForm((f) => ({ ...f, groupId: v }))}>
-              <SelectTrigger><SelectValue placeholder="No group" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("fattening.noGroup")} /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">No group</SelectItem>
                 {groups.map((g: any) => (
@@ -160,16 +162,16 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label>Notes</Label>
+            <Label>{t("common.notes")}</Label>
             <Input
-              placeholder="Optional notes"
+              placeholder={t("common.optionalNotes")}
               value={form.notes}
               onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button
             onClick={() =>
               updateAnimal.mutate({
@@ -203,7 +205,7 @@ export default function Fattening() {
 
   const deleteAnimal = trpc.recycleBin.deleteAnimal.useMutation({
     onSuccess: () => {
-      toast.success("Animal moved to Recycle Bin");
+      toast.success(t("fattening.movedToBin"));
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.dashboard.getHeadCountByCategory.invalidate();
@@ -219,7 +221,7 @@ export default function Fattening() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Scale className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Fattening Tracker
+            {t("fattening.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {fatteningAnimals.length} animals in fattening
@@ -229,7 +231,7 @@ export default function Fattening() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Fattening Animals</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t("fattening.fatteningAnimals")}</CardTitle></CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -237,9 +239,9 @@ export default function Fattening() {
                 <TableRow>
                   <TableHead>{t("animals.animalId")}</TableHead>
                   <TableHead>{t("common.category")}</TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead className="text-right">Days on Farm</TableHead>
-                  <TableHead className="text-right">Current Weight</TableHead>
+                  <TableHead>{t("common.group")}</TableHead>
+                  <TableHead className="text-right">{t("animals.daysOnFarm")}</TableHead>
+                  <TableHead className="text-right">{t("common.currentWeight")}</TableHead>
                   <TableHead className="text-right">{t("fattening.targetWeight")}</TableHead>
                   <TableHead className="text-right">% to Target</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
@@ -258,7 +260,7 @@ export default function Fattening() {
                 ) : fatteningAnimals.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                      No animals currently in fattening.
+                      {t("fattening.noAnimalsFattening")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -331,19 +333,19 @@ export default function Fattening() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle className="flex items-center gap-2">
                                     <AlertTriangle className="h-5 w-5 text-destructive" />
-                                    Remove Animal
+                                    {t("fattening.removeAnimal")}
                                   </AlertDialogTitle>
                                   <AlertDialogDescription>
                                     Move <strong>{a.animal.animalId}</strong> to the Recycle Bin? You can restore it anytime.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                   <AlertDialogAction
                                     className="bg-destructive hover:bg-destructive/90"
                                     onClick={() => deleteAnimal.mutate({ id: a.animal.id })}
                                   >
-                                    Move to Bin
+                                    {t("common.moveToBin")}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>

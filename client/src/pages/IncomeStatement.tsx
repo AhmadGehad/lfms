@@ -111,10 +111,10 @@ export default function IncomeStatement() {
       }
 
       doc.save(`azal-farms-income-statement-${fromDate}-to-${toDate}.pdf`);
-      toast.success("PDF exported successfully");
+      toast.success(t("incomeStatement.pdfExported"));
     } catch (err) {
       console.error(err);
-      toast.error("Failed to export PDF");
+      toast.error(t("incomeStatement.pdfFailed"));
     }
   };
 
@@ -168,10 +168,10 @@ export default function IncomeStatement() {
       XLSX.utils.book_append_sheet(wb, wsExpenses, "Expense Breakdown");
 
       XLSX.writeFile(wb, `azal-farms-income-statement-${fromDate}-to-${toDate}.xlsx`);
-      toast.success("Excel exported successfully");
+      toast.success(t("incomeStatement.excelExported"));
     } catch (err) {
       console.error(err);
-      toast.error("Failed to export Excel");
+      toast.error(t("incomeStatement.excelFailed"));
     }
   };
 
@@ -181,33 +181,33 @@ export default function IncomeStatement() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Farm Income Statement
+            {t("incomeStatement.title")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Financial performance summary for Azal Farms</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("incomeStatement.summary")}</p>
         </div>
         <div className="flex gap-2 flex-wrap no-print">
           <Button variant="outline" className="gap-2" onClick={() => window.print()}>
             <Printer className="h-4 w-4" />
-            Print
+            {t("incomeStatement.print")}
           </Button>
           <Button variant="outline" className="gap-2" onClick={handleExportPDF} disabled={isLoading}>
             <Download className="h-4 w-4" />
-            Export PDF
+            {t("common.exportPDF")}
           </Button>
           <Button variant="outline" className="gap-2" onClick={handleExportExcel} disabled={isLoading}>
             <FileSpreadsheet className="h-4 w-4" />
-            Export Excel
+            {t("common.exportExcel")}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-3 items-end no-print">
         <div className="space-y-1.5">
-          <Label>From Date</Label>
+          <Label>{t("incomeStatement.fromDate")}</Label>
           <Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="w-36" />
         </div>
         <div className="space-y-1.5">
-          <Label>To Date</Label>
+          <Label>{t("incomeStatement.toDate")}</Label>
           <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-36" />
         </div>
       </div>
@@ -236,16 +236,16 @@ export default function IncomeStatement() {
               <div>
                 <h3 className="font-semibold text-green-700 mb-3 flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-green-600 inline-block" />
-                  Revenue
+                  {t("incomeStatement.revenue")}
                 </h3>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Animal Sales</span>
+                    <span className="text-muted-foreground">{t("incomeStatement.animalSales")}</span>
                     <span className="font-medium">{fmt(statement?.revenue?.animalSales ?? 0)}</span>
                   </div>
                 </div>
                 <div className="flex justify-between font-semibold border-t mt-3 pt-3">
-                  <span>Total Revenue</span>
+                  <span>{t("incomeStatement.totalRevenue")}</span>
                   <span className="text-green-700">{fmt(statement?.revenue?.total ?? 0)}</span>
                 </div>
               </div>
@@ -256,16 +256,16 @@ export default function IncomeStatement() {
               <div>
                 <h3 className="font-semibold text-red-700 mb-3 flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-red-600 inline-block" />
-                  Expenses
+                  {t("incomeStatement.expenses")}
                 </h3>
                 <div className="space-y-2 pl-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Animal Purchases</span>
+                    <span className="text-muted-foreground">{t("incomeStatement.animalPurchases")}</span>
                     <span className="font-medium">{fmt(statement?.costs?.animalPurchases ?? 0)}</span>
                   </div>
                   {(statement?.costs?.feedPurchases ?? 0) > 0 && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Feed Stock Purchases</span>
+                      <span className="text-muted-foreground">{t("incomeStatement.feedStockPurchases")}</span>
                       <span className="font-medium">{fmt(statement?.costs?.feedPurchases ?? 0)}</span>
                     </div>
                   )}
@@ -277,7 +277,7 @@ export default function IncomeStatement() {
                   ))}
                 </div>
                 <div className="flex justify-between font-semibold border-t mt-3 pt-3">
-                  <span>Total Expenses</span>
+                  <span>{t("incomeStatement.totalExpenses")}</span>
                   <span className="text-red-700">{fmt(statement?.costs?.total ?? 0)}</span>
                 </div>
               </div>
@@ -287,11 +287,11 @@ export default function IncomeStatement() {
               {/* Net Income */}
               <div className="bg-muted/30 rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Total Revenue</span>
+                  <span>{t("incomeStatement.totalRevenue")}</span>
                   <span>{fmt(statement?.revenue?.total ?? 0)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Total Expenses</span>
+                  <span>{t("incomeStatement.totalExpenses")}</span>
                   <span>({fmt(statement?.costs?.total ?? 0)})</span>
                 </div>
                 <Separator className="my-1" />
@@ -306,13 +306,13 @@ export default function IncomeStatement() {
               {/* Additional Metrics */}
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <div className="text-center p-3 rounded-lg bg-muted/20 border">
-                  <p className="text-xs text-muted-foreground mb-1">Profit Margin</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t("incomeStatement.profitMargin")}</p>
                   <p className={`text-2xl font-bold ${(statement?.profitMargin ?? 0) >= 0 ? "text-green-700" : "text-red-700"}`}>
                     {(statement?.profitMargin ?? 0).toFixed(1)}%
                   </p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-muted/20 border">
-                  <p className="text-xs text-muted-foreground mb-1">Report Period</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t("incomeStatement.reportPeriod")}</p>
                   <p className="text-sm font-medium">{fromDate}</p>
                   <p className="text-xs text-muted-foreground">to</p>
                   <p className="text-sm font-medium">{toDate}</p>
