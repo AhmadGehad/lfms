@@ -237,6 +237,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
 }
 
 function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     categoryId: "",
@@ -286,7 +287,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5">
               <Label>Category *</Label>
               <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                 <SelectContent>
                   {(categories ?? []).map((c: any) => (
                     <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
@@ -333,6 +334,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
 }
 
 function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () => void }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     categoryId: String(plan.categoryId),
@@ -396,7 +398,7 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
             <div className="space-y-1.5">
               <Label>Category *</Label>
               <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                 <SelectContent>
                   {(categories ?? []).map((c: any) => (
                     <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>

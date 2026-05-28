@@ -41,7 +41,7 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const exitAnimal = trpc.animals.exit.useMutation({
     onSuccess: () => {
-      toast.success("Sale recorded successfully");
+      toast.success(t("sales.recorded"));
       utils.animals.list.invalidate();
       utils.sales.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
@@ -54,7 +54,7 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
   });
 
   const handleSubmit = () => {
-    if (!form.animalId || !form.salePrice) { toast.error("Animal and sale price required"); return; }
+    if (!form.animalId || !form.salePrice) { toast.error(t("sales.animalPriceRequired")); return; }
     exitAnimal.mutate({
       id: Number(form.animalId),
       exitDate: form.saleDate,
@@ -70,15 +70,15 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><Plus className="h-4 w-4" />Record Sale</Button>
+        <Button className="gap-2"><Plus className="h-4 w-4" />{t("sales.recordSale")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Record Animal Sale</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("sales.recordAnimalSale")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Animal *</Label>
             <Select value={form.animalId} onValueChange={(v) => setForm((f) => ({ ...f, animalId: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select animal" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("sales.selectAnimal")} /></SelectTrigger>
               <SelectContent>
                 {(animals ?? []).map((a: any) => (
                   <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
@@ -100,13 +100,13 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
               <Input type="number" placeholder="0.0" value={form.weightAtSale} onChange={(e) => setForm((f) => ({ ...f, weightAtSale: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>Buyer Name</Label>
-              <Input placeholder="Buyer" value={form.buyerName} onChange={(e) => setForm((f) => ({ ...f, buyerName: e.target.value }))} />
+              <Label>{t("sales.buyerName")}</Label>
+              <Input placeholder={t("common.buyer")} value={form.buyerName} onChange={(e) => setForm((f) => ({ ...f, buyerName: e.target.value }))} />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>{t("common.notes")}</Label>
-            <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+            <Input placeholder={t("common.optionalNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
@@ -135,7 +135,7 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
 
   const update = trpc.sales.update.useMutation({
     onSuccess: () => {
-      toast.success("Sale updated");
+      toast.success(t("sales.updated"));
       utils.sales.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.animals.getAllPnL.invalidate();
@@ -160,7 +160,7 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
   };
 
   const handleSave = () => {
-    if (!form.salePrice) { toast.error("Sale price is required"); return; }
+    if (!form.salePrice) { toast.error(t("sales.priceRequired")); return; }
     const pricePerKg = form.weightAtSale && parseFloat(form.weightAtSale) > 0
       ? String(parseFloat(form.salePrice) / parseFloat(form.weightAtSale))
       : undefined;
@@ -181,7 +181,7 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
       <DialogTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-1.5 h-8">
           <Pencil className="h-3.5 w-3.5" />
-          {isPending ? <span className="text-xs text-amber-600 font-medium">Enter Price</span> : null}
+          {isPending ? <span className="text-xs text-amber-600 font-medium">{t("sales.enterPrice")}</span> : null}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-md">
@@ -208,17 +208,17 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Sale Date</Label>
+              <Label>{t("common.saleDate")}</Label>
               <Input type="date" value={form.saleDate} onChange={(e) => setForm((f) => ({ ...f, saleDate: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <Label>Buyer Name</Label>
-              <Input placeholder="Buyer" value={form.buyerName} onChange={(e) => setForm((f) => ({ ...f, buyerName: e.target.value }))} />
+              <Label>{t("sales.buyerName")}</Label>
+              <Input placeholder={t("common.buyer")} value={form.buyerName} onChange={(e) => setForm((f) => ({ ...f, buyerName: e.target.value }))} />
             </div>
           </div>
           <div className="space-y-1.5">
             <Label>{t("common.notes")}</Label>
-            <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+            <Input placeholder={t("common.optionalNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
           {form.salePrice && form.weightAtSale && parseFloat(form.weightAtSale) > 0 && (
             <p className="text-sm text-muted-foreground">
@@ -244,7 +244,7 @@ export default function Sales() {
 
   const deleteSale = trpc.recycleBin.deleteSale.useMutation({
     onSuccess: () => {
-      toast.success("Sale record moved to Recycle Bin");
+      toast.success(t("sales.movedToBin"));
       utils.sales.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.animals.getAllPnL.invalidate();
@@ -261,7 +261,7 @@ export default function Sales() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Sales Records
+            {t("sales.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {(sales ?? []).length} sales · Total Revenue: EGP {totalRevenue.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
@@ -285,11 +285,11 @@ export default function Sales() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("animals.animalId")}</TableHead>
-                  <TableHead>Species / Category</TableHead>
+                  <TableHead>{t("sales.speciesCategory")}</TableHead>
                   <TableHead>{t("common.date")}</TableHead>
                   <TableHead>Sale Price (EGP)</TableHead>
                   <TableHead>{t("pnl.weightAtSale")}</TableHead>
-                  <TableHead>Price / kg</TableHead>
+                  <TableHead>{t("pnl.pricePerKg")}</TableHead>
                   <TableHead>{t("pnl.buyer")}</TableHead>
                   <TableHead>{t("common.notes")}</TableHead>
                   <TableHead className="text-right">{t("common.actions")}</TableHead>
@@ -305,7 +305,7 @@ export default function Sales() {
                     </TableRow>
                   ))
                 ) : (sales ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No sales recorded yet.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">{t("sales.noSalesYet")}</TableCell></TableRow>
                 ) : (
                   (sales ?? []).map((s: any) => {
                     // Support both flat and nested response shapes
@@ -341,7 +341,7 @@ export default function Sales() {
                         <TableCell>{saleDate ? new Date(saleDate).toLocaleDateString() : "—"}</TableCell>
                         <TableCell>
                           {isPending
-                            ? <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">Pending</Badge>
+                            ? <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">{t("common.pending")}</Badge>
                             : <span className="font-semibold text-green-600">{salePrice.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>
                           }
                         </TableCell>
@@ -362,7 +362,7 @@ export default function Sales() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle className="flex items-center gap-2">
                                     <AlertTriangle className="h-5 w-5 text-destructive" />
-                                    Delete Sale Record
+                                    {t("sales.deleteSaleRecord")}
                                   </AlertDialogTitle>
                                   <AlertDialogDescription>
                                     Move sale record for <strong>{animalCode}</strong> to the Recycle Bin? You can restore it anytime.
@@ -371,7 +371,7 @@ export default function Sales() {
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                   <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteSale.mutate({ id: saleId })}>
-                                    Move to Bin
+                                    {t("common.moveToBin")}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>

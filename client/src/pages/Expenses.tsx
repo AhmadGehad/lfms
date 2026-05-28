@@ -95,7 +95,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5">
               <Label>Category *</Label>
               <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v, subCategoryId: "" }))}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                 <SelectContent>
                   {(categories ?? []).map((c: any) => (
                     <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
@@ -129,7 +129,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
               <div className="space-y-1.5">
                 <Label>Animal Category *</Label>
                 <Select value={form.categoryTarget} onValueChange={(v) => setForm((f) => ({ ...f, categoryTarget: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                   <SelectContent>
                     {(animalCategories ?? []).map((c: any) => (
                       <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>

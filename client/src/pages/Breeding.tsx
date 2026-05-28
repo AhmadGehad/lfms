@@ -51,7 +51,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
   const utils = trpc.useUtils();
   const recordBirth = trpc.breeding.recordBirth.useMutation({
     onSuccess: () => {
-      toast.success("Birth recorded successfully");
+      toast.success(t("breeding.birthRecorded"));
       utils.breeding.listLambing.invalidate();
       setOpen(false);
       reset();
@@ -62,7 +62,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const onSubmit = (data: any) => {
     if (!data.sex || !data.birthTypeId) {
-      toast.error("Sex and birth type are required");
+      toast.error(t("breeding.sexBirthTypeRequired"));
       return;
     }
     recordBirth.mutate({
@@ -96,7 +96,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>{t("breeding.birthType")} *</Label>
               <Controller name="birthTypeId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectType")} /></SelectTrigger>
                   <SelectContent>
                     {(birthTypes ?? []).map((bt: any) => (
                       <SelectItem key={bt.id} value={String(bt.id)}>{bt.name}</SelectItem>
@@ -109,7 +109,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>Sex *</Label>
               <Controller name="sex" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select sex" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectSex")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="female">Female</SelectItem>
                     <SelectItem value="male">Male</SelectItem>
@@ -127,7 +127,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>Dam (Mother)</Label>
               <Controller name="damId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select dam" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("breeding.selectDam")} /></SelectTrigger>
                   <SelectContent>
                     {females.map((a: any) => (
                       <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
@@ -140,7 +140,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>{t("breeding.sire")}</Label>
               <Controller name="sireId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select sire" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("breeding.selectSire")} /></SelectTrigger>
                   <SelectContent>
                     {males.map((a: any) => (
                       <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
@@ -153,7 +153,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>Assign to Group</Label>
               <Controller name="groupId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
                   <SelectContent>
                     {(groups ?? []).map((g: any) => (
                       <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
@@ -165,7 +165,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5 col-span-2">
               <Label>Notes</Label>
               <Controller name="notes" control={control} render={({ field }) => (
-                <Input placeholder="Optional notes..." {...field} />
+                <Input placeholder={t("common.optionalNotes")} {...field} />
               )} />
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function Breeding() {
   const utils = trpc.useUtils();
 
   const deleteLambingLog = trpc.recycleBin.deleteLambingLog.useMutation({
-    onSuccess: () => { toast.success("Birth record moved to Recycle Bin"); utils.breeding.listLambing.invalidate(); },
+    onSuccess: () => { toast.success(t("breeding.birthMovedToBin")); utils.breeding.listLambing.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
   const promoteLamb = trpc.breeding.promoteLamb.useMutation({
@@ -212,7 +212,7 @@ export default function Breeding() {
 
   const handlePromote = () => {
     if (!promoteDialog.lambId || !promoteForm.categoryId || !promoteForm.speciesId || !promoteForm.groupId || !promoteForm.statusId) {
-      toast.error("All fields required for promotion");
+      toast.error(t("breeding.promotionFieldsRequired"));
       return;
     }
     promoteLamb.mutate({
@@ -339,7 +339,7 @@ export default function Breeding() {
             <div className="space-y-1.5">
               <Label>Species *</Label>
               <Select value={promoteForm.speciesId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, speciesId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select species" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectSpecies")} /></SelectTrigger>
                 <SelectContent>
                   {(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                 </SelectContent>
@@ -348,7 +348,7 @@ export default function Breeding() {
             <div className="space-y-1.5">
               <Label>Category *</Label>
               <Select value={promoteForm.categoryId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, categoryId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                 <SelectContent>
                   {(categories ?? []).map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                 </SelectContent>
@@ -357,7 +357,7 @@ export default function Breeding() {
             <div className="space-y-1.5">
               <Label>Group *</Label>
               <Select value={promoteForm.groupId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, groupId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select group" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
                 <SelectContent>
                   {(groups ?? []).map((g: any) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                 </SelectContent>
@@ -366,7 +366,7 @@ export default function Breeding() {
             <div className="space-y-1.5">
               <Label>Initial Status *</Label>
               <Select value={promoteForm.statusId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, statusId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("common.selectStatus")} /></SelectTrigger>
                 <SelectContent>
                   {(statuses ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                 </SelectContent>

@@ -161,7 +161,7 @@ function CategoriesTab() {
               <div className="space-y-1.5">
                 <Label>Species *</Label>
                 <Select value={form.speciesId} onValueChange={(v) => setForm((f) => ({ ...f, speciesId: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select species" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectSpecies")} /></SelectTrigger>
                   <SelectContent>{(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>

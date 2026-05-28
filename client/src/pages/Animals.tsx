@@ -83,7 +83,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const onSubmit = (data: any) => {
     if (!data.speciesId || !data.categoryId || !data.groupId || !data.statusId || !data.sex || !data.acquisitionType) {
-      toast.error("Please fill all required fields");
+      toast.error(t("common.required"));
       return;
     }
     createAnimal.mutate({
