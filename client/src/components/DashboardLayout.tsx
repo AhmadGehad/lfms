@@ -189,7 +189,7 @@ function DashboardLayoutContent({
         { icon: BookOpen, label: t("nav.auditLog"), path: "/audit" },
         { icon: Users, label: t("nav.users"), path: "/users" },
         { icon: Cog, label: t("nav.configuration"), path: "/config" },
-        { icon: Database, label: "Data Management", path: "/data" },
+        { icon: Database, label: t("nav.dataManagement"), path: "/data" },
         { icon: Trash2, label: t("nav.recycleBin") ?? "Recycle Bin", path: "/recycle-bin" },
       ],
     },

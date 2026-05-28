@@ -48,10 +48,10 @@ export default function AuditLog() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <ClipboardList className="h-6 w-6 text-primary" />
-          Audit Log
+          {t("audit.title")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Full history of all actions across the system • {filtered.length} {filtered.length === 1 ? "entry" : "entries"}
+          {t("audit.subtitle")} • {t("audit.entriesCount", { count: filtered.length })}
         </p>
       </div>
 
@@ -59,25 +59,25 @@ export default function AuditLog() {
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by entity, action, notes…"
+            placeholder={t("audit.searchPlaceholder")}
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Action" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={t("audit.action")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All actions</SelectItem>
+            <SelectItem value="all">{t("audit.allActions")}</SelectItem>
             {actions.map((a) => (
               <SelectItem key={a} value={a} className="capitalize">{a.replace(/_/g, " ")}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={entityFilter} onValueChange={setEntityFilter}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Entity" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={t("audit.entity")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All entities</SelectItem>
+            <SelectItem value="all">{t("audit.allEntities")}</SelectItem>
             {entityTypes.map((e) => (
               <SelectItem key={e} value={e} className="capitalize">{e}</SelectItem>
             ))}
@@ -93,19 +93,19 @@ export default function AuditLog() {
                 <TableRow>
                   <TableHead>{t("audit.timestamp")}</TableHead>
                   <TableHead>{t("audit.action")}</TableHead>
-                  <TableHead>Entity Type</TableHead>
+                  <TableHead>{t("audit.entityType")}</TableHead>
                   <TableHead>{t("audit.entityId")}</TableHead>
                   <TableHead>{t("audit.user")}</TableHead>
-                  <TableHead>Notes</TableHead>
+                  <TableHead>{t("audit.notes")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-8">{t("common.loading")}</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
-                      {(entries ?? []).length === 0 ? "No audit entries yet." : "No entries match your filters."}
+                      {(entries ?? []).length === 0 ? t("audit.noEntries") : t("audit.noMatch")}
                     </TableCell>
                   </TableRow>
                 ) : (
