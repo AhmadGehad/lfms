@@ -83,7 +83,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
         <Button className="gap-2"><Plus className="h-4 w-4" />{t("breeding.recordBirth")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Record New Birth</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("breeding.recordNewBirth")}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -111,8 +111,8 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder={t("common.selectSex")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">{t("common.female")}</SelectItem>
+                    <SelectItem value="male">{t("common.male")}</SelectItem>
                   </SelectContent>
                 </Select>
               )} />
@@ -150,7 +150,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label>Assign to Group</Label>
+              <Label>{t("breeding.assignToGroup")}</Label>
               <Controller name="groupId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
@@ -163,7 +163,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5 col-span-2">
-              <Label>Notes</Label>
+              <Label>{t("common.notes")}</Label>
               <Controller name="notes" control={control} render={({ field }) => (
                 <Input placeholder={t("common.optionalNotes")} {...field} />
               )} />
@@ -232,7 +232,7 @@ export default function Breeding() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Egg className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Breeding & Lambing
+            {t("breeding.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {(lambingLog ?? []).length} birth records · {(lambingLog ?? []).filter((l: any) => !l.isPromoted).length} pending promotion
@@ -243,21 +243,21 @@ export default function Breeding() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Lambing Log</CardTitle>
+          <CardTitle className="text-base">{t("breeding.lambingLog")}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Lamb ID</TableHead>
+                  <TableHead>{t("breeding.lambId")}</TableHead>
                   <TableHead>{t("breeding.birthDate")}</TableHead>
                   <TableHead>Sex</TableHead>
                   <TableHead>{t("breeding.birthType")}</TableHead>
                   <TableHead>{t("breeding.birthWeight")}</TableHead>
                   <TableHead>{t("breeding.dam")}</TableHead>
                   <TableHead>{t("breeding.sire")}</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
                   <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -271,7 +271,7 @@ export default function Breeding() {
                     </TableRow>
                   ))
                 ) : (lambingLog ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">No birth records yet. Record the first birth above.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">{t("breeding.noBirthRecords")}</TableCell></TableRow>
                 ) : (
                   (lambingLog ?? []).map((l: any) => (
                     <TableRow key={l.id}>
@@ -284,16 +284,16 @@ export default function Breeding() {
                       <TableCell className="font-mono text-xs">{l.sireAnimalId ?? "—"}</TableCell>
                       <TableCell>
                         {l.isPromoted ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Promoted</Badge>
+                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("breeding.promoted")}</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-xs">Pending</Badge>
+                          <Badge variant="outline" className="text-xs">{t("common.pending")}</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           {!l.isPromoted && (
                             <Button size="sm" variant="outline" onClick={() => setPromoteDialog({ open: true, lambId: l.id })}>
-                              Promote
+                              {t("breeding.promote")}
                             </Button>
                           )}
                           <AlertDialog>
@@ -306,7 +306,7 @@ export default function Breeding() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="flex items-center gap-2">
                                   <AlertTriangle className="h-5 w-5 text-destructive" />
-                                  Delete Birth Record
+                                  {t("breeding.deleteBirthRecord")}
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
                                   Move birth record <strong>{l.lambId}</strong> to the Recycle Bin? You can restore it anytime.
@@ -315,7 +315,7 @@ export default function Breeding() {
                               <AlertDialogFooter>
                                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteLambingLog.mutate({ id: l.id })}>
-                                  Move to Bin
+                                  {t("common.moveToBin")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -334,7 +334,7 @@ export default function Breeding() {
       {/* Promote Dialog */}
       <Dialog open={promoteDialog.open} onOpenChange={(o) => setPromoteDialog({ open: o, lambId: promoteDialog.lambId })}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Promote Lamb to Animal Registry</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("breeding.promoteLambToRegistry")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label>Species *</Label>

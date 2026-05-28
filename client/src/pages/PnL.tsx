@@ -63,7 +63,7 @@ export default function PnL() {
           <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           {t("nav.pnl") || "P&L per Animal"}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">Lifetime profitability for each animal</p>
+        <p className="text-sm text-muted-foreground mt-1">{t("pnl.lifetimeSub")}</p>
       </div>
 
       {/* Summary cards */}
@@ -71,16 +71,16 @@ export default function PnL() {
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Total Animals</p>
+              <p className="text-xs text-muted-foreground">{t("pnl.totalAnimals")}</p>
               <p className="text-xl sm:text-2xl font-bold">{filtered.length}</p>
               <p className="text-xs text-muted-foreground mt-1">{activeCount} active · {closedAnimals.length} closed</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Realised Revenue</p>
+              <p className="text-xs text-muted-foreground">{t("pnl.realisedRevenue")}</p>
               <p className="text-xl sm:text-2xl font-bold text-green-600">{fmt(totalRevenue)}</p>
-              <p className="text-xs text-muted-foreground mt-1">From sold animals</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.fromSold")}</p>
             </CardContent>
           </Card>
           <Card>
@@ -92,7 +92,7 @@ export default function PnL() {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Realised Net P&L</p>
+              <p className="text-xs text-muted-foreground">{t("pnl.realisedNet")}</p>
               <p className={`text-xl sm:text-2xl font-bold ${totalNetPnL >= 0 ? "text-green-600" : "text-red-600"}`}>
                 {fmt(totalNetPnL)}
               </p>
@@ -109,25 +109,25 @@ export default function PnL() {
         <div className="relative flex-1 min-w-48">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search by animal ID..."
+            placeholder={t("pnl.searchPlaceholder")}
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={filterSpecies} onValueChange={(v) => { setFilterSpecies(v); setFilterCategory("all"); }}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="Species" /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder={t("common.species")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Species</SelectItem>
+            <SelectItem value="all">{t("pnl.allSpecies")}</SelectItem>
             {(species ?? []).map((s: any) => (
               <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Category" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={t("common.category")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem value="all">{t("pnl.allCategories")}</SelectItem>
             {(categories ?? [])
               .filter((c: any) => filterSpecies === "all" || c.speciesId === Number(filterSpecies))
               .map((c: any) => (
@@ -136,9 +136,9 @@ export default function PnL() {
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-40"><SelectValue placeholder={t("common.status")} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="all">{t("pnl.allStatus")}</SelectItem>
             {allStatuses.map((s) => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
             ))}
@@ -174,26 +174,26 @@ export default function PnL() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Animal ID</TableHead>
-                    <TableHead>Species</TableHead>
+                    <TableHead>{t("pnl.animalIdCol")}</TableHead>
+                    <TableHead>{t("common.species")}</TableHead>
                     <TableHead>{t("common.category")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
-                    <TableHead className="text-right">Days on Farm</TableHead>
+                    <TableHead className="text-right">{t("pnl.daysOnFarm")}</TableHead>
                     <TableHead className="text-right">{t("animals.purchaseCost")}</TableHead>
-                    <TableHead className="text-right">Feed Cost</TableHead>
-                    <TableHead className="text-right">Direct Exp.</TableHead>
-                    <TableHead className="text-right">Cat. Exp.</TableHead>
-                    <TableHead className="text-right">Total Cost</TableHead>
-                    <TableHead className="text-right">Revenue</TableHead>
-                    <TableHead className="text-right">Net P&L</TableHead>
-                    <TableHead className="text-right">Cost/Day</TableHead>
+                    <TableHead className="text-right">{t("pnl.feedCost")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.directExp")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.catExp")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.totalCost")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.revenue")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.netPnL")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.costDay")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
-                        No animals found.
+                        {t("pnl.noAnimals")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -273,6 +273,7 @@ export default function PnL() {
 
 // ── PnL Chart — bar chart sorted by netPnL ──────────────────────────────────
 function PnLChart({ data }: { data: any[] }) {
+  const { t } = useTranslation();
   // Take only closed animals (have revenue), sort by netPnL, show top 20
   const closed = data
     .filter((a) => !a.isActive && a.revenue > 0)
@@ -280,7 +281,7 @@ function PnLChart({ data }: { data: any[] }) {
     .slice(0, 20);
 
   if (closed.length === 0) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">No closed animals to chart yet.</p>;
+    return <p className="text-sm text-muted-foreground py-8 text-center">{t("pnl.noClosedChart")}</p>;
   }
 
   const chartData = closed.map((a) => ({
