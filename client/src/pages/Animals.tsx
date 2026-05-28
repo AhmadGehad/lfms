@@ -105,12 +105,12 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
-          Register Animal
+          {t("animals.registerAnimal")}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Register New Animal</DialogTitle>
+          <DialogTitle>{t("animals.registerNewAnimal")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -172,8 +172,8 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder={t("common.sex")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="male">{t("common.male")}</SelectItem>
+                    <SelectItem value="female">{t("common.female")}</SelectItem>
                   </SelectContent>
                 </Select>
               )} />
@@ -184,8 +184,8 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder={t("common.type")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="purchased">Purchased</SelectItem>
-                    <SelectItem value="born">Born on Farm</SelectItem>
+                    <SelectItem value="purchased">{t("common.purchased")}</SelectItem>
+                    <SelectItem value="born">{t("animals.bornOnFarm")}</SelectItem>
                   </SelectContent>
                 </Select>
               )} />
@@ -237,7 +237,7 @@ export default function Animals() {
   const utils = trpc.useUtils();
   const deleteAnimalMutation = trpc.recycleBin.deleteAnimal.useMutation({
     onSuccess: () => {
-      toast.success("Animal moved to Recycle Bin");
+      toast.success(t("animals.movedToBin"));
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.dashboard.getHeadCountByCategory.invalidate();
@@ -274,7 +274,7 @@ export default function Animals() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Leaf className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Animal Registry
+            {t("animals.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {filtered.length} animals · All lifecycle stages
@@ -290,7 +290,7 @@ export default function Animals() {
             <div className="relative flex-1 min-w-48">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by ID, category, species..."
+                placeholder={t("animals.searchPlaceholder")}
                 className="pl-9"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -302,16 +302,16 @@ export default function Animals() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Exited</SelectItem>
+                <SelectItem value="active">{t("common.active")}</SelectItem>
+                <SelectItem value="inactive">{t("animals.exited")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterSpecies} onValueChange={setFilterSpecies}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Species" />
+                <SelectValue placeholder={t("common.species")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Species</SelectItem>
+                <SelectItem value="all">{t("animals.allSpecies")}</SelectItem>
                 {(species ?? []).map((s: any) => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                 ))}
@@ -319,10 +319,10 @@ export default function Animals() {
             </Select>
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("common.status")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="all">{t("animals.allStatuses")}</SelectItem>
                 {(statuses ?? []).map((s: any) => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
                 ))}
@@ -359,7 +359,7 @@ export default function Animals() {
                   {filtered.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
-                        No animals found. Register the first animal to get started.
+                        {t("animals.noAnimalsFound")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -403,7 +403,7 @@ export default function Animals() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle className="flex items-center gap-2">
                                       <AlertTriangle className="h-5 w-5 text-destructive" />
-                                      Delete Animal
+                                      {t("animals.deleteAnimal")}
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
                                       Move <strong>{a.animal.animalId}</strong> and all related records to the Recycle Bin? You can restore it anytime.
@@ -415,7 +415,7 @@ export default function Animals() {
                                       className="bg-destructive hover:bg-destructive/90"
                                       onClick={(e) => { e.stopPropagation(); deleteAnimalMutation.mutate({ id: a.animal.id }); }}
                                     >
-                                      Move to Bin
+                                      {t("common.moveToBin")}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>

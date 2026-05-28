@@ -48,7 +48,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const createExpense = trpc.expenses.create.useMutation({
     onSuccess: () => {
-      toast.success("Expense recorded");
+      toast.success(t("expenses.recorded"));
       utils.expenses.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.animals.getAllPnL.invalidate();
@@ -59,9 +59,9 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   });
 
   const handleSubmit = () => {
-    if (!form.categoryId || !form.amount) { toast.error("Category and amount required"); return; }
-    if (form.targetType === "head" && !form.headId) { toast.error("Select an animal for HEAD expense"); return; }
-    if (form.targetType === "category" && !form.categoryTarget) { toast.error("Select a category for CATEGORY expense"); return; }
+    if (!form.categoryId || !form.amount) { toast.error(t("expenses.categoryAmountRequired")); return; }
+    if (form.targetType === "head" && !form.headId) { toast.error(t("expenses.selectAnimalForHead")); return; }
+    if (form.targetType === "category" && !form.categoryTarget) { toast.error(t("expenses.selectCategoryForCat")); return; }
     createExpense.mutate({
       expenseDate: form.expenseDate,
       categoryId: Number(form.categoryId),
@@ -81,7 +81,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
         <Button className="gap-2"><Plus className="h-4 w-4" />{t("expenses.addExpense")}</Button>
       </DialogTrigger>
       <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Record Expense</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("expenses.recordExpense")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -106,7 +106,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5">
               <Label>{t("expenses.subCategory")}</Label>
               <Select value={form.subCategoryId} onValueChange={(v) => setForm((f) => ({ ...f, subCategoryId: v }))} disabled={!form.categoryId}>
-                <SelectTrigger><SelectValue placeholder="Select sub-category" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("expenses.selectSubCategory")} /></SelectTrigger>
                 <SelectContent>
                   {(subCategories ?? []).map((sc: any) => (
                     <SelectItem key={sc.id} value={String(sc.id)}>{sc.name}</SelectItem>
@@ -121,7 +121,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
                 <SelectContent>
                   <SelectItem value="general">General (Farm-wide)</SelectItem>
                   <SelectItem value="category">Category (shared by group)</SelectItem>
-                  <SelectItem value="head">Specific Animal</SelectItem>
+                  <SelectItem value="head">{t("expenses.specificAnimal")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -142,7 +142,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
               <div className="space-y-1.5">
                 <Label>Animal *</Label>
                 <Select value={form.headId} onValueChange={(v) => setForm((f) => ({ ...f, headId: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Select animal" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("expenses.selectAnimal")} /></SelectTrigger>
                   <SelectContent>
                     {(animals ?? []).map((a: any) => (
                       <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
@@ -153,12 +153,12 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
             )}
           </div>
           <div className="space-y-1.5">
-            <Label>Vendor / Supplier</Label>
-            <Input placeholder="Vendor name" value={form.vendorName} onChange={(e) => setForm((f) => ({ ...f, vendorName: e.target.value }))} />
+            <Label>{t("expenses.vendorSupplier")}</Label>
+            <Input placeholder={t("expenses.vendorName")} value={form.vendorName} onChange={(e) => setForm((f) => ({ ...f, vendorName: e.target.value }))} />
           </div>
           <div className="space-y-1.5">
             <Label>{t("common.notes")}</Label>
-            <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+            <Input placeholder={t("common.optionalNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
@@ -185,7 +185,7 @@ export default function Expenses() {
 
   const deleteExpense = trpc.recycleBin.deleteExpense.useMutation({
     onSuccess: () => {
-      toast.success("Expense moved to Recycle Bin");
+      toast.success(t("expenses.movedToBin"));
       utils.expenses.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.animals.getAllPnL.invalidate();
@@ -201,7 +201,7 @@ export default function Expenses() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Expense Log
+            {t("expenses.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {(expenses ?? []).length} entries · Total: EGP {totalAmount.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
@@ -227,7 +227,7 @@ export default function Expenses() {
                   <TableHead>{t("common.category")}</TableHead>
                   <TableHead>{t("expenses.subCategory")}</TableHead>
                   <TableHead>Amount (EGP)</TableHead>
-                  <TableHead>Allocation</TableHead>
+                  <TableHead>{t("expenses.allocation")}</TableHead>
                   <TableHead>{t("expenses.vendor")}</TableHead>
                   <TableHead>{t("common.notes")}</TableHead>
                   <TableHead className="text-right">{t("common.actions")}</TableHead>
@@ -243,7 +243,7 @@ export default function Expenses() {
                     </TableRow>
                   ))
                 ) : (expenses ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">No expenses found for this period.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">{t("expenses.noExpensesPeriod")}</TableCell></TableRow>
                 ) : (
                   (expenses ?? []).map((e: any) => (
                     <TableRow key={e.expense.id}>
@@ -267,7 +267,7 @@ export default function Expenses() {
                             <AlertDialogHeader>
                               <AlertDialogTitle className="flex items-center gap-2">
                                 <AlertTriangle className="h-5 w-5 text-destructive" />
-                                Delete Expense
+                                {t("expenses.deleteExpense")}
                               </AlertDialogTitle>
                               <AlertDialogDescription>
                                 Move this <strong>EGP {parseFloat(String(e.expense.amount)).toLocaleString()}</strong> expense to the Recycle Bin? You can restore it anytime.
@@ -276,7 +276,7 @@ export default function Expenses() {
                             <AlertDialogFooter>
                               <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                               <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteExpense.mutate({ id: e.expense.id })}>
-                                Move to Bin
+                                {t("common.moveToBin")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
