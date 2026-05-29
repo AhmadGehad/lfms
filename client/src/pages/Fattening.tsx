@@ -81,7 +81,7 @@ function RecordWeightDialog({
         <div className="space-y-4">
           {!preselectedId && (
             <div className="space-y-1.5">
-              <Label>Animal</Label>
+              <Label>{t("common.animal")}</Label>
               <Select value={animalId} onValueChange={setAnimalId}>
                 <SelectTrigger><SelectValue placeholder={t("fattening.selectAnimal")} /></SelectTrigger>
                 <SelectContent>
@@ -154,7 +154,7 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
             <Select value={form.groupId} onValueChange={(v) => setForm((f) => ({ ...f, groupId: v }))}>
               <SelectTrigger><SelectValue placeholder={t("fattening.noGroup")} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">No group</SelectItem>
+                <SelectItem value="none">{t("common.noGroup")}</SelectItem>
                 {groups.map((g: any) => (
                   <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
                 ))}

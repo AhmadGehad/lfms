@@ -114,89 +114,89 @@ export default function RecycleBin() {
   };
 
   const restoreAnimal = trpc.recycleBin.restoreAnimal.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Animal restored successfully"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("animals.title")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreExpense = trpc.recycleBin.restoreExpense.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Expense restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("nav.expenses")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreWeightLog = trpc.recycleBin.restoreWeightLog.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Weight entry restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("animalProfile.weightLog")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreLambingLog = trpc.recycleBin.restoreLambingLog.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Lambing record restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("breeding.lambingLog")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreRationPlan = trpc.recycleBin.restoreRationPlan.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Ration plan restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("feed.rationPlans")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreFeedStock = trpc.recycleBin.restoreFeedStock.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Feed stock entry restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("feed.stockLedger")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreSale = trpc.recycleBin.restoreSale.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Sale record restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("nav.sales")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreSpecies = trpc.recycleBin.restoreSpecies.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Species restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("config.species")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreCategory = trpc.recycleBin.restoreCategory.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Category restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("config.categories")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreGroup = trpc.recycleBin.restoreGroup.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Group restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("config.groups")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreStatus = trpc.recycleBin.restoreStatus.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Status restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("config.statusLabel")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreBirthType = trpc.recycleBin.restoreBirthType.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Birth type restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("config.birthTypes")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreFeedItem = trpc.recycleBin.restoreFeedItem.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Feed item restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("config.feedItems")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
   const restoreExpenseCategory = trpc.recycleBin.restoreExpenseCategory.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Expense category restored"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("config.expenseCategories")} ${t("recycleBin.restored")}`); },
     onError: (e) => toast.error(e.message),
   });
 
   // ─── PURGE MUTATIONS ────────────────────────────────────────────────────────
   const purgeAnimal = trpc.recycleBin.purgeAnimal.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Animal permanently deleted"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("animals.title")} ${t("recycleBin.permanentlyDeleted")}`); },
     onError: (e) => toast.error(e.message),
   });
   const purgeExpense = trpc.recycleBin.purgeExpense.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Expense permanently deleted"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("nav.expenses")} ${t("recycleBin.permanentlyDeleted")}`); },
     onError: (e) => toast.error(e.message),
   });
   const purgeWeightLog = trpc.recycleBin.purgeWeightLog.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Weight entry permanently deleted"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("animalProfile.weightLog")} ${t("recycleBin.permanentlyDeleted")}`); },
     onError: (e) => toast.error(e.message),
   });
   const purgeLambingLog = trpc.recycleBin.purgeLambingLog.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Lambing record permanently deleted"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("breeding.lambingLog")} ${t("recycleBin.permanentlyDeleted")}`); },
     onError: (e) => toast.error(e.message),
   });
   const purgeRationPlan = trpc.recycleBin.purgeRationPlan.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Ration plan permanently deleted"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("feed.rationPlans")} ${t("recycleBin.permanentlyDeleted")}`); },
     onError: (e) => toast.error(e.message),
   });
   const purgeFeedStock = trpc.recycleBin.purgeFeedStock.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Feed stock entry permanently deleted"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("feed.stockLedger")} ${t("recycleBin.permanentlyDeleted")}`); },
     onError: (e) => toast.error(e.message),
   });
   const purgeSale = trpc.recycleBin.purgeSale.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Sale permanently deleted"); },
+    onSuccess: () => { invalidateAll(); toast.success(`${t("nav.sales")} ${t("recycleBin.permanentlyDeleted")}`); },
     onError: (e) => toast.error(e.message),
   });
   const purgeAll = trpc.recycleBin.purgeAll.useMutation({

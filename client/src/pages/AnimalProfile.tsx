@@ -112,7 +112,7 @@ function WeightChart({ animalId }: { animalId: number }) {
       if (result?.autoStaged && result?.newAnimalId) {
         toast.success(`Weight recorded — auto-staged to ${result.newAnimalId}`);
       } else {
-        toast.success("Weight recorded");
+        toast.success(t("animalProfile.weightRecorded"));
       }
       utils.animals.getWeightLog.invalidate({ animalId });
       utils.animals.getPnL.invalidate({ animalId });
@@ -139,7 +139,7 @@ function WeightChart({ animalId }: { animalId: number }) {
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="gap-2">
               <Plus className="h-3 w-3" />
-              Record Weight
+              {t("fattening.recordWeight")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
@@ -372,7 +372,7 @@ function AnimalSalesTab({ animalId }: { animalId: number }) {
             <TableRow>
               <TableHead>{t("common.saleDate")}</TableHead>
               <TableHead>{t("common.salePrice")}</TableHead>
-              <TableHead>Weight at Sale</TableHead>
+              <TableHead>{t("animalProfile.weightAtSale")}</TableHead>
               <TableHead>{t("pnl.pricePerKg")}</TableHead>
               <TableHead>{t("common.buyer")}</TableHead>
               <TableHead>{t("common.notes")}</TableHead>
@@ -594,7 +594,7 @@ function DownloadPdfButton({ animal, animalId }: { animal: any; animalId: number
 
   const handleDownload = () => {
     if (!pnl) {
-      toast.error("Loading data, try again in a moment");
+      toast.error(t("animalProfile.loadingData"));
       return;
     }
     generateAnimalPnLPdf({
@@ -604,7 +604,7 @@ function DownloadPdfButton({ animal, animalId }: { animal: any; animalId: number
       currency,
       farmName,
     });
-    toast.success("PDF downloaded");
+    toast.success(t("animalProfile.pdfDownloaded"));
   };
 
   return (

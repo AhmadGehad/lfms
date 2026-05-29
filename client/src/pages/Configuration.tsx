@@ -45,11 +45,11 @@ function SpeciesTab() {
   const utils = trpc.useUtils();
 
   const create = trpc.config.createSpecies.useMutation({
-    onSuccess: () => { toast.success("Species created"); utils.config.getSpecies.invalidate(); setOpen(false); setName(""); setDescription(""); },
+    onSuccess: () => { toast.success(`${t("config.species")} ${t("common.created")}`); utils.config.getSpecies.invalidate(); setOpen(false); setName(""); setDescription(""); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateSpecies.useMutation({
-    onSuccess: () => { toast.success("Species updated"); utils.config.getSpecies.invalidate(); setEditOpen(false); setEditItem(null); },
+    onSuccess: () => { toast.success(`${t("config.species")} ${t("common.updated")}`); utils.config.getSpecies.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -86,13 +86,13 @@ function SpeciesTab() {
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(species ?? []).map((s: any) => (
             <TableRow key={s.id}>
               <TableCell className="font-medium">{s.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{s.description ?? "—"}</TableCell>
-              <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Active</Badge></TableCell>
+              <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge></TableCell>
               <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}
@@ -114,11 +114,11 @@ function CategoriesTab() {
   const utils = trpc.useUtils();
 
   const create = trpc.config.createCategory.useMutation({
-    onSuccess: () => { toast.success("Category created"); utils.config.getCategories.invalidate(); setOpen(false); setForm({ name: "", idPrefix: "", speciesId: "", targetWeightKg: "" }); },
+    onSuccess: () => { toast.success(`${t("config.categories")} ${t("common.created")}`); utils.config.getCategories.invalidate(); setOpen(false); setForm({ name: "", idPrefix: "", speciesId: "", targetWeightKg: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateCategory.useMutation({
-    onSuccess: () => { toast.success("Category updated"); utils.config.getCategories.invalidate(); setEditOpen(false); setEditItem(null); },
+    onSuccess: () => { toast.success(`${t("config.categories")} ${t("common.updated")}`); utils.config.getCategories.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -256,11 +256,11 @@ function GroupsTab() {
   const utils = trpc.useUtils();
 
   const create = trpc.config.createGroup.useMutation({
-    onSuccess: () => { toast.success("Group created"); utils.config.getGroups.invalidate(); setOpen(false); setForm({ name: "", groupCode: "", description: "" }); },
+    onSuccess: () => { toast.success(`${t("config.groups")} ${t("common.created")}`); utils.config.getGroups.invalidate(); setOpen(false); setForm({ name: "", groupCode: "", description: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateGroup.useMutation({
-    onSuccess: () => { toast.success("Group updated"); utils.config.getGroups.invalidate(); setEditOpen(false); setEditItem(null); },
+    onSuccess: () => { toast.success(`${t("config.groups")} ${t("common.updated")}`); utils.config.getGroups.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -325,11 +325,11 @@ function StatusesTab() {
   const [form, setForm] = useState({ name: "", description: "" });
   const utils = trpc.useUtils();
   const create = trpc.config.createStatus.useMutation({
-    onSuccess: () => { toast.success("Status created"); utils.config.getStatuses.invalidate(); setOpen(false); setForm({ name: "", description: "" }); },
+    onSuccess: () => { toast.success(`${t("config.statusLabel")} ${t("common.created")}`); utils.config.getStatuses.invalidate(); setOpen(false); setForm({ name: "", description: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateStatus.useMutation({
-    onSuccess: () => { toast.success("Status updated"); utils.config.getStatuses.invalidate(); setEditOpen(false); setEditItem(null); },
+    onSuccess: () => { toast.success(`${t("config.statusLabel")} ${t("common.updated")}`); utils.config.getStatuses.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
   function openEdit(s: any) { setEditItem({ ...s }); setEditOpen(true); }
@@ -386,11 +386,11 @@ function BirthTypesTab() {
   const [form, setForm] = useState({ name: "", description: "" });
   const utils = trpc.useUtils();
   const create = trpc.config.createBirthType.useMutation({
-    onSuccess: () => { toast.success("Birth type created"); utils.config.getBirthTypes.invalidate(); setOpen(false); setForm({ name: "", description: "" }); },
+    onSuccess: () => { toast.success(`${t("config.birthTypes")} ${t("common.created")}`); utils.config.getBirthTypes.invalidate(); setOpen(false); setForm({ name: "", description: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateBirthType.useMutation({
-    onSuccess: () => { toast.success("Birth type updated"); utils.config.getBirthTypes.invalidate(); setEditOpen(false); setEditItem(null); },
+    onSuccess: () => { toast.success(`${t("config.birthTypes")} ${t("common.updated")}`); utils.config.getBirthTypes.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
   function openEdit(b: any) { setEditItem({ ...b }); setEditOpen(true); }
@@ -448,11 +448,11 @@ function FeedItemsTab() {
   const utils = trpc.useUtils();
 
   const create = trpc.config.createFeedItem.useMutation({
-    onSuccess: () => { toast.success("Feed item created"); utils.config.getFeedItems.invalidate(); setOpen(false); setForm({ name: "", unit: "kg" }); },
+    onSuccess: () => { toast.success(`${t("config.feedItems")} ${t("common.created")}`); utils.config.getFeedItems.invalidate(); setOpen(false); setForm({ name: "", unit: "kg" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateFeedItem.useMutation({
-    onSuccess: () => { toast.success("Feed item updated"); utils.config.getFeedItems.invalidate(); setEditOpen(false); setEditItem(null); },
+    onSuccess: () => { toast.success(`${t("config.feedItems")} ${t("common.updated")}`); utils.config.getFeedItems.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -503,7 +503,7 @@ function FeedItemsTab() {
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.unit")}</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.unit")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(feedItems ?? []).map((fi: any) => (
             <TableRow key={fi.id}>
@@ -531,11 +531,11 @@ function ExpenseCategoriesTab() {
   const utils = trpc.useUtils();
 
   const create = trpc.config.createExpenseCategory.useMutation({
-    onSuccess: () => { toast.success("Category created"); utils.config.getExpenseCategories.invalidate(); setOpen(false); setName(""); setDescription(""); },
+    onSuccess: () => { toast.success(`${t("config.categories")} ${t("common.created")}`); utils.config.getExpenseCategories.invalidate(); setOpen(false); setName(""); setDescription(""); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateExpenseCategory.useMutation({
-    onSuccess: () => { toast.success("Category updated"); utils.config.getExpenseCategories.invalidate(); setEditOpen(false); setEditItem(null); },
+    onSuccess: () => { toast.success(`${t("config.categories")} ${t("common.updated")}`); utils.config.getExpenseCategories.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -572,13 +572,13 @@ function ExpenseCategoriesTab() {
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
               <TableCell className="font-medium">{c.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{c.description ?? "—"}</TableCell>
-              <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Active</Badge></TableCell>
+              <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge></TableCell>
               <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
             </TableRow>
           ))}
@@ -651,14 +651,14 @@ function SettingsTab() {
 
   const upsert = trpc.config.upsertSetting.useMutation({
     onSuccess: () => {
-      toast.success("Setting saved");
+      toast.success(t("common.settingSaved"));
       utils.config.getSettings.invalidate();
     },
     onError: (e: any) => toast.error(e.message),
   });
 
   const handleSave = (key: string, value: string) => {
-    if (!value.trim()) return toast.error("Value cannot be empty");
+    if (!value.trim()) return toast.error(t("common.valueEmpty"));
     upsert.mutate({ key, value: value.trim() });
   };
 
@@ -677,7 +677,7 @@ function SettingsTab() {
             className="font-mono"
           />
           <Button onClick={() => handleSave("currency", currency)} disabled={upsert.isPending}>
-            Save
+            {t("common.save")}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -694,7 +694,7 @@ function SettingsTab() {
             placeholder="e.g. Azal Farms"
           />
           <Button onClick={() => handleSave("farmName", farmName)} disabled={upsert.isPending}>
-            Save
+            {t("common.save")}
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">

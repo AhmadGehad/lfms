@@ -50,7 +50,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const addStock = trpc.feed.addStockEntry.useMutation({
     onSuccess: () => {
-      toast.success("Stock entry recorded");
+      toast.success(t("feed.stockRecorded"));
       utils.feed.getStockStatus.invalidate();
       utils.feed.getStockLedger.invalidate();
       setOpen(false);
@@ -152,7 +152,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
 
   const updateStock = trpc.feed.updateStockEntry.useMutation({
     onSuccess: () => {
-      toast.success("Stock entry updated");
+      toast.success(t("feed.stockUpdated"));
       utils.feed.getStockLedger.invalidate();
       utils.feed.getStockStatus.invalidate();
       setOpen(false);
@@ -253,7 +253,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const createPlan = trpc.feed.createRationPlan.useMutation({
     onSuccess: () => {
-      toast.success("Ration plan created");
+      toast.success(t("feed.rationCreated"));
       utils.feed.getRationPlans.invalidate();
       utils.feed.getStockStatus.invalidate();
       setOpen(false);
@@ -279,7 +279,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2"><span className="text-lg leading-none">+</span> Add Ration Plan</Button>
+        <Button size="sm" className="gap-2"><span className="text-lg leading-none">+</span> {t("feed.addRationPlan")}</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>{t("feed.addRationPlan")}</DialogTitle></DialogHeader>
@@ -356,7 +356,7 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
 
   const updatePlan = trpc.feed.updateRationPlan.useMutation({
     onSuccess: () => {
-      toast.success("Ration plan updated");
+      toast.success(t("feed.rationUpdated"));
       utils.feed.getRationPlans.invalidate();
       utils.feed.getStockStatus.invalidate();
       setOpen(false);
@@ -487,7 +487,7 @@ export default function Feed() {
 
   const deleteRationPlan = trpc.recycleBin.deleteRationPlan.useMutation({
     onSuccess: () => {
-      toast.success("Ration plan moved to Recycle Bin");
+      toast.success(t("feed.rationMovedToBin"));
       utils.feed.getRationPlans.invalidate();
     },
     onError: (e) => toast.error(e.message),

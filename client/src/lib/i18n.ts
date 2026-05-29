@@ -118,6 +118,12 @@ const en = {
     currentWeight: "Current Weight",
     feedItem: "Feed Item",
     idPrefix: "ID Prefix",
+    created: "created",
+    updated: "updated",
+    settingSaved: "Setting saved",
+    valueEmpty: "Value cannot be empty",
+    noGroup: "No group",
+    animal: "Animal",
   },
 
   // Dashboard
@@ -291,6 +297,11 @@ const en = {
     feedItemQtyRequired: "Feed item and quantity are required",
     stockMovedToBin: "Feed stock entry moved to Recycle Bin",
     qtyRequired: "Quantity is required",
+    stockRecorded: "Stock entry recorded",
+    stockUpdated: "Stock entry updated",
+    rationCreated: "Ration plan created",
+    rationUpdated: "Ration plan updated",
+    rationMovedToBin: "Ration plan moved to Recycle Bin",
   },
 
   // Expenses
@@ -555,6 +566,10 @@ const en = {
     saleRecords: "Sale Records",
     thisAnimal: "This Animal",
     weightLog: "Weight Log",
+    weightAtSale: "Weight at Sale",
+    weightRecorded: "Weight recorded",
+    loadingData: "Loading data, try again in a moment",
+    pdfDownloaded: "PDF downloaded",
     costDay: "Cost / Day",
   },
   recycleBin: {
@@ -694,6 +709,12 @@ const ar = {
     currentWeight: "الوزن الحالي",
     feedItem: "صنف العلف",
     idPrefix: "بادئة المعرّف",
+    created: "تم الإنشاء",
+    updated: "تم التحديث",
+    settingSaved: "تم حفظ الإعداد",
+    valueEmpty: "القيمة لا يمكن أن تكون فارغة",
+    noGroup: "بدون مجموعة",
+    animal: "الحيوان",
   },
 
   dashboard: {
@@ -862,6 +883,11 @@ const ar = {
     feedItemQtyRequired: "صنف العلف والكمية مطلوبان",
     stockMovedToBin: "تم نقل قيد مخزون العلف إلى سلة المحذوفات",
     qtyRequired: "الكمية مطلوبة",
+    stockRecorded: "تم تسجيل قيد المخزون",
+    stockUpdated: "تم تحديث قيد المخزون",
+    rationCreated: "تم إنشاء خطة التغذية",
+    rationUpdated: "تم تحديث خطة التغذية",
+    rationMovedToBin: "تم نقل خطة التغذية إلى سلة المحذوفات",
   },
 
   expenses: {
@@ -1118,6 +1144,10 @@ const ar = {
     saleRecords: "سجلات البيع",
     thisAnimal: "هذا الحيوان",
     weightLog: "سجل الأوزان",
+    weightAtSale: "الوزن عند البيع",
+    weightRecorded: "تم تسجيل الوزن",
+    loadingData: "جارٍ تحميل البيانات، حاول مرة أخرى بعد لحظات",
+    pdfDownloaded: "تم تنزيل PDF",
     costDay: "التكلفة / يوم",
   },
   recycleBin: {
