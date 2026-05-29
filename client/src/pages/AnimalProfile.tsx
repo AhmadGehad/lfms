@@ -50,7 +50,7 @@ function PnLCard({ animalId }: { animalId: number }) {
       <CardHeader>
         <CardTitle className="text-base flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
-          Financial Summary
+          {t("animalProfile.financialSummary")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -73,7 +73,7 @@ function PnLCard({ animalId }: { animalId: number }) {
         {pnl && (
           <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4">
             <div>
-              <p className="text-xs text-muted-foreground">Cost / Day</p>
+              <p className="text-xs text-muted-foreground">{t("animalProfile.costDay")}</p>
               <p className="text-lg font-bold">{fmt(pnl.costPerDay ?? 0)}</p>
             </div>
             <div>
@@ -82,7 +82,7 @@ function PnLCard({ animalId }: { animalId: number }) {
             </div>
             {pnl.pricePerKg > 0 && (
               <div>
-                <p className="text-xs text-muted-foreground">Price / kg at sale</p>
+                <p className="text-xs text-muted-foreground">{t("animalProfile.pricePerKgAtSale")}</p>
                 <p className="text-lg font-bold text-green-600">EGP {(pnl.pricePerKg ?? 0).toFixed(2)}</p>
               </div>
             )}
@@ -143,10 +143,10 @@ function WeightChart({ animalId }: { animalId: number }) {
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Record Weight</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("fattening.recordWeight")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Date</Label>
+                <Label>{t("common.date")}</Label>
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
               <div className="space-y-1.5">
@@ -156,7 +156,7 @@ function WeightChart({ animalId }: { animalId: number }) {
             </div>
             <DialogFooter>
               <Button onClick={() => addWeight.mutate({ animalId, weighDate: date, weightKg: weight })} disabled={!weight || addWeight.isPending}>
-                Save
+                {t("common.save")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -175,7 +175,7 @@ function WeightChart({ animalId }: { animalId: number }) {
         </ResponsiveContainer>
       ) : (
         <div className="text-center py-8 text-muted-foreground text-sm">
-          No weight records yet. Record the first weight above.
+          {t("animalProfile.noWeightRecords")}
         </div>
       )}
 
@@ -183,9 +183,9 @@ function WeightChart({ animalId }: { animalId: number }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
+              <TableHead>{t("common.date")}</TableHead>
               <TableHead>Weight (kg)</TableHead>
-              <TableHead>Notes</TableHead>
+              <TableHead>{t("common.notes")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -204,6 +204,7 @@ function WeightChart({ animalId }: { animalId: number }) {
 }
 
 function LineageTree({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
   const { data: lineage } = trpc.animals.getLineage.useQuery({ animalId });
   const [, setLocation] = useLocation();
 
@@ -220,7 +221,7 @@ function LineageTree({ animalId }: { animalId: number }) {
           {animal.animal.animalId}
         </button>
       ) : (
-        <span className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs">Unknown</span>
+        <span className="px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-xs">{t("common.unknown")}</span>
       )}
     </div>
   );
@@ -229,7 +230,7 @@ function LineageTree({ animalId }: { animalId: number }) {
     <div className="space-y-4">
       <h3 className="font-semibold flex items-center gap-2">
         <GitBranch className="h-4 w-4 text-primary" />
-        Lineage Tree
+        {t("animalProfile.lineageTree")}
       </h3>
 
       {/* Grandparents */}
@@ -249,7 +250,7 @@ function LineageTree({ animalId }: { animalId: number }) {
       {/* This animal */}
       <div className="flex justify-center">
         <div className="flex flex-col items-center gap-1">
-          <span className="text-xs text-muted-foreground">This Animal</span>
+          <span className="text-xs text-muted-foreground">{t("animalProfile.thisAnimal")}</span>
           <span className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-mono font-bold">
             {lineage.animal?.animal.animalId}
           </span>
@@ -278,21 +279,22 @@ function LineageTree({ animalId }: { animalId: number }) {
 }
 
 function FeedHistoryTab({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
   const { data: plans } = trpc.animals.getFeedHistory.useQuery({ animalId });
   return (
     <div className="space-y-4">
       <h3 className="font-semibold">Feed Ration Plans (for this animal's category)</h3>
       {(plans ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No ration plans found for this animal's category.</p>
+        <p className="text-sm text-muted-foreground">{t("animalProfile.noRationPlans")}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Feed Item</TableHead>
-              <TableHead>Qty / Head / Day</TableHead>
-              <TableHead>Effective Date</TableHead>
-              <TableHead>End Date</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t("common.feedItem")}</TableHead>
+              <TableHead>{t("animalProfile.qtyHeadDay")}</TableHead>
+              <TableHead>{t("common.effectiveDate")}</TableHead>
+              <TableHead>{t("common.endDate")}</TableHead>
+              <TableHead>{t("common.status")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -317,23 +319,24 @@ function FeedHistoryTab({ animalId }: { animalId: number }) {
 }
 
 function ExpenseHistoryTab({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
   const { data: expenses } = trpc.animals.getExpenseHistory.useQuery({ animalId });
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold">Direct Expenses Allocated to This Animal</h3>
+      <h3 className="font-semibold">{t("animalProfile.directExpensesAllocated")}</h3>
       {(expenses ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No direct expenses recorded for this animal.</p>
+        <p className="text-sm text-muted-foreground">{t("animalProfile.noDirectExpenses")}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Vendor</TableHead>
-              <TableHead>Notes</TableHead>
+              <TableHead>{t("common.date")}</TableHead>
+              <TableHead>{t("common.category")}</TableHead>
+              <TableHead>{t("common.amount")}</TableHead>
+              <TableHead>{t("common.vendor")}</TableHead>
+              <TableHead>{t("common.notes")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -354,24 +357,25 @@ function ExpenseHistoryTab({ animalId }: { animalId: number }) {
 }
 
 function AnimalSalesTab({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
   const { data: salesData } = trpc.animals.getAnimalSales.useQuery({ animalId });
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold">Sale Records</h3>
+      <h3 className="font-semibold">{t("animalProfile.saleRecords")}</h3>
       {(salesData ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No sale records for this animal.</p>
+        <p className="text-sm text-muted-foreground">{t("animalProfile.noSaleRecords")}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Sale Date</TableHead>
-              <TableHead>Sale Price</TableHead>
+              <TableHead>{t("common.saleDate")}</TableHead>
+              <TableHead>{t("common.salePrice")}</TableHead>
               <TableHead>Weight at Sale</TableHead>
-              <TableHead>Price / kg</TableHead>
-              <TableHead>Buyer</TableHead>
-              <TableHead>Notes</TableHead>
+              <TableHead>{t("pnl.pricePerKg")}</TableHead>
+              <TableHead>{t("common.buyer")}</TableHead>
+              <TableHead>{t("common.notes")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -400,7 +404,7 @@ function StatusHistory({ animalId }: { animalId: number }) {
     <div className="space-y-4">
       <h3 className="font-semibold">{t("animals.statusHistory")}</h3>
       {(history ?? []).length === 0 ? (
-        <p className="text-sm text-muted-foreground">No status changes recorded.</p>
+        <p className="text-sm text-muted-foreground">{t("animalProfile.noStatusChanges")}</p>
       ) : (
         <div className="relative">
           <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
@@ -446,7 +450,7 @@ export default function AnimalProfile() {
   if (!animal) {
     return (
       <div className="p-3 md:p-6">
-        <p className="text-muted-foreground">Animal not found.</p>
+        <p className="text-muted-foreground">{t("animalProfile.animalNotFound")}</p>
         <Button variant="link" onClick={() => setLocation("/animals")}>{t("animals.title")}</Button>
       </div>
     );
@@ -462,7 +466,7 @@ export default function AnimalProfile() {
       <div className="flex items-center gap-4 flex-wrap">
         <Button variant="ghost" size="sm" onClick={() => setLocation("/animals")} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
-          Back
+          {t("animalProfile.back")}
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
@@ -479,17 +483,17 @@ export default function AnimalProfile() {
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
             <DollarSign className="h-3.5 w-3.5" />
-            Add Expense
+            {t("animals.addExpense")}
           </Button>
           {animal.animal.isActive && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/sales?animalId=${animal.animal.id}`)}>
               <ShoppingCart className="h-3.5 w-3.5" />
-              Record Sale
+              {t("sales.recordSale")}
             </Button>
           )}
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/animals?edit=${animal.animal.id}`)}>
             <Pencil className="h-3.5 w-3.5" />
-            Edit
+            {t("common.edit")}
           </Button>
           <DownloadPdfButton animal={animal} animalId={animalId} />
         </div>
@@ -505,7 +509,7 @@ export default function AnimalProfile() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Scale className="h-4 w-4 text-primary" />
-              Animal Details
+              {t("animalProfile.animalDetails")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -530,7 +534,7 @@ export default function AnimalProfile() {
             ))}
             {animal.animal.exitDate && (
               <div className="flex justify-between items-start border-t pt-2">
-                <span className="text-sm text-muted-foreground">Exit Date</span>
+                <span className="text-sm text-muted-foreground">{t("common.exitDate")}</span>
                 <span className="text-sm font-medium">{new Date(animal.animal.exitDate).toLocaleDateString()}</span>
               </div>
             )}
@@ -550,10 +554,10 @@ export default function AnimalProfile() {
         <CardContent className="pt-6">
           <Tabs defaultValue="weights">
             <TabsList className="mb-4 flex-wrap h-auto gap-1">
-              <TabsTrigger value="weights">Weight Log</TabsTrigger>
+              <TabsTrigger value="weights">{t("animalProfile.weightLog")}</TabsTrigger>
               <TabsTrigger value="feed">{t("animals.feedHistory")}</TabsTrigger>
-              <TabsTrigger value="expenses">Expenses</TabsTrigger>
-              <TabsTrigger value="sales">Sales</TabsTrigger>
+              <TabsTrigger value="expenses">{t("nav.expenses")}</TabsTrigger>
+              <TabsTrigger value="sales">{t("nav.sales")}</TabsTrigger>
               <TabsTrigger value="status">{t("animals.statusHistory")}</TabsTrigger>
             </TabsList>
             <TabsContent value="weights">
@@ -580,6 +584,7 @@ export default function AnimalProfile() {
 
 // ── Download PDF button (fetches pnl + weight log, generates PDF) ────────────
 function DownloadPdfButton({ animal, animalId }: { animal: any; animalId: number }) {
+  const { t } = useTranslation();
   const { data: pnl } = trpc.animals.getPnL.useQuery({ animalId });
   const { data: weights } = trpc.animals.getWeightLog.useQuery({ animalId });
   const { data: settings } = trpc.config.getSettings.useQuery();
@@ -605,7 +610,7 @@ function DownloadPdfButton({ animal, animalId }: { animal: any; animalId: number
   return (
     <Button size="sm" variant="outline" className="gap-2" onClick={handleDownload} disabled={!pnl}>
       <FileDown className="h-3.5 w-3.5" />
-      Download PDF
+      {t("animalProfile.downloadPDF")}
     </Button>
   );
 }

@@ -206,7 +206,7 @@ export default function Dashboard() {
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-3 space-y-3" align="end">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date Range</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("dashboard.dateRange")}</p>
               <div className="grid grid-cols-2 gap-1.5">
                 {(["month", "quarter", "year"] as Preset[]).map((p) => (
                   <Button
@@ -221,9 +221,9 @@ export default function Dashboard() {
                 ))}
               </div>
               <div className="border-t pt-2 space-y-2">
-                <p className="text-xs font-medium">Custom Range</p>
+                <p className="text-xs font-medium">{t("dashboard.customRange")}</p>
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">From</Label>
+                  <Label className="text-xs text-muted-foreground">{t("dashboard.from")}</Label>
                   <Input
                     type="date"
                     className="h-7 text-xs"
@@ -246,7 +246,7 @@ export default function Dashboard() {
                   disabled={!pendingFrom || !pendingTo}
                   onClick={applyCustomRange}
                 >
-                  Apply Custom Range
+                  {t("dashboard.applyCustomRange")}
                 </Button>
               </div>
             </PopoverContent>
@@ -314,7 +314,7 @@ export default function Dashboard() {
           isLoading={kpisLoading}
         />
         <KPICard
-          title="Cost / Head / Day"
+          title={t("dashboard.costHeadDay")}
           value={kpis ? `EGP ${(kpis.costPerHeadPerDay ?? 0).toFixed(2)}` : "—"}
           sub={`${kpis?.totalActiveHeads ?? 0} heads · ${Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / 86400000)} days`}
           icon={TrendingUp}
@@ -325,7 +325,7 @@ export default function Dashboard() {
       {/* Net P&L summary bar */}
       {kpis && (
         <div className={`rounded-lg border px-4 py-3 flex items-center justify-between text-sm ${(kpis.grossPnL ?? 0) >= 0 ? "border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800" : "border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800"}`}>
-          <span className="text-muted-foreground">Net P&L for period</span>
+          <span className="text-muted-foreground">{t("dashboard.netPnLForPeriod")}</span>
           <span className={`text-lg font-bold ${(kpis.grossPnL ?? 0) >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
             {fmt(kpis.grossPnL ?? 0)}
           </span>
@@ -458,7 +458,7 @@ export default function Dashboard() {
                   <TableHead>{t("common.type")}</TableHead>
                   <TableHead>{t("feed.dailyConsumption")}</TableHead>
                   <TableHead>{t("feed.daysRemaining")}</TableHead>
-                  <TableHead>Reorder Level</TableHead>
+                  <TableHead>{t("dashboard.reorderLevel")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -537,6 +537,7 @@ function ExportButton() {
 
 // ── PDF Report Button — Farm Summary ────────────────────────────────────────
 function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: string }; kpis: any }) {
+  const { t } = useTranslation();
   const { data: pnlData } = trpc.animals.getAllPnL.useQuery({});
   const { data: settings } = trpc.config.getSettings.useQuery();
   const { currency } = useCurrency();
@@ -546,7 +547,7 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
 
   const handleClick = async () => {
     if (!kpis || !pnlData) {
-      toast.error("Data still loading, try again in a moment");
+      toast.error(t("dashboard.dataLoading"));
       return;
     }
     setGenerating(true);
@@ -560,7 +561,7 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
         currency,
         farmName,
       });
-      toast.success("PDF report downloaded");
+      toast.success(t("dashboard.pdfDownloaded"));
     } catch (e: any) {
       toast.error(e.message ?? "PDF generation failed");
     } finally {
