@@ -58,7 +58,7 @@ function SpeciesTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Species</h3>
+        <h3 className="font-semibold">{t("config.species")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addSpecies")}</Button>
@@ -67,7 +67,7 @@ function SpeciesTab() {
             <DialogHeader><DialogTitle>{t("config.addSpecies")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Sheep" value={name} onChange={(e) => setName(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -78,15 +78,15 @@ function SpeciesTab() {
       </div>
 
       {editItem && (
-        <EditDialog title="Edit Species" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+        <EditDialog title={t("config.editSpecies")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
           onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
-          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(species ?? []).map((s: any) => (
             <TableRow key={s.id}>
@@ -148,7 +148,7 @@ function CategoriesTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Animal Categories</h3>
+        <h3 className="font-semibold">{t("config.animalCategories")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>
@@ -176,13 +176,13 @@ function CategoriesTab() {
       </div>
 
       {editItem && (
-        <EditDialog title="Edit Category" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+        <EditDialog title={t("config.editCategory")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
           onSave={handleSave}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
-          <div className="space-y-1.5"><Label>ID Prefix</Label><Input value={editItem.idPrefix} onChange={(e) => setEditItem((p: any) => ({ ...p, idPrefix: e.target.value.toUpperCase() }))} maxLength={6} /></div>
+          <div className="space-y-1.5"><Label>{t("config.idPrefix")}</Label><Input value={editItem.idPrefix} onChange={(e) => setEditItem((p: any) => ({ ...p, idPrefix: e.target.value.toUpperCase() }))} maxLength={6} /></div>
           <div className="space-y-1.5"><Label>Target Weight (kg)</Label><Input type="number" value={editItem.targetWeightKg} onChange={(e) => setEditItem((p: any) => ({ ...p, targetWeightKg: e.target.value }))} /></div>
           <div className="border-t pt-3 mt-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Auto-Stage Settings</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">{t("config.autoStageSettings")}</p>
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label>Auto-stage when weight ≥ (kg)</Label>
@@ -196,12 +196,12 @@ function CategoriesTab() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Move to category</Label>
+                <Label>{t("config.moveToCategory")}</Label>
                 <Select
                   value={editItem.autoStageTargetCategoryId}
                   onValueChange={(v) => setEditItem((p: any) => ({ ...p, autoStageTargetCategoryId: v }))}
                 >
-                  <SelectTrigger><SelectValue placeholder="Select target category" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("config.selectTargetCategory")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">None (disable auto-stage)</SelectItem>
                     {(categories ?? []).filter((c: any) => c.id !== editItem.id).map((c: any) => (
@@ -218,10 +218,10 @@ function CategoriesTab() {
       <Table>
         <TableHeader><TableRow>
           <TableHead>{t("common.name")}</TableHead>
-          <TableHead>ID Prefix</TableHead>
-          <TableHead>Species</TableHead>
+          <TableHead>{t("config.idPrefix")}</TableHead>
+          <TableHead>{t("config.species")}</TableHead>
           <TableHead>{t("config.targetWeight")}</TableHead>
-          <TableHead>Auto-stage at</TableHead>
+          <TableHead>{t("config.autoStageAt")}</TableHead>
           <TableHead className="w-16"></TableHead>
         </TableRow></TableHeader>
         <TableBody>
@@ -269,17 +269,17 @@ function GroupsTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Groups / Pens</h3>
+        <h3 className="font-semibold">{t("config.groups")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addGroup")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Add Group / Pen</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("config.addGroupPen")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Pen A" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
               <div className="space-y-1.5"><Label>Group Code *</Label><Input placeholder="e.g. PEN-A" value={form.groupCode} onChange={(e) => setForm((f) => ({ ...f, groupCode: e.target.value.toUpperCase() }))} /></div>
-              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -290,16 +290,16 @@ function GroupsTab() {
       </div>
 
       {editItem && (
-        <EditDialog title="Edit Group / Pen" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+        <EditDialog title={t("config.editGroupPen")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
           onSave={() => update.mutate({ id: editItem.id, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
-          <div className="space-y-1.5"><Label>Group Code</Label><Input value={editItem.groupCode ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, groupCode: e.target.value.toUpperCase() }))} /></div>
-          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("config.groupCode")}</Label><Input value={editItem.groupCode ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, groupCode: e.target.value.toUpperCase() }))} /></div>
+          <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Code</TableHead><TableHead>Description</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.code")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(groups ?? []).map((g: any) => (
             <TableRow key={g.id}>
@@ -336,16 +336,16 @@ function StatusesTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Animal Statuses</h3>
+        <h3 className="font-semibold">{t("config.statuses")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Status</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addStatus")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Add Animal Status</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("config.addAnimalStatus")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Quarantine" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
-              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -355,14 +355,14 @@ function StatusesTab() {
         </Dialog>
       </div>
       {editItem && (
-        <EditDialog title="Edit Animal Status" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+        <EditDialog title={t("config.editAnimalStatus")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
           onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
-          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
       )}
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(statuses ?? []).map((s: any) => (
             <TableRow key={s.id}>
@@ -397,16 +397,16 @@ function BirthTypesTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Birth Types</h3>
+        <h3 className="font-semibold">{t("config.birthTypes")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />Add Birth Type</Button>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addBirthType")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Add Birth Type</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("config.addBirthType")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Natural" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
-              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -416,14 +416,14 @@ function BirthTypesTab() {
         </Dialog>
       </div>
       {editItem && (
-        <EditDialog title="Edit Birth Type" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+        <EditDialog title={t("config.editBirthType")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
           onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
-          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
       )}
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(birthTypes ?? []).map((b: any) => (
             <TableRow key={b.id}>
@@ -463,7 +463,7 @@ function FeedItemsTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Feed Items</h3>
+        <h3 className="font-semibold">{t("config.feedItems")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addFeedItem")}</Button>
@@ -473,7 +473,7 @@ function FeedItemsTab() {
             <div className="space-y-4">
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Alfalfa Hay" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
               <div className="space-y-1.5">
-                <Label>Unit</Label>
+                <Label>{t("config.unit")}</Label>
                 <Select value={form.unit} onValueChange={(v) => setForm((f) => ({ ...f, unit: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>{unitOptions.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
@@ -489,11 +489,11 @@ function FeedItemsTab() {
       </div>
 
       {editItem && (
-        <EditDialog title="Edit Feed Item" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+        <EditDialog title={t("config.editFeedItem")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
           onSave={() => update.mutate({ id: editItem.id, name: editItem.name, unit: editItem.unit })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5">
-            <Label>Unit</Label>
+            <Label>{t("config.unit")}</Label>
             <Select value={editItem.unit} onValueChange={(v) => setEditItem((p: any) => ({ ...p, unit: v }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{unitOptions.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
@@ -503,7 +503,7 @@ function FeedItemsTab() {
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Unit</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.unit")}</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(feedItems ?? []).map((fi: any) => (
             <TableRow key={fi.id}>
@@ -544,16 +544,16 @@ function ExpenseCategoriesTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Expense Categories</h3>
+        <h3 className="font-semibold">{t("config.expenseCategories")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>Add Expense Category</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("config.addExpenseCategory")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Veterinary" value={name} onChange={(e) => setName(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Optional" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -564,15 +564,15 @@ function ExpenseCategoriesTab() {
       </div>
 
       {editItem && (
-        <EditDialog title="Edit Expense Category" open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+        <EditDialog title={t("config.editExpenseCategory")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
           onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
-          <div className="space-y-1.5"><Label>Description</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>Description</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>Status</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
@@ -595,7 +595,7 @@ export default function Configuration() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Settings className="h-6 w-6 text-primary" />
-          Configuration Hub
+          {t("config.configHub")}
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Master data management — single source of truth for all reference data
@@ -606,14 +606,14 @@ export default function Configuration() {
         <CardContent className="pt-6">
           <Tabs defaultValue="species">
             <TabsList className="flex-wrap h-auto gap-1 mb-6">
-              <TabsTrigger value="species">Species</TabsTrigger>
-              <TabsTrigger value="categories">Categories</TabsTrigger>
-              <TabsTrigger value="groups">Groups / Pens</TabsTrigger>
-              <TabsTrigger value="feed">Feed Items</TabsTrigger>
-              <TabsTrigger value="expenses">Expense Categories</TabsTrigger>
-              <TabsTrigger value="statuses">Statuses</TabsTrigger>
-              <TabsTrigger value="birthtypes">Birth Types</TabsTrigger>
-              <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="species">{t("config.species")}</TabsTrigger>
+              <TabsTrigger value="categories">{t("config.categories")}</TabsTrigger>
+              <TabsTrigger value="groups">{t("config.groups")}</TabsTrigger>
+              <TabsTrigger value="feed">{t("config.feedItems")}</TabsTrigger>
+              <TabsTrigger value="expenses">{t("config.expenseCategories")}</TabsTrigger>
+              <TabsTrigger value="statuses">{t("config.statusesLabel")}</TabsTrigger>
+              <TabsTrigger value="birthtypes">{t("config.birthTypes")}</TabsTrigger>
+              <TabsTrigger value="settings">{t("config.settings")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="species"><SpeciesTab /></TabsContent>
@@ -633,6 +633,7 @@ export default function Configuration() {
 
 // ── Settings Tab ─────────────────────────────────────────────────────────────
 function SettingsTab() {
+  const { t } = useTranslation();
   const { data: settings } = trpc.config.getSettings.useQuery();
   const utils = trpc.useUtils();
   const [currency, setCurrency] = useState("");
@@ -663,10 +664,10 @@ function SettingsTab() {
 
   return (
     <div className="space-y-6 max-w-xl">
-      <h3 className="font-semibold">System Settings</h3>
+      <h3 className="font-semibold">{t("config.systemSettings")}</h3>
 
       <div className="space-y-1.5">
-        <Label>Currency code</Label>
+        <Label>{t("config.currencyCode")}</Label>
         <div className="flex gap-2">
           <Input
             value={currency}
@@ -685,7 +686,7 @@ function SettingsTab() {
       </div>
 
       <div className="space-y-1.5">
-        <Label>Farm name</Label>
+        <Label>{t("config.farmName")}</Label>
         <div className="flex gap-2">
           <Input
             value={farmName}
@@ -697,7 +698,7 @@ function SettingsTab() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Used in report headers, PDF exports, and the dashboard title.
+          {t("config.farmNameHint")}
         </p>
       </div>
     </div>

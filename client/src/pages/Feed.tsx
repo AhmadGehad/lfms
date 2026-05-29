@@ -26,9 +26,10 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 function StockStatusBadge({ status }: { status: string }) {
-  if (status === "critical") return <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">Critical</Badge>;
-  if (status === "low") return <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">Low</Badge>;
-  return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">OK</Badge>;
+  const { t } = useTranslation();
+  if (status === "critical") return <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{t("dashboard.critical")}</Badge>;
+  if (status === "low") return <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">{t("dashboard.lowStock")}</Badge>;
+  return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("dashboard.adequate")}</Badge>;
 }
 
 function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
@@ -59,7 +60,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   });
 
   const handleSubmit = () => {
-    if (!form.feedItemId || !form.qty) return toast.error("Feed item and quantity are required");
+    if (!form.feedItemId || !form.qty) return toast.error(t("feed.feedItemQtyRequired"));
     addStock.mutate({
       feedItemId: parseInt(form.feedItemId),
       transactionDate: form.transactionDate,
@@ -74,15 +75,15 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2"><span className="text-lg leading-none">+</span> Add Stock</Button>
+        <Button className="gap-2"><span className="text-lg leading-none">+</span> {t("feed.addStock")}</Button>
       </DialogTrigger>
       <DialogContent className="w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Add Stock Entry</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("feed.addStockEntry")}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label>Feed Item *</Label>
             <Select value={form.feedItemId} onValueChange={(v) => setForm((f) => ({ ...f, feedItemId: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select feed item" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("feed.selectFeedItem")} /></SelectTrigger>
               <SelectContent>
                 {(feedItems ?? []).map((fi: any) => (
                   <SelectItem key={fi.id} value={String(fi.id)}>{fi.name}</SelectItem>
@@ -100,9 +101,9 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
               <Select value={form.transactionType} onValueChange={(v) => setForm((f) => ({ ...f, transactionType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="purchase">Purchase</SelectItem>
-                  <SelectItem value="stock_count">Stock Count</SelectItem>
-                  <SelectItem value="adjustment">Adjustment</SelectItem>
+                  <SelectItem value="purchase">{t("feed.purchase")}</SelectItem>
+                  <SelectItem value="stock_count">{t("feed.stockCount")}</SelectItem>
+                  <SelectItem value="adjustment">{t("feed.adjustment")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -117,7 +118,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
           </div>
           <div className="space-y-1.5">
             <Label>{t("feed.supplier")}</Label>
-            <Input placeholder="Supplier name" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
+            <Input placeholder={t("feed.supplierName")} value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
@@ -161,7 +162,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
   });
 
   const handleSubmit = () => {
-    if (!form.qty) return toast.error("Quantity is required");
+    if (!form.qty) return toast.error(t("feed.qtyRequired"));
     updateStock.mutate({
       id: entry.id,
       transactionDate: form.transactionDate,
@@ -183,7 +184,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Stock Entry</DialogTitle>
+          <DialogTitle>{t("feed.editStockEntry")}</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">{entry.feedItemName}</p>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -197,9 +198,9 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
               <Select value={form.transactionType} onValueChange={(v) => setForm((f) => ({ ...f, transactionType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="purchase">Purchase</SelectItem>
-                  <SelectItem value="stock_count">Stock Count</SelectItem>
-                  <SelectItem value="adjustment">Adjustment</SelectItem>
+                  <SelectItem value="purchase">{t("feed.purchase")}</SelectItem>
+                  <SelectItem value="stock_count">{t("feed.stockCount")}</SelectItem>
+                  <SelectItem value="adjustment">{t("feed.adjustment")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -217,12 +218,12 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
             </div>
             <div className="space-y-1.5">
               <Label>{t("feed.supplier")}</Label>
-              <Input placeholder="Supplier name" value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
+              <Input placeholder={t("feed.supplierName")} value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label>Notes</Label>
-            <Input placeholder="Optional notes" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+            <Label>{t("common.notes")}</Label>
+            <Input placeholder={t("common.optionalNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
         </div>
         <DialogFooter>
@@ -264,7 +265,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = () => {
     if (!form.categoryId || !form.feedItemId || !form.qtyPerHeadPerDay || !form.effectiveDate) {
-      return toast.error("Category, feed item, quantity and effective date are required");
+      return toast.error(t("feed.catFeedQtyDateRequired"));
     }
     createPlan.mutate({
       categoryId: parseInt(form.categoryId),
@@ -281,7 +282,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
         <Button size="sm" className="gap-2"><span className="text-lg leading-none">+</span> Add Ration Plan</Button>
       </DialogTrigger>
       <DialogContent>
-        <DialogHeader><DialogTitle>Add Ration Plan</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{t("feed.addRationPlan")}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -298,7 +299,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5">
               <Label>Feed Item *</Label>
               <Select value={form.feedItemId} onValueChange={(v) => setForm((f) => ({ ...f, feedItemId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select feed item" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("feed.selectFeedItem")} /></SelectTrigger>
                 <SelectContent>
                   {(feedItems ?? []).map((fi: any) => (
                     <SelectItem key={fi.id} value={String(fi.id)}>{fi.name}</SelectItem>
@@ -323,7 +324,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={createPlan.isPending}>
             {createPlan.isPending ? "Saving..." : "Create Plan"}
           </Button>
@@ -366,7 +367,7 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
 
   const handleSubmit = () => {
     if (!form.qtyPerHeadPerDay || !form.effectiveDate || !form.categoryId || !form.feedItemId) {
-      return toast.error("Category, feed item, quantity and effective date are required");
+      return toast.error(t("feed.catFeedQtyDateRequired"));
     }
     updatePlan.mutate({
       id: plan.id,
@@ -388,7 +389,7 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit Ration Plan</DialogTitle>
+          <DialogTitle>{t("feed.editRationPlan")}</DialogTitle>
           <p className="text-sm text-muted-foreground mt-1">
             {plan.categoryName} — {plan.feedItemName}
           </p>
@@ -409,7 +410,7 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
             <div className="space-y-1.5">
               <Label>Feed Item *</Label>
               <Select value={form.feedItemId} onValueChange={(v) => setForm((f) => ({ ...f, feedItemId: v }))}>
-                <SelectTrigger><SelectValue placeholder="Select feed item" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t("feed.selectFeedItem")} /></SelectTrigger>
                 <SelectContent>
                   {(feedItems ?? []).map((fi: any) => (
                     <SelectItem key={fi.id} value={String(fi.id)}>{fi.name}</SelectItem>
@@ -454,11 +455,11 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
               onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))}
               className="h-4 w-4"
             />
-            <Label htmlFor="isActive">Active</Label>
+            <Label htmlFor="isActive">{t("common.active")}</Label>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button onClick={handleSubmit} disabled={updatePlan.isPending}>
             {updatePlan.isPending ? "Saving..." : "Save Changes"}
           </Button>
@@ -477,7 +478,7 @@ export default function Feed() {
 
   const deleteFeedStock = trpc.recycleBin.deleteFeedStock.useMutation({
     onSuccess: () => {
-      toast.success("Feed stock entry moved to Recycle Bin");
+      toast.success(t("feed.stockMovedToBin"));
       utils.feed.getStockLedger.invalidate();
       utils.feed.getStockStatus.invalidate();
     },
@@ -502,7 +503,7 @@ export default function Feed() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
             <Wheat className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Feed Management
+            {t("feed.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {criticalCount > 0 && <span className="text-red-600 font-medium">{criticalCount} critical · </span>}
@@ -519,7 +520,7 @@ export default function Feed() {
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">Low Stock Alerts</p>
+              <p className="font-semibold text-amber-800 dark:text-amber-400 text-sm">{t("feed.lowStockAlerts")}</p>
               <div className="mt-2 space-y-1">
                 {alertItems.map((item: any) => (
                   <div key={item.feedItemId} className="flex items-center gap-2 text-sm">
@@ -592,7 +593,7 @@ export default function Feed() {
           <Card className="col-span-4">
             <CardContent className="pt-6 text-center text-muted-foreground">
               <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-              No feed items configured. Add feed items in Configuration first.
+              {t("feed.noFeedItems")}
             </CardContent>
           </Card>
         )}
@@ -611,9 +612,9 @@ export default function Feed() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
+                      <TableHead>{t("common.date")}</TableHead>
                       <TableHead>{t("feed.feedItem")}</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>{t("common.type")}</TableHead>
                       <TableHead>{t("common.quantity")}</TableHead>
                       <TableHead>{t("feed.unitCost")}</TableHead>
                       <TableHead>{t("feed.totalCost")}</TableHead>
@@ -633,7 +634,7 @@ export default function Feed() {
                     ) : (stockLedger ?? []).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                          No stock entries yet.
+                          {t("feed.noStockEntries")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -662,7 +663,7 @@ export default function Feed() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle className="flex items-center gap-2">
                                       <AlertTriangle className="h-5 w-5 text-destructive" />
-                                      Delete Feed Stock Entry
+                                      {t("feed.deleteFeedStockEntry")}
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
                                       Move this <strong>{entry.feedItemName}</strong> entry to the Recycle Bin? You can restore it anytime.
@@ -671,7 +672,7 @@ export default function Feed() {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                     <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteFeedStock.mutate({ id: entry.id })}>
-                                      Move to Bin
+                                      {t("common.moveToBin")}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -700,10 +701,10 @@ export default function Feed() {
                     <TableRow>
                       <TableHead>{t("common.category")}</TableHead>
                       <TableHead>{t("feed.feedItem")}</TableHead>
-                      <TableHead>Qty / Head / Day</TableHead>
+                      <TableHead>{t("feed.qtyHeadDay")}</TableHead>
                       <TableHead>{t("feed.effectiveDate")}</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Status</TableHead>
+                      <TableHead>{t("common.endDate")}</TableHead>
+                      <TableHead>{t("common.status")}</TableHead>
                       <TableHead className="text-right">{t("common.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -719,7 +720,7 @@ export default function Feed() {
                     ) : (rationPlans ?? []).length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
-                          No ration plans configured.
+                          {t("feed.noRationPlansConfigured")}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -732,9 +733,9 @@ export default function Feed() {
                           <TableCell>{plan.endDate ? new Date(plan.endDate instanceof Date ? plan.endDate.toISOString() : plan.endDate).toLocaleDateString() : "Ongoing"}</TableCell>
                           <TableCell>
                             {plan.isActive ? (
-                              <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">Active</Badge>
+                              <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge>
                             ) : (
-                              <Badge variant="outline" className="text-xs">Inactive</Badge>
+                              <Badge variant="outline" className="text-xs">{t("feed.inactive")}</Badge>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
@@ -753,7 +754,7 @@ export default function Feed() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle className="flex items-center gap-2">
                                       <AlertTriangle className="h-5 w-5 text-destructive" />
-                                      Delete Ration Plan
+                                      {t("feed.deleteRationPlan")}
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
                                       Move ration plan for <strong>{plan.categoryName}</strong> to the Recycle Bin? You can restore it anytime.
@@ -762,7 +763,7 @@ export default function Feed() {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                     <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRationPlan.mutate({ id: plan.id })}>
-                                      Move to Bin
+                                      {t("common.moveToBin")}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
