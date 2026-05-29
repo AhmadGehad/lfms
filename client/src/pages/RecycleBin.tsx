@@ -200,7 +200,7 @@ export default function RecycleBin() {
     onError: (e) => toast.error(e.message),
   });
   const purgeAll = trpc.recycleBin.purgeAll.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success("Recycle bin emptied permanently"); },
+    onSuccess: () => { invalidateAll(); toast.success(t("recycleBin.emptiedPermanently")); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -249,7 +249,7 @@ export default function RecycleBin() {
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Trash2 className="h-6 w-6 text-destructive" />
-              Recycle Bin
+              {t("recycleBin.title")}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               All soft-deleted records. Restore anytime or permanently delete (admin only).
@@ -260,7 +260,7 @@ export default function RecycleBin() {
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={filterType} onValueChange={setFilterType}>
                 <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by type" />
+                  <SelectValue placeholder={t("recycleBin.filterByType")} />
                 </SelectTrigger>
                 <SelectContent>
                   {ENTITY_TYPES.map((t) => (
@@ -276,21 +276,21 @@ export default function RecycleBin() {
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm">
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Empty Bin
+                    {t("recycleBin.emptyBin")}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                       <AlertTriangle className="h-5 w-5" />
-                      Empty Recycle Bin
+                      {t("recycleBin.emptyRecycleBin")}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                       This will <strong>permanently delete all {items.length} records</strong> in the recycle bin. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                       className="bg-destructive hover:bg-destructive/90"
                       onClick={() => purgeAll.mutate()}
@@ -330,9 +330,9 @@ export default function RecycleBin() {
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-20 text-center">
               <PackageOpen className="h-16 w-16 text-muted-foreground/40 mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground">Recycle bin is empty</h3>
+              <h3 className="text-lg font-medium text-muted-foreground">{t("recycleBin.empty")}</h3>
               <p className="text-sm text-muted-foreground/70 mt-1">
-                Deleted items will appear here and can be restored at any time.
+                {t("recycleBin.emptyHint")}
               </p>
             </CardContent>
           </Card>
@@ -382,7 +382,7 @@ export default function RecycleBin() {
                             onClick={() => handleRestore(item.entityType, item.id)}
                           >
                             <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
-                            Restore
+                            {t("recycleBin.restore")}
                           </Button>
 
                           {/* Permanent delete (admin only, and only for supported types) */}
@@ -395,14 +395,14 @@ export default function RecycleBin() {
                                   className="text-destructive hover:bg-destructive/10"
                                 >
                                   <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                                  Delete Forever
+                                  {t("recycleBin.deleteForever")}
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                                     <AlertTriangle className="h-5 w-5" />
-                                    Permanently Delete
+                                    {t("recycleBin.permanentlyDelete")}
                                   </AlertDialogTitle>
                                   <AlertDialogDescription>
                                     Are you sure you want to permanently delete <strong>{item.label}</strong>?
@@ -410,12 +410,12 @@ export default function RecycleBin() {
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                   <AlertDialogAction
                                     className="bg-destructive hover:bg-destructive/90"
                                     onClick={() => handlePurge(item.entityType, item.id)}
                                   >
-                                    Delete Forever
+                                    {t("recycleBin.deleteForever")}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
