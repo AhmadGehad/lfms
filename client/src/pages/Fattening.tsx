@@ -45,7 +45,7 @@ function RecordWeightDialog({
   const addWeight = trpc.animals.addWeight.useMutation({
     onSuccess: (result: any) => {
       if (result?.autoStaged && result?.newAnimalId) {
-        toast.success(`Weight recorded — animal auto-staged to ${result.newAnimalId}`);
+        toast.success(t("fattening.weightAutoStaged", { id: result.newAnimalId }));
       } else {
         toast.success(t("fattening.weightRecorded"));
       }

@@ -506,9 +506,9 @@ export default function Feed() {
             {t("feed.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {criticalCount > 0 && <span className="text-red-600 font-medium">{criticalCount} critical · </span>}
-            {lowCount > 0 && <span className="text-amber-600 font-medium">{lowCount} low · </span>}
-            {(stockStatus ?? []).length} feed items tracked
+            {criticalCount > 0 && <span className="text-red-600 font-medium">{t("feed.criticalCount", { count: criticalCount })} · </span>}
+            {lowCount > 0 && <span className="text-amber-600 font-medium">{t("feed.lowCount", { count: lowCount })} · </span>}
+            {t("feed.feedItemsTracked", { count: (stockStatus ?? []).length })}
           </p>
         </div>
         <AddStockDialog onSuccess={() => {}} />
@@ -527,8 +527,9 @@ export default function Feed() {
                     <StockStatusBadge status={item.status} />
                     <span className="font-medium">{item.feedItemName}</span>
                     <span className="text-muted-foreground">
-                      — {parseFloat(item.stockOnHand).toFixed(0)} {item.unit} remaining
-                      {item.daysRemaining !== 999 && ` (${item.daysRemaining} days)`}
+                      — {item.daysRemaining !== 999
+                        ? t("feed.kgRemainingDays", { qty: parseFloat(item.stockOnHand).toFixed(0), unit: item.unit, days: item.daysRemaining })
+                        : `${parseFloat(item.stockOnHand).toFixed(0)} ${item.unit} ${t("feed.remaining")}`}
                     </span>
                   </div>
                 ))}
@@ -562,27 +563,27 @@ export default function Feed() {
                   <p className="text-xs text-muted-foreground">{item.unit}</p>
                   {item.doomedKg > 0 && (
                     <p className="text-xs text-red-500 mt-1">
-                      −{parseFloat(item.doomedKg).toFixed(0)} kg doomed stock
+                      −{t("feed.kgDoomedStock", { qty: parseFloat(item.doomedKg).toFixed(0) })}
                     </p>
                   )}
                   {item.consumedSinceCount > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      −{parseFloat(item.consumedSinceCount).toFixed(0)} kg used ({item.daysSinceCount}d since count)
+                      −{t("feed.kgUsedSince", { qty: parseFloat(item.consumedSinceCount).toFixed(0), days: item.daysSinceCount })}
                     </p>
                   )}
                 </div>
                 <div className="text-right">
                   <StockStatusBadge status={item.status} />
                   <p className="text-xs text-muted-foreground mt-2">
-                    {item.daysRemaining === 999 ? "∞" : item.daysRemaining} days
+                    {item.daysRemaining === 999 ? "∞" : `${item.daysRemaining} ${t("feed.daysLabel")}`}
                   </p>
                   {item.runOutDate && item.daysRemaining !== 999 && (
                     <p className="text-xs text-muted-foreground">
-                      out {new Date(item.runOutDate).toLocaleDateString()}
+                      {t("feed.outDate", { date: new Date(item.runOutDate).toLocaleDateString() })}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    {parseFloat(item.dailyConsumption ?? 0).toFixed(1)} {item.unit}/day
+                    {t("feed.perDayUnit", { qty: parseFloat(item.dailyConsumption ?? 0).toFixed(1), unit: item.unit })}
                   </p>
                 </div>
               </div>

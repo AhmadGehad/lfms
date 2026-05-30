@@ -286,7 +286,7 @@ export default function RecycleBin() {
                       {t("recycleBin.emptyRecycleBin")}
                     </AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will <strong>permanently delete all {items.length} records</strong> in the recycle bin. This action cannot be undone.
+                      This will <strong>{t("recycleBin.deleteAllRecords", { count: items.length })}</strong> in the recycle bin. This action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>

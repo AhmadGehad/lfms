@@ -73,7 +73,7 @@ export default function PnL() {
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">{t("pnl.totalAnimals")}</p>
               <p className="text-xl sm:text-2xl font-bold">{filtered.length}</p>
-              <p className="text-xs text-muted-foreground mt-1">{activeCount} active · {closedAnimals.length} closed</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.activeClosed", { active: activeCount, closed: closedAnimals.length })}</p>
             </CardContent>
           </Card>
           <Card>
@@ -87,7 +87,7 @@ export default function PnL() {
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">Running Cost (Active)</p>
               <p className="text-xl sm:text-2xl font-bold text-amber-600">{fmt(runningCost)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{activeCount} animals ongoing</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalsOngoing", { count: activeCount })}</p>
             </CardContent>
           </Card>
           <Card>

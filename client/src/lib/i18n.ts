@@ -153,6 +153,7 @@ const en = {
     costHeadDay: "Cost / Head / Day",
     dataLoading: "Data still loading, try again in a moment",
     pdfDownloaded: "PDF report downloaded",
+    headsDays: "{{heads}} heads · {{days}} days",
   },
 
   // Animals
@@ -220,6 +221,7 @@ const en = {
     birthMovedToBin: "Birth record moved to Recycle Bin",
     birthRecorded: "Birth recorded successfully",
     sexBirthTypeRequired: "Sex and birth type are required",
+    lambPromotedAs: "Lamb promoted as {{id}}",
     assignToGroup: "Assign to Group",
     deleteBirthRecord: "Delete Birth Record",
     lambingLog: "Lambing Log",
@@ -252,6 +254,7 @@ const en = {
     animal: "Animal",
     weightRecorded: "Weight recorded",
     animalUpdated: "Animal updated",
+    weightAutoStaged: "Weight recorded — animal auto-staged to {{id}}",
     movedToBin: "Animal moved to Recycle Bin",
     selectAnimal: "Select animal",
   },
@@ -302,6 +305,17 @@ const en = {
     rationCreated: "Ration plan created",
     rationUpdated: "Ration plan updated",
     rationMovedToBin: "Ration plan moved to Recycle Bin",
+    criticalCount: "{{count}} critical",
+    lowCount: "{{count}} low",
+    feedItemsTracked: "{{count}} feed items tracked",
+    remaining: "remaining",
+    daysParen: "({{days}} days)",
+    kgDoomedStock: "{{qty}} kg doomed stock",
+    kgUsedSince: "{{qty}} kg used ({{days}}d since count)",
+    daysLabel: "days",
+    outDate: "out {{date}}",
+    perDayUnit: "{{qty}} {{unit}}/day",
+    kgRemainingDays: "{{qty}} {{unit}} remaining ({{days}} days)",
   },
 
   // Expenses
@@ -366,6 +380,8 @@ const en = {
     totalAnimals: "Total Animals",
     totalCost: "Total Cost",
     searchPlaceholder: "Search by animal ID...",
+    activeClosed: "{{active}} active · {{closed}} closed",
+    animalsOngoing: "{{count}} animals ongoing",
   },
 
   // Sales
@@ -385,6 +401,8 @@ const en = {
     movedToBin: "Sale record moved to Recycle Bin",
     recorded: "Sale recorded successfully",
     updated: "Sale updated",
+    editSale: "Edit Sale — {{code}}",
+    pendingPriceEntry: "{{count}} pending price entry",
   },
 
   // Income Statement
@@ -566,6 +584,9 @@ const en = {
     saleRecords: "Sale Records",
     thisAnimal: "This Animal",
     weightLog: "Weight Log",
+    weightAutoStaged: "Weight recorded — auto-staged to {{id}}",
+    offspring: "Offspring ({{count}})",
+    fromStatus: "From: {{status}}",
     weightAtSale: "Weight at Sale",
     weightRecorded: "Weight recorded",
     loadingData: "Loading data, try again in a moment",
@@ -587,6 +608,7 @@ const en = {
     restored: "restored",
     permanentlyDeleted: "permanently deleted",
     emptiedPermanently: "Recycle bin emptied permanently",
+    deleteAllRecords: "permanently delete all {{count}} records",
   },
   notFound: {
     title: "Page Not Found",
@@ -743,6 +765,7 @@ const ar = {
     costHeadDay: "التكلفة / رأس / يوم",
     dataLoading: "البيانات قيد التحميل، حاول مرة أخرى بعد لحظات",
     pdfDownloaded: "تم تنزيل تقرير PDF",
+    headsDays: "{{heads}} رأس · {{days}} يوم",
   },
 
   animals: {
@@ -808,6 +831,7 @@ const ar = {
     birthMovedToBin: "تم نقل سجل الولادة إلى سلة المحذوفات",
     birthRecorded: "تم تسجيل الولادة بنجاح",
     sexBirthTypeRequired: "الجنس ونوع الولادة مطلوبان",
+    lambPromotedAs: "تمت ترقية الحمل كـ {{id}}",
     assignToGroup: "تعيين لمجموعة",
     deleteBirthRecord: "حذف سجل الولادة",
     lambingLog: "سجل الولادات",
@@ -839,6 +863,7 @@ const ar = {
     animal: "الحيوان",
     weightRecorded: "تم تسجيل الوزن",
     animalUpdated: "تم تحديث الحيوان",
+    weightAutoStaged: "تم تسجيل الوزن — تمت الترقية التلقائية للحيوان إلى {{id}}",
     movedToBin: "تم نقل الحيوان إلى سلة المحذوفات",
     selectAnimal: "اختر الحيوان",
   },
@@ -888,6 +913,17 @@ const ar = {
     rationCreated: "تم إنشاء خطة التغذية",
     rationUpdated: "تم تحديث خطة التغذية",
     rationMovedToBin: "تم نقل خطة التغذية إلى سلة المحذوفات",
+    criticalCount: "{{count}} حرج",
+    lowCount: "{{count}} منخفض",
+    feedItemsTracked: "{{count}} صنف علف متتبع",
+    remaining: "متبقٍ",
+    daysParen: "({{days}} يوم)",
+    kgDoomedStock: "{{qty}} كجم مخزون تالف",
+    kgUsedSince: "{{qty}} كجم مستهلك ({{days}} يوم منذ الجرد)",
+    daysLabel: "يوم",
+    outDate: "ينفد {{date}}",
+    perDayUnit: "{{qty}} {{unit}}/يوم",
+    kgRemainingDays: "{{qty}} {{unit}} متبقٍ ({{days}} يوم)",
   },
 
   expenses: {
@@ -950,6 +986,8 @@ const ar = {
     totalAnimals: "إجمالي الحيوانات",
     totalCost: "التكلفة الإجمالية",
     searchPlaceholder: "ابحث بمعرّف الحيوان...",
+    activeClosed: "{{active}} نشط · {{closed}} مغلق",
+    animalsOngoing: "{{count}} حيوان قيد المتابعة",
   },
 
   sales: {
@@ -968,6 +1006,8 @@ const ar = {
     movedToBin: "تم نقل سجل البيع إلى سلة المحذوفات",
     recorded: "تم تسجيل البيع بنجاح",
     updated: "تم تحديث البيع",
+    editSale: "تعديل البيع — {{code}}",
+    pendingPriceEntry: "{{count}} إدخال سعر معلّق",
   },
 
   incomeStatement: {
@@ -1144,6 +1184,9 @@ const ar = {
     saleRecords: "سجلات البيع",
     thisAnimal: "هذا الحيوان",
     weightLog: "سجل الأوزان",
+    weightAutoStaged: "تم تسجيل الوزن — تمت الترقية التلقائية إلى {{id}}",
+    offspring: "النسل ({{count}})",
+    fromStatus: "من: {{status}}",
     weightAtSale: "الوزن عند البيع",
     weightRecorded: "تم تسجيل الوزن",
     loadingData: "جارٍ تحميل البيانات، حاول مرة أخرى بعد لحظات",
@@ -1165,6 +1208,7 @@ const ar = {
     restored: "تمت استعادته",
     permanentlyDeleted: "تم حذفه نهائيًا",
     emptiedPermanently: "تم إفراغ سلة المحذوفات نهائيًا",
+    deleteAllRecords: "حذف جميع السجلات نهائيًا ({{count}})",
   },
   notFound: {
     title: "الصفحة غير موجودة",

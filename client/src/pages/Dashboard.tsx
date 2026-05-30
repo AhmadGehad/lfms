@@ -316,7 +316,7 @@ export default function Dashboard() {
         <KPICard
           title={t("dashboard.costHeadDay")}
           value={kpis ? `EGP ${(kpis.costPerHeadPerDay ?? 0).toFixed(2)}` : "—"}
-          sub={`${kpis?.totalActiveHeads ?? 0} heads · ${Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / 86400000)} days`}
+          sub={t("dashboard.headsDays", { heads: kpis?.totalActiveHeads ?? 0, days: Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / 86400000) })}
           icon={TrendingUp}
           color="text-amber-600"
           isLoading={kpisLoading}

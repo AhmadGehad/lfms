@@ -110,7 +110,7 @@ function WeightChart({ animalId }: { animalId: number }) {
   const addWeight = trpc.animals.addWeight.useMutation({
     onSuccess: (result: any) => {
       if (result?.autoStaged && result?.newAnimalId) {
-        toast.success(`Weight recorded — auto-staged to ${result.newAnimalId}`);
+        toast.success(t("animalProfile.weightAutoStaged", { id: result.newAnimalId }));
       } else {
         toast.success(t("animalProfile.weightRecorded"));
       }
@@ -260,7 +260,7 @@ function LineageTree({ animalId }: { animalId: number }) {
       {/* Offspring */}
       {lineage.offspring.length > 0 && (
         <div>
-          <p className="text-sm font-medium text-muted-foreground mb-2">Offspring ({lineage.offspring.length})</p>
+          <p className="text-sm font-medium text-muted-foreground mb-2">{t("animalProfile.offspring", { count: lineage.offspring.length })}</p>
           <div className="flex flex-wrap gap-2">
             {lineage.offspring.map((o: any) => (
               <button
@@ -415,7 +415,7 @@ function StatusHistory({ animalId }: { animalId: number }) {
                 <div>
                   <p className="text-sm font-medium">{h.newStatusName}</p>
                   {h.previousStatusName && (
-                    <p className="text-xs text-muted-foreground">From: {h.previousStatusName}</p>
+                    <p className="text-xs text-muted-foreground">{t("animalProfile.fromStatus", { status: h.previousStatusName })}</p>
                   )}
                   <p className="text-xs text-muted-foreground">{new Date(h.changedAt).toLocaleString()}</p>
                   {h.notes && <p className="text-xs text-muted-foreground italic">{h.notes}</p>}

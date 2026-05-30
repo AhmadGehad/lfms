@@ -192,7 +192,7 @@ export default function Breeding() {
   });
   const promoteLamb = trpc.breeding.promoteLamb.useMutation({
     onSuccess: (data) => {
-      toast.success(`Lamb promoted as ${data.animalId}`);
+      toast.success(t("breeding.lambPromotedAs", { id: data.animalId }));
       utils.breeding.listLambing.invalidate();
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();

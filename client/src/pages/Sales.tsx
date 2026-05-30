@@ -186,7 +186,7 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Sale — {sale.animalCode ?? sale.animalId}</DialogTitle>
+          <DialogTitle>{t("sales.editSale", { code: sale.animalCode ?? sale.animalId })}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -265,7 +265,7 @@ export default function Sales() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {(sales ?? []).length} sales · Total Revenue: EGP {totalRevenue.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
-            {pendingCount > 0 && <span className="ml-2 text-amber-600 font-medium">· {pendingCount} pending price entry</span>}
+            {pendingCount > 0 && <span className="ml-2 text-amber-600 font-medium">· {t("sales.pendingPriceEntry", { count: pendingCount })}</span>}
           </p>
         </div>
         <RecordSaleDialog onSuccess={refetch} />
