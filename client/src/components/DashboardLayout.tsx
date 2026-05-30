@@ -266,15 +266,15 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           {/* Navigation */}
-          <SidebarContent className="gap-0 py-2">
+          <SidebarContent className="gap-1 py-2">
             {navGroups.map((group) => (
-              <SidebarGroup key={group.label} className="py-0">
+              <SidebarGroup key={group.label} className="py-1">
                 {!isCollapsed && (
-                  <SidebarGroupLabel className={`text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 px-4 py-2 ${isAr ? "text-right" : ""}`}>
+                  <SidebarGroupLabel className={`h-auto min-h-7 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 px-4 ${isAr ? "flex-row-reverse text-right" : ""}`}>
                     {group.label}
                   </SidebarGroupLabel>
                 )}
-                <SidebarMenu className="px-2">
+                <SidebarMenu className="px-2 gap-1">
                   {group.items.map((item) => {
                     const isActive = location === item.path ||
                       (item.path !== "/" && location.startsWith(item.path));
