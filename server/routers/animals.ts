@@ -8,6 +8,7 @@ import {
   createNotification,
   createSale,
   createWeightEntry,
+  getDb,
   getAnimalById,
   getAllAnimalsPnL,
   getAnimalPnL,
@@ -170,43 +171,56 @@ export const animalsRouter = router({
       const existing = await getAnimalById(input.id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
 
-      await updateAnimal(input.id, {
-        statusId: input.newStatusId,
-        exitDate: input.exitDate as any,
-        exitReason: input.exitReason,
-        isActive: false,
-      });
-
-      await recordStatusChange({
-        animalId: input.id,
-        previousStatusId: existing.animal.statusId,
-        newStatusId: input.newStatusId,
-        changedBy: ctx.user?.id,
-        notes: input.exitReason,
-      });
-
-      // Record sale if price provided
-      if (input.salePrice) {
-        await createSale({
-          animalId: input.id,
-          saleDate: input.exitDate as any,
-          salePrice: input.salePrice,
-          weightAtSale: input.weightAtSale,
-          pricePerKg: input.weightAtSale && input.salePrice
-            ? String(parseFloat(input.salePrice) / parseFloat(input.weightAtSale))
-            : undefined,
-          buyerName: input.buyerName,
-          notes: input.saleNotes,
-          createdBy: ctx.user?.id,
-        });
+      // Validate exit date is not before acquisition
+      if (new Date(input.exitDate) < new Date(String(existing.animal.acquisitionDate))) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Exit date cannot be before acquisition date" });
+      }
+      if (input.salePrice !== undefined && parseFloat(input.salePrice) < 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Sale price cannot be negative" });
       }
 
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "exit",
-        entityType: "animal",
-        entityId: String(input.id),
-        newValues: { exitDate: input.exitDate, exitReason: input.exitReason } as any,
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // All-or-nothing: animal update + status history + sale + audit
+      await db.transaction(async (tx) => {
+        await updateAnimal(input.id, {
+          statusId: input.newStatusId,
+          exitDate: input.exitDate as any,
+          exitReason: input.exitReason,
+          isActive: false,
+        }, tx);
+
+        await recordStatusChange({
+          animalId: input.id,
+          previousStatusId: existing.animal.statusId,
+          newStatusId: input.newStatusId,
+          changedBy: ctx.user?.id,
+          notes: input.exitReason,
+        }, tx);
+
+        if (input.salePrice) {
+          await createSale({
+            animalId: input.id,
+            saleDate: input.exitDate as any,
+            salePrice: input.salePrice,
+            weightAtSale: input.weightAtSale,
+            pricePerKg: input.weightAtSale && input.salePrice
+              ? String(parseFloat(input.salePrice) / parseFloat(input.weightAtSale))
+              : undefined,
+            buyerName: input.buyerName,
+            notes: input.saleNotes,
+            createdBy: ctx.user?.id,
+          }, tx);
+        }
+
+        await createAuditEntry({
+          userId: ctx.user?.id,
+          action: "exit",
+          entityType: "animal",
+          entityId: String(input.id),
+          newValues: { exitDate: input.exitDate, exitReason: input.exitReason } as any,
+        }, tx);
       });
 
       return { success: true };

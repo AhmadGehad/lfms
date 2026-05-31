@@ -40,6 +40,14 @@ export async function getDb() {
   return _db;
 }
 
+/**
+ * A database handle that is either the shared pool or an active transaction.
+ * Write helpers accept an optional tx so multi-step flows can run atomically.
+ */
+type DbHandle = NonNullable<Awaited<ReturnType<typeof getDb>>>;
+type Tx = Parameters<Parameters<DbHandle["transaction"]>[0]>[0];
+export type DbOrTx = DbHandle | Tx;
+
 // ─── USER HELPERS ─────────────────────────────────────────────────────────────
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -189,8 +197,8 @@ export async function updateCategory(id: number, data: Partial<typeof animalCate
   await db.update(animalCategories).set(data).where(eq(animalCategories.id, id));
 }
 
-export async function incrementCategorySequence(categoryId: number): Promise<number> {
-  const db = await getDb();
+export async function incrementCategorySequence(categoryId: number, tx?: DbOrTx): Promise<number> {
+  const db = tx ?? await getDb();
   if (!db) throw new Error("DB not available");
   await db
     .update(animalCategories)
@@ -456,15 +464,15 @@ export async function getAnimalById(id: number) {
   return rows.length > 0 ? rows[0] : null;
 }
 
-export async function createAnimal(data: typeof animals.$inferInsert) {
-  const db = await getDb();
+export async function createAnimal(data: typeof animals.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(animals).values(data);
   return result;
 }
 
-export async function updateAnimal(id: number, data: Partial<typeof animals.$inferInsert>) {
-  const db = await getDb();
+export async function updateAnimal(id: number, data: Partial<typeof animals.$inferInsert>, tx?: DbOrTx) {
+  const db = tx ?? await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(animals).set(data).where(eq(animals.id, id));
 }
@@ -508,8 +516,8 @@ export async function getAnimalStatusHistory(animalId: number) {
     .orderBy(desc(animalStatusHistory.changedAt));
 }
 
-export async function recordStatusChange(data: { animalId: number; previousStatusId?: number; newStatusId: number; changedBy?: number; notes?: string }) {
-  const db = await getDb();
+export async function recordStatusChange(data: { animalId: number; previousStatusId?: number; newStatusId: number; changedBy?: number; notes?: string }, tx?: DbOrTx) {
+  const db = tx ?? await getDb();
   if (!db) throw new Error("DB not available");
   await db.insert(animalStatusHistory).values(data);
 }
@@ -538,8 +546,8 @@ export async function getSales(filters?: { animalId?: number; fromDate?: string;
   return query.where(and(...conditions)).orderBy(desc(sales.saleDate));
 }
 
-export async function createSale(data: typeof sales.$inferInsert) {
-  const db = await getDb();
+export async function createSale(data: typeof sales.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(sales).values(data);
   return result;
@@ -587,8 +595,8 @@ export async function createLambingRecord(data: typeof lambingLog.$inferInsert) 
   return result;
 }
 
-export async function updateLambingRecord(id: number, data: Partial<typeof lambingLog.$inferInsert>) {
-  const db = await getDb();
+export async function updateLambingRecord(id: number, data: Partial<typeof lambingLog.$inferInsert>, tx?: DbOrTx) {
+  const db = tx ?? await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(lambingLog).set(data).where(eq(lambingLog.id, id));
 }
@@ -819,8 +827,8 @@ export async function markAllNotificationsRead(userId: number) {
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 
-export async function createAuditEntry(data: typeof auditLog.$inferInsert) {
-  const db = await getDb();
+export async function createAuditEntry(data: typeof auditLog.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? await getDb();
   if (!db) return;
   await db.insert(auditLog).values(data);
 }

@@ -4,6 +4,7 @@ import {
   createLambingRecord,
   createAnimal,
   createAuditEntry,
+  getDb,
   getAllCategories,
   getAllStatuses,
   getAllGroups,
@@ -95,41 +96,50 @@ export const breedingRouter = router({
       if (!lamb) throw new Error("Lambing record not found");
       if (lamb.isPromoted) throw new Error("Lamb already promoted");
 
-      const seq = await incrementCategorySequence(input.categoryId);
       const cats = await getAllCategories();
       const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
       const prefix = cat?.idPrefix ?? "A-";
-      const animalId = `${prefix}${String(seq).padStart(4, "0")}`;
 
-      const result = await createAnimal({
-        animalId,
-        speciesId: input.speciesId,
-        categoryId: input.categoryId,
-        groupId: input.groupId,
-        statusId: input.statusId,
-        sex: lamb.sex,
-        acquisitionType: "born",
-        acquisitionDate: input.acquisitionDate as any,
-        birthDate: lamb.birthDate,
-        damId: lamb.damId,
-        sireId: lamb.sireId,
-        weightAtAcquisition: lamb.birthWeightKg,
-        createdBy: ctx.user?.id,
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      // All-or-nothing: sequence bump + animal insert + status history + lamb update
+      const out = await db.transaction(async (tx) => {
+        const seq = await incrementCategorySequence(input.categoryId, tx);
+        const animalId = `${prefix}${String(seq).padStart(4, "0")}`;
+
+        const result = await createAnimal({
+          animalId,
+          speciesId: input.speciesId,
+          categoryId: input.categoryId,
+          groupId: input.groupId,
+          statusId: input.statusId,
+          sex: lamb.sex,
+          acquisitionType: "born",
+          acquisitionDate: input.acquisitionDate as any,
+          birthDate: lamb.birthDate,
+          damId: lamb.damId,
+          sireId: lamb.sireId,
+          weightAtAcquisition: lamb.birthWeightKg,
+          createdBy: ctx.user?.id,
+        }, tx);
+
+        const insertId = (result as any).insertId;
+        await recordStatusChange({
+          animalId: insertId,
+          newStatusId: input.statusId,
+          changedBy: ctx.user?.id,
+          notes: "Promoted from lambing log",
+        }, tx);
+
+        await updateLambingRecord(input.lambingLogId, {
+          isPromoted: true,
+          promotedHeadId: insertId,
+        }, tx);
+
+        return { animalId, insertId };
       });
 
-      const insertId = (result as any).insertId;
-      await recordStatusChange({
-        animalId: insertId,
-        newStatusId: input.statusId,
-        changedBy: ctx.user?.id,
-        notes: "Promoted from lambing log",
-      });
-
-      await updateLambingRecord(input.lambingLogId, {
-        isPromoted: true,
-        promotedHeadId: insertId,
-      });
-
-      return { animalId, insertId };
+      return out;
     }),
 });
