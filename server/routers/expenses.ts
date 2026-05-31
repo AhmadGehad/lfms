@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import { createExpense, deleteExpense, getExpenses, updateExpense, createAuditEntry } from "../db";
 
 export const expensesRouter = router({
@@ -15,7 +15,7 @@ export const expensesRouter = router({
     )
     .query(({ input }) => getExpenses(input ?? {})),
 
-  create: protectedProcedure
+  create: staffProcedure
     .input(
       z.object({
         expenseDate: z.string(),
@@ -47,7 +47,7 @@ export const expensesRouter = router({
       return result;
     }),
 
-  update: protectedProcedure
+  update: staffProcedure
     .input(
       z.object({
         id: z.number(),
@@ -60,7 +60,7 @@ export const expensesRouter = router({
     )
     .mutation(({ input: { id, ...data } }) => updateExpense(id, data)),
 
-  delete: protectedProcedure
+  delete: staffProcedure
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => deleteExpense(input.id)),
 });

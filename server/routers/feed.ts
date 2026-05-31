@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import {
   createAuditEntry,
   createFeedStockEntry,
@@ -18,7 +18,7 @@ export const feedRouter = router({
     .input(z.object({ categoryId: z.number().optional() }).optional())
     .query(({ input }) => getRationPlans(input?.categoryId)),
 
-  createRationPlan: protectedProcedure
+  createRationPlan: staffProcedure
     .input(
       z.object({
         categoryId: z.number(),
@@ -45,7 +45,7 @@ export const feedRouter = router({
       return result;
     }),
 
-  updateRationPlan: protectedProcedure
+  updateRationPlan: staffProcedure
     .input(
       z.object({
         id: z.number(),
@@ -78,7 +78,7 @@ export const feedRouter = router({
     .input(z.object({ feedItemId: z.number().optional() }).optional())
     .query(({ input }) => getFeedStockLedger(input?.feedItemId)),
 
-  addStockEntry: protectedProcedure
+  addStockEntry: staffProcedure
     .input(
       z.object({
         feedItemId: z.number(),
@@ -134,7 +134,7 @@ export const feedRouter = router({
       return result;
     }),
 
-  updateStockEntry: protectedProcedure
+  updateStockEntry: staffProcedure
     .input(
       z.object({
         id: z.number(),

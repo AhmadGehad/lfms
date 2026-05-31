@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { protectedProcedure, router } from "../_core/trpc";
+import { supervisorProcedure, router } from "../_core/trpc";
 import {
   getAllSpecies,
   getAllCategories,
@@ -585,7 +585,7 @@ async function buildWorkbook(): Promise<Buffer> {
 
 export const exportRouter = router({
   /** Generate the full workbook and return as base64. */
-  full: protectedProcedure.query(async () => {
+  full: supervisorProcedure.query(async () => {
     const buf = await buildWorkbook();
     return {
       filename: `lfms-export-${new Date().toISOString().split("T")[0]}.xlsx`,

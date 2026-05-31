@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import {
   checkAndStageAnimal,
   createAnimal,
@@ -46,7 +46,7 @@ export const animalsRouter = router({
     }),
 
   // ─── CREATE ─────────────────────────────────────────────────────────────────
-  create: protectedProcedure
+  create: staffProcedure
     .input(
       z.object({
         categoryId: z.number(),
@@ -102,7 +102,7 @@ export const animalsRouter = router({
     }),
 
   // ─── UPDATE ─────────────────────────────────────────────────────────────────
-  update: protectedProcedure
+  update: staffProcedure
     .input(
       z.object({
         id: z.number(),
@@ -152,7 +152,7 @@ export const animalsRouter = router({
     }),
 
   // ─── EXIT ANIMAL ────────────────────────────────────────────────────────────
-  exit: protectedProcedure
+  exit: staffProcedure
     .input(
       z.object({
         id: z.number(),
@@ -222,7 +222,7 @@ export const animalsRouter = router({
     .input(z.object({ animalId: z.number() }))
     .query(({ input }) => getWeightLog(input.animalId)),
 
-  addWeight: protectedProcedure
+  addWeight: staffProcedure
     .input(
       z.object({
         animalId: z.number(),

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, privilegedProcedure, router } from "../_core/trpc";
 import {
   createAuditEntry,
   getDashboardKPIs,
@@ -176,7 +176,7 @@ export const userManagementRouter = router({
     const { users } = await import("../../drizzle/schema");
     return db.select().from(users).orderBy(users.createdAt);
   }),
-  updateUserRole: protectedProcedure
+  updateUserRole: privilegedProcedure
     .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
     .mutation(async ({ input }) => {
       const { getDb } = await import("../db");

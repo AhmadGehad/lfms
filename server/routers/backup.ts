@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, privilegedProcedure, router } from "../_core/trpc";
 import {
   getAllAnimalsPnL,
   getAllCategories,
@@ -55,7 +55,7 @@ export const backupRouter = router({
    * Generate a full JSON snapshot of the live database.
    * Returns base64 for client download as `lfms-backup-YYYY-MM-DD.json`.
    */
-  download: protectedProcedure.query(async () => {
+  download: privilegedProcedure.query(async () => {
     const db = await getDb();
     const weights = db
       ? await db.select().from(weightLog).where(isNull(weightLog.deletedAt))
@@ -102,7 +102,7 @@ export const backupRouter = router({
    * Restore from a JSON backup. Skips entities that already exist by ID.
    * Returns counts of restored vs skipped.
    */
-  restore: protectedProcedure
+  restore: privilegedProcedure
     .input(z.object({ base64: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const json = Buffer.from(input.base64, "base64").toString("utf-8");

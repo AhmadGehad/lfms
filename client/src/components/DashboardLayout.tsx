@@ -55,6 +55,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const SIDEBAR_WIDTH_KEY = "lfms-sidebar-width";
 const DEFAULT_WIDTH = 260;
@@ -147,6 +148,7 @@ function DashboardLayoutContent({
   const isMobile = useIsMobile();
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
+  const perms = usePermissions();
 
   // Notification count
   const { data: notifications } = trpc.notifications.list.useQuery({ unreadOnly: true });
@@ -187,13 +189,18 @@ function DashboardLayoutContent({
       items: [
         { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
         { icon: BookOpen, label: t("nav.auditLog"), path: "/audit" },
-        { icon: Users, label: t("nav.users"), path: "/users" },
-        { icon: Cog, label: t("nav.configuration"), path: "/config" },
-        { icon: Database, label: t("nav.dataManagement"), path: "/data" },
-        { icon: Trash2, label: t("nav.recycleBin") ?? "Recycle Bin", path: "/recycle-bin" },
+        { icon: Users, label: t("nav.users"), path: "/users", minPerm: "canManageUsers" as const },
+        { icon: Cog, label: t("nav.configuration"), path: "/config", minPerm: "canEditConfig" as const },
+        { icon: Database, label: t("nav.dataManagement"), path: "/data", minPerm: "canEditConfig" as const },
+        { icon: Trash2, label: t("nav.recycleBin") ?? "Recycle Bin", path: "/recycle-bin", minPerm: "canDelete" as const },
       ],
     },
-  ];
+  ]
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item: any) => !item.minPerm || perms[item.minPerm as keyof typeof perms]),
+    }))
+    .filter((group) => group.items.length > 0);
 
   useEffect(() => {
     if (isCollapsed) setIsResizing(false);

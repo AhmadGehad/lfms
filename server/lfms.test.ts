@@ -154,7 +154,7 @@ vi.mock("./db", () => ({
 // ─── Helper: create auth context ─────────────────────────────────────────────
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function makeCtx(role: "admin" | "user" = "user"): TrpcContext {
+function makeCtx(role: "owner" | "admin" | "supervisor" | "staff" | "user" = "admin"): TrpcContext {
   const clearedCookies: any[] = [];
   const user: AuthenticatedUser = {
     id: 1, openId: "test-user", email: "test@farm.com", name: "Test User",
@@ -688,5 +688,46 @@ describe("animals.getAllPnL", () => {
     await expect(
       caller.animals.getAllPnL({ speciesId: 1, categoryId: 1 })
     ).resolves.toBeDefined();
+  });
+});
+
+// ─── RBAC (role-based access control) ─────────────────────────────────────────
+describe("rbac", () => {
+  it("read-only 'user' role is blocked from creating animals", async () => {
+    const caller = appRouter.createCaller(makeCtx("user"));
+    await expect(
+      caller.animals.create({
+        animalId: "X-999", speciesId: 1, categoryId: 1, groupId: 1, statusId: 1,
+        sex: "male", acquisitionType: "purchased", acquisitionDate: "2026-01-01",
+        birthDate: "2026-01-01",
+      } as any)
+    ).rejects.toThrow(/permission/i);
+  });
+
+  it("'staff' role can record operational data but cannot manage config", async () => {
+    const caller = appRouter.createCaller(makeCtx("staff"));
+    // staff blocked from supervisor-level config
+    await expect(
+      caller.config.createSpecies({ name: "Llama" } as any)
+    ).rejects.toThrow(/permission/i);
+  });
+
+  it("'supervisor' role cannot change user roles (privileged only)", async () => {
+    const caller = appRouter.createCaller(makeCtx("supervisor"));
+    await expect(
+      caller.config.updateUserRole({ userId: 2, role: "admin" })
+    ).rejects.toThrow(/permission/i);
+  });
+
+  it("'staff' role cannot permanently purge or restore", async () => {
+    const caller = appRouter.createCaller(makeCtx("staff"));
+    await expect(
+      caller.recycleBin.purgeAnimal({ id: 1 })
+    ).rejects.toThrow(/permission/i);
+  });
+
+  it("'admin' role can manage config and users", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    await expect(caller.config.createSpecies({ name: "Alpaca" } as any)).resolves.toBeDefined();
   });
 });

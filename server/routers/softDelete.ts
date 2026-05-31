@@ -19,7 +19,7 @@ import {
   weightLog,
 } from "../../drizzle/schema";
 import { getDb } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, supervisorProcedure, privilegedProcedure, router } from "../_core/trpc";
 
 // Helper: log to audit trail
 async function logAudit(
@@ -310,7 +310,7 @@ export const recycleBinRouter = router({
   // ─── SOFT DELETE ──────────────────────────────────────────────────────────
 
   /** Soft-delete an animal and cascade to all related records */
-  deleteAnimal: protectedProcedure
+  deleteAnimal: supervisorProcedure
     .input(z.object({ id: z.number(), reason: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -348,7 +348,7 @@ export const recycleBinRouter = router({
     }),
 
   /** Restore a soft-deleted animal and all its cascaded records */
-  restoreAnimal: protectedProcedure
+  restoreAnimal: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -380,7 +380,7 @@ export const recycleBinRouter = router({
     }),
 
   /** Permanently delete an animal (admin only) */
-  purgeAnimal: protectedProcedure
+  purgeAnimal: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
@@ -407,7 +407,7 @@ export const recycleBinRouter = router({
 
   // ─── EXPENSE ──────────────────────────────────────────────────────────────
 
-  deleteExpense: protectedProcedure
+  deleteExpense: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -419,7 +419,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreExpense: protectedProcedure
+  restoreExpense: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -431,7 +431,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  purgeExpense: protectedProcedure
+  purgeExpense: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
@@ -445,7 +445,7 @@ export const recycleBinRouter = router({
 
   // ─── WEIGHT LOG ───────────────────────────────────────────────────────────
 
-  deleteWeightLog: protectedProcedure
+  deleteWeightLog: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -457,7 +457,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreWeightLog: protectedProcedure
+  restoreWeightLog: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -469,7 +469,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  purgeWeightLog: protectedProcedure
+  purgeWeightLog: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
@@ -483,7 +483,7 @@ export const recycleBinRouter = router({
 
   // ─── LAMBING LOG ──────────────────────────────────────────────────────────
 
-  deleteLambingLog: protectedProcedure
+  deleteLambingLog: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -495,7 +495,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreLambingLog: protectedProcedure
+  restoreLambingLog: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -507,7 +507,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  purgeLambingLog: protectedProcedure
+  purgeLambingLog: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
@@ -521,7 +521,7 @@ export const recycleBinRouter = router({
 
   // ─── RATION PLAN ──────────────────────────────────────────────────────────
 
-  deleteRationPlan: protectedProcedure
+  deleteRationPlan: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -533,7 +533,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreRationPlan: protectedProcedure
+  restoreRationPlan: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -545,7 +545,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  purgeRationPlan: protectedProcedure
+  purgeRationPlan: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
@@ -559,7 +559,7 @@ export const recycleBinRouter = router({
 
   // ─── FEED STOCK ───────────────────────────────────────────────────────────
 
-  deleteFeedStock: protectedProcedure
+  deleteFeedStock: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -571,7 +571,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreFeedStock: protectedProcedure
+  restoreFeedStock: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -583,7 +583,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  purgeFeedStock: protectedProcedure
+  purgeFeedStock: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
@@ -597,7 +597,7 @@ export const recycleBinRouter = router({
 
   // ─── SALE ─────────────────────────────────────────────────────────────────
 
-  deleteSale: protectedProcedure
+  deleteSale: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -609,7 +609,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreSale: protectedProcedure
+  restoreSale: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -621,7 +621,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  purgeSale: protectedProcedure
+  purgeSale: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
@@ -635,7 +635,7 @@ export const recycleBinRouter = router({
 
   // ─── CONFIG ENTITIES ──────────────────────────────────────────────────────
 
-  deleteSpecies: protectedProcedure
+  deleteSpecies: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -647,7 +647,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreSpecies: protectedProcedure
+  restoreSpecies: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -659,7 +659,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  deleteCategory: protectedProcedure
+  deleteCategory: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -671,7 +671,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreCategory: protectedProcedure
+  restoreCategory: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -683,7 +683,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  deleteGroup: protectedProcedure
+  deleteGroup: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -695,7 +695,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreGroup: protectedProcedure
+  restoreGroup: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -707,7 +707,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  deleteStatus: protectedProcedure
+  deleteStatus: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -719,7 +719,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreStatus: protectedProcedure
+  restoreStatus: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -731,7 +731,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  deleteBirthType: protectedProcedure
+  deleteBirthType: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -743,7 +743,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreBirthType: protectedProcedure
+  restoreBirthType: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -755,7 +755,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  deleteFeedItem: protectedProcedure
+  deleteFeedItem: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -767,7 +767,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreFeedItem: protectedProcedure
+  restoreFeedItem: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -779,7 +779,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  deleteExpenseCategory: protectedProcedure
+  deleteExpenseCategory: supervisorProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -791,7 +791,7 @@ export const recycleBinRouter = router({
       return { success: true };
     }),
 
-  restoreExpenseCategory: protectedProcedure
+  restoreExpenseCategory: privilegedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -804,7 +804,7 @@ export const recycleBinRouter = router({
     }),
 
   /** Purge all soft-deleted records permanently (admin only) */
-  purgeAll: protectedProcedure
+  purgeAll: privilegedProcedure
     .mutation(async ({ ctx }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin only" });

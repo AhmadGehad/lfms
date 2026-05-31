@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import {
   createLambingRecord,
   createAnimal,
@@ -20,7 +20,7 @@ export const breedingRouter = router({
     .query(({ input }) => getLambingLog(input)),
 
   // ─── RECORD BIRTH ───────────────────────────────────────────────────────────
-  recordBirth: protectedProcedure
+  recordBirth: staffProcedure
     .input(
       z.object({
         birthDate: z.string(),
@@ -78,7 +78,7 @@ export const breedingRouter = router({
     }),
 
   // ─── PROMOTE LAMB TO ANIMAL REGISTRY ────────────────────────────────────────
-  promoteLamb: protectedProcedure
+  promoteLamb: staffProcedure
     .input(
       z.object({
         lambingLogId: z.number(),

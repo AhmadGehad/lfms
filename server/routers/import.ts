@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, supervisorProcedure, router } from "../_core/trpc";
 import {
   createAnimal,
   createExpense,
@@ -56,7 +56,7 @@ type ImportStats = {
 
 export const importRouter = router({
   /** Preview an upload — count rows per sheet without inserting. */
-  preview: protectedProcedure
+  preview: supervisorProcedure
     .input(z.object({ base64: z.string() }))
     .mutation(async ({ input }) => {
       const buf = Buffer.from(input.base64, "base64");
@@ -70,7 +70,7 @@ export const importRouter = router({
     }),
 
   /** Apply an upload — upserts all supported sheets. */
-  applyImport: protectedProcedure
+  applyImport: supervisorProcedure
     .input(z.object({ base64: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const buf = Buffer.from(input.base64, "base64");

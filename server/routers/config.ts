@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, supervisorProcedure, privilegedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import {
   getAllSpecies, createSpecies, updateSpecies,
@@ -19,7 +19,7 @@ export const configRouter = router({
   // ─── SPECIES ────────────────────────────────────────────────────────────────
   getSpecies: protectedProcedure.query(() => getAllSpecies()),
 
-  createSpecies: protectedProcedure
+  createSpecies: supervisorProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createSpecies(input);
@@ -27,7 +27,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateSpecies: protectedProcedure
+  updateSpecies: supervisorProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateSpecies(id, data);
@@ -40,7 +40,7 @@ export const configRouter = router({
     .input(z.object({ speciesId: z.number().optional() }).optional())
     .query(({ input }) => getAllCategories(input?.speciesId)),
 
-  createCategory: protectedProcedure
+  createCategory: supervisorProcedure
     .input(z.object({
       name: z.string().min(1),
       speciesId: z.number(),
@@ -54,7 +54,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateCategory: protectedProcedure
+  updateCategory: supervisorProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -74,7 +74,7 @@ export const configRouter = router({
   // ─── STATUSES ───────────────────────────────────────────────────────────────
   getStatuses: protectedProcedure.query(() => getAllStatuses()),
 
-  createStatus: protectedProcedure
+  createStatus: supervisorProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional(), isExitStatus: z.boolean().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createStatus(input);
@@ -82,7 +82,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateStatus: protectedProcedure
+  updateStatus: supervisorProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isExitStatus: z.boolean().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateStatus(id, data);
@@ -95,7 +95,7 @@ export const configRouter = router({
     .input(z.object({ speciesId: z.number().optional() }).optional())
     .query(({ input }) => getAllGroups(input?.speciesId)),
 
-  createGroup: protectedProcedure
+  createGroup: supervisorProcedure
     .input(z.object({
       groupCode: z.string().min(1),
       name: z.string().min(1),
@@ -109,7 +109,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateGroup: protectedProcedure
+  updateGroup: supervisorProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -128,7 +128,7 @@ export const configRouter = router({
   // ─── BIRTH TYPES ────────────────────────────────────────────────────────────
   getBirthTypes: protectedProcedure.query(() => getAllBirthTypes()),
 
-  createBirthType: protectedProcedure
+  createBirthType: supervisorProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createBirthType(input);
@@ -136,7 +136,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateBirthType: protectedProcedure
+  updateBirthType: supervisorProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateBirthType(id, data);
@@ -147,7 +147,7 @@ export const configRouter = router({
   // ─── FEED ITEMS ─────────────────────────────────────────────────────────────
   getFeedItems: protectedProcedure.query(() => getAllFeedItems()),
 
-  createFeedItem: protectedProcedure
+  createFeedItem: supervisorProcedure
     .input(z.object({ name: z.string().min(1), unit: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createFeedItem(input);
@@ -155,7 +155,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateFeedItem: protectedProcedure
+  updateFeedItem: supervisorProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), unit: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateFeedItem(id, data);
@@ -167,7 +167,7 @@ export const configRouter = router({
     .input(z.object({ feedItemId: z.number() }))
     .query(({ input }) => getFeedItemPriceHistory(input.feedItemId)),
 
-  addFeedItemPrice: protectedProcedure
+  addFeedItemPrice: supervisorProcedure
     .input(z.object({
       feedItemId: z.number(),
       effectiveDate: z.string(),
@@ -183,7 +183,7 @@ export const configRouter = router({
   // ─── EXPENSE CATEGORIES ─────────────────────────────────────────────────────
   getExpenseCategories: protectedProcedure.query(() => getAllExpenseCategories()),
 
-  createExpenseCategory: protectedProcedure
+  createExpenseCategory: supervisorProcedure
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createExpenseCategory(input);
@@ -191,7 +191,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateExpenseCategory: protectedProcedure
+  updateExpenseCategory: supervisorProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateExpenseCategory(id, data);
@@ -203,7 +203,7 @@ export const configRouter = router({
     .input(z.object({ categoryId: z.number().optional() }).optional())
     .query(({ input }) => getAllExpenseSubCategories(input?.categoryId)),
 
-  createExpenseSubCategory: protectedProcedure
+  createExpenseSubCategory: supervisorProcedure
     .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createExpenseSubCategory(input);
@@ -211,7 +211,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateExpenseSubCategory: protectedProcedure
+  updateExpenseSubCategory: supervisorProcedure
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateExpenseSubCategory(id, data);
@@ -222,7 +222,7 @@ export const configRouter = router({
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
   getSettings: protectedProcedure.query(() => getAllSettings()),
 
-  upsertSetting: protectedProcedure
+  upsertSetting: supervisorProcedure
     .input(z.object({ key: z.string(), value: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const result = await upsertSetting(input.key, input.value, ctx.user?.id);
@@ -233,7 +233,7 @@ export const configRouter = router({
   // ─── USER MANAGEMENT ────────────────────────────────────────────────────────
   getUsers: protectedProcedure.query(() => getAllUsers()),
 
-  updateUserRole: protectedProcedure
+  updateUserRole: privilegedProcedure
     .input(z.object({ userId: z.number(), role: z.enum(["owner", "supervisor", "staff", "admin", "user"]) }))
     .mutation(async ({ input, ctx }) => {
       const result = await updateUserRole(input.userId, input.role);
