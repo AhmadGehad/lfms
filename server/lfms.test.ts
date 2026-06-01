@@ -731,3 +731,47 @@ describe("rbac", () => {
     await expect(caller.config.createSpecies({ name: "Alpaca" } as any)).resolves.toBeDefined();
   });
 });
+
+// ─── INPUT VALIDATION ─────────────────────────────────────────────────────────
+describe("validation", () => {
+  it("rejects negative purchase cost on animal create", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.animals.create({
+        categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
+        sex: "male", acquisitionType: "purchased",
+        acquisitionDate: "2026-01-01", birthDate: "2026-01-01",
+        purchaseCost: "-500",
+      } as any)
+    ).rejects.toThrow();
+  });
+
+  it("rejects a future acquisition date", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.animals.create({
+        categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
+        sex: "male", acquisitionType: "purchased",
+        acquisitionDate: "2099-01-01", birthDate: "2099-01-01",
+      } as any)
+    ).rejects.toThrow();
+  });
+
+  it("rejects an unrealistically large weight", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.animals.addWeight({ animalId: 1, weighDate: "2026-01-01", weightKg: "99999" })
+    ).rejects.toThrow();
+  });
+
+  it("rejects birth date after acquisition date", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.animals.create({
+        categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
+        sex: "male", acquisitionType: "purchased",
+        acquisitionDate: "2026-01-01", birthDate: "2026-06-01",
+      } as any)
+    ).rejects.toThrow();
+  });
+});

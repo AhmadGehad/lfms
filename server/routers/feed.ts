@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { qtyString, rationRateString, optionalMoneyString, isoDate } from "../_core/validators";
 import {
   createAuditEntry,
   createFeedStockEntry,
@@ -21,11 +22,11 @@ export const feedRouter = router({
   createRationPlan: staffProcedure
     .input(
       z.object({
-        categoryId: z.number(),
-        feedItemId: z.number(),
-        qtyPerHeadPerDay: z.string(),
-        effectiveDate: z.string(),
-        endDate: z.string().optional(),
+        categoryId: z.number().int().positive(),
+        feedItemId: z.number().int().positive(),
+        qtyPerHeadPerDay: rationRateString,
+        effectiveDate: isoDate,
+        endDate: isoDate.optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -81,14 +82,14 @@ export const feedRouter = router({
   addStockEntry: staffProcedure
     .input(
       z.object({
-        feedItemId: z.number(),
-        transactionDate: z.string(),
+        feedItemId: z.number().int().positive(),
+        transactionDate: isoDate,
         transactionType: z.enum(["purchase", "stock_count", "adjustment"]),
-        qty: z.string(),
-        unitCost: z.string().optional(),
-        totalCost: z.string().optional(),
-        supplierName: z.string().optional(),
-        notes: z.string().optional(),
+        qty: qtyString,
+        unitCost: optionalMoneyString,
+        totalCost: optionalMoneyString,
+        supplierName: z.string().max(100).optional(),
+        notes: z.string().max(2000).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

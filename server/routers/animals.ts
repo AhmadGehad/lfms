@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { optionalMoneyString, optionalWeightString, weightString, pastOrTodayDate } from "../_core/validators";
 import {
   checkAndStageAnimal,
   createAnimal,
@@ -50,20 +51,23 @@ export const animalsRouter = router({
   create: staffProcedure
     .input(
       z.object({
-        categoryId: z.number(),
-        speciesId: z.number(),
-        groupId: z.number(),
-        statusId: z.number(),
+        categoryId: z.number().int().positive(),
+        speciesId: z.number().int().positive(),
+        groupId: z.number().int().positive(),
+        statusId: z.number().int().positive(),
         sex: z.enum(["male", "female"]),
         acquisitionType: z.enum(["purchased", "born"]),
-        acquisitionDate: z.string(),
-        birthDate: z.string(),
-        damId: z.number().optional(),
-        sireId: z.number().optional(),
-        purchaseCost: z.string().optional(),
-        weightAtAcquisition: z.string().optional(),
-        notes: z.string().optional(),
-      })
+        acquisitionDate: pastOrTodayDate,
+        birthDate: pastOrTodayDate,
+        damId: z.number().int().positive().optional(),
+        sireId: z.number().int().positive().optional(),
+        purchaseCost: optionalMoneyString,
+        weightAtAcquisition: optionalWeightString,
+        notes: z.string().max(2000).optional(),
+      }).refine(
+        (d) => new Date(d.birthDate) <= new Date(d.acquisitionDate),
+        { message: "Birth date cannot be after acquisition date", path: ["birthDate"] }
+      )
     )
     .mutation(async ({ input, ctx }) => {
       // Auto-generate Animal ID
@@ -156,15 +160,15 @@ export const animalsRouter = router({
   exit: staffProcedure
     .input(
       z.object({
-        id: z.number(),
-        exitDate: z.string(),
-        exitReason: z.string(),
-        newStatusId: z.number(),
+        id: z.number().int().positive(),
+        exitDate: pastOrTodayDate,
+        exitReason: z.string().min(1).max(1000),
+        newStatusId: z.number().int().positive(),
         // Sale details (optional)
-        salePrice: z.string().optional(),
-        weightAtSale: z.string().optional(),
-        buyerName: z.string().optional(),
-        saleNotes: z.string().optional(),
+        salePrice: optionalMoneyString,
+        weightAtSale: optionalWeightString,
+        buyerName: z.string().max(100).optional(),
+        saleNotes: z.string().max(2000).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -239,10 +243,10 @@ export const animalsRouter = router({
   addWeight: staffProcedure
     .input(
       z.object({
-        animalId: z.number(),
-        weighDate: z.string(),
-        weightKg: z.string(),
-        notes: z.string().optional(),
+        animalId: z.number().int().positive(),
+        weighDate: pastOrTodayDate,
+        weightKg: weightString,
+        notes: z.string().max(2000).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

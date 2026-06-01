@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { optionalWeightString, pastOrTodayDate } from "../_core/validators";
 import {
   createLambingRecord,
   createAnimal,
@@ -24,16 +25,16 @@ export const breedingRouter = router({
   recordBirth: staffProcedure
     .input(
       z.object({
-        birthDate: z.string(),
-        damId: z.number().optional(),
-        sireId: z.number().optional(),
+        birthDate: pastOrTodayDate,
+        damId: z.number().int().positive().optional(),
+        sireId: z.number().int().positive().optional(),
         sex: z.enum(["male", "female"]),
-        birthTypeId: z.number(),
-        birthWeightKg: z.string().optional(),
-        groupId: z.number().optional(),
-        notes: z.string().optional(),
+        birthTypeId: z.number().int().positive(),
+        birthWeightKg: optionalWeightString,
+        groupId: z.number().int().positive().optional(),
+        notes: z.string().max(2000).optional(),
         // If multiple births (twins/triplets), call multiple times
-        count: z.number().min(1).max(10).default(1),
+        count: z.number().int().min(1).max(10).default(1),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -87,7 +88,7 @@ export const breedingRouter = router({
         speciesId: z.number(),
         groupId: z.number(),
         statusId: z.number(),
-        acquisitionDate: z.string(),
+        acquisitionDate: pastOrTodayDate,
       })
     )
     .mutation(async ({ input, ctx }) => {

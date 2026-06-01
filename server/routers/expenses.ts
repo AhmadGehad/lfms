@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { moneyString, optionalMoneyString, pastOrTodayDate } from "../_core/validators";
 import { createExpense, deleteExpense, getExpenses, updateExpense, createAuditEntry } from "../db";
 
 export const expensesRouter = router({
@@ -18,15 +19,15 @@ export const expensesRouter = router({
   create: staffProcedure
     .input(
       z.object({
-        expenseDate: z.string(),
-        categoryId: z.number(),
-        subCategoryId: z.number().optional(),
-        amount: z.string(),
+        expenseDate: pastOrTodayDate,
+        categoryId: z.number().int().positive(),
+        subCategoryId: z.number().int().positive().optional(),
+        amount: moneyString,
         targetType: z.enum(["general", "category", "head"]),
-        categoryTarget: z.number().optional(),
-        headId: z.number().optional(),
-        vendorName: z.string().optional(),
-        notes: z.string().optional(),
+        categoryTarget: z.number().int().positive().optional(),
+        headId: z.number().int().positive().optional(),
+        vendorName: z.string().max(100).optional(),
+        notes: z.string().max(2000).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -50,12 +51,12 @@ export const expensesRouter = router({
   update: staffProcedure
     .input(
       z.object({
-        id: z.number(),
-        amount: z.string().optional(),
-        vendorName: z.string().optional(),
-        notes: z.string().optional(),
-        categoryId: z.number().optional(),
-        subCategoryId: z.number().optional(),
+        id: z.number().int().positive(),
+        amount: optionalMoneyString,
+        vendorName: z.string().max(100).optional(),
+        notes: z.string().max(2000).optional(),
+        categoryId: z.number().int().positive().optional(),
+        subCategoryId: z.number().int().positive().optional(),
       })
     )
     .mutation(({ input: { id, ...data } }) => updateExpense(id, data)),
