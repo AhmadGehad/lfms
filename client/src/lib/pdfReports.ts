@@ -94,7 +94,7 @@ export function generateAnimalPnLPdf(opts: {
       ["Days on farm", `${pnl?.daysOnFarm ?? 0} days`],
       ["Cost per day", fmt(pnl?.costPerDay ?? 0)],
       pnl?.pricePerKg > 0 ? ["Price / kg at sale", fmt(pnl.pricePerKg)] : null,
-      pnl?.projectedCost ? ["Projected cost (+30d)", fmt(pnl.projectedCost)] : null,
+      pnl?.projectedCost ? ["Projected cost to target", fmt(pnl.projectedCost)] : null,
     ].filter(Boolean) as any[][],
     margin: { left: margin, right: margin },
     styles: { fontSize: 10, cellPadding: 5 },

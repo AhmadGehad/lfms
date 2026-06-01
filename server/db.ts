@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   animalCategories,
@@ -686,6 +686,152 @@ export async function getActivePlanOnDate(categoryId: number, dateStr: string) {
     );
 }
 
+/**
+ * Pure feed-cost segmentation math (no DB). Given a category's ration plans
+ * and the full price history, compute total feed cost over [startStr, endStr).
+ * Exported for unit testing and reused by both single + bulk P&L paths.
+ */
+export function segmentedFeedCostPure(
+  plans: Array<{ feedItemId: number; qtyPerHeadPerDay: string; effectiveDate: string; endDate: string | null; isActive: boolean }>,
+  pricesByItem: Map<number, Array<{ eff: string; price: number }>>,
+  startStr: string,
+  endStr: string
+): number {
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+  if (end <= start) return 0;
+  const active = plans.filter((p) => p.isActive);
+  if (!active.length) return 0;
+
+  const priceOnDate = (feedItemId: number, dateStr: string): number => {
+    const arr = pricesByItem.get(feedItemId);
+    if (!arr) return 0;
+    let price = 0;
+    for (const r of arr) {
+      if (r.eff <= dateStr) price = r.price;
+      else break;
+    }
+    return price;
+  };
+
+  const cps = new Set<number>([start.getTime(), end.getTime()]);
+  const within = (t: number) => t > start.getTime() && t < end.getTime();
+  for (const p of active) {
+    const eff = new Date(p.effectiveDate).getTime();
+    if (within(eff)) cps.add(eff);
+    if (p.endDate) {
+      const after = new Date(p.endDate).getTime() + 86400000;
+      if (within(after)) cps.add(after);
+    }
+    for (const pr of pricesByItem.get(p.feedItemId) ?? []) {
+      const e = new Date(pr.eff).getTime();
+      if (within(e)) cps.add(e);
+    }
+  }
+  const sorted = Array.from(cps).sort((a, b) => a - b);
+  let total = 0;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const segStart = sorted[i];
+    const segDays = Math.round((sorted[i + 1] - segStart) / 86400000);
+    if (segDays <= 0) continue;
+    const segStartStr = new Date(segStart).toISOString().split("T")[0];
+    for (const p of active) {
+      const eff = p.effectiveDate;
+      const endD = p.endDate;
+      if (eff <= segStartStr && (!endD || endD >= segStartStr)) {
+        total += parseFloat(p.qtyPerHeadPerDay) * segDays * priceOnDate(p.feedItemId, segStartStr);
+      }
+    }
+  }
+  return Math.round(total * 100) / 100;
+}
+
+/**
+ * Accurate feed cost for one animal over [startDate, endDate).
+ *
+ * Walks the period in segments, re-evaluating BOTH the active ration plan and
+ * the feed price whenever either changes — instead of freezing a single
+ * acquisition-date snapshot. This makes per-animal feed cost track plan
+ * revisions and price inflation over the animal's life.
+ *
+ * Cost for a segment = Σ_plans (qtyPerHeadPerDay × segmentDays × priceOnSegmentStart).
+ */
+export async function computeFeedCostForPeriod(
+  categoryId: number,
+  startDate: string,
+  endDate: string
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const start = new Date(startDate.split("T")[0]);
+  const end = new Date(endDate.split("T")[0]);
+  if (end <= start) return 0;
+
+  // Fetch this category's active ration plans + the price history for their feed items.
+  const planRows = await db
+    .select()
+    .from(rationPlans)
+    .where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true)));
+
+  const feedItemIds = Array.from(new Set(planRows.map((p) => p.feedItemId)));
+  const priceRows = feedItemIds.length
+    ? await db
+        .select()
+        .from(feedItemPriceHistory)
+        .where(inArray(feedItemPriceHistory.feedItemId, feedItemIds))
+    : [];
+
+  const plansForPure = planRows.map((p) => ({
+    feedItemId: p.feedItemId,
+    qtyPerHeadPerDay: p.qtyPerHeadPerDay,
+    effectiveDate: String(p.effectiveDate).split("T")[0],
+    endDate: p.endDate ? String(p.endDate).split("T")[0] : null,
+    isActive: true,
+  }));
+  const pricesMap = new Map<number, Array<{ eff: string; price: number }>>();
+  for (const pr of priceRows) {
+    const eff = String(pr.effectiveDate).split("T")[0];
+    if (!pricesMap.has(pr.feedItemId)) pricesMap.set(pr.feedItemId, []);
+    pricesMap.get(pr.feedItemId)!.push({ eff, price: parseFloat(pr.pricePerUnit) });
+  }
+  for (const arr of Array.from(pricesMap.values())) arr.sort((a, b) => (a.eff < b.eff ? -1 : 1));
+
+  return segmentedFeedCostPure(
+    plansForPure,
+    pricesMap,
+    start.toISOString().split("T")[0],
+    end.toISOString().split("T")[0]
+  );
+}
+
+/**
+ * Head count in a category that overlapped a given date window — i.e. animals
+ * acquired on/before windowEnd and not exited before windowStart. Used to
+ * allocate category-level expenses fairly against the herd that actually
+ * existed during the expense window, instead of today's (changing) count.
+ */
+export async function getCategoryHeadCountDuring(
+  categoryId: number,
+  windowStart: string,
+  windowEnd: string
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 1;
+  const ws = windowStart.split("T")[0];
+  const we = windowEnd.split("T")[0];
+  const rows = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(animals)
+    .where(and(
+      eq(animals.categoryId, categoryId),
+      isNull(animals.deletedAt),
+      sql`${animals.acquisitionDate} <= ${we}`,
+      or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${ws}`)
+    ));
+  return Math.max(1, Number(rows[0]?.count ?? 1));
+}
+
 // ─── FEED STOCK ───────────────────────────────────────────────────────────────
 
 export async function getFeedStockLedger(feedItemId?: number) {
@@ -902,12 +1048,9 @@ export async function getAnimalPnL(animalId: number) {
     ));
   const catExpTotal = parseFloat(String(catExpensesRows[0]?.total ?? 0));
 
-  // Divide by total head count in that category (all animals, incl. exited) for fair allocation
-  const catHeadCountRows = await db
-    .select({ count: sql<number>`COUNT(*)` })
-    .from(animals)
-    .where(and(eq(animals.categoryId, animal.categoryId), isNull(animals.deletedAt)));
-  const catHeadCount = Math.max(1, Number(catHeadCountRows[0]?.count ?? 1));
+  // Allocate by the head count that overlapped the animal's time on farm —
+  // not today's count — so historical P&L stays stable as the herd changes.
+  const catHeadCount = await getCategoryHeadCountDuring(animal.categoryId, acqDateStr, exitDateStr);
   const categoryExpenseAllocation = catExpTotal / catHeadCount;
 
   // Sale revenue (exclude soft-deleted sales)
@@ -918,31 +1061,40 @@ export async function getAnimalPnL(animalId: number) {
   const revenue = saleRows.length > 0 ? parseFloat(saleRows[0].salePrice) : 0;
   const weightAtSale = saleRows.length > 0 ? parseFloat(saleRows[0].weightAtSale ?? "0") : 0;
 
-  // Feed cost (simplified: use ration plan × days × current price)
-  const plans = await getActivePlanOnDate(animal.categoryId, String(acquisitionDate));
-  let feedCost = 0;
-  for (const plan of plans) {
-    const price = await getFeedPriceOnDate(plan.feedItemId, acquisitionDate);
-    feedCost += parseFloat(plan.qtyPerHeadPerDay) * daysOnFarm * price;
-  }
+  // Feed cost: time-segmented across ration-plan AND price changes over the
+  // animal's life (not a single acquisition-date snapshot).
+  const feedCost = await computeFeedCostForPeriod(animal.categoryId, acquisitionDate, exitDate);
 
   const totalCost = purchaseCost + feedCost + directExpenseTotal + categoryExpenseAllocation;
   const netPnL = revenue - totalCost;
   const costPerDay = daysOnFarm > 0 ? totalCost / daysOnFarm : 0;
   const pricePerKg = weightAtSale > 0 ? revenue / weightAtSale : 0;
 
-  // Projected cost for active animals
+  // Projected cost for active animals — based on actual growth rate and the
+  // remaining distance to target weight, not a flat 30 days.
   const targetWeight = parseFloat(category?.targetWeightKg ?? "0");
-  const latestWeight = await db
-    .select({ weightKg: weightLog.weightKg })
+  const weightRows = await db
+    .select({ weightKg: weightLog.weightKg, weighDate: weightLog.weighDate })
     .from(weightLog)
     .where(and(eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt)))
     .orderBy(desc(weightLog.weighDate))
     .limit(1);
-  const currentWeight = latestWeight.length > 0 ? parseFloat(latestWeight[0].weightKg) : parseFloat(animal.weightAtAcquisition ?? "0");
-  const projectedCost = animal.isActive && targetWeight > currentWeight && costPerDay > 0
-    ? totalCost + costPerDay * 30 // rough estimate: 30 more days
-    : null;
+  const acqWeight = parseFloat(animal.weightAtAcquisition ?? "0");
+  const currentWeight = weightRows.length > 0 ? parseFloat(weightRows[0].weightKg) : acqWeight;
+
+  // Average daily gain so far (kg/day); fall back to a conservative 0.15 kg/day
+  // if we don't have enough data to measure it.
+  const adg = currentWeight > acqWeight && daysOnFarm > 0
+    ? (currentWeight - acqWeight) / daysOnFarm
+    : 0;
+  let projectedCost: number | null = null;
+  if (animal.isActive && targetWeight > currentWeight && costPerDay > 0) {
+    const effectiveAdg = adg > 0 ? adg : 0.15;
+    const daysToTarget = Math.ceil((targetWeight - currentWeight) / effectiveAdg);
+    // cap projection horizon at 1 year to avoid runaway estimates
+    const horizon = Math.min(daysToTarget, 365);
+    projectedCost = Math.round((totalCost + costPerDay * horizon) * 100) / 100;
+  }
 
   return {
     animalId,
@@ -1032,14 +1184,20 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     catExpByCatId.get(catId)!.push({ amount: parseFloat(String(e.amount)), date: dateStr });
   }
 
-  // Count ALL animals (incl. exited) per category for per-animal category expense allocation
-  const allHeadCountRows = await db
-    .select({ categoryId: animals.categoryId, count: sql<number>`COUNT(*)` })
-    .from(animals)
-    .where(isNull(animals.deletedAt))
-    .groupBy(animals.categoryId);
-  const totalHeadsByCategory = new Map<number, number>();
-  for (const r of allHeadCountRows) totalHeadsByCategory.set(r.categoryId, Number(r.count));
+  // Pre-build per-category animal list with acquisition/exit dates so we can
+  // allocate each category expense against the head count that overlapped it.
+  const animalsByCategory = new Map<number, Array<{ acq: string; exit: string | null }>>();
+  for (const r of allAnimals) {
+    const a = r.animal;
+    const acq = a.acquisitionDate instanceof Date
+      ? a.acquisitionDate.toISOString().split("T")[0]
+      : String(a.acquisitionDate ?? today).split("T")[0];
+    const exit = a.exitDate
+      ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0])
+      : null;
+    if (!animalsByCategory.has(a.categoryId)) animalsByCategory.set(a.categoryId, []);
+    animalsByCategory.get(a.categoryId)!.push({ acq, exit });
+  }
 
   // 5. Pre-fetch ALL ration plans (active + historical) for accurate per-period cost
   const allPlans = await db
@@ -1054,14 +1212,30 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   }
 
   // 6. Build feed price cache — key: `feedItemId:dateStr`
-  const feedPriceCache = new Map<string, number>();
-  async function getCachedFeedPrice(feedItemId: number, dateStr: string): Promise<number> {
-    const key = `${feedItemId}:${dateStr.substring(0, 7)}`; // cache by month
-    if (feedPriceCache.has(key)) return feedPriceCache.get(key)!;
-    const price = await getFeedPriceOnDate(feedItemId, dateStr);
-    feedPriceCache.set(key, price);
-    return price;
+  // 6. Pre-fetch ALL feed price history (one query) for in-memory segmented costing.
+  const allPriceRows = await db.select().from(feedItemPriceHistory);
+  const pricesByItem = new Map<number, Array<{ eff: string; price: number }>>();
+  for (const pr of allPriceRows) {
+    const eff = pr.effectiveDate instanceof Date
+      ? pr.effectiveDate.toISOString().split("T")[0]
+      : String(pr.effectiveDate).split("T")[0];
+    if (!pricesByItem.has(pr.feedItemId)) pricesByItem.set(pr.feedItemId, []);
+    pricesByItem.get(pr.feedItemId)!.push({ eff, price: parseFloat(pr.pricePerUnit) });
   }
+  for (const arr of Array.from(pricesByItem.values())) arr.sort((a, b) => (a.eff < b.eff ? -1 : 1));
+
+  // In-memory segmented feed cost for one animal over [start, end), reusing the
+  // same pure logic as the single-animal path so both views always agree.
+  const segmentedFeedCost = (categoryId: number, startStr: string, endStr: string): number => {
+    const plans = (plansByCategory.get(categoryId) ?? []).map((p) => ({
+      feedItemId: p.feedItemId,
+      qtyPerHeadPerDay: p.qtyPerHeadPerDay,
+      effectiveDate: String(p.effectiveDate).split("T")[0],
+      endDate: p.endDate ? String(p.endDate).split("T")[0] : null,
+      isActive: p.isActive,
+    }));
+    return segmentedFeedCostPure(plans, pricesByItem, startStr, endStr);
+  };
 
   // 7. Compute P&L per animal
   const results = [];
@@ -1085,36 +1259,22 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const revenue = saleRow ? parseFloat(saleRow.salePrice) : 0;
     const weightAtSale = saleRow ? parseFloat(saleRow.weightAtSale ?? "0") : 0;
 
-    // Feed cost: use ration plans ACTIVE on the animal's acquisition date
-    // and the feed price on that date (matches getAnimalPnL single-animal logic)
-    let feedCost = 0;
-    const plans = plansByCategory.get(animal.categoryId) ?? [];
-    // Filter to plans that were active on acquisition date
-    const plansOnAcqDate = plans.filter((p) => {
-      const pStart = p.effectiveDate instanceof Date
-        ? p.effectiveDate.toISOString().split("T")[0]
-        : String(p.effectiveDate ?? "2000-01-01").split("T")[0];
-      const pEnd = p.endDate
-        ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0])
-        : "9999-12-31";
-      return pStart <= acqDateStr && pEnd >= acqDateStr;
-    });
-    // Fall back to all active plans if none found on acquisition date
-    const effectivePlans = plansOnAcqDate.length > 0 ? plansOnAcqDate : plans.filter((p) => p.isActive);
-    for (const plan of effectivePlans) {
-      const price = await getCachedFeedPrice(plan.feedItemId, acqDateStr);
-      feedCost += parseFloat(plan.qtyPerHeadPerDay) * daysOnFarm * price;
-    }
+    // Feed cost: time-segmented across ration-plan AND price changes (matches
+    // getAnimalPnL). Reflects plan revisions and price inflation over the life.
+    const feedCost = segmentedFeedCost(animal.categoryId, acqDateStr, exitDateStr);
 
-    // Category expense allocation: animal's share of category-level expenses
-    // Divide each category expense by total head count in that category
+    // Category expense allocation: each expense divided by the head count that
+    // overlapped THAT expense's window (animals acquired on/before the expense
+    // and not yet exited), not today's total — so history stays stable.
     let categoryExpenseAllocation = 0;
     const catExpenses = catExpByCatId.get(animal.categoryId) ?? [];
-    const totalHeadsInCat = Math.max(1, totalHeadsByCategory.get(animal.categoryId) ?? 1);
+    const catAnimals = animalsByCategory.get(animal.categoryId) ?? [];
     for (const ce of catExpenses) {
-      // Only allocate if the expense date falls within the animal's time on farm
       if (ce.date >= acqDateStr && ce.date <= exitDateStr) {
-        categoryExpenseAllocation += ce.amount / totalHeadsInCat;
+        const headsAtExpense = Math.max(1, catAnimals.filter((a) =>
+          a.acq <= ce.date && (a.exit === null || a.exit >= ce.date)
+        ).length);
+        categoryExpenseAllocation += ce.amount / headsAtExpense;
       }
     }
 
