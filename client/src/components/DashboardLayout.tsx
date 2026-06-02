@@ -273,15 +273,15 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           {/* Navigation */}
-          <SidebarContent className="gap-1 py-2">
+          <SidebarContent className="gap-2 py-2">
             {navGroups.map((group) => (
-              <SidebarGroup key={group.label} className="py-1">
+              <SidebarGroup key={group.label} className="py-0.5">
                 {!isCollapsed && (
-                  <SidebarGroupLabel className={`h-auto min-h-7 py-1.5 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 px-4 ${isAr ? "flex-row-reverse text-right" : ""}`}>
+                  <SidebarGroupLabel className={`!h-auto min-h-6 py-1 mb-1 leading-tight text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 px-4 ${isAr ? "flex-row-reverse text-right" : ""}`}>
                     {group.label}
                   </SidebarGroupLabel>
                 )}
-                <SidebarMenu className="px-2 gap-1">
+                <SidebarMenu className="px-2 gap-1.5">
                   {group.items.map((item) => {
                     const isActive = location === item.path ||
                       (item.path !== "/" && location.startsWith(item.path));
@@ -294,7 +294,7 @@ function DashboardLayoutContent({
                             if (isMobile) toggleSidebar();
                           }}
                           tooltip={item.label}
-                          className={`h-9 font-normal relative ${isAr ? "flex-row-reverse" : ""}`}
+                          className={`!h-auto min-h-9 py-2 font-normal relative ${isAr ? "flex-row-reverse" : ""}`}
                         >
                           <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} />
                           <span className={isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground"}>
