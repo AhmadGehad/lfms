@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { toMinor, toMajor, divMinor } from "./_core/money";
 import {
   animalCategories,
   animalStatusHistory,
@@ -729,7 +730,7 @@ export function segmentedFeedCostPure(
     }
   }
   const sorted = Array.from(cps).sort((a, b) => a - b);
-  let total = 0;
+  let totalMinor = 0;
   for (let i = 0; i < sorted.length - 1; i++) {
     const segStart = sorted[i];
     const segDays = Math.round((sorted[i + 1] - segStart) / 86400000);
@@ -739,11 +740,13 @@ export function segmentedFeedCostPure(
       const eff = p.effectiveDate;
       const endD = p.endDate;
       if (eff <= segStartStr && (!endD || endD >= segStartStr)) {
-        total += parseFloat(p.qtyPerHeadPerDay) * segDays * priceOnDate(p.feedItemId, segStartStr);
+        // price is money → minor units; qty and days are plain multipliers.
+        const priceMinor = Math.round(priceOnDate(p.feedItemId, segStartStr) * 100);
+        totalMinor += Math.round(priceMinor * parseFloat(p.qtyPerHeadPerDay) * segDays);
       }
     }
   }
-  return Math.round(total * 100) / 100;
+  return Math.round(totalMinor) / 100;
 }
 
 /**
@@ -1018,9 +1021,6 @@ export async function getAnimalPnL(animalId: number) {
     Math.floor((new Date(exitDate).getTime() - new Date(acquisitionDate).getTime()) / 86400000)
   );
 
-  // Purchase cost
-  const purchaseCost = parseFloat(animal.purchaseCost ?? "0");
-
   // Direct expenses (head-level only, exclude soft-deleted)
   const directExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
@@ -1030,7 +1030,7 @@ export async function getAnimalPnL(animalId: number) {
       eq(expenses.targetType, "head"),
       isNull(expenses.deletedAt)
     ));
-  const directExpenseTotal = parseFloat(String(directExpenses[0]?.total ?? 0));
+  const directExpenseTotalMinor = toMinor(String(directExpenses[0]?.total ?? 0));
 
   // Category-level expense allocation: animal's share of vet/vaccine bills etc
   // targeting the animal's category during its time on farm
@@ -1046,29 +1046,39 @@ export async function getAnimalPnL(animalId: number) {
       sql`${expenses.expenseDate} >= ${acqDateStr}`,
       sql`${expenses.expenseDate} <= ${exitDateStr}`
     ));
-  const catExpTotal = parseFloat(String(catExpensesRows[0]?.total ?? 0));
+  const catExpTotalMinor = toMinor(String(catExpensesRows[0]?.total ?? 0));
 
   // Allocate by the head count that overlapped the animal's time on farm —
   // not today's count — so historical P&L stays stable as the herd changes.
   const catHeadCount = await getCategoryHeadCountDuring(animal.categoryId, acqDateStr, exitDateStr);
-  const categoryExpenseAllocation = catExpTotal / catHeadCount;
+  const categoryExpenseAllocationMinor = divMinor(catExpTotalMinor, catHeadCount);
 
   // Sale revenue (exclude soft-deleted sales)
   const saleRows = await db.select().from(sales).where(and(
     eq(sales.animalId, animalId),
     isNull(sales.deletedAt)
   )).limit(1);
-  const revenue = saleRows.length > 0 ? parseFloat(saleRows[0].salePrice) : 0;
+  const revenueMinor = saleRows.length > 0 ? toMinor(saleRows[0].salePrice) : 0;
   const weightAtSale = saleRows.length > 0 ? parseFloat(saleRows[0].weightAtSale ?? "0") : 0;
 
   // Feed cost: time-segmented across ration-plan AND price changes over the
   // animal's life (not a single acquisition-date snapshot).
   const feedCost = await computeFeedCostForPeriod(animal.categoryId, acquisitionDate, exitDate);
+  const feedCostMinor = toMinor(feedCost);
 
-  const totalCost = purchaseCost + feedCost + directExpenseTotal + categoryExpenseAllocation;
-  const netPnL = revenue - totalCost;
-  const costPerDay = daysOnFarm > 0 ? totalCost / daysOnFarm : 0;
-  const pricePerKg = weightAtSale > 0 ? revenue / weightAtSale : 0;
+  const purchaseCostMinor = toMinor(animal.purchaseCost ?? "0");
+  const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor;
+  const netPnLMinor = revenueMinor - totalCostMinor;
+
+  // Convert back to major-unit numbers at the boundary
+  const purchaseCost = toMajor(purchaseCostMinor);
+  const directExpenseTotal = toMajor(directExpenseTotalMinor);
+  const categoryExpenseAllocation = toMajor(categoryExpenseAllocationMinor);
+  const revenue = toMajor(revenueMinor);
+  const totalCost = toMajor(totalCostMinor);
+  const netPnL = toMajor(netPnLMinor);
+  const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(totalCostMinor, daysOnFarm)) : 0;
+  const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
   // Projected cost for active animals — based on actual growth rate and the
   // remaining distance to target weight, not a flat 30 days.
@@ -1088,12 +1098,13 @@ export async function getAnimalPnL(animalId: number) {
     ? (currentWeight - acqWeight) / daysOnFarm
     : 0;
   let projectedCost: number | null = null;
-  if (animal.isActive && targetWeight > currentWeight && costPerDay > 0) {
+  if (animal.isActive && targetWeight > currentWeight && totalCostMinor > 0 && daysOnFarm > 0) {
     const effectiveAdg = adg > 0 ? adg : 0.15;
     const daysToTarget = Math.ceil((targetWeight - currentWeight) / effectiveAdg);
     // cap projection horizon at 1 year to avoid runaway estimates
     const horizon = Math.min(daysToTarget, 365);
-    projectedCost = Math.round((totalCost + costPerDay * horizon) * 100) / 100;
+    const costPerDayMinor = divMinor(totalCostMinor, daysOnFarm);
+    projectedCost = toMajor(totalCostMinor + costPerDayMinor * horizon);
   }
 
   return {
@@ -1102,7 +1113,7 @@ export async function getAnimalPnL(animalId: number) {
     purchaseCost,
     feedCost,
     directExpenseTotal,
-    categoryExpenseAllocation: Math.round(categoryExpenseAllocation * 100) / 100,
+    categoryExpenseAllocation,
     totalCost,
     revenue,
     netPnL,
@@ -1156,9 +1167,9 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     .from(expenses)
     .where(and(eq(expenses.targetType, "head"), isNull(expenses.deletedAt)))
     .groupBy(expenses.headId);
-  const directExpByAnimal = new Map<number, number>();
+  const directExpByAnimal = new Map<number, number>(); // minor units
   for (const e of allDirectExp) {
-    if (e.headId != null) directExpByAnimal.set(e.headId, parseFloat(String(e.total ?? 0)));
+    if (e.headId != null) directExpByAnimal.set(e.headId, toMinor(String(e.total ?? 0)));
   }
 
   // 4. Pre-fetch all CATEGORY-level expenses with date + categoryTarget (numeric FK → categoryId)
@@ -1172,8 +1183,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     .from(expenses)
     .where(and(eq(expenses.targetType, "category"), isNull(expenses.deletedAt)));
 
-  // Build a map: categoryId → array of { amount, date }
-  const catExpByCatId = new Map<number, Array<{ amount: number; date: string }>>();
+  // Build a map: categoryId → array of { amountMinor, date }
+  const catExpByCatId = new Map<number, Array<{ amount: number; date: string }>>(); // amount in minor units
   for (const e of allCatExp) {
     if (e.categoryTarget == null) continue;
     const catId = Number(e.categoryTarget);
@@ -1181,7 +1192,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       ? e.expenseDate.toISOString().split("T")[0]
       : String(e.expenseDate).split("T")[0];
     if (!catExpByCatId.has(catId)) catExpByCatId.set(catId, []);
-    catExpByCatId.get(catId)!.push({ amount: parseFloat(String(e.amount)), date: dateStr });
+    catExpByCatId.get(catId)!.push({ amount: toMinor(String(e.amount)), date: dateStr });
   }
 
   // Pre-build per-category animal list with acquisition/exit dates so we can
@@ -1252,21 +1263,22 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       Math.floor((new Date(exitDateStr).getTime() - new Date(acqDateStr).getTime()) / 86400000)
     );
 
-    const purchaseCost = parseFloat(animal.purchaseCost ?? "0");
-    const directExpenseTotal = directExpByAnimal.get(animal.id) ?? 0;
+    const purchaseCostMinor = toMinor(animal.purchaseCost ?? "0");
+    const directExpenseTotalMinor = directExpByAnimal.get(animal.id) ?? 0; // already minor
 
     const saleRow = saleByAnimal.get(animal.id);
-    const revenue = saleRow ? parseFloat(saleRow.salePrice) : 0;
+    const revenueMinor = saleRow ? toMinor(saleRow.salePrice) : 0;
     const weightAtSale = saleRow ? parseFloat(saleRow.weightAtSale ?? "0") : 0;
 
     // Feed cost: time-segmented across ration-plan AND price changes (matches
     // getAnimalPnL). Reflects plan revisions and price inflation over the life.
     const feedCost = segmentedFeedCost(animal.categoryId, acqDateStr, exitDateStr);
+    const feedCostMinor = toMinor(feedCost);
 
     // Category expense allocation: each expense divided by the head count that
     // overlapped THAT expense's window (animals acquired on/before the expense
     // and not yet exited), not today's total — so history stays stable.
-    let categoryExpenseAllocation = 0;
+    let categoryExpenseAllocationMinor = 0;
     const catExpenses = catExpByCatId.get(animal.categoryId) ?? [];
     const catAnimals = animalsByCategory.get(animal.categoryId) ?? [];
     for (const ce of catExpenses) {
@@ -1274,14 +1286,20 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
         const headsAtExpense = Math.max(1, catAnimals.filter((a) =>
           a.acq <= ce.date && (a.exit === null || a.exit >= ce.date)
         ).length);
-        categoryExpenseAllocation += ce.amount / headsAtExpense;
+        categoryExpenseAllocationMinor += divMinor(ce.amount, headsAtExpense);
       }
     }
 
-    const totalCost = purchaseCost + feedCost + directExpenseTotal + categoryExpenseAllocation;
-    const netPnL = revenue - totalCost;
-    const costPerDay = daysOnFarm > 0 ? totalCost / daysOnFarm : 0;
-    const pricePerKg = weightAtSale > 0 ? revenue / weightAtSale : 0;
+    const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor;
+    const netPnLMinor = revenueMinor - totalCostMinor;
+
+    const purchaseCost = toMajor(purchaseCostMinor);
+    const directExpenseTotal = toMajor(directExpenseTotalMinor);
+    const revenue = toMajor(revenueMinor);
+    const totalCost = toMajor(totalCostMinor);
+    const netPnL = toMajor(netPnLMinor);
+    const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(totalCostMinor, daysOnFarm)) : 0;
+    const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
     results.push({
       animalId: animal.id,
@@ -1294,7 +1312,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       purchaseCost,
       feedCost,
       directExpenseTotal,
-      categoryExpenseAllocation: Math.round(categoryExpenseAllocation * 100) / 100,
+      categoryExpenseAllocation: toMajor(categoryExpenseAllocationMinor),
       totalCost,
       revenue,
       netPnL,
@@ -1441,15 +1459,22 @@ export async function getDashboardKPIs(filters?: {
     .where(and(...headConditions))
     .groupBy(animals.categoryId, animalCategories.name);
 
-  const otherExpenses = parseFloat(String(totalOtherExpenses[0]?.total ?? 0));
-  const feedExpenses = parseFloat(String(feedPurchasesInPeriod[0]?.total ?? 0));
-  const totalExpenses = otherExpenses + feedExpenses;
-  const revenueNum = parseFloat(String(totalRevenue[0]?.total ?? 0));
+  const otherExpensesMinor = toMinor(String(totalOtherExpenses[0]?.total ?? 0));
+  const feedExpensesMinor = toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
+  const totalExpensesMinor = otherExpensesMinor + feedExpensesMinor;
+  const revenueMinor = toMinor(String(totalRevenue[0]?.total ?? 0));
   const activeHeads = Number(headCount[0]?.count ?? 0);
+
+  const otherExpenses = toMajor(otherExpensesMinor);
+  const feedExpenses = toMajor(feedExpensesMinor);
+  const totalExpenses = toMajor(totalExpensesMinor);
+  const revenueNum = toMajor(revenueMinor);
 
   // Cost per head per day (Excel's primary daily metric)
   const periodDays = Math.max(1, Math.ceil((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86400000));
-  const costPerHeadPerDay = activeHeads > 0 && periodDays > 0 ? totalExpenses / activeHeads / periodDays : 0;
+  const costPerHeadPerDay = activeHeads > 0 && periodDays > 0
+    ? toMajor(divMinor(totalExpensesMinor, activeHeads * periodDays))
+    : 0;
 
   return {
     totalActiveHeads: activeHeads,
@@ -1457,8 +1482,8 @@ export async function getDashboardKPIs(filters?: {
     feedExpenses,
     totalExpenses,
     totalRevenue: revenueNum,
-    grossPnL: revenueNum - totalExpenses,
-    costPerHeadPerDay: Math.round(costPerHeadPerDay * 100) / 100,
+    grossPnL: toMajor(revenueMinor - totalExpensesMinor),
+    costPerHeadPerDay,
     categoryBreakdown,
     period: { fromDate, toDate },
   };
@@ -1703,12 +1728,19 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
         isNull(feedStockLedger.deletedAt)
       )
     );
-  const totalFeedCost = parseFloat(String(feedPurchases[0]?.total ?? 0));
-  const totalRevenue = parseFloat(String(salesData[0]?.total ?? 0));
-  const totalAnimalCost = parseFloat(String(purchaseCosts[0]?.total ?? 0));
-  const totalOtherCost = expensesByCategory.reduce((sum, e) => sum + parseFloat(String(e.total ?? 0)), 0);
-  const totalCost = totalAnimalCost + totalFeedCost + totalOtherCost;
-  const grossProfit = totalRevenue - totalCost;
+  const totalFeedCostMinor = toMinor(String(feedPurchases[0]?.total ?? 0));
+  const totalRevenueMinor = toMinor(String(salesData[0]?.total ?? 0));
+  const totalAnimalCostMinor = toMinor(String(purchaseCosts[0]?.total ?? 0));
+  const totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
+  const totalCostMinor = totalAnimalCostMinor + totalFeedCostMinor + totalOtherCostMinor;
+  const grossProfitMinor = totalRevenueMinor - totalCostMinor;
+
+  const totalFeedCost = toMajor(totalFeedCostMinor);
+  const totalRevenue = toMajor(totalRevenueMinor);
+  const totalAnimalCost = toMajor(totalAnimalCostMinor);
+  const totalOtherCost = toMajor(totalOtherCostMinor);
+  const totalCost = toMajor(totalCostMinor);
+  const grossProfit = toMajor(grossProfitMinor);
   return {
     period: { fromDate: filters.fromDate, toDate: filters.toDate },
     revenue: { animalSales: totalRevenue, total: totalRevenue },
@@ -1720,6 +1752,6 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       total: totalCost,
     },
     grossProfit,
-    profitMargin: totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0,
+    profitMargin: totalRevenueMinor > 0 ? Math.round((grossProfitMinor / totalRevenueMinor) * 10000) / 100 : 0,
   };
 }
