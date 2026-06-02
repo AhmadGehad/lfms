@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import { protectedProcedure, supervisorProcedure, router } from "../_core/trpc";
 import {
   createAnimal,
@@ -313,6 +314,7 @@ export const importRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "import",
+        ipAddress: getClientIp(ctx),
         entityType: "bulk",
         entityId: "excel",
         newValues: { totalInserted, sheets: stats.map((s) => ({ sheet: s.sheet, inserted: s.inserted })) } as any,

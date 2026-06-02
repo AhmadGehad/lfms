@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import { moneyString, optionalMoneyString, pastOrTodayDate } from "../_core/validators";
 import { createExpense, deleteExpense, getExpenses, updateExpense, createAuditEntry } from "../db";
@@ -40,6 +41,7 @@ export const expensesRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "create",
+        ipAddress: getClientIp(ctx),
         entityType: "expense",
         entityId: String((result as any).insertId),
         newValues: input as any,
@@ -59,9 +61,34 @@ export const expensesRouter = router({
         subCategoryId: z.number().int().positive().optional(),
       })
     )
-    .mutation(({ input: { id, ...data } }) => updateExpense(id, data)),
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const before = (await getExpenses({})).find((e: any) => e.expense?.id === id)?.expense;
+      const result = await updateExpense(id, data);
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        entityType: "expense",
+        entityId: String(id),
+        oldValues: before ? { amount: before.amount, vendorName: before.vendorName, categoryId: before.categoryId } as any : undefined,
+        newValues: data as any,
+        ipAddress: getClientIp(ctx),
+      });
+      return result;
+    }),
 
   delete: staffProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(({ input }) => deleteExpense(input.id)),
+    .mutation(async ({ input, ctx }) => {
+      const before = (await getExpenses({})).find((e: any) => e.expense?.id === input.id)?.expense;
+      const result = await deleteExpense(input.id, ctx.user?.id);
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "delete",
+        entityType: "expense",
+        entityId: String(input.id),
+        oldValues: before ? { amount: before.amount, vendorName: before.vendorName } as any : undefined,
+        ipAddress: getClientIp(ctx),
+      });
+      return result;
+    }),
 });

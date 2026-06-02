@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import { protectedProcedure, privilegedProcedure, router } from "../_core/trpc";
 import {
   createAuditEntry,
@@ -149,6 +150,7 @@ export const salesRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",
+        ipAddress: getClientIp(ctx),
         entityType: "sale",
         entityId: String(id),
         newValues: data as any,

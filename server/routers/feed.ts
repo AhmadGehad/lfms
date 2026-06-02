@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import { qtyString, rationRateString, optionalMoneyString, isoDate } from "../_core/validators";
 import {
@@ -39,6 +40,7 @@ export const feedRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "create",
+        ipAddress: getClientIp(ctx),
         entityType: "rationPlan",
         entityId: String((result as any).insertId),
         newValues: input as any,
@@ -67,6 +69,7 @@ export const feedRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",
+        ipAddress: getClientIp(ctx),
         entityType: "rationPlan",
         entityId: String(id),
         newValues: data as any,
@@ -101,6 +104,7 @@ export const feedRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "create",
+        ipAddress: getClientIp(ctx),
         entityType: "feedStock",
         entityId: String((result as any).insertId),
         newValues: input as any,
@@ -154,6 +158,7 @@ export const feedRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",
+        ipAddress: getClientIp(ctx),
         entityType: "feedStock",
         entityId: String(id),
         newValues: data as any,

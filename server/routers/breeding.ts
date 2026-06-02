@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import { optionalWeightString, pastOrTodayDate } from "../_core/validators";
 import {
@@ -71,6 +72,7 @@ export const breedingRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "create",
+        ipAddress: getClientIp(ctx),
         entityType: "lambing_log",
         entityId: results[0]?.lambId ?? "unknown",
         newValues: input as any,

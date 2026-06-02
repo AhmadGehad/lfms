@@ -1,5 +1,6 @@
 import { protectedProcedure, supervisorProcedure, privilegedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import {
   getAllSpecies, createSpecies, updateSpecies,
   getAllCategories, createCategory, updateCategory,
@@ -23,7 +24,7 @@ export const configRouter = router({
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createSpecies(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -31,7 +32,7 @@ export const configRouter = router({
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateSpecies(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -50,7 +51,7 @@ export const configRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await createCategory(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -67,7 +68,7 @@ export const configRouter = router({
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateCategory(id, data as any);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -78,7 +79,7 @@ export const configRouter = router({
     .input(z.object({ name: z.string().min(1), description: z.string().optional(), isExitStatus: z.boolean().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createStatus(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "status", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "status", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -86,7 +87,7 @@ export const configRouter = router({
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isExitStatus: z.boolean().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateStatus(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "status", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "status", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -105,7 +106,7 @@ export const configRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await createGroup(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -121,7 +122,7 @@ export const configRouter = router({
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateGroup(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -132,7 +133,7 @@ export const configRouter = router({
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createBirthType(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "birthType", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "birthType", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -140,7 +141,7 @@ export const configRouter = router({
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateBirthType(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "birthType", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "birthType", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -151,7 +152,7 @@ export const configRouter = router({
     .input(z.object({ name: z.string().min(1), unit: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createFeedItem(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -159,7 +160,7 @@ export const configRouter = router({
     .input(z.object({ id: z.number(), name: z.string().optional(), unit: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateFeedItem(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -176,7 +177,7 @@ export const configRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await addFeedItemPrice(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(input.feedItemId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(input.feedItemId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -187,7 +188,7 @@ export const configRouter = router({
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createExpenseCategory(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseCategory", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseCategory", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -195,7 +196,7 @@ export const configRouter = router({
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateExpenseCategory(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseCategory", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseCategory", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -207,7 +208,7 @@ export const configRouter = router({
     .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createExpenseSubCategory(input);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String((result as any).insertId), action: "create", newValues: input });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -215,7 +216,7 @@ export const configRouter = router({
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateExpenseSubCategory(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String(id), action: "update", newValues: data });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -226,7 +227,7 @@ export const configRouter = router({
     .input(z.object({ key: z.string(), value: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const result = await upsertSetting(input.key, input.value, ctx.user?.id);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "setting", entityId: input.key, action: "update", newValues: { value: input.value } });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "setting", entityId: input.key, action: "update", newValues: { value: input.value }, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
@@ -236,8 +237,9 @@ export const configRouter = router({
   updateUserRole: privilegedProcedure
     .input(z.object({ userId: z.number(), role: z.enum(["owner", "supervisor", "staff", "admin", "user"]) }))
     .mutation(async ({ input, ctx }) => {
+      const before = (await getAllUsers()).find((u: any) => u.id === input.userId);
       const result = await updateUserRole(input.userId, input.role);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "user", entityId: String(input.userId), action: "update", newValues: { role: input.role } });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "user", entityId: String(input.userId), action: "update", oldValues: before ? { role: before.role } as any : undefined, newValues: { role: input.role }, ipAddress: getClientIp(ctx) });
       return result;
     }),
 });

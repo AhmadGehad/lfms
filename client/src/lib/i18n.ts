@@ -536,6 +536,7 @@ const en = {
     searchPlaceholder: "Search by entity, action, notes…",
     noEntries: "No audit entries yet.",
     noMatch: "No entries match your filters.",
+    ipAddress: "IP Address",
     entriesCount: "{{count}} entries",
   },
 
@@ -1136,6 +1137,7 @@ const ar = {
     searchPlaceholder: "ابحث بالكيان أو الإجراء أو الملاحظات…",
     noEntries: "لا توجد سجلات تدقيق بعد.",
     noMatch: "لا توجد سجلات مطابقة للمرشحات.",
+    ipAddress: "عنوان IP",
     entriesCount: "{{count}} سجل",
   },
 

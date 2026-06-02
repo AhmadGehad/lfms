@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import { optionalMoneyString, optionalWeightString, weightString, pastOrTodayDate } from "../_core/validators";
 import {
@@ -98,6 +99,7 @@ export const animalsRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "create",
+        ipAddress: getClientIp(ctx),
         entityType: "animal",
         entityId: animalId,
         newValues: input as any,
@@ -147,6 +149,7 @@ export const animalsRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",
+        ipAddress: getClientIp(ctx),
         entityType: "animal",
         entityId: String(id),
         oldValues: existing as any,
@@ -221,6 +224,7 @@ export const animalsRouter = router({
         await createAuditEntry({
           userId: ctx.user?.id,
           action: "exit",
+          ipAddress: getClientIp(ctx),
           entityType: "animal",
           entityId: String(input.id),
           newValues: { exitDate: input.exitDate, exitReason: input.exitReason } as any,
@@ -261,6 +265,7 @@ export const animalsRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "create",
+        ipAddress: getClientIp(ctx),
         entityType: "weightLog",
         entityId: String((result as any).insertId),
         newValues: input as any,

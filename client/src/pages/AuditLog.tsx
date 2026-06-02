@@ -96,15 +96,16 @@ export default function AuditLog() {
                   <TableHead>{t("audit.entityType")}</TableHead>
                   <TableHead>{t("audit.entityId")}</TableHead>
                   <TableHead>{t("audit.user")}</TableHead>
-                  <TableHead>{t("audit.notes")}</TableHead>
+                  <TableHead>{t("audit.changes") ?? "Changes"}</TableHead>
+                  <TableHead>{t("audit.ipAddress") ?? "IP"}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center py-8">{t("common.loading")}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-8">{t("common.loading")}</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
                       {(entries ?? []).length === 0 ? t("audit.noEntries") : t("audit.noMatch")}
                     </TableCell>
                   </TableRow>
@@ -122,9 +123,19 @@ export default function AuditLog() {
                       <TableCell className="capitalize">{e.entityType}</TableCell>
                       <TableCell className="font-mono text-xs">{e.entityId}</TableCell>
                       <TableCell className="text-muted-foreground">{e.userId ?? "System"}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
-                        {e.notes ?? (e.newValues ? JSON.stringify(e.newValues).slice(0, 60) : "—")}
+                      <TableCell className="text-muted-foreground text-xs max-w-sm">
+                        {e.oldValues || e.newValues ? (
+                          <span className="font-mono">
+                            {e.oldValues && (
+                              <span className="text-red-600 line-through me-1">{JSON.stringify(e.oldValues).slice(0, 50)}</span>
+                            )}
+                            {e.newValues && (
+                              <span className="text-green-700">{JSON.stringify(e.newValues).slice(0, 50)}</span>
+                            )}
+                          </span>
+                        ) : (e.notes ?? "—")}
                       </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">{e.ipAddress ?? "—"}</TableCell>
                     </TableRow>
                   ))
                 )}

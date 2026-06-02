@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getClientIp } from "../_core/audit";
 import { protectedProcedure, privilegedProcedure, router } from "../_core/trpc";
 import {
   getAllAnimalsPnL,
@@ -265,6 +266,7 @@ export const backupRouter = router({
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "restore",
+        ipAddress: getClientIp(ctx),
         entityType: "backup",
         entityId: snap.generatedAt,
         newValues: stats as any,
