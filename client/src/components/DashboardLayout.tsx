@@ -70,6 +70,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { loading, user } = useAuth();
   const { t, i18n } = useTranslation();
   const isAr = i18n.language === "ar";
+  const isMobile = useIsMobile();
 
   // Apply RTL direction based on language
   useEffect(() => {
@@ -121,9 +122,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider
       style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}
-      defaultOpen={true}
+      defaultOpen={!isMobile}
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} isAr={isAr}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} isAr={isAr} isMobile={isMobile}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -134,10 +135,12 @@ function DashboardLayoutContent({
   children,
   setSidebarWidth,
   isAr,
+  isMobile: isMobileProp,
 }: {
   children: React.ReactNode;
   setSidebarWidth: (w: number) => void;
   isAr: boolean;
+  isMobile: boolean;
 }) {
   const { user, logout } = useAuth();
   const [location, setLocation] = useLocation();
@@ -145,7 +148,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
+  const isMobile = isMobileProp;
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const perms = usePermissions();
