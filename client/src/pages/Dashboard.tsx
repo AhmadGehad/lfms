@@ -9,25 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
+import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const COLORS = ["#4ade80", "#86efac", "#bbf7d0", "#d1fae5", "#6ee7b7", "#34d399"];
 
@@ -54,27 +41,12 @@ function getPresetRange(preset: Preset, customFrom?: string, customTo?: string):
     return { from: fmt(from), to: today };
   }
   // custom
-  const fallbackFrom = new Date(now); fallbackFrom.setFullYear(fallbackFrom.getFullYear() - 1);
+  const fallbackFrom = new Date(now);
+  fallbackFrom.setFullYear(fallbackFrom.getFullYear() - 1);
   return { from: customFrom || fmt(fallbackFrom), to: customTo || today };
 }
 
-function KPICard({
-  title,
-  value,
-  sub,
-  icon: Icon,
-  trend,
-  color = "text-primary",
-  isLoading,
-}: {
-  title: string;
-  value: string | number;
-  sub?: string;
-  icon: any;
-  trend?: "up" | "down" | "neutral";
-  color?: string;
-  isLoading?: boolean;
-}) {
+function KPICard({ title, value, sub, icon: Icon, trend, color = "text-primary", isLoading }: { title: string; value: string | number; sub?: string; icon: any; trend?: "up" | "down" | "neutral"; color?: string; isLoading?: boolean }) {
   return (
     <Card className="relative overflow-hidden">
       <CardContent className="pt-5 pb-5">
@@ -95,11 +67,7 @@ function KPICard({
             </div>
           </div>
         )}
-        {trend && !isLoading && (
-          <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-600" : "text-muted-foreground"}`}>
-            {trend === "up" ? <ArrowUpRight className="h-3 w-3" /> : trend === "down" ? <ArrowDownRight className="h-3 w-3" /> : null}
-          </div>
-        )}
+        {trend && !isLoading && <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-600" : "text-muted-foreground"}`}>{trend === "up" ? <ArrowUpRight className="h-3 w-3" /> : trend === "down" ? <ArrowDownRight className="h-3 w-3" /> : null}</div>}
       </CardContent>
     </Card>
   );
@@ -116,7 +84,7 @@ const PRESET_LABELS: Record<Preset, string> = {
   month: "This Month",
   quarter: "This Quarter",
   year: "This Year",
-  custom: "Custom Range",
+  custom: "Custom Range"
 };
 
 export default function Dashboard() {
@@ -133,17 +101,14 @@ export default function Dashboard() {
   const [pendingFrom, setPendingFrom] = useState<string>("");
   const [pendingTo, setPendingTo] = useState<string>("");
 
-  const dateRange = useMemo(
-    () => getPresetRange(preset, customFrom, customTo),
-    [preset, customFrom, customTo]
-  );
+  const dateRange = useMemo(() => getPresetRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
   const { data: kpis, isLoading: kpisLoading } = trpc.dashboard.getKPIs.useQuery({
     fromDate: dateRange.from,
     toDate: dateRange.to,
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
-    groupId: filterGroup !== "all" ? Number(filterGroup) : undefined,
+    groupId: filterGroup !== "all" ? Number(filterGroup) : undefined
   });
 
   // Feed stock - use shared feed.getStockStatus so it updates when Feed page changes stock
@@ -152,11 +117,11 @@ export default function Dashboard() {
 
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
     fromDate: dateRange.from,
-    toDate: dateRange.to,
+    toDate: dateRange.to
   });
   const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery({
     fromDate: dateRange.from,
-    toDate: dateRange.to,
+    toDate: dateRange.to
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
@@ -165,14 +130,16 @@ export default function Dashboard() {
 
   const locale = i18n.language === "ar" ? "ar-EG" : "en-EG";
   const fmt = (v: number) =>
-    new Intl.NumberFormat(locale, { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
+    new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: "EGP",
+      maximumFractionDigits: 0
+    }).format(v);
 
   const criticalAlerts = (feedStock ?? []).filter((s: any) => s.status === "critical").length;
   const lowAlerts = (feedStock ?? []).filter((s: any) => s.status === "low").length;
 
-  const presetLabel = preset === "custom"
-    ? `${customFrom || "?"} → ${customTo || "?"}`
-    : PRESET_LABELS[preset];
+  const presetLabel = preset === "custom" ? `${customFrom || "?"} → ${customTo || "?"}` : PRESET_LABELS[preset];
 
   function applyCustomRange() {
     if (pendingFrom && pendingTo) {
@@ -190,7 +157,12 @@ export default function Dashboard() {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">{t("dashboard.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {new Date().toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+            {new Date().toLocaleDateString(locale, {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric"
+            })}
           </p>
         </div>
         {/* Filters Row */}
@@ -208,13 +180,16 @@ export default function Dashboard() {
             <PopoverContent className="w-64 p-3 space-y-3" align="end">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("dashboard.dateRange")}</p>
               <div className="grid grid-cols-2 gap-1.5">
-                {(["month", "quarter", "year"] as Preset[]).map((p) => (
+                {(["month", "quarter", "year"] as Preset[]).map(p => (
                   <Button
                     key={p}
                     size="sm"
                     variant={preset === p ? "default" : "outline"}
                     className="text-xs h-7"
-                    onClick={() => { setPreset(p); setPopoverOpen(false); }}
+                    onClick={() => {
+                      setPreset(p);
+                      setPopoverOpen(false);
+                    }}
                   >
                     {PRESET_LABELS[p]}
                   </Button>
@@ -224,28 +199,13 @@ export default function Dashboard() {
                 <p className="text-xs font-medium">{t("dashboard.customRange")}</p>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">{t("dashboard.from")}</Label>
-                  <Input
-                    type="date"
-                    className="h-7 text-xs"
-                    value={pendingFrom}
-                    onChange={(e) => setPendingFrom(e.target.value)}
-                  />
+                  <Input type="date" className="h-7 text-xs" value={pendingFrom} onChange={e => setPendingFrom(e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">To</Label>
-                  <Input
-                    type="date"
-                    className="h-7 text-xs"
-                    value={pendingTo}
-                    onChange={(e) => setPendingTo(e.target.value)}
-                  />
+                  <Input type="date" className="h-7 text-xs" value={pendingTo} onChange={e => setPendingTo(e.target.value)} />
                 </div>
-                <Button
-                  size="sm"
-                  className="w-full h-7 text-xs"
-                  disabled={!pendingFrom || !pendingTo}
-                  onClick={applyCustomRange}
-                >
+                <Button size="sm" className="w-full h-7 text-xs" disabled={!pendingFrom || !pendingTo} onClick={applyCustomRange}>
                   {t("dashboard.applyCustomRange")}
                 </Button>
               </div>
@@ -254,24 +214,48 @@ export default function Dashboard() {
 
           {/* Species / Category / Group filters */}
           <Select value={filterSpecies} onValueChange={setFilterSpecies}>
-            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder={t("common.species")} /></SelectTrigger>
+            <SelectTrigger className="w-32 h-8 text-xs">
+              <SelectValue placeholder={t("common.species")} />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("common.all")} {t("common.species")}</SelectItem>
-              {(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+              <SelectItem value="all">
+                {t("common.all")} {t("common.species")}
+              </SelectItem>
+              {(species ?? []).map((s: any) => (
+                <SelectItem key={s.id} value={String(s.id)}>
+                  {s.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder={t("common.category")} /></SelectTrigger>
+            <SelectTrigger className="w-36 h-8 text-xs">
+              <SelectValue placeholder={t("common.category")} />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("common.all")} {t("common.category")}</SelectItem>
-              {(categories ?? []).map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+              <SelectItem value="all">
+                {t("common.all")} {t("common.category")}
+              </SelectItem>
+              {(categories ?? []).map((c: any) => (
+                <SelectItem key={c.id} value={String(c.id)}>
+                  {c.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={filterGroup} onValueChange={setFilterGroup}>
-            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder={t("common.group")} /></SelectTrigger>
+            <SelectTrigger className="w-32 h-8 text-xs">
+              <SelectValue placeholder={t("common.group")} />
+            </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("common.all")} {t("common.group")}</SelectItem>
-              {(groups ?? []).map((g: any) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+              <SelectItem value="all">
+                {t("common.all")} {t("common.group")}
+              </SelectItem>
+              {(groups ?? []).map((g: any) => (
+                <SelectItem key={g.id} value={String(g.id)}>
+                  {g.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -290,33 +274,16 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <KPICard
-          title={t("dashboard.activeAnimals")}
-          value={kpis?.totalActiveHeads ?? 0}
-          sub={`${(kpis?.categoryBreakdown ?? []).length} ${t("common.category").toLowerCase()}`}
-          icon={Leaf}
-          isLoading={kpisLoading}
-        />
-        <KPICard
-          title={t("animals.totalRevenue")}
-          value={fmt(kpis?.totalRevenue ?? 0)}
-          sub={t("common.sold")}
-          icon={TrendingUp}
-          color="text-green-600"
-          isLoading={kpisLoading}
-        />
-        <KPICard
-          title={t("dashboard.totalExpenses")}
-          value={fmt(kpis?.totalExpenses ?? 0)}
-          sub={kpis ? `Feed: ${fmt(kpis.feedExpenses ?? 0)} · Other: ${fmt(kpis.otherExpenses ?? 0)}` : ""}
-          icon={Scale}
-          color="text-red-600"
-          isLoading={kpisLoading}
-        />
+        <KPICard title={t("dashboard.activeAnimals")} value={kpis?.totalActiveHeads ?? 0} sub={`${(kpis?.categoryBreakdown ?? []).length} ${t("common.category").toLowerCase()}`} icon={Leaf} isLoading={kpisLoading} />
+        <KPICard title={t("animals.totalRevenue")} value={fmt(kpis?.totalRevenue ?? 0)} sub={t("common.sold")} icon={TrendingUp} color="text-green-600" isLoading={kpisLoading} />
+        <KPICard title={t("dashboard.totalExpenses")} value={fmt(kpis?.totalExpenses ?? 0)} sub={kpis ? `Feed: ${fmt(kpis.feedExpenses ?? 0)} · Other: ${fmt(kpis.otherExpenses ?? 0)}` : ""} icon={Scale} color="text-red-600" isLoading={kpisLoading} />
         <KPICard
           title={t("dashboard.costHeadDay")}
           value={kpis ? `EGP ${(kpis.costPerHeadPerDay ?? 0).toFixed(2)}` : "—"}
-          sub={t("dashboard.headsDays", { heads: kpis?.totalActiveHeads ?? 0, days: Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / 86400000) })}
+          sub={t("dashboard.headsDays", {
+            heads: kpis?.totalActiveHeads ?? 0,
+            days: Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / 86400000)
+          })}
           icon={TrendingUp}
           color="text-amber-600"
           isLoading={kpisLoading}
@@ -326,9 +293,7 @@ export default function Dashboard() {
       {kpis && (
         <div className={`rounded-lg border px-4 py-3 flex items-center justify-between text-sm ${(kpis.grossPnL ?? 0) >= 0 ? "border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800" : "border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800"}`}>
           <span className="text-muted-foreground">{t("dashboard.netPnLForPeriod")}</span>
-          <span className={`text-lg font-bold ${(kpis.grossPnL ?? 0) >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
-            {fmt(kpis.grossPnL ?? 0)}
-          </span>
+          <span className={`text-lg font-bold ${(kpis.grossPnL ?? 0) >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>{fmt(kpis.grossPnL ?? 0)}</span>
         </div>
       )}
 
@@ -344,7 +309,10 @@ export default function Dashboard() {
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
-                    data={(headCountByCategory ?? []).map((d: any) => ({ name: d.category ?? t("common.noData"), value: d.count }))}
+                    data={(headCountByCategory ?? []).map((d: any) => ({
+                      name: d.category ?? t("common.noData"),
+                      value: d.count
+                    }))}
                     cx="50%"
                     cy="45%"
                     innerRadius={45}
@@ -362,15 +330,17 @@ export default function Dashboard() {
                   <Legend
                     iconType="circle"
                     iconSize={7}
-                    wrapperStyle={{ fontSize: "10px", lineHeight: "16px", paddingTop: "4px" }}
-                    formatter={(value: string) => value.length > 12 ? value.slice(0, 12) + "…" : value}
+                    wrapperStyle={{
+                      fontSize: "10px",
+                      lineHeight: "16px",
+                      paddingTop: "4px"
+                    }}
+                    formatter={(value: string) => (value.length > 12 ? value.slice(0, 12) + "…" : value)}
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-                {t("common.noData")}
-              </div>
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">{t("common.noData")}</div>
             )}
           </CardContent>
         </Card>
@@ -385,10 +355,17 @@ export default function Dashboard() {
           <CardContent>
             {(expenseTrend ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={(expenseTrend ?? []).map((d: any) => ({
-                  date: d.month ? new Date(d.month + "-01").toLocaleDateString(locale, { month: "short", year: "2-digit" }) : "—",
-                  amount: parseFloat(String(d.total ?? 0)),
-                }))}>
+                <AreaChart
+                  data={(expenseTrend ?? []).map((d: any) => ({
+                    date: d.month
+                      ? new Date(d.month + "-01").toLocaleDateString(locale, {
+                          month: "short",
+                          year: "2-digit"
+                        })
+                      : "—",
+                    amount: parseFloat(String(d.total ?? 0))
+                  }))}
+                >
                   <defs>
                     <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
@@ -403,9 +380,7 @@ export default function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-                {t("common.noData")}
-              </div>
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">{t("common.noData")}</div>
             )}
           </CardContent>
         </Card>
@@ -420,10 +395,17 @@ export default function Dashboard() {
           <CardContent>
             {(salesTrend ?? []).length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={(salesTrend ?? []).map((d: any) => ({
-                  date: d.month ? new Date(d.month + "-01").toLocaleDateString(locale, { month: "short", year: "2-digit" }) : "—",
-                  revenue: parseFloat(String(d.revenue ?? 0)),
-                }))}>
+                <BarChart
+                  data={(salesTrend ?? []).map((d: any) => ({
+                    date: d.month
+                      ? new Date(d.month + "-01").toLocaleDateString(locale, {
+                          month: "short",
+                          year: "2-digit"
+                        })
+                      : "—",
+                    revenue: parseFloat(String(d.revenue ?? 0))
+                  }))}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
@@ -432,9 +414,7 @@ export default function Dashboard() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
-                {t("common.noData")}
-              </div>
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">{t("common.noData")}</div>
             )}
           </CardContent>
         </Card>
@@ -445,7 +425,9 @@ export default function Dashboard() {
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm font-semibold">{t("dashboard.feedStock")}</CardTitle>
-            <Badge variant="outline" className="text-xs">{t("dashboard.feedStockNote")}</Badge>
+            <Badge variant="outline" className="text-xs">
+              {t("dashboard.feedStockNote")}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -477,12 +459,12 @@ export default function Dashboard() {
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>{parseFloat(item.dailyUsage ?? 0).toFixed(2)}</TableCell>
                       <TableCell>
-                        <span className={`font-medium ${item.daysRemaining < 7 ? "text-red-600" : item.daysRemaining < 14 ? "text-amber-600" : "text-green-600"}`}>
-                          {item.daysRemaining === 999 ? "∞" : item.daysRemaining}
-                        </span>
+                        <span className={`font-medium ${item.daysRemaining < 7 ? "text-red-600" : item.daysRemaining < 14 ? "text-amber-600" : "text-green-600"}`}>{item.daysRemaining === 999 ? "∞" : item.daysRemaining}</span>
                       </TableCell>
                       <TableCell>{item.reorderLevel ?? "—"}</TableCell>
-                      <TableCell><StockStatusBadge status={item.status} /></TableCell>
+                      <TableCell>
+                        <StockStatusBadge status={item.status} />
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -495,11 +477,13 @@ export default function Dashboard() {
   );
 }
 
-
 // ── Export to Excel ──────────────────────────────────────────────────────────
 function ExportButton() {
   const [loading, setLoading] = useState(false);
   const utils = trpc.useUtils();
+  const { canPurgeOrRestore } = usePermissions();
+
+  if (!canPurgeOrRestore) return null;
 
   const handleExport = async () => {
     try {
@@ -511,16 +495,16 @@ function ExportButton() {
       for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
       const blob = new Blob([bytes], { type: result.mimeType });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = result.filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success('Export downloaded');
+      toast.success("Export downloaded");
     } catch (e: any) {
-      toast.error(e.message ?? 'Export failed');
+      toast.error(e.message ?? "Export failed");
     } finally {
       setLoading(false);
     }
@@ -529,11 +513,10 @@ function ExportButton() {
   return (
     <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background" onClick={handleExport} disabled={loading}>
       <Download className="h-3.5 w-3.5" />
-      {loading ? 'Generating…' : 'Export Excel'}
+      {loading ? "Generating…" : "Export Excel"}
     </Button>
   );
 }
-
 
 // ── PDF Report Button — Farm Summary ────────────────────────────────────────
 function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: string }; kpis: any }) {
@@ -543,7 +526,7 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
   const { currency } = useCurrency();
   const [generating, setGenerating] = useState(false);
 
-  const farmName = (settings as any[] | undefined)?.find((s) => s.settingKey === "farmName")?.settingValue;
+  const farmName = (settings as any[] | undefined)?.find(s => s.settingKey === "farmName")?.settingValue;
 
   const handleClick = async () => {
     if (!kpis || !pnlData) {
@@ -559,7 +542,7 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
         kpis,
         pnlData,
         currency,
-        farmName,
+        farmName
       });
       toast.success(t("dashboard.pdfDownloaded"));
     } catch (e: any) {
@@ -570,13 +553,7 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="h-8 text-xs gap-1.5 bg-background"
-      onClick={handleClick}
-      disabled={generating || !kpis}
-    >
+    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background" onClick={handleClick} disabled={generating || !kpis}>
       <FileText className="h-3.5 w-3.5" />
       {generating ? "Generating…" : "PDF Report"}
     </Button>

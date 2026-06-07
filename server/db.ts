@@ -1,30 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { toMinor, toMajor, divMinor } from "./_core/money";
-import {
-  animalCategories,
-  animalStatusHistory,
-  animalStatuses,
-  animals,
-  auditLog,
-  birthTypes,
-  expenseCategories,
-  expenseSubCategories,
-  expenses,
-  feedItemPriceHistory,
-  feedItems,
-  feedStockLedger,
-  groups,
-  InsertUser,
-  lambingLog,
-  notifications,
-  rationPlans,
-  sales,
-  species,
-  systemSettings,
-  users,
-  weightLog,
-} from "../drizzle/schema";
+import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, rationPlans, sales, species, systemSettings, users, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -58,7 +35,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   const values: InsertUser = { openId: user.openId };
   const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod"] as const;
-  textFields.forEach((field) => {
+  textFields.forEach(field => {
     const value = user[field];
     if (value === undefined) return;
     const normalized = value ?? null;
@@ -128,9 +105,7 @@ export async function getAllCategories(speciesId?: number) {
   if (!db) return [];
 
   // Use alias for self-join on auto-stage target category
-  const targetCat = db.$with("targetCat").as(
-    db.select({ id: animalCategories.id, name: animalCategories.name }).from(animalCategories)
-  );
+  const targetCat = db.$with("targetCat").as(db.select({ id: animalCategories.id, name: animalCategories.name }).from(animalCategories));
 
   const baseQuery = db
     .select({
@@ -146,7 +121,7 @@ export async function getAllCategories(speciesId?: number) {
       autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
       isExitStatus: animalCategories.isExitStatus,
       isActive: animalCategories.isActive,
-      createdAt: animalCategories.createdAt,
+      createdAt: animalCategories.createdAt
     })
     .from(animalCategories)
     .leftJoin(species, eq(animalCategories.speciesId, species.id))
@@ -168,7 +143,7 @@ export async function getAllCategories(speciesId?: number) {
           autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
           isExitStatus: animalCategories.isExitStatus,
           isActive: animalCategories.isActive,
-          createdAt: animalCategories.createdAt,
+          createdAt: animalCategories.createdAt
         })
         .from(animalCategories)
         .leftJoin(species, eq(animalCategories.speciesId, species.id))
@@ -179,13 +154,7 @@ export async function getAllCategories(speciesId?: number) {
   return rows;
 }
 
-export async function createCategory(data: {
-  name: string;
-  speciesId: number;
-  idPrefix: string;
-  targetWeightKg?: string;
-  expectedCycleDays?: number;
-}) {
+export async function createCategory(data: { name: string; speciesId: number; idPrefix: string; targetWeightKg?: string; expectedCycleDays?: number }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(animalCategories).values(data);
@@ -199,13 +168,19 @@ export async function updateCategory(id: number, data: Partial<typeof animalCate
 }
 
 export async function incrementCategorySequence(categoryId: number, tx?: DbOrTx): Promise<number> {
-  const db = tx ?? await getDb();
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   await db
     .update(animalCategories)
     .set({ idSequence: sql`${animalCategories.idSequence} + 1` })
     .where(eq(animalCategories.id, categoryId));
-  const [cat] = await db.select({ idSequence: animalCategories.idSequence, idPrefix: animalCategories.idPrefix }).from(animalCategories).where(eq(animalCategories.id, categoryId));
+  const [cat] = await db
+    .select({
+      idSequence: animalCategories.idSequence,
+      idPrefix: animalCategories.idPrefix
+    })
+    .from(animalCategories)
+    .where(eq(animalCategories.id, categoryId));
   return cat?.idSequence ?? 1;
 }
 
@@ -236,7 +211,10 @@ export async function getAllGroups(speciesId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (speciesId) {
-    return db.select().from(groups).where(and(or(eq(groups.speciesId, speciesId), isNull(groups.speciesId)), isNull(groups.deletedAt)));
+    return db
+      .select()
+      .from(groups)
+      .where(and(or(eq(groups.speciesId, speciesId), isNull(groups.speciesId)), isNull(groups.deletedAt)));
   }
   return db.select().from(groups).where(isNull(groups.deletedAt)).orderBy(groups.groupCode);
 }
@@ -297,11 +275,7 @@ export async function updateFeedItem(id: number, data: Partial<typeof feedItems.
 export async function getFeedItemPriceHistory(feedItemId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db
-    .select()
-    .from(feedItemPriceHistory)
-    .where(eq(feedItemPriceHistory.feedItemId, feedItemId))
-    .orderBy(desc(feedItemPriceHistory.effectiveDate));
+  return db.select().from(feedItemPriceHistory).where(eq(feedItemPriceHistory.feedItemId, feedItemId)).orderBy(desc(feedItemPriceHistory.effectiveDate));
 }
 
 export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate: string; pricePerUnit: string; notes?: string }) {
@@ -311,7 +285,7 @@ export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate
     feedItemId: data.feedItemId,
     effectiveDate: sql`${data.effectiveDate}`,
     pricePerUnit: data.pricePerUnit,
-    notes: data.notes,
+    notes: data.notes
   } as any);
   return result;
 }
@@ -393,14 +367,7 @@ export async function upsertSetting(key: string, value: string, updatedBy?: numb
 
 // ─── ANIMALS ──────────────────────────────────────────────────────────────────
 
-export async function getAnimals(filters?: {
-  speciesId?: number;
-  categoryId?: number;
-  groupId?: number;
-  statusId?: number;
-  isActive?: boolean;
-  search?: string;
-}) {
+export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; isActive?: boolean; search?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions: ReturnType<typeof eq>[] = [];
@@ -426,7 +393,7 @@ export async function getAnimals(filters?: {
         SELECT wl.weightKg FROM weight_log wl
         WHERE wl.animalId = ${animals.id} AND wl.deletedAt IS NULL
         ORDER BY wl.weighDate DESC LIMIT 1
-      )`,
+      )`
     })
     .from(animals)
     .leftJoin(species, eq(animals.speciesId, species.id))
@@ -453,7 +420,7 @@ export async function getAnimalById(id: number) {
       groupCode: groups.groupCode,
       groupName: groups.name,
       statusName: animalStatuses.name,
-      isExitStatus: animalStatuses.isExitStatus,
+      isExitStatus: animalStatuses.isExitStatus
     })
     .from(animals)
     .leftJoin(species, eq(animals.speciesId, species.id))
@@ -466,14 +433,14 @@ export async function getAnimalById(id: number) {
 }
 
 export async function createAnimal(data: typeof animals.$inferInsert, tx?: DbOrTx) {
-  const db = tx ?? await getDb();
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(animals).values(data);
   return result;
 }
 
 export async function updateAnimal(id: number, data: Partial<typeof animals.$inferInsert>, tx?: DbOrTx) {
-  const db = tx ?? await getDb();
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   await db.update(animals).set(data).where(eq(animals.id, id));
 }
@@ -493,7 +460,9 @@ export async function getActiveHeadCountByCategory(dateStr?: string): Promise<Re
     .where(and(...conditions))
     .groupBy(animals.categoryId);
   const result: Record<number, number> = {};
-  rows.forEach((r) => { result[r.categoryId] = Number(r.count); });
+  rows.forEach(r => {
+    result[r.categoryId] = Number(r.count);
+  });
   return result;
 }
 
@@ -510,15 +479,24 @@ export async function getAnimalStatusHistory(animalId: number) {
       newStatusId: animalStatusHistory.newStatusId,
       changedAt: animalStatusHistory.changedAt,
       changedBy: animalStatusHistory.changedBy,
-      notes: animalStatusHistory.notes,
+      notes: animalStatusHistory.notes
     })
     .from(animalStatusHistory)
     .where(eq(animalStatusHistory.animalId, animalId))
     .orderBy(desc(animalStatusHistory.changedAt));
 }
 
-export async function recordStatusChange(data: { animalId: number; previousStatusId?: number; newStatusId: number; changedBy?: number; notes?: string }, tx?: DbOrTx) {
-  const db = tx ?? await getDb();
+export async function recordStatusChange(
+  data: {
+    animalId: number;
+    previousStatusId?: number;
+    newStatusId: number;
+    changedBy?: number;
+    notes?: string;
+  },
+  tx?: DbOrTx
+) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   await db.insert(animalStatusHistory).values(data);
 }
@@ -537,7 +515,7 @@ export async function getSales(filters?: { animalId?: number; fromDate?: string;
       sale: sales,
       animalCode: animals.animalId,
       speciesName: species.name,
-      categoryName: animalCategories.name,
+      categoryName: animalCategories.name
     })
     .from(sales)
     .leftJoin(animals, eq(sales.animalId, animals.id))
@@ -548,15 +526,29 @@ export async function getSales(filters?: { animalId?: number; fromDate?: string;
 }
 
 export async function createSale(data: typeof sales.$inferInsert, tx?: DbOrTx) {
-  const db = tx ?? await getDb();
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(sales).values(data);
   return result;
 }
-export async function updateSale(id: number, data: Partial<{ salePrice: string; weightAtSale: string; saleDate: string; buyerName: string; notes: string }>) {
+export async function updateSale(
+  id: number,
+  data: Partial<{
+    animalId: number;
+    salePrice: string;
+    weightAtSale: string | null;
+    pricePerKg: string | null;
+    saleDate: string;
+    buyerName: string | null;
+    notes: string | null;
+  }>
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(sales).set(data as any).where(eq(sales.id, id));
+  await db
+    .update(sales)
+    .set(data as any)
+    .where(eq(sales.id, id));
 }
 // ─── LAMBING LOG ──────────────────────────────────────────────────────────────
 
@@ -579,7 +571,7 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
       promotedHeadId: lambingLog.promotedHeadId,
       createdAt: lambingLog.createdAt,
       birthTypeName: birthTypes.name,
-      groupCode: groups.groupCode,
+      groupCode: groups.groupCode
     })
     .from(lambingLog)
     .leftJoin(birthTypes, eq(lambingLog.birthTypeId, birthTypes.id))
@@ -589,15 +581,15 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
   return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
 }
 
-export async function createLambingRecord(data: typeof lambingLog.$inferInsert) {
-  const db = await getDb();
+export async function createLambingRecord(data: typeof lambingLog.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(lambingLog).values(data);
   return result;
 }
 
 export async function updateLambingRecord(id: number, data: Partial<typeof lambingLog.$inferInsert>, tx?: DbOrTx) {
-  const db = tx ?? await getDb();
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   await db.update(lambingLog).set(data).where(eq(lambingLog.id, id));
 }
@@ -607,11 +599,15 @@ export async function updateLambingRecord(id: number, data: Partial<typeof lambi
 export async function getWeightLog(animalId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(weightLog).where(and(eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt))).orderBy(weightLog.weighDate);
+  return db
+    .select()
+    .from(weightLog)
+    .where(and(eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt)))
+    .orderBy(weightLog.weighDate);
 }
 
-export async function createWeightEntry(data: typeof weightLog.$inferInsert) {
-  const db = await getDb();
+export async function createWeightEntry(data: typeof weightLog.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(weightLog).values(data);
   return result;
@@ -625,10 +621,15 @@ export async function getLatestWeightForAnimals(animalIds: number[]) {
     .select({
       animalId: weightLog.animalId,
       weightKg: weightLog.weightKg,
-      weighDate: weightLog.weighDate,
+      weighDate: weightLog.weighDate
     })
     .from(weightLog)
-    .where(sql`${weightLog.animalId} IN (${sql.join(animalIds.map((id) => sql`${id}`), sql`, `)})`)
+    .where(
+      sql`${weightLog.animalId} IN (${sql.join(
+        animalIds.map(id => sql`${id}`),
+        sql`, `
+      )})`
+    )
     .orderBy(desc(weightLog.weighDate));
 }
 
@@ -649,7 +650,7 @@ export async function getRationPlans(categoryId?: number) {
       createdAt: rationPlans.createdAt,
       feedItemName: feedItems.name,
       unit: feedItems.unit,
-      categoryName: animalCategories.name,
+      categoryName: animalCategories.name
     })
     .from(rationPlans)
     .leftJoin(feedItems, eq(rationPlans.feedItemId, feedItems.id))
@@ -658,8 +659,8 @@ export async function getRationPlans(categoryId?: number) {
   return query.where(and(eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
 }
 
-export async function createRationPlan(data: typeof rationPlans.$inferInsert) {
-  const db = await getDb();
+export async function createRationPlan(data: typeof rationPlans.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(rationPlans).values(data);
   return result;
@@ -677,14 +678,7 @@ export async function getActivePlanOnDate(categoryId: number, dateStr: string) {
   return db
     .select()
     .from(rationPlans)
-    .where(
-      and(
-        eq(rationPlans.categoryId, categoryId),
-        eq(rationPlans.isActive, true),
-        sql`${rationPlans.effectiveDate} <= ${dateStr}`,
-        or(isNull(rationPlans.endDate), sql`${rationPlans.endDate} >= ${dateStr}`)
-      )
-    );
+    .where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true), sql`${rationPlans.effectiveDate} <= ${dateStr}`, or(isNull(rationPlans.endDate), sql`${rationPlans.endDate} >= ${dateStr}`)));
 }
 
 /**
@@ -693,7 +687,13 @@ export async function getActivePlanOnDate(categoryId: number, dateStr: string) {
  * Exported for unit testing and reused by both single + bulk P&L paths.
  */
 export function segmentedFeedCostPure(
-  plans: Array<{ feedItemId: number; qtyPerHeadPerDay: string; effectiveDate: string; endDate: string | null; isActive: boolean }>,
+  plans: Array<{
+    feedItemId: number;
+    qtyPerHeadPerDay: string;
+    effectiveDate: string;
+    endDate: string | null;
+    isActive: boolean;
+  }>,
   pricesByItem: Map<number, Array<{ eff: string; price: number }>>,
   startStr: string,
   endStr: string
@@ -701,7 +701,7 @@ export function segmentedFeedCostPure(
   const start = new Date(startStr);
   const end = new Date(endStr);
   if (end <= start) return 0;
-  const active = plans.filter((p) => p.isActive);
+  const active = plans.filter(p => p.isActive);
   if (!active.length) return 0;
 
   const priceOnDate = (feedItemId: number, dateStr: string): number => {
@@ -759,11 +759,7 @@ export function segmentedFeedCostPure(
  *
  * Cost for a segment = Σ_plans (qtyPerHeadPerDay × segmentDays × priceOnSegmentStart).
  */
-export async function computeFeedCostForPeriod(
-  categoryId: number,
-  startDate: string,
-  endDate: string
-): Promise<number> {
+export async function computeFeedCostForPeriod(categoryId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
 
@@ -777,20 +773,15 @@ export async function computeFeedCostForPeriod(
     .from(rationPlans)
     .where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true)));
 
-  const feedItemIds = Array.from(new Set(planRows.map((p) => p.feedItemId)));
-  const priceRows = feedItemIds.length
-    ? await db
-        .select()
-        .from(feedItemPriceHistory)
-        .where(inArray(feedItemPriceHistory.feedItemId, feedItemIds))
-    : [];
+  const feedItemIds = Array.from(new Set(planRows.map(p => p.feedItemId)));
+  const priceRows = feedItemIds.length ? await db.select().from(feedItemPriceHistory).where(inArray(feedItemPriceHistory.feedItemId, feedItemIds)) : [];
 
-  const plansForPure = planRows.map((p) => ({
+  const plansForPure = planRows.map(p => ({
     feedItemId: p.feedItemId,
     qtyPerHeadPerDay: p.qtyPerHeadPerDay,
     effectiveDate: String(p.effectiveDate).split("T")[0],
     endDate: p.endDate ? String(p.endDate).split("T")[0] : null,
-    isActive: true,
+    isActive: true
   }));
   const pricesMap = new Map<number, Array<{ eff: string; price: number }>>();
   for (const pr of priceRows) {
@@ -800,12 +791,7 @@ export async function computeFeedCostForPeriod(
   }
   for (const arr of Array.from(pricesMap.values())) arr.sort((a, b) => (a.eff < b.eff ? -1 : 1));
 
-  return segmentedFeedCostPure(
-    plansForPure,
-    pricesMap,
-    start.toISOString().split("T")[0],
-    end.toISOString().split("T")[0]
-  );
+  return segmentedFeedCostPure(plansForPure, pricesMap, start.toISOString().split("T")[0], end.toISOString().split("T")[0]);
 }
 
 /**
@@ -814,11 +800,7 @@ export async function computeFeedCostForPeriod(
  * allocate category-level expenses fairly against the herd that actually
  * existed during the expense window, instead of today's (changing) count.
  */
-export async function getCategoryHeadCountDuring(
-  categoryId: number,
-  windowStart: string,
-  windowEnd: string
-): Promise<number> {
+export async function getCategoryHeadCountDuring(categoryId: number, windowStart: string, windowEnd: string): Promise<number> {
   const db = await getDb();
   if (!db) return 1;
   const ws = windowStart.split("T")[0];
@@ -826,12 +808,7 @@ export async function getCategoryHeadCountDuring(
   const rows = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(animals)
-    .where(and(
-      eq(animals.categoryId, categoryId),
-      isNull(animals.deletedAt),
-      sql`${animals.acquisitionDate} <= ${we}`,
-      or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${ws}`)
-    ));
+    .where(and(eq(animals.categoryId, categoryId), isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${we}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${ws}`)));
   return Math.max(1, Number(rows[0]?.count ?? 1));
 }
 
@@ -852,7 +829,7 @@ export async function getFeedStockLedger(feedItemId?: number) {
       supplierName: feedStockLedger.supplierName,
       notes: feedStockLedger.notes,
       feedItemName: feedItems.name,
-      feedItemUnit: feedItems.unit,
+      feedItemUnit: feedItems.unit
     })
     .from(feedStockLedger)
     .leftJoin(feedItems, eq(feedStockLedger.feedItemId, feedItems.id));
@@ -860,8 +837,8 @@ export async function getFeedStockLedger(feedItemId?: number) {
   return query.where(isNull(feedStockLedger.deletedAt)).orderBy(desc(feedStockLedger.transactionDate));
 }
 
-export async function createFeedStockEntry(data: typeof feedStockLedger.$inferInsert) {
-  const db = await getDb();
+export async function createFeedStockEntry(data: typeof feedStockLedger.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(feedStockLedger).values(data);
   return result;
@@ -890,13 +867,7 @@ export async function updateFeedStockEntry(
 
 // ─── EXPENSESS ─────────────────────────────────────────────────────────────────
 
-export async function getExpenses(filters?: {
-  fromDate?: string;
-  toDate?: string;
-  categoryId?: number;
-  targetType?: "general" | "category" | "head";
-  headId?: number;
-}) {
+export async function getExpenses(filters?: { fromDate?: string; toDate?: string; categoryId?: number; targetType?: "general" | "category" | "head"; headId?: number }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
@@ -910,7 +881,7 @@ export async function getExpenses(filters?: {
       expense: expenses,
       categoryName: expenseCategories.name,
       subCategoryName: expenseSubCategories.name,
-      animalCode: animals.animalId,
+      animalCode: animals.animalId
     })
     .from(expenses)
     .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
@@ -920,8 +891,8 @@ export async function getExpenses(filters?: {
   return query.where(and(...conditions)).orderBy(desc(expenses.expenseDate));
 }
 
-export async function createExpense(data: typeof expenses.$inferInsert) {
-  const db = await getDb();
+export async function createExpense(data: typeof expenses.$inferInsert, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(expenses).values(data);
   return result;
@@ -936,7 +907,10 @@ export async function updateExpense(id: number, data: Partial<typeof expenses.$i
 export async function deleteExpense(id: number, deletedBy?: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(expenses).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(expenses.id, id));
+  await db
+    .update(expenses)
+    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null })
+    .where(eq(expenses.id, id));
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
@@ -948,7 +922,11 @@ export async function getNotifications(userId?: number, unreadOnly?: boolean) {
   if (userId) conditions.push(or(eq(notifications.userId, userId), isNull(notifications.userId)));
   if (unreadOnly) conditions.push(eq(notifications.isRead, false));
   const query = db.select().from(notifications);
-  if (conditions.length > 0) return query.where(and(...conditions)).orderBy(desc(notifications.createdAt)).limit(50);
+  if (conditions.length > 0)
+    return query
+      .where(and(...conditions))
+      .orderBy(desc(notifications.createdAt))
+      .limit(50);
   return query.orderBy(desc(notifications.createdAt)).limit(50);
 }
 
@@ -969,15 +947,16 @@ export async function markAllNotificationsRead(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   // Mark both user-specific notifications AND system notifications (userId IS NULL) as read
-  await db.update(notifications).set({ isRead: true }).where(
-    or(eq(notifications.userId, userId), isNull(notifications.userId))
-  );
+  await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(or(eq(notifications.userId, userId), isNull(notifications.userId)));
 }
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 
 export async function createAuditEntry(data: typeof auditLog.$inferInsert, tx?: DbOrTx) {
-  const db = tx ?? await getDb();
+  const db = tx ?? (await getDb());
   if (!db) return;
   await db.insert(auditLog).values(data);
 }
@@ -989,7 +968,11 @@ export async function getAuditLog(entityType?: string, entityId?: string) {
   if (entityType) conditions.push(eq(auditLog.entityType, entityType));
   if (entityId) conditions.push(eq(auditLog.entityId, entityId));
   const query = db.select().from(auditLog);
-  if (conditions.length > 0) return query.where(and(...conditions)).orderBy(desc(auditLog.createdAt)).limit(100);
+  if (conditions.length > 0)
+    return query
+      .where(and(...conditions))
+      .orderBy(desc(auditLog.createdAt))
+      .limit(100);
   return query.orderBy(desc(auditLog.createdAt)).limit(100);
 }
 
@@ -1002,11 +985,11 @@ export async function getAnimalPnL(animalId: number) {
   const animalRows = await db
     .select({
       animal: animals,
-      category: animalCategories,
+      category: animalCategories
     })
     .from(animals)
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .where(and(eq(animals.id, animalId), isNull(animals.deletedAt)))
+    .where(and(eq(animals.id, animalId), isNull(animals.deletedAt)));
 
   const animal = animalRows[0].animal;
   const category = animalRows[0].category;
@@ -1016,20 +999,13 @@ export async function getAnimalPnL(animalId: number) {
   const acquisitionDate = String(animal.acquisitionDate);
 
   // Days on farm
-  const daysOnFarm = Math.max(
-    1,
-    Math.floor((new Date(exitDate).getTime() - new Date(acquisitionDate).getTime()) / 86400000)
-  );
+  const daysOnFarm = Math.max(1, Math.floor((new Date(exitDate).getTime() - new Date(acquisitionDate).getTime()) / 86400000));
 
   // Direct expenses (head-level only, exclude soft-deleted)
   const directExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(
-      eq(expenses.headId, animalId),
-      eq(expenses.targetType, "head"),
-      isNull(expenses.deletedAt)
-    ));
+    .where(and(eq(expenses.headId, animalId), eq(expenses.targetType, "head"), isNull(expenses.deletedAt)));
   const directExpenseTotalMinor = toMinor(String(directExpenses[0]?.total ?? 0));
 
   // Category-level expense allocation: animal's share of vet/vaccine bills etc
@@ -1039,13 +1015,7 @@ export async function getAnimalPnL(animalId: number) {
   const catExpensesRows = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(
-      eq(expenses.targetType, "category"),
-      eq(expenses.categoryTarget, animal.categoryId),
-      isNull(expenses.deletedAt),
-      sql`${expenses.expenseDate} >= ${acqDateStr}`,
-      sql`${expenses.expenseDate} <= ${exitDateStr}`
-    ));
+    .where(and(eq(expenses.targetType, "category"), eq(expenses.categoryTarget, animal.categoryId), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
   const catExpTotalMinor = toMinor(String(catExpensesRows[0]?.total ?? 0));
 
   // Allocate by the head count that overlapped the animal's time on farm —
@@ -1054,10 +1024,11 @@ export async function getAnimalPnL(animalId: number) {
   const categoryExpenseAllocationMinor = divMinor(catExpTotalMinor, catHeadCount);
 
   // Sale revenue (exclude soft-deleted sales)
-  const saleRows = await db.select().from(sales).where(and(
-    eq(sales.animalId, animalId),
-    isNull(sales.deletedAt)
-  )).limit(1);
+  const saleRows = await db
+    .select()
+    .from(sales)
+    .where(and(eq(sales.animalId, animalId), isNull(sales.deletedAt)))
+    .limit(1);
   const revenueMinor = saleRows.length > 0 ? toMinor(saleRows[0].salePrice) : 0;
   const weightAtSale = saleRows.length > 0 ? parseFloat(saleRows[0].weightAtSale ?? "0") : 0;
 
@@ -1094,9 +1065,7 @@ export async function getAnimalPnL(animalId: number) {
 
   // Average daily gain so far (kg/day); fall back to a conservative 0.15 kg/day
   // if we don't have enough data to measure it.
-  const adg = currentWeight > acqWeight && daysOnFarm > 0
-    ? (currentWeight - acqWeight) / daysOnFarm
-    : 0;
+  const adg = currentWeight > acqWeight && daysOnFarm > 0 ? (currentWeight - acqWeight) / daysOnFarm : 0;
   let projectedCost: number | null = null;
   if (animal.isActive && targetWeight > currentWeight && totalCostMinor > 0 && daysOnFarm > 0) {
     const effectiveAdg = adg > 0 ? adg : 0.15;
@@ -1121,7 +1090,7 @@ export async function getAnimalPnL(animalId: number) {
     pricePerKg,
     projectedCost,
     isActive: animal.isActive,
-    saleRecord: saleRows[0] ?? null,
+    saleRecord: saleRows[0] ?? null
   };
 }
 
@@ -1145,7 +1114,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       animal: animals,
       categoryName: animalCategories.name,
       speciesName: species.name,
-      statusName: animalStatuses.name,
+      statusName: animalStatuses.name
     })
     .from(animals)
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
@@ -1158,7 +1127,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
 
   // 2. Pre-fetch all sales (one query)
   const allSales = await db.select().from(sales).where(isNull(sales.deletedAt));
-  const saleByAnimal = new Map<number, typeof allSales[0]>();
+  const saleByAnimal = new Map<number, (typeof allSales)[0]>();
   for (const s of allSales) saleByAnimal.set(s.animalId, s);
 
   // 3. Pre-fetch all direct (head) expenses per animal
@@ -1178,7 +1147,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       id: expenses.id,
       amount: expenses.amount,
       expenseDate: expenses.expenseDate,
-      categoryTarget: expenses.categoryTarget,
+      categoryTarget: expenses.categoryTarget
     })
     .from(expenses)
     .where(and(eq(expenses.targetType, "category"), isNull(expenses.deletedAt)));
@@ -1188,9 +1157,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   for (const e of allCatExp) {
     if (e.categoryTarget == null) continue;
     const catId = Number(e.categoryTarget);
-    const dateStr = e.expenseDate instanceof Date
-      ? e.expenseDate.toISOString().split("T")[0]
-      : String(e.expenseDate).split("T")[0];
+    const dateStr = e.expenseDate instanceof Date ? e.expenseDate.toISOString().split("T")[0] : String(e.expenseDate).split("T")[0];
     if (!catExpByCatId.has(catId)) catExpByCatId.set(catId, []);
     catExpByCatId.get(catId)!.push({ amount: toMinor(String(e.amount)), date: dateStr });
   }
@@ -1200,21 +1167,14 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const animalsByCategory = new Map<number, Array<{ acq: string; exit: string | null }>>();
   for (const r of allAnimals) {
     const a = r.animal;
-    const acq = a.acquisitionDate instanceof Date
-      ? a.acquisitionDate.toISOString().split("T")[0]
-      : String(a.acquisitionDate ?? today).split("T")[0];
-    const exit = a.exitDate
-      ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0])
-      : null;
+    const acq = a.acquisitionDate instanceof Date ? a.acquisitionDate.toISOString().split("T")[0] : String(a.acquisitionDate ?? today).split("T")[0];
+    const exit = a.exitDate ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0]) : null;
     if (!animalsByCategory.has(a.categoryId)) animalsByCategory.set(a.categoryId, []);
     animalsByCategory.get(a.categoryId)!.push({ acq, exit });
   }
 
   // 5. Pre-fetch ALL ration plans (active + historical) for accurate per-period cost
-  const allPlans = await db
-    .select()
-    .from(rationPlans)
-    .where(isNull(rationPlans.deletedAt));
+  const allPlans = await db.select().from(rationPlans).where(isNull(rationPlans.deletedAt));
   // Group by categoryId
   const plansByCategory = new Map<number, typeof allPlans>();
   for (const p of allPlans) {
@@ -1227,9 +1187,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const allPriceRows = await db.select().from(feedItemPriceHistory);
   const pricesByItem = new Map<number, Array<{ eff: string; price: number }>>();
   for (const pr of allPriceRows) {
-    const eff = pr.effectiveDate instanceof Date
-      ? pr.effectiveDate.toISOString().split("T")[0]
-      : String(pr.effectiveDate).split("T")[0];
+    const eff = pr.effectiveDate instanceof Date ? pr.effectiveDate.toISOString().split("T")[0] : String(pr.effectiveDate).split("T")[0];
     if (!pricesByItem.has(pr.feedItemId)) pricesByItem.set(pr.feedItemId, []);
     pricesByItem.get(pr.feedItemId)!.push({ eff, price: parseFloat(pr.pricePerUnit) });
   }
@@ -1238,12 +1196,12 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   // In-memory segmented feed cost for one animal over [start, end), reusing the
   // same pure logic as the single-animal path so both views always agree.
   const segmentedFeedCost = (categoryId: number, startStr: string, endStr: string): number => {
-    const plans = (plansByCategory.get(categoryId) ?? []).map((p) => ({
+    const plans = (plansByCategory.get(categoryId) ?? []).map(p => ({
       feedItemId: p.feedItemId,
       qtyPerHeadPerDay: p.qtyPerHeadPerDay,
       effectiveDate: String(p.effectiveDate).split("T")[0],
       endDate: p.endDate ? String(p.endDate).split("T")[0] : null,
-      isActive: p.isActive,
+      isActive: p.isActive
     }));
     return segmentedFeedCostPure(plans, pricesByItem, startStr, endStr);
   };
@@ -1252,16 +1210,9 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const results = [];
   for (const row of allAnimals) {
     const animal = row.animal;
-    const acqDateStr = animal.acquisitionDate instanceof Date
-      ? animal.acquisitionDate.toISOString().split("T")[0]
-      : String(animal.acquisitionDate ?? today).split("T")[0];
-    const exitDateStr = animal.exitDate
-      ? (animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0])
-      : today;
-    const daysOnFarm = Math.max(
-      1,
-      Math.floor((new Date(exitDateStr).getTime() - new Date(acqDateStr).getTime()) / 86400000)
-    );
+    const acqDateStr = animal.acquisitionDate instanceof Date ? animal.acquisitionDate.toISOString().split("T")[0] : String(animal.acquisitionDate ?? today).split("T")[0];
+    const exitDateStr = animal.exitDate ? (animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0]) : today;
+    const daysOnFarm = Math.max(1, Math.floor((new Date(exitDateStr).getTime() - new Date(acqDateStr).getTime()) / 86400000));
 
     const purchaseCostMinor = toMinor(animal.purchaseCost ?? "0");
     const directExpenseTotalMinor = directExpByAnimal.get(animal.id) ?? 0; // already minor
@@ -1283,9 +1234,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const catAnimals = animalsByCategory.get(animal.categoryId) ?? [];
     for (const ce of catExpenses) {
       if (ce.date >= acqDateStr && ce.date <= exitDateStr) {
-        const headsAtExpense = Math.max(1, catAnimals.filter((a) =>
-          a.acq <= ce.date && (a.exit === null || a.exit >= ce.date)
-        ).length);
+        const headsAtExpense = Math.max(1, catAnimals.filter(a => a.acq <= ce.date && (a.exit === null || a.exit >= ce.date)).length);
         categoryExpenseAllocationMinor += divMinor(ce.amount, headsAtExpense);
       }
     }
@@ -1317,7 +1266,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       revenue,
       netPnL,
       costPerDay,
-      pricePerKg,
+      pricePerKg
     });
   }
   return results;
@@ -1327,11 +1276,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
  * Check if an animal should be auto-staged to another category based on its latest weight.
  * Called after every weight log entry. Returns the new categoryId if staged, null otherwise.
  */
-export async function checkAndStageAnimal(
-  animalId: number,
-  currentWeightKg: number,
-  changedBy?: number
-): Promise<{ staged: boolean; newCategoryId?: number; newAnimalId?: string }> {
+export async function checkAndStageAnimal(animalId: number, currentWeightKg: number, changedBy?: number): Promise<{ staged: boolean; newCategoryId?: number; newAnimalId?: string }> {
   const db = await getDb();
   if (!db) return { staged: false };
 
@@ -1342,7 +1287,7 @@ export async function checkAndStageAnimal(
   const [catRow] = await db
     .select({
       autoStageWeightKg: animalCategories.autoStageWeightKg,
-      autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
+      autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId
     })
     .from(animalCategories)
     .where(eq(animalCategories.id, animal.animal.categoryId))
@@ -1355,7 +1300,11 @@ export async function checkAndStageAnimal(
 
   // Get target category
   const [targetCat] = await db
-    .select({ id: animalCategories.id, idPrefix: animalCategories.idPrefix, idSequence: animalCategories.idSequence })
+    .select({
+      id: animalCategories.id,
+      idPrefix: animalCategories.idPrefix,
+      idSequence: animalCategories.idSequence
+    })
     .from(animalCategories)
     .where(eq(animalCategories.id, catRow.autoStageTargetCategoryId))
     .limit(1);
@@ -1372,7 +1321,7 @@ export async function checkAndStageAnimal(
     .set({
       categoryId: targetCat.id,
       animalId: newAnimalId,
-      updatedAt: new Date(),
+      updatedAt: new Date()
     })
     .where(eq(animals.id, animalId));
 
@@ -1382,20 +1331,21 @@ export async function checkAndStageAnimal(
     action: "update",
     entityType: "animal",
     entityId: String(animalId),
-    oldValues: { categoryId: animal.animal.categoryId, animalId: animal.animal.animalId } as any,
-    newValues: { categoryId: targetCat.id, animalId: newAnimalId, autoStagedAtWeightKg: currentWeightKg } as any,
+    oldValues: {
+      categoryId: animal.animal.categoryId,
+      animalId: animal.animal.animalId
+    } as any,
+    newValues: {
+      categoryId: targetCat.id,
+      animalId: newAnimalId,
+      autoStagedAtWeightKg: currentWeightKg
+    } as any
   });
 
   return { staged: true, newCategoryId: targetCat.id, newAnimalId };
 }
 
-export async function getDashboardKPIs(filters?: {
-  fromDate?: string;
-  toDate?: string;
-  speciesId?: number;
-  categoryId?: number;
-  groupId?: number;
-}) {
+export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number }) {
   const db = await getDb();
   if (!db) return null;
 
@@ -1420,39 +1370,26 @@ export async function getDashboardKPIs(filters?: {
   const totalOtherExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(
-      sql`${expenses.expenseDate} >= ${fromDate}`,
-      sql`${expenses.expenseDate} <= ${toDate}`,
-      isNull(expenses.deletedAt)
-    ));
+    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
 
   // Feed purchases in period (from feed_stock_ledger, matching Income Statement logic)
   const feedPurchasesInPeriod = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
-    .where(and(
-      eq(feedStockLedger.transactionType, "purchase"),
-      sql`${feedStockLedger.transactionDate} >= ${fromDate}`,
-      sql`${feedStockLedger.transactionDate} <= ${toDate}`,
-      isNull(feedStockLedger.deletedAt)
-    ));
+    .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${fromDate}`, sql`${feedStockLedger.transactionDate} <= ${toDate}`, isNull(feedStockLedger.deletedAt)));
 
   // Total sales revenue in period
   const totalRevenue = await db
     .select({ total: sql<number>`SUM(salePrice)` })
     .from(sales)
-    .where(and(
-      sql`${sales.saleDate} >= ${fromDate}`,
-      sql`${sales.saleDate} <= ${toDate}`,
-      isNull(sales.deletedAt)
-    ));
+    .where(and(sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt)));
 
   // Category breakdown (active animals only)
   const categoryBreakdown = await db
     .select({
       categoryId: animals.categoryId,
       categoryName: animalCategories.name,
-      headCount: sql<number>`COUNT(*)`,
+      headCount: sql<number>`COUNT(*)`
     })
     .from(animals)
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
@@ -1472,9 +1409,7 @@ export async function getDashboardKPIs(filters?: {
 
   // Cost per head per day (Excel's primary daily metric)
   const periodDays = Math.max(1, Math.ceil((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86400000));
-  const costPerHeadPerDay = activeHeads > 0 && periodDays > 0
-    ? toMajor(divMinor(totalExpensesMinor, activeHeads * periodDays))
-    : 0;
+  const costPerHeadPerDay = activeHeads > 0 && periodDays > 0 ? toMajor(divMinor(totalExpensesMinor, activeHeads * periodDays)) : 0;
 
   return {
     totalActiveHeads: activeHeads,
@@ -1485,7 +1420,7 @@ export async function getDashboardKPIs(filters?: {
     grossPnL: toMajor(revenueMinor - totalExpensesMinor),
     costPerHeadPerDay,
     categoryBreakdown,
-    period: { fromDate, toDate },
+    period: { fromDate, toDate }
   };
 }
 
@@ -1504,17 +1439,10 @@ export async function getDoomedFeedConsumption(): Promise<Record<number, number>
     .select({
       categoryId: animals.categoryId,
       exitDate: animals.exitDate,
-      acquisitionDate: animals.acquisitionDate,
+      acquisitionDate: animals.acquisitionDate
     })
     .from(animals)
-    .where(
-      and(
-        eq(animals.isActive, false),
-        isNotNull(animals.exitDate),
-        isNull(animals.deletedAt),
-        sql`${animals.exitDate} >= DATE_SUB(${today}, INTERVAL 90 DAY)`
-      )
-    );
+    .where(and(eq(animals.isActive, false), isNotNull(animals.exitDate), isNull(animals.deletedAt), sql`${animals.exitDate} >= DATE_SUB(${today}, INTERVAL 90 DAY)`));
 
   if (recentlyExited.length === 0) return {};
 
@@ -1523,7 +1451,7 @@ export async function getDoomedFeedConsumption(): Promise<Record<number, number>
     .select({
       feedItemId: rationPlans.feedItemId,
       categoryId: rationPlans.categoryId,
-      qty: rationPlans.qtyPerHeadPerDay,
+      qty: rationPlans.qtyPerHeadPerDay
     })
     .from(rationPlans)
     .where(and(eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
@@ -1532,12 +1460,8 @@ export async function getDoomedFeedConsumption(): Promise<Record<number, number>
   const feedConsumed: Record<number, number> = {};
   for (const animal of recentlyExited) {
     if (!animal.exitDate) continue;
-    const exitDateStr = animal.exitDate instanceof Date
-      ? animal.exitDate.toISOString().split("T")[0]
-      : String(animal.exitDate).split("T")[0];
-    const acqDateStr = animal.acquisitionDate instanceof Date
-      ? animal.acquisitionDate.toISOString().split("T")[0]
-      : String(animal.acquisitionDate).split("T")[0];
+    const exitDateStr = animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0];
+    const acqDateStr = animal.acquisitionDate instanceof Date ? animal.acquisitionDate.toISOString().split("T")[0] : String(animal.acquisitionDate).split("T")[0];
 
     const exitMs = new Date(exitDateStr).getTime();
     const todayMs = new Date(today).getTime();
@@ -1545,7 +1469,7 @@ export async function getDoomedFeedConsumption(): Promise<Record<number, number>
     const daysAfterExit = Math.max(0, Math.floor((todayMs - exitMs) / 86400000));
     if (daysAfterExit === 0) continue;
 
-    const plansForCategory = allPlans.filter((p) => p.categoryId === animal.categoryId);
+    const plansForCategory = allPlans.filter(p => p.categoryId === animal.categoryId);
     for (const plan of plansForCategory) {
       const qty = parseFloat(plan.qty) * daysAfterExit;
       feedConsumed[plan.feedItemId] = (feedConsumed[plan.feedItemId] ?? 0) + qty;
@@ -1567,15 +1491,12 @@ export async function getFeedStockStatus() {
   for (const item of allFeedItems) {
     // Last stock count
     const lastCount = await db
-      .select({ qty: feedStockLedger.qty, transactionDate: feedStockLedger.transactionDate })
+      .select({
+        qty: feedStockLedger.qty,
+        transactionDate: feedStockLedger.transactionDate
+      })
       .from(feedStockLedger)
-      .where(
-        and(
-          eq(feedStockLedger.feedItemId, item.id),
-          eq(feedStockLedger.transactionType, "stock_count"),
-          isNull(feedStockLedger.deletedAt)
-        )
-      )
+      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "stock_count"), isNull(feedStockLedger.deletedAt)))
       .orderBy(desc(feedStockLedger.transactionDate))
       .limit(1);
 
@@ -1586,50 +1507,41 @@ export async function getFeedStockStatus() {
     const purchases = await db
       .select({ total: sql<number>`SUM(qty)` })
       .from(feedStockLedger)
-      .where(
-        and(
-          eq(feedStockLedger.feedItemId, item.id),
-          eq(feedStockLedger.transactionType, "purchase"),
-          isNull(feedStockLedger.deletedAt),
-          sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`
-        )
-      );
+      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "purchase"), isNull(feedStockLedger.deletedAt), sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`));
     const purchasedQty = parseFloat(String(purchases[0]?.total ?? 0));
 
     // Adjustments since last count
     const adjustments = await db
       .select({ total: sql<number>`SUM(qty)` })
       .from(feedStockLedger)
-      .where(
-        and(
-          eq(feedStockLedger.feedItemId, item.id),
-          eq(feedStockLedger.transactionType, "adjustment"),
-          isNull(feedStockLedger.deletedAt),
-          sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`
-        )
-      );
+      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "adjustment"), isNull(feedStockLedger.deletedAt), sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`));
     const adjustmentQty = parseFloat(String(adjustments[0]?.total ?? 0));
 
     // Daily consumption from ration plans (using fresh head counts)
     const plans = await db
-      .select({ qty: rationPlans.qtyPerHeadPerDay, categoryId: rationPlans.categoryId })
+      .select({
+        qty: rationPlans.qtyPerHeadPerDay,
+        categoryId: rationPlans.categoryId
+      })
       .from(rationPlans)
-      .where(
-        and(
-          eq(rationPlans.feedItemId, item.id),
-          eq(rationPlans.isActive, true),
-          isNull(rationPlans.deletedAt)
-        )
-      );
+      .where(and(eq(rationPlans.feedItemId, item.id), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
 
     let dailyConsumption = 0;
-    const consumptionByCategory: Array<{ categoryId: number; categoryDailyKg: number; heads: number }> = [];
+    const consumptionByCategory: Array<{
+      categoryId: number;
+      categoryDailyKg: number;
+      heads: number;
+    }> = [];
     for (const plan of plans) {
       const heads = headCounts[plan.categoryId] ?? 0;
       const categoryDailyKg = parseFloat(plan.qty) * heads;
       dailyConsumption += categoryDailyKg;
       if (heads > 0) {
-        consumptionByCategory.push({ categoryId: plan.categoryId, categoryDailyKg, heads });
+        consumptionByCategory.push({
+          categoryId: plan.categoryId,
+          categoryDailyKg,
+          heads
+        });
       }
     }
 
@@ -1637,24 +1549,15 @@ export async function getFeedStockStatus() {
     const doomedKg = doomedConsumed[item.id] ?? 0;
 
     // Excel formula: StockToday = LastCountQty + PurchSinceCount + Adjustments - (DailyUse × daysSinceCount)
-    const lastCountDateStr = lastCount[0]?.transactionDate
-      ? (lastCount[0].transactionDate instanceof Date
-          ? lastCount[0].transactionDate.toISOString().split("T")[0]
-          : String(lastCount[0].transactionDate).split("T")[0])
-      : "2020-01-01";
+    const lastCountDateStr = lastCount[0]?.transactionDate ? (lastCount[0].transactionDate instanceof Date ? lastCount[0].transactionDate.toISOString().split("T")[0] : String(lastCount[0].transactionDate).split("T")[0]) : "2020-01-01";
     const today = new Date().toISOString().split("T")[0];
-    const daysSinceCount = Math.max(
-      0,
-      Math.floor((new Date(today).getTime() - new Date(lastCountDateStr).getTime()) / 86400000)
-    );
+    const daysSinceCount = Math.max(0, Math.floor((new Date(today).getTime() - new Date(lastCountDateStr).getTime()) / 86400000));
     const consumedSinceCount = dailyConsumption * daysSinceCount;
 
     const stockOnHand = Math.max(0, lastCountQty + purchasedQty + adjustmentQty - consumedSinceCount);
     const adjustedStock = Math.max(0, stockOnHand - doomedKg);
     const daysRemaining = dailyConsumption > 0 ? Math.floor(adjustedStock / dailyConsumption) : 999;
-    const runOutDate = dailyConsumption > 0
-      ? new Date(Date.now() + daysRemaining * 86400000).toISOString().split("T")[0]
-      : null;
+    const runOutDate = dailyConsumption > 0 ? new Date(Date.now() + daysRemaining * 86400000).toISOString().split("T")[0] : null;
 
     result.push({
       feedItemId: item.id,
@@ -1670,7 +1573,7 @@ export async function getFeedStockStatus() {
       consumptionByCategory,
       daysRemaining,
       runOutDate,
-      status: daysRemaining <= 3 ? "critical" : daysRemaining <= 7 ? "low" : "ok",
+      status: daysRemaining <= 3 ? "critical" : daysRemaining <= 7 ? "low" : "ok"
     });
   }
 
@@ -1685,49 +1588,30 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const salesData = await db
     .select({ total: sql<number>`SUM(salePrice)` })
     .from(sales)
-    .where(and(
-      sql`${sales.saleDate} >= ${filters.fromDate}`,
-      sql`${sales.saleDate} <= ${filters.toDate}`,
-      isNull(sales.deletedAt)
-    ));
+    .where(and(sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`, isNull(sales.deletedAt)));
 
   // Animal purchase costs (exclude soft-deleted)
   const purchaseCosts = await db
     .select({ total: sql<number>`SUM(purchaseCost)` })
     .from(animals)
-    .where(and(
-      sql`${animals.acquisitionDate} >= ${filters.fromDate}`,
-      sql`${animals.acquisitionDate} <= ${filters.toDate}`,
-      isNull(animals.deletedAt)
-    ));
+    .where(and(sql`${animals.acquisitionDate} >= ${filters.fromDate}`, sql`${animals.acquisitionDate} <= ${filters.toDate}`, isNull(animals.deletedAt)));
 
   // Expenses by category (exclude soft-deleted)
   const expensesByCategory = await db
     .select({
       categoryName: expenseCategories.name,
-      total: sql<number>`SUM(${expenses.amount})`,
+      total: sql<number>`SUM(${expenses.amount})`
     })
     .from(expenses)
     .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(
-      sql`${expenses.expenseDate} >= ${filters.fromDate}`,
-      sql`${expenses.expenseDate} <= ${filters.toDate}`,
-      isNull(expenses.deletedAt)
-    ))
+    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
     .groupBy(expenseCategories.name);
 
-   // Feed stock purchases in period (exclude soft-deleted)
+  // Feed stock purchases in period (exclude soft-deleted)
   const feedPurchases = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
-    .where(
-      and(
-        eq(feedStockLedger.transactionType, "purchase"),
-        sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`,
-        sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`,
-        isNull(feedStockLedger.deletedAt)
-      )
-    );
+    .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
   const totalFeedCostMinor = toMinor(String(feedPurchases[0]?.total ?? 0));
   const totalRevenueMinor = toMinor(String(salesData[0]?.total ?? 0));
   const totalAnimalCostMinor = toMinor(String(purchaseCosts[0]?.total ?? 0));
@@ -1749,9 +1633,9 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       feedPurchases: totalFeedCost,
       byCategory: expensesByCategory,
       totalOther: totalOtherCost,
-      total: totalCost,
+      total: totalCost
     },
     grossProfit,
-    profitMargin: totalRevenueMinor > 0 ? Math.round((grossProfitMinor / totalRevenueMinor) * 10000) / 100 : 0,
+    profitMargin: totalRevenueMinor > 0 ? Math.round((grossProfitMinor / totalRevenueMinor) * 10000) / 100 : 0
   };
 }

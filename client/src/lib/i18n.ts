@@ -30,13 +30,13 @@ const en = {
       livestock: "Livestock",
       operations: "Operations",
       finance: "Finance",
-      system: "System",
-    },
+      system: "System"
+    }
   },
 
   auth: {
     signIn: "Sign in to continue",
-    signOut: "Sign out",
+    signOut: "Sign out"
   },
 
   // Common
@@ -123,7 +123,7 @@ const en = {
     settingSaved: "Setting saved",
     valueEmpty: "Value cannot be empty",
     noGroup: "No group",
-    animal: "Animal",
+    animal: "Animal"
   },
 
   // Dashboard
@@ -153,7 +153,7 @@ const en = {
     costHeadDay: "Cost / Head / Day",
     dataLoading: "Data still loading, try again in a moment",
     pdfDownloaded: "PDF report downloaded",
-    headsDays: "{{heads}} heads · {{days}} days",
+    headsDays: "{{heads}} heads · {{days}} days"
   },
 
   // Animals
@@ -199,7 +199,7 @@ const en = {
     exited: "Exited",
     noAnimalsFound: "No animals found. Register the first animal to get started.",
     searchPlaceholder: "Search by ID, category, species...",
-    movedToBin: "Animal moved to Recycle Bin",
+    movedToBin: "Animal moved to Recycle Bin"
   },
 
   // Breeding
@@ -230,7 +230,7 @@ const en = {
     promote: "Promote",
     promoteLambToRegistry: "Promote Lamb to Animal Registry",
     promoted: "Promoted",
-    recordNewBirth: "Record New Birth",
+    recordNewBirth: "Record New Birth"
   },
 
   // Fattening
@@ -256,7 +256,7 @@ const en = {
     animalUpdated: "Animal updated",
     weightAutoStaged: "Weight recorded — animal auto-staged to {{id}}",
     movedToBin: "Animal moved to Recycle Bin",
-    selectAnimal: "Select animal",
+    selectAnimal: "Select animal"
   },
 
   // Feed
@@ -315,7 +315,7 @@ const en = {
     daysLabel: "days",
     outDate: "out {{date}}",
     perDayUnit: "{{qty}} {{unit}}/day",
-    kgRemainingDays: "{{qty}} {{unit}} remaining ({{days}} days)",
+    kgRemainingDays: "{{qty}} {{unit}} remaining ({{days}} days)"
   },
 
   // Expenses
@@ -346,7 +346,7 @@ const en = {
     recorded: "Expense recorded",
     selectCategoryForCat: "Select a category for CATEGORY expense",
     selectAnimalForHead: "Select an animal for HEAD expense",
-    selectAnimal: "Select animal",
+    selectAnimal: "Select animal"
   },
 
   // P&L
@@ -381,7 +381,7 @@ const en = {
     totalCost: "Total Cost",
     searchPlaceholder: "Search by animal ID...",
     activeClosed: "{{active}} active · {{closed}} closed",
-    animalsOngoing: "{{count}} animals ongoing",
+    animalsOngoing: "{{count}} animals ongoing"
   },
 
   // Sales
@@ -402,7 +402,7 @@ const en = {
     recorded: "Sale recorded successfully",
     updated: "Sale updated",
     editSale: "Edit Sale — {{code}}",
-    pendingPriceEntry: "{{count}} pending price entry",
+    pendingPriceEntry: "{{count}} pending price entry"
   },
 
   // Income Statement
@@ -433,7 +433,7 @@ const en = {
     excelExported: "Excel exported successfully",
     excelFailed: "Failed to export Excel",
     pdfExported: "PDF exported successfully",
-    pdfFailed: "Failed to export PDF",
+    pdfFailed: "Failed to export PDF"
   },
 
   // Configuration
@@ -485,7 +485,7 @@ const en = {
     editExpenseCategory: "Edit Expense Category",
     editFeedItem: "Edit Feed Item",
     editGroupPen: "Edit Group / Pen",
-    editSpecies: "Edit Species",
+    editSpecies: "Edit Species"
   },
 
   // Notifications
@@ -498,7 +498,7 @@ const en = {
     targetWeightReached: "Target Weight Reached",
     negativePnL: "Negative P&L Alert",
     highCostPerDay: "High Cost/Day Alert",
-    newBirth: "New Birth Recorded",
+    newBirth: "New Birth Recorded"
   },
 
   // User Management
@@ -516,7 +516,7 @@ const en = {
     email: "Email",
     joined: "Joined",
     noUsers: "No users found.",
-    roleUpdated: "User role updated",
+    roleUpdated: "User role updated"
   },
 
   // Audit Log
@@ -537,7 +537,7 @@ const en = {
     noEntries: "No audit entries yet.",
     noMatch: "No entries match your filters.",
     ipAddress: "IP Address",
-    entriesCount: "{{count}} entries",
+    entriesCount: "{{count}} entries"
   },
 
   // Data Management
@@ -545,27 +545,35 @@ const en = {
     title: "Data Management",
     subtitle: "Import data from Excel, create full backups, or restore from a backup file.",
     importTitle: "Import from Excel",
-    importDesc: "Upload an Excel file matching the export format. Existing records are skipped (matched by animal code).",
+    importDesc: "Upload an LFMS Excel file and choose whether to append missing records or replace the full system from a canonical export.",
+    appendMode: "Append missing records",
+    appendModeDesc: "Keeps current data, inserts missing records, skips identical records, and aborts on conflicts.",
+    appendModeDescExcel: "Canonical Excel inserts missing records and skips identical records. Manual templates append new rows, skip existing animal codes, and may duplicate other prior manual imports.",
+    replaceMode: "Replace entire system",
+    replaceModeDesc: "Deletes all current tables and restores the uploaded complete snapshot. Requires canonical Excel or complete JSON.",
+    appendConfirm: "Append missing records from this file? Existing identical records will be skipped and conflicts will abort the import.",
+    replaceConfirm: "DANGER: Replace will delete all current system data and restore the uploaded complete snapshot. Continue?",
     chooseExcel: "Choose Excel file",
     importing: "Importing…",
     importResults: "Import results:",
-    added: "added",
+    added: "applied",
     skipped: "skipped",
     errors: "errors",
     showErrors: "Show errors",
     backupTitle: "Download Full Backup",
-    backupDesc: "Save a full snapshot of all live data as a single JSON file. Includes animals, sales, lambing, weights, rations, stock, and expenses. Soft-deleted records are excluded.",
+    backupDesc: "Save a complete versioned JSON snapshot containing every table, field, relationship, user, setting, audit entry, notification, and soft-deleted record.",
+    recordsExported: "records exported",
     downloadBackup: "Download backup (JSON)",
     generating: "Generating…",
     restoreTitle: "Restore from Backup",
-    restoreDesc: "Upload a JSON backup file. Records already in the database (matched by animal code) are skipped to avoid duplicates.",
+    restoreDesc: "Upload a complete versioned JSON backup and choose Append or Replace.",
     chooseBackup: "Choose backup file",
     restoring: "Restoring…",
     restoreResults: "Restore results:",
     restored: "restored",
-    restoreConfirm: "Restore will ADD records from this backup to the current database. Records that already exist (matched by animal code) will be skipped. Continue?",
+    restoreConfirm: "Restore this backup?",
     exportTitle: "Export to Excel",
-    exportDesc: "Download the full database as a structured Excel workbook with live formulas.",
+    exportDesc: "Download reports plus versioned canonical sheets containing every database table, field, relationship, and soft-deleted record."
   },
   animalProfile: {
     animalDetails: "Animal Details",
@@ -592,7 +600,7 @@ const en = {
     weightRecorded: "Weight recorded",
     loadingData: "Loading data, try again in a moment",
     pdfDownloaded: "PDF downloaded",
-    costDay: "Cost / Day",
+    costDay: "Cost / Day"
   },
   recycleBin: {
     title: "Recycle Bin",
@@ -609,14 +617,14 @@ const en = {
     restored: "restored",
     permanentlyDeleted: "permanently deleted",
     emptiedPermanently: "Recycle bin emptied permanently",
-    deleteAllRecords: "permanently delete all {{count}} records",
+    deleteAllRecords: "permanently delete all {{count}} records"
   },
   notFound: {
     title: "Page Not Found",
     message: "Sorry, the page you are looking for doesn't exist.",
     hint: "It may have been moved or deleted.",
-    goHome: "Go Home",
-  },
+    goHome: "Go Home"
+  }
 };
 
 const ar = {
@@ -645,13 +653,13 @@ const ar = {
       livestock: "المواشي",
       operations: "العمليات",
       finance: "المالية",
-      system: "النظام",
-    },
+      system: "النظام"
+    }
   },
 
   auth: {
     signIn: "تسجيل الدخول للمتابعة",
-    signOut: "تسجيل الخروج",
+    signOut: "تسجيل الخروج"
   },
 
   common: {
@@ -737,7 +745,7 @@ const ar = {
     settingSaved: "تم حفظ الإعداد",
     valueEmpty: "القيمة لا يمكن أن تكون فارغة",
     noGroup: "بدون مجموعة",
-    animal: "الحيوان",
+    animal: "الحيوان"
   },
 
   dashboard: {
@@ -766,7 +774,7 @@ const ar = {
     costHeadDay: "التكلفة / رأس / يوم",
     dataLoading: "البيانات قيد التحميل، حاول مرة أخرى بعد لحظات",
     pdfDownloaded: "تم تنزيل تقرير PDF",
-    headsDays: "{{heads}} رأس · {{days}} يوم",
+    headsDays: "{{heads}} رأس · {{days}} يوم"
   },
 
   animals: {
@@ -811,7 +819,7 @@ const ar = {
     exited: "خرج",
     noAnimalsFound: "لا توجد حيوانات. سجّل أول حيوان للبدء.",
     searchPlaceholder: "ابحث بالمعرّف أو الفئة أو النوع...",
-    movedToBin: "تم نقل الحيوان إلى سلة المحذوفات",
+    movedToBin: "تم نقل الحيوان إلى سلة المحذوفات"
   },
 
   breeding: {
@@ -841,7 +849,7 @@ const ar = {
     promote: "ترقية",
     promoteLambToRegistry: "ترقية الحمل إلى سجل الحيوانات",
     promoted: "تمت الترقية",
-    recordNewBirth: "تسجيل ولادة جديدة",
+    recordNewBirth: "تسجيل ولادة جديدة"
   },
 
   fattening: {
@@ -866,7 +874,7 @@ const ar = {
     animalUpdated: "تم تحديث الحيوان",
     weightAutoStaged: "تم تسجيل الوزن — تمت الترقية التلقائية للحيوان إلى {{id}}",
     movedToBin: "تم نقل الحيوان إلى سلة المحذوفات",
-    selectAnimal: "اختر الحيوان",
+    selectAnimal: "اختر الحيوان"
   },
 
   feed: {
@@ -924,7 +932,7 @@ const ar = {
     daysLabel: "يوم",
     outDate: "ينفد {{date}}",
     perDayUnit: "{{qty}} {{unit}}/يوم",
-    kgRemainingDays: "{{qty}} {{unit}} متبقٍ ({{days}} يوم)",
+    kgRemainingDays: "{{qty}} {{unit}} متبقٍ ({{days}} يوم)"
   },
 
   expenses: {
@@ -954,7 +962,7 @@ const ar = {
     recorded: "تم تسجيل المصروف",
     selectCategoryForCat: "اختر فئة لمصروف الفئة",
     selectAnimalForHead: "اختر حيوانًا لمصروف الرأس",
-    selectAnimal: "اختر الحيوان",
+    selectAnimal: "اختر الحيوان"
   },
 
   pnl: {
@@ -988,7 +996,7 @@ const ar = {
     totalCost: "التكلفة الإجمالية",
     searchPlaceholder: "ابحث بمعرّف الحيوان...",
     activeClosed: "{{active}} نشط · {{closed}} مغلق",
-    animalsOngoing: "{{count}} حيوان قيد المتابعة",
+    animalsOngoing: "{{count}} حيوان قيد المتابعة"
   },
 
   sales: {
@@ -1008,7 +1016,7 @@ const ar = {
     recorded: "تم تسجيل البيع بنجاح",
     updated: "تم تحديث البيع",
     editSale: "تعديل البيع — {{code}}",
-    pendingPriceEntry: "{{count}} إدخال سعر معلّق",
+    pendingPriceEntry: "{{count}} إدخال سعر معلّق"
   },
 
   incomeStatement: {
@@ -1038,7 +1046,7 @@ const ar = {
     excelExported: "تم تصدير Excel بنجاح",
     excelFailed: "فشل تصدير Excel",
     pdfExported: "تم تصدير PDF بنجاح",
-    pdfFailed: "فشل تصدير PDF",
+    pdfFailed: "فشل تصدير PDF"
   },
 
   config: {
@@ -1089,7 +1097,7 @@ const ar = {
     editExpenseCategory: "تعديل فئة المصروف",
     editFeedItem: "تعديل صنف العلف",
     editGroupPen: "تعديل المجموعة / القلم",
-    editSpecies: "تعديل الفصيلة",
+    editSpecies: "تعديل الفصيلة"
   },
 
   notifications: {
@@ -1101,7 +1109,7 @@ const ar = {
     targetWeightReached: "تم الوصول للوزن المستهدف",
     negativePnL: "تنبيه خسارة",
     highCostPerDay: "تنبيه ارتفاع التكلفة اليومية",
-    newBirth: "تم تسجيل ولادة جديدة",
+    newBirth: "تم تسجيل ولادة جديدة"
   },
 
   users: {
@@ -1118,7 +1126,7 @@ const ar = {
     email: "البريد الإلكتروني",
     joined: "تاريخ الانضمام",
     noUsers: "لا يوجد مستخدمون.",
-    roleUpdated: "تم تحديث دور المستخدم",
+    roleUpdated: "تم تحديث دور المستخدم"
   },
 
   audit: {
@@ -1138,7 +1146,7 @@ const ar = {
     noEntries: "لا توجد سجلات تدقيق بعد.",
     noMatch: "لا توجد سجلات مطابقة للمرشحات.",
     ipAddress: "عنوان IP",
-    entriesCount: "{{count}} سجل",
+    entriesCount: "{{count}} سجل"
   },
 
   // Data Management
@@ -1146,27 +1154,35 @@ const ar = {
     title: "إدارة البيانات",
     subtitle: "استيراد البيانات من Excel، أو إنشاء نسخ احتياطية كاملة، أو الاستعادة من ملف نسخة احتياطية.",
     importTitle: "استيراد من Excel",
-    importDesc: "ارفع ملف Excel مطابقًا لصيغة التصدير. يتم تجاهل السجلات الموجودة (المطابقة برمز الحيوان).",
+    importDesc: "ارفع ملف Excel لنظام LFMS واختر إضافة السجلات الناقصة أو استبدال النظام بالكامل من تصدير أساسي كامل.",
+    appendMode: "إضافة السجلات الناقصة",
+    appendModeDesc: "يحافظ على البيانات الحالية ويضيف السجلات الناقصة ويتجاوز السجلات المتطابقة ويلغي الاستيراد عند وجود تعارض.",
+    appendModeDescExcel: "يضيف Excel الأساسي السجلات الناقصة ويتجاوز المتطابق. يضيف القالب اليدوي صفوفًا جديدة ويتجاوز أكواد الحيوانات الموجودة وقد يكرر عمليات الاستيراد اليدوية السابقة.",
+    replaceMode: "استبدال النظام بالكامل",
+    replaceModeDesc: "يحذف جميع الجداول الحالية ويستعيد اللقطة الكاملة المرفوعة. يتطلب Excel أساسيًا أو JSON كاملاً.",
+    appendConfirm: "هل تريد إضافة السجلات الناقصة من هذا الملف؟ سيتم تجاوز السجلات المتطابقة وإلغاء الاستيراد عند وجود تعارض.",
+    replaceConfirm: "تحذير: سيحذف الاستبدال جميع بيانات النظام الحالية ويستعيد اللقطة الكاملة المرفوعة. هل تريد المتابعة؟",
     chooseExcel: "اختر ملف Excel",
     importing: "جارٍ الاستيراد…",
     importResults: "نتائج الاستيراد:",
-    added: "مضاف",
+    added: "مطبّق",
     skipped: "متجاهل",
     errors: "أخطاء",
     showErrors: "عرض الأخطاء",
     backupTitle: "تنزيل نسخة احتياطية كاملة",
-    backupDesc: "احفظ لقطة كاملة لجميع البيانات الحية كملف JSON واحد. يشمل الحيوانات والمبيعات والولادات والأوزان والحصص والمخزون والمصروفات. السجلات المحذوفة مستثناة.",
+    backupDesc: "احفظ لقطة JSON كاملة بإصدار معتمد تشمل كل الجداول والحقول والعلاقات والمستخدمين والإعدادات وسجل التدقيق والإشعارات والسجلات المحذوفة منطقيًا.",
+    recordsExported: "سجل تم تصديره",
     downloadBackup: "تنزيل نسخة احتياطية (JSON)",
     generating: "جارٍ الإنشاء…",
     restoreTitle: "الاستعادة من نسخة احتياطية",
-    restoreDesc: "ارفع ملف نسخة احتياطية JSON. السجلات الموجودة في قاعدة البيانات (المطابقة برمز الحيوان) يتم تجاهلها لتجنب التكرار.",
+    restoreDesc: "ارفع نسخة JSON كاملة بإصدار معتمد واختر الإضافة أو الاستبدال.",
     chooseBackup: "اختر ملف النسخة الاحتياطية",
     restoring: "جارٍ الاستعادة…",
     restoreResults: "نتائج الاستعادة:",
     restored: "مُستعاد",
     restoreConfirm: "ستضيف الاستعادة السجلات من هذه النسخة الاحتياطية إلى قاعدة البيانات الحالية. السجلات الموجودة (المطابقة برمز الحيوان) سيتم تجاهلها. هل تريد المتابعة؟",
     exportTitle: "تصدير إلى Excel",
-    exportDesc: "نزّل قاعدة البيانات الكاملة كمصنف Excel منظم مع صيغ حية.",
+    exportDesc: "نزّل التقارير مع أوراق بيانات أساسية بإصدار معتمد تشمل كل الجداول والحقول والعلاقات والسجلات المحذوفة منطقيًا."
   },
   animalProfile: {
     animalDetails: "تفاصيل الحيوان",
@@ -1193,7 +1209,7 @@ const ar = {
     weightRecorded: "تم تسجيل الوزن",
     loadingData: "جارٍ تحميل البيانات، حاول مرة أخرى بعد لحظات",
     pdfDownloaded: "تم تنزيل PDF",
-    costDay: "التكلفة / يوم",
+    costDay: "التكلفة / يوم"
   },
   recycleBin: {
     title: "سلة المحذوفات",
@@ -1210,14 +1226,14 @@ const ar = {
     restored: "تمت استعادته",
     permanentlyDeleted: "تم حذفه نهائيًا",
     emptiedPermanently: "تم إفراغ سلة المحذوفات نهائيًا",
-    deleteAllRecords: "حذف جميع السجلات نهائيًا ({{count}})",
+    deleteAllRecords: "حذف جميع السجلات نهائيًا ({{count}})"
   },
   notFound: {
     title: "الصفحة غير موجودة",
     message: "عذرًا، الصفحة التي تبحث عنها غير موجودة.",
     hint: "ربما تم نقلها أو حذفها.",
-    goHome: "العودة للرئيسية",
-  },
+    goHome: "العودة للرئيسية"
+  }
 };
 
 i18n
@@ -1226,18 +1242,18 @@ i18n
   .init({
     resources: {
       en: { translation: en },
-      ar: { translation: ar },
+      ar: { translation: ar }
     },
     fallbackLng: "en",
     defaultNS: "translation",
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
-      lookupLocalStorage: "lfms-lang",
+      lookupLocalStorage: "lfms-lang"
     },
     interpolation: {
-      escapeValue: false,
-    },
+      escapeValue: false
+    }
   });
 
 export default i18n;

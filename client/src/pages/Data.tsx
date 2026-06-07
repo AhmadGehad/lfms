@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { useQueryClient } from "@tanstack/react-query";
-import { Database, Download, FileUp, HardDriveDownload, History, Upload } from "lucide-react";
+import { AlertTriangle, Database, Download, FileUp, HardDriveDownload, History, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+
+type ImportMode = "append" | "replace";
 
 export default function Data() {
   const { t } = useTranslation();
@@ -35,6 +38,7 @@ function ImportCard() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<any[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
+  const [mode, setMode] = useState<ImportMode>("append");
   const qc = useQueryClient();
 
   const apply = trpc.import.applyImport.useMutation({
@@ -51,6 +55,7 @@ function ImportCard() {
   });
 
   const handleFile = async (file: File) => {
+    if (mode === "replace" && !confirm(t("data.replaceConfirm"))) return;
     setStats(null);
     setErrors([]);
     const buf = await file.arrayBuffer();
@@ -58,7 +63,7 @@ function ImportCard() {
     let binary = "";
     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
     const base64 = btoa(binary);
-    apply.mutate({ base64 });
+    apply.mutate({ base64, mode });
   };
 
   return (
@@ -71,6 +76,7 @@ function ImportCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{t("data.importDesc")}</p>
+        <ModeSelect mode={mode} onChange={setMode} source="excel" />
         <input
           ref={fileRef}
           type="file"
@@ -136,7 +142,7 @@ function BackupCard() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`${res.stats.animals} / ${res.stats.expenses} / ${res.stats.feedStock}`);
+      toast.success(`${Object.values(res.stats).reduce((sum, count) => sum + Number(count), 0)} ${t("data.recordsExported")}`);
     } catch (e: any) {
       toast.error(e.message ?? "Backup failed");
     } finally {
@@ -168,12 +174,13 @@ function RestoreCard() {
   const { t } = useTranslation();
   const fileRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<any | null>(null);
+  const [mode, setMode] = useState<ImportMode>("append");
   const qc = useQueryClient();
 
   const restore = trpc.backup.restore.useMutation({
     onSuccess: (res) => {
-      setStats(res);
-      const totalRestored = Object.values(res).reduce(
+      setStats(res.stats);
+      const totalRestored = Object.values(res.stats).reduce(
         (sum: number, v: any) => sum + (v.restored ?? 0),
         0
       );
@@ -184,7 +191,7 @@ function RestoreCard() {
   });
 
   const handleFile = async (file: File) => {
-    if (!confirm(t("data.restoreConfirm"))) {
+    if (!confirm(mode === "replace" ? t("data.replaceConfirm") : t("data.appendConfirm"))) {
       return;
     }
     setStats(null);
@@ -193,7 +200,7 @@ function RestoreCard() {
     let binary = "";
     for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
     const base64 = btoa(binary);
-    restore.mutate({ base64 });
+    restore.mutate({ base64, mode });
   };
 
   return (
@@ -206,6 +213,7 @@ function RestoreCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{t("data.restoreDesc")}</p>
+        <ModeSelect mode={mode} onChange={setMode} source="json" />
         <input
           ref={fileRef}
           type="file"
@@ -238,5 +246,36 @@ function RestoreCard() {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function ModeSelect({
+  mode,
+  onChange,
+  source,
+}: {
+  mode: ImportMode;
+  onChange: (mode: ImportMode) => void;
+  source: "excel" | "json";
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="space-y-2">
+      <Select value={mode} onValueChange={(value) => onChange(value as ImportMode)}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="append">{t("data.appendMode")}</SelectItem>
+          <SelectItem value="replace">{t("data.replaceMode")}</SelectItem>
+        </SelectContent>
+      </Select>
+      <p className={`text-xs flex items-start gap-1.5 ${mode === "replace" ? "text-destructive" : "text-muted-foreground"}`}>
+        {mode === "replace" && <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />}
+        {mode === "replace"
+          ? t("data.replaceModeDesc")
+          : t(source === "excel" ? "data.appendModeDescExcel" : "data.appendModeDesc")}
+      </p>
+    </div>
   );
 }
