@@ -244,7 +244,7 @@ function DashboardLayoutContent({
   return (
     <>
       {/* Sidebar wrapper — side prop switches between left (LTR) and right (RTL) */}
-      <div className="relative" ref={sidebarRef}>
+      <div className="relative hidden md:block" ref={sidebarRef}>
         <Sidebar
           side={isAr ? "right" : "left"}
           collapsible={isMobile ? "offcanvas" : "icon"}
