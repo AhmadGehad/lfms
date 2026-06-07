@@ -1,0 +1,74 @@
+{
+  "query": "SELECT id, name FROM birth_types;\nSELECT id, name FROM `groups`;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT id, name FROM birth_types;\nSELECT id, name FROM `groups`;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Single"
+    },
+    {
+      "id": "3",
+      "name": "Triplet"
+    },
+    {
+      "id": "2",
+      "name": "Twin"
+    },
+    {
+      "id": "4",
+      "name": "Unknown"
+    },
+    {
+      "id": "id",
+      "name": "name"
+    },
+    {
+      "id": "1",
+      "name": "F1"
+    },
+    {
+      "id": "2",
+      "name": "F2"
+    },
+    {
+      "id": "3",
+      "name": "F3"
+    },
+    {
+      "id": "4",
+      "name": "F4"
+    },
+    {
+      "id": "5",
+      "name": "F5"
+    },
+    {
+      "id": "6",
+      "name": "F6"
+    },
+    {
+      "id": "7",
+      "name": "B1"
+    },
+    {
+      "id": "8",
+      "name": "B2"
+    },
+    {
+      "id": "9",
+      "name": "Zone1"
+    },
+    {
+      "id": "10",
+      "name": "Zone2"
+    },
+    {
+      "id": "11",
+      "name": "Zone3"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\tSingle\n3\tTriplet\n2\tTwin\n4\tUnknown\nid\tname\n1\tF1\n2\tF2\n3\tF3\n4\tF4\n5\tF5\n6\tF6\n7\tB1\n8\tB2\n9\tZone1\n10\tZone2\n11\tZone3\n",
+  "stderr": "",
+  "execution_time_ms": 2034
+}

@@ -1,0 +1,50 @@
+{
+  "query": "SELECT 'animals' as tbl, COUNT(*) as total, SUM(CASE WHEN isActive=1 THEN 1 ELSE 0 END) as active FROM animals\nUNION ALL SELECT 'lambing_log', COUNT(*), NULL FROM lambing_log\nUNION ALL SELECT 'weight_log', COUNT(*), NULL FROM weight_log\nUNION ALL SELECT 'expenses', COUNT(*), NULL FROM expenses\nUNION ALL SELECT 'feed_stock_ledger', COUNT(*), NULL FROM feed_stock_ledger\nUNION ALL SELECT 'feed_items', COUNT(*), NULL FROM feed_items\nUNION ALL SELECT 'species', COUNT(*), NULL FROM species\nUNION ALL SELECT 'animal_categories', COUNT(*), NULL FROM animal_categories;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT 'animals' as tbl, COUNT(*) as total, SUM(CASE WHEN isActive=1 THEN 1 ELSE 0 END) as active FROM animals\nUNION ALL SELECT 'lambing_log', COUNT(*), NULL FROM lambing_log\nUNION ALL SELECT 'weight_log', COUNT(*), NULL FROM weight_log\nUNION ALL SELECT 'expenses', COUNT(*), NULL FROM expenses\nUNION ALL SELECT 'feed_stock_ledger', COUNT(*), NULL FROM feed_stock_ledger\nUNION ALL SELECT 'feed_items', COUNT(*), NULL FROM feed_items\nUNION ALL SELECT 'species', COUNT(*), NULL FROM species\nUNION ALL SELECT 'animal_categories', COUNT(*), NULL FROM animal_categories;",
+  "rows": [
+    {
+      "tbl": "feed_stock_ledger",
+      "total": "21",
+      "active": "NULL"
+    },
+    {
+      "tbl": "weight_log",
+      "total": "71",
+      "active": "NULL"
+    },
+    {
+      "tbl": "animals",
+      "total": "97",
+      "active": "85"
+    },
+    {
+      "tbl": "expenses",
+      "total": "25",
+      "active": "NULL"
+    },
+    {
+      "tbl": "lambing_log",
+      "total": "15",
+      "active": "NULL"
+    },
+    {
+      "tbl": "animal_categories",
+      "total": "10",
+      "active": "NULL"
+    },
+    {
+      "tbl": "feed_items",
+      "total": "8",
+      "active": "NULL"
+    },
+    {
+      "tbl": "species",
+      "total": "4",
+      "active": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\ttotal\tactive\nfeed_stock_ledger\t21\tNULL\nweight_log\t71\tNULL\nanimals\t97\t85\nexpenses\t25\tNULL\nlambing_log\t15\tNULL\nanimal_categories\t10\tNULL\nfeed_items\t8\tNULL\nspecies\t4\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1752
+}

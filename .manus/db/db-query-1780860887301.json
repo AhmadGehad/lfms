@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM weight_log;\nALTER TABLE weight_log AUTO_INCREMENT = 1;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute DELETE FROM weight_log;\nALTER TABLE weight_log AUTO_INCREMENT = 1;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2022
+}

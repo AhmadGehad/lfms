@@ -1,0 +1,8 @@
+{
+  "query": "INSERT INTO feed_items (id, name, unit, lowStockThreshold, isActive) VALUES (10, 'Concentrate 16%', 'kg', 100, 1);\nINSERT INTO feed_items (id, name, unit, lowStockThreshold, isActive) VALUES (11, 'Concentrate 14%', 'kg', 100, 1);\nINSERT INTO feed_items (id, name, unit, lowStockThreshold, isActive) VALUES (12, 'Chicken Feed', 'kg', 50, 1);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute INSERT INTO feed_items (id, name, unit, lowStockThreshold, isActive) VALUES (10, 'Concentrate 16%', 'kg', 100, 1);\nINSERT INTO feed_items (id, name, unit, lowStockThreshold, isActive) VALUES (11, 'Concentrate 14%', 'kg', 100, 1);\nINSERT INTO feed_items (id, name, unit, lowStockThreshold, isActive) VALUES (12, 'Chicken Feed', 'kg', 50, 1);",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'lowStockThreshold' in 'field list'"
+  ]
+}
