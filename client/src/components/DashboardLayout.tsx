@@ -275,48 +275,96 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          {/* Navigation */}
-          <SidebarContent className="gap-2 py-2">
+          {/* Navigation - uses inline styles for critical layout to guarantee
+              no overlap regardless of utility-class ordering or base styles. */}
+          <SidebarContent className="py-2" style={{ gap: 0 }}>
             {navGroups.map((group) => (
-              <SidebarGroup key={group.label} className="py-0.5">
+              <div
+                key={group.label}
+                style={{ display: "flex", flexDirection: "column", padding: "8px 8px 4px 8px" }}
+              >
                 {!isCollapsed && (
-                  <SidebarGroupLabel className={`!h-auto min-h-6 py-1 mb-1 leading-tight text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 px-4 ${isAr ? "flex-row-reverse text-right" : ""}`}>
+                  <div
+                    className={`text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 ${isAr ? "text-right" : ""}`}
+                    style={{
+                      height: "auto",
+                      minHeight: 0,
+                      padding: "8px 8px 4px 8px",
+                      lineHeight: 1.2,
+                      letterSpacing: "0.05em",
+                    }}
+                  >
                     {group.label}
-                  </SidebarGroupLabel>
+                  </div>
                 )}
-                <SidebarMenu className="px-2 gap-1.5">
+                <ul style={{ display: "flex", flexDirection: "column", gap: "4px", listStyle: "none", margin: 0, padding: 0 }}>
                   {group.items.map((item) => {
                     const isActive = location === item.path ||
                       (item.path !== "/" && location.startsWith(item.path));
                     return (
-                      <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton
-                          isActive={isActive}
+                      <li key={item.path} style={{ position: "relative" }}>
+                        <button
+                          type="button"
                           onClick={() => {
                             setLocation(item.path);
                             if (isMobile) toggleSidebar();
                           }}
-                          tooltip={item.label}
-                          className={`!h-auto min-h-9 py-2 font-normal relative ${isAr ? "flex-row-reverse" : ""}`}
+                          title={isCollapsed ? item.label : undefined}
+                          className={`w-full rounded-md text-sm transition-colors ${
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                          }`}
+                          style={{
+                            height: "auto",
+                            minHeight: "40px",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            padding: "8px 12px",
+                            flexDirection: isAr ? "row-reverse" : "row",
+                            textAlign: isAr ? "right" : "left",
+                            border: "none",
+                            background: isActive ? undefined : "transparent",
+                            cursor: "pointer",
+                          }}
                         >
-                          <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}`} />
-                          <span className={isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground"}>
-                            {item.label}
-                          </span>
+                          <item.icon
+                            className={isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}
+                            style={{ width: 16, height: 16, flexShrink: 0 }}
+                          />
+                          {!isCollapsed && (
+                            <span style={{ flex: 1, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {item.label}
+                            </span>
+                          )}
                           {item.path === "/notifications" && unreadCount > 0 && !isCollapsed && (
-                            <Badge className={`${isAr ? "mr-auto" : "ml-auto"} h-5 min-w-5 text-xs bg-red-500 text-white border-0 px-1.5`}>
+                            <Badge
+                              className="bg-red-500 text-white border-0"
+                              style={{ height: 20, minWidth: 20, fontSize: 11, padding: "0 6px", marginLeft: isAr ? 0 : "auto", marginRight: isAr ? "auto" : 0, flexShrink: 0 }}
+                            >
                               {unreadCount > 99 ? "99+" : unreadCount}
                             </Badge>
                           )}
                           {item.path === "/notifications" && unreadCount > 0 && isCollapsed && (
-                            <span className={`absolute top-1 ${isAr ? "left-1" : "right-1"} h-2 w-2 rounded-full bg-red-500`} />
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: 4,
+                                [isAr ? "left" : "right"]: 4,
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                background: "#ef4444",
+                              }}
+                            />
                           )}
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                        </button>
+                      </li>
                     );
                   })}
-                </SidebarMenu>
-              </SidebarGroup>
+                </ul>
+              </div>
             ))}
           </SidebarContent>
 
