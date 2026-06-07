@@ -1,0 +1,74 @@
+{
+  "query": "SELECT id, name FROM animal_statuses ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT id, name FROM animal_statuses ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Active"
+    },
+    {
+      "id": "2",
+      "name": "Sold"
+    },
+    {
+      "id": "3",
+      "name": "Dead"
+    },
+    {
+      "id": "4",
+      "name": "Transported"
+    },
+    {
+      "id": "5",
+      "name": "Lamb"
+    },
+    {
+      "id": "6",
+      "name": "Weaner"
+    },
+    {
+      "id": "7",
+      "name": "Fattening"
+    },
+    {
+      "id": "8",
+      "name": "Ewe"
+    },
+    {
+      "id": "9",
+      "name": "Ram"
+    },
+    {
+      "id": "10",
+      "name": "Cow"
+    },
+    {
+      "id": "11",
+      "name": "Beef Calf"
+    },
+    {
+      "id": "12",
+      "name": "Buffalo Calf"
+    },
+    {
+      "id": "13",
+      "name": "Billy Goat"
+    },
+    {
+      "id": "14",
+      "name": "Goat"
+    },
+    {
+      "id": "15",
+      "name": "Baby Goat"
+    },
+    {
+      "id": "16",
+      "name": "Dog"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\n1\tActive\n2\tSold\n3\tDead\n4\tTransported\n5\tLamb\n6\tWeaner\n7\tFattening\n8\tEwe\n9\tRam\n10\tCow\n11\tBeef Calf\n12\tBuffalo Calf\n13\tBilly Goat\n14\tGoat\n15\tBaby Goat\n16\tDog\n",
+  "stderr": "",
+  "execution_time_ms": 1791
+}

@@ -1,0 +1,46 @@
+{
+  "query": "SELECT 'Total animals' as metric, COUNT(*) as cnt FROM animals UNION ALL SELECT 'Active animals', COUNT(*) FROM animals WHERE isActive=1 UNION ALL SELECT 'Inactive animals', COUNT(*) FROM animals WHERE isActive=0 UNION ALL SELECT 'Sheep', COUNT(*) FROM animals WHERE speciesId=4 UNION ALL SELECT 'Goat', COUNT(*) FROM animals WHERE speciesId=3 UNION ALL SELECT 'Cow', COUNT(*) FROM animals WHERE speciesId=1 UNION ALL SELECT 'Dog', COUNT(*) FROM animals WHERE speciesId=2 UNION ALL SELECT 'Born animals', COUNT(*) FROM animals WHERE acquisitionType='born' UNION ALL SELECT 'Animals with dam', COUNT(*) FROM animals WHERE damId IS NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT 'Total animals' as metric, COUNT(*) as cnt FROM animals UNION ALL SELECT 'Active animals', COUNT(*) FROM animals WHERE isActive=1 UNION ALL SELECT 'Inactive animals', COUNT(*) FROM animals WHERE isActive=0 UNION ALL SELECT 'Sheep', COUNT(*) FROM animals WHERE speciesId=4 UNION ALL SELECT 'Goat', COUNT(*) FROM animals WHERE speciesId=3 UNION ALL SELECT 'Cow', COUNT(*) FROM animals WHERE speciesId=1 UNION ALL SELECT 'Dog', COUNT(*) FROM animals WHERE speciesId=2 UNION ALL SELECT 'Born animals', COUNT(*) FROM animals WHERE acquisitionType='born' UNION ALL SELECT 'Animals with dam', COUNT(*) FROM animals WHERE damId IS NOT NULL;",
+  "rows": [
+    {
+      "metric": "Total animals",
+      "cnt": "97"
+    },
+    {
+      "metric": "Goat",
+      "cnt": "22"
+    },
+    {
+      "metric": "Sheep",
+      "cnt": "64"
+    },
+    {
+      "metric": "Active animals",
+      "cnt": "83"
+    },
+    {
+      "metric": "Inactive animals",
+      "cnt": "14"
+    },
+    {
+      "metric": "Animals with dam",
+      "cnt": "15"
+    },
+    {
+      "metric": "Cow",
+      "cnt": "6"
+    },
+    {
+      "metric": "Dog",
+      "cnt": "5"
+    },
+    {
+      "metric": "Born animals",
+      "cnt": "15"
+    }
+  ],
+  "messages": [],
+  "stdout": "metric\tcnt\nTotal animals\t97\nGoat\t22\nSheep\t64\nActive animals\t83\nInactive animals\t14\nAnimals with dam\t15\nCow\t6\nDog\t5\nBorn animals\t15\n",
+  "stderr": "",
+  "execution_time_ms": 1758
+}

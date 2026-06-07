@@ -1,0 +1,215 @@
+{
+  "query": "SELECT 'species' as tbl, id, name FROM species UNION ALL SELECT 'category', id, name FROM animal_categories UNION ALL SELECT 'status', id, name FROM animal_statuses UNION ALL SELECT 'group', id, name FROM `groups`;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT 'species' as tbl, id, name FROM species UNION ALL SELECT 'category', id, name FROM animal_categories UNION ALL SELECT 'status', id, name FROM animal_statuses UNION ALL SELECT 'group', id, name FROM `groups`;",
+  "rows": [
+    {
+      "tbl": "category",
+      "id": "1",
+      "name": "Baby Goat"
+    },
+    {
+      "tbl": "category",
+      "id": "2",
+      "name": "Beef Calf"
+    },
+    {
+      "tbl": "category",
+      "id": "3",
+      "name": "Billy Goat"
+    },
+    {
+      "tbl": "category",
+      "id": "4",
+      "name": "Cow"
+    },
+    {
+      "tbl": "category",
+      "id": "5",
+      "name": "Dog"
+    },
+    {
+      "tbl": "category",
+      "id": "6",
+      "name": "Ewe"
+    },
+    {
+      "tbl": "category",
+      "id": "7",
+      "name": "Fattening"
+    },
+    {
+      "tbl": "category",
+      "id": "8",
+      "name": "Goat"
+    },
+    {
+      "tbl": "category",
+      "id": "9",
+      "name": "Lamb"
+    },
+    {
+      "tbl": "category",
+      "id": "10",
+      "name": "Ram"
+    },
+    {
+      "tbl": "group",
+      "id": "1",
+      "name": "F1"
+    },
+    {
+      "tbl": "group",
+      "id": "2",
+      "name": "F2"
+    },
+    {
+      "tbl": "group",
+      "id": "3",
+      "name": "F3"
+    },
+    {
+      "tbl": "group",
+      "id": "4",
+      "name": "F4"
+    },
+    {
+      "tbl": "group",
+      "id": "5",
+      "name": "F5"
+    },
+    {
+      "tbl": "group",
+      "id": "6",
+      "name": "F6"
+    },
+    {
+      "tbl": "group",
+      "id": "7",
+      "name": "B1"
+    },
+    {
+      "tbl": "group",
+      "id": "8",
+      "name": "B2"
+    },
+    {
+      "tbl": "group",
+      "id": "9",
+      "name": "Zone1"
+    },
+    {
+      "tbl": "group",
+      "id": "10",
+      "name": "Zone2"
+    },
+    {
+      "tbl": "group",
+      "id": "11",
+      "name": "Zone3"
+    },
+    {
+      "tbl": "species",
+      "id": "1",
+      "name": "Cow"
+    },
+    {
+      "tbl": "species",
+      "id": "2",
+      "name": "Dog"
+    },
+    {
+      "tbl": "species",
+      "id": "3",
+      "name": "Goat"
+    },
+    {
+      "tbl": "species",
+      "id": "4",
+      "name": "Sheep"
+    },
+    {
+      "tbl": "status",
+      "id": "1",
+      "name": "Active"
+    },
+    {
+      "tbl": "status",
+      "id": "15",
+      "name": "Baby Goat"
+    },
+    {
+      "tbl": "status",
+      "id": "11",
+      "name": "Beef Calf"
+    },
+    {
+      "tbl": "status",
+      "id": "13",
+      "name": "Billy Goat"
+    },
+    {
+      "tbl": "status",
+      "id": "12",
+      "name": "Buffalo Calf"
+    },
+    {
+      "tbl": "status",
+      "id": "10",
+      "name": "Cow"
+    },
+    {
+      "tbl": "status",
+      "id": "3",
+      "name": "Dead"
+    },
+    {
+      "tbl": "status",
+      "id": "16",
+      "name": "Dog"
+    },
+    {
+      "tbl": "status",
+      "id": "8",
+      "name": "Ewe"
+    },
+    {
+      "tbl": "status",
+      "id": "7",
+      "name": "Fattening"
+    },
+    {
+      "tbl": "status",
+      "id": "14",
+      "name": "Goat"
+    },
+    {
+      "tbl": "status",
+      "id": "5",
+      "name": "Lamb"
+    },
+    {
+      "tbl": "status",
+      "id": "9",
+      "name": "Ram"
+    },
+    {
+      "tbl": "status",
+      "id": "2",
+      "name": "Sold"
+    },
+    {
+      "tbl": "status",
+      "id": "4",
+      "name": "Transported"
+    },
+    {
+      "tbl": "status",
+      "id": "6",
+      "name": "Weaner"
+    }
+  ],
+  "messages": [],
+  "stdout": "tbl\tid\tname\ncategory\t1\tBaby Goat\ncategory\t2\tBeef Calf\ncategory\t3\tBilly Goat\ncategory\t4\tCow\ncategory\t5\tDog\ncategory\t6\tEwe\ncategory\t7\tFattening\ncategory\t8\tGoat\ncategory\t9\tLamb\ncategory\t10\tRam\ngroup\t1\tF1\ngroup\t2\tF2\ngroup\t3\tF3\ngroup\t4\tF4\ngroup\t5\tF5\ngroup\t6\tF6\ngroup\t7\tB1\ngroup\t8\tB2\ngroup\t9\tZone1\ngroup\t10\tZone2\ngroup\t11\tZone3\nspecies\t1\tCow\nspecies\t2\tDog\nspecies\t3\tGoat\nspecies\t4\tSheep\nstatus\t1\tActive\nstatus\t15\tBaby Goat\nstatus\t11\tBeef Calf\nstatus\t13\tBilly Goat\nstatus\t12\tBuffalo Calf\nstatus\t10\tCow\nstatus\t3\tDead\nstatus\t16\tDog\nstatus\t8\tEwe\nstatus\t7\tFattening\nstatus\t14\tGoat\nstatus\t5\tLamb\nstatus\t9\tRam\nstatus\t2\tSold\nstatus\t4\tTransported\nstatus\t6\tWeaner\n",
+  "stderr": "",
+  "execution_time_ms": 1729
+}

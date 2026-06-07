@@ -1,0 +1,46 @@
+{
+  "query": "SELECT id, animalId, statusId, damId, sireId, weightAtAcquisition, notes FROM animals WHERE id IN (1, 44, 81, 85) ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT id, animalId, statusId, damId, sireId, weightAtAcquisition, notes FROM animals WHERE id IN (1, 44, 81, 85) ORDER BY id;",
+  "rows": [
+    {
+      "id": "1",
+      "animalId": "F-001",
+      "statusId": "7",
+      "damId": "NULL",
+      "sireId": "NULL",
+      "weightAtAcquisition": "NULL",
+      "notes": "15 kg"
+    },
+    {
+      "id": "44",
+      "animalId": "F-012",
+      "statusId": "7",
+      "damId": "NULL",
+      "sireId": "NULL",
+      "weightAtAcquisition": "NULL",
+      "notes": "NULL"
+    },
+    {
+      "id": "81",
+      "animalId": "L-011",
+      "statusId": "5",
+      "damId": "NULL",
+      "sireId": "NULL",
+      "weightAtAcquisition": "NULL",
+      "notes": "NULL"
+    },
+    {
+      "id": "85",
+      "animalId": "L-015",
+      "statusId": "5",
+      "damId": "NULL",
+      "sireId": "NULL",
+      "weightAtAcquisition": "NULL",
+      "notes": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tanimalId\tstatusId\tdamId\tsireId\tweightAtAcquisition\tnotes\n1\tF-001\t7\tNULL\tNULL\tNULL\t15 kg\n44\tF-012\t7\tNULL\tNULL\tNULL\tNULL\n81\tL-011\t5\tNULL\tNULL\tNULL\tNULL\n85\tL-015\t5\tNULL\tNULL\tNULL\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1806
+}
