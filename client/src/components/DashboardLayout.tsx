@@ -146,6 +146,9 @@ function DashboardLayoutContent({
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
+  // On mobile the sidebar is an offcanvas drawer — when it's visible the user
+  // always sees the full labels regardless of the desktop "collapsed" state.
+  const showLabels = !isCollapsed || isMobileProp;
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = isMobileProp;
@@ -261,7 +264,7 @@ function DashboardLayoutContent({
               >
                 <PanelLeft className={`h-4 w-4 text-sidebar-foreground/70 ${isAr ? "rotate-180" : ""}`} />
               </button>
-              {!isCollapsed && (
+              {showLabels && (
                 <div className={`flex items-center gap-2 min-w-0 ${isAr ? "flex-row-reverse" : ""}`}>
                   <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
                     <Leaf className="h-4 w-4 text-sidebar-primary-foreground" />
@@ -283,7 +286,7 @@ function DashboardLayoutContent({
                 key={group.label}
                 style={{ display: "flex", flexDirection: "column", padding: "8px 8px 4px 8px" }}
               >
-                {!isCollapsed && (
+                {showLabels && (
                   <div
                     className={`text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/40 ${isAr ? "text-right" : ""}`}
                     style={{
@@ -333,12 +336,12 @@ function DashboardLayoutContent({
                             className={isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}
                             style={{ width: 16, height: 16, flexShrink: 0 }}
                           />
-                          {!isCollapsed && (
+                          {showLabels && (
                             <span style={{ flex: 1, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                               {item.label}
                             </span>
                           )}
-                          {item.path === "/notifications" && unreadCount > 0 && !isCollapsed && (
+                          {item.path === "/notifications" && unreadCount > 0 && showLabels && (
                             <Badge
                               className="bg-red-500 text-white border-0"
                               style={{ height: 20, minWidth: 20, fontSize: 11, padding: "0 6px", marginLeft: isAr ? 0 : "auto", marginRight: isAr ? "auto" : 0, flexShrink: 0 }}
@@ -371,7 +374,7 @@ function DashboardLayoutContent({
           {/* Footer */}
           <SidebarFooter className="p-3 border-t border-sidebar-border">
             {/* Language + Theme row */}
-            {!isCollapsed && (
+            {showLabels && (
               <div className={`flex items-center justify-between mb-2 gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
                 <LanguageSwitcher />
                 <button
@@ -410,7 +413,7 @@ function DashboardLayoutContent({
                       {user?.name?.charAt(0).toUpperCase() ?? "U"}
                     </AvatarFallback>
                   </Avatar>
-                  {!isCollapsed && (
+                  {showLabels && (
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-sidebar-foreground truncate leading-none">
                         {user?.name ?? "User"}
@@ -420,7 +423,7 @@ function DashboardLayoutContent({
                       </p>
                     </div>
                   )}
-                  {!isCollapsed && <ChevronRight className={`h-3 w-3 text-sidebar-foreground/40 shrink-0 ${isAr ? "rotate-180" : ""}`} />}
+                  {showLabels && <ChevronRight className={`h-3 w-3 text-sidebar-foreground/40 shrink-0 ${isAr ? "rotate-180" : ""}`} />}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align={isAr ? "start" : "end"} className="w-52">
