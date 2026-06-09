@@ -54,7 +54,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       birthDate: new Date().toISOString().split("T")[0],
       purchaseCost: "",
       weightAtAcquisition: "",
-      ownerId: "",
+      ownerId: "none",
     },
   });
 
@@ -101,7 +101,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       birthDate: data.birthDate,
       purchaseCost: data.purchaseCost || undefined,
       weightAtAcquisition: data.weightAtAcquisition || undefined,
-      ownerId: data.ownerId ? Number(data.ownerId) : undefined,
+      ownerId: (data.ownerId && data.ownerId !== "none") ? Number(data.ownerId) : undefined,
     });
   };
 
@@ -225,7 +225,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder={t("owners.selectOwner")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">{t("owners.noOwner")}</SelectItem>
+                    <SelectItem value="none">{t("owners.noOwner")}</SelectItem>
                     {(ownersList ?? []).map((o: any) => (
                       <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
                     ))}
