@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle } from "lucide-react";
+import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import * as React from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
@@ -52,6 +54,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       birthDate: new Date().toISOString().split("T")[0],
       purchaseCost: "",
       weightAtAcquisition: "",
+      ownerId: "",
     },
   });
 
@@ -65,6 +68,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
     { speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined }
   );
   const { data: statuses } = trpc.config.getStatuses.useQuery();
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
 
   const utils = trpc.useUtils();
   const createAnimal = trpc.animals.create.useMutation({
@@ -97,6 +101,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       birthDate: data.birthDate,
       purchaseCost: data.purchaseCost || undefined,
       weightAtAcquisition: data.weightAtAcquisition || undefined,
+      ownerId: data.ownerId ? Number(data.ownerId) : undefined,
     });
   };
 
@@ -214,6 +219,20 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
                 <Input type="number" placeholder="0.0" {...field} />
               )} />
             </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>{t("owners.owner")}</Label>
+              <Controller name="ownerId" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder={t("owners.selectOwner")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">{t("owners.noOwner")}</SelectItem>
+                    {(ownersList ?? []).map((o: any) => (
+                      <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
@@ -227,6 +246,182 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function BulkSellDialog({
+  open,
+  onOpenChange,
+  selectedAnimals,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedAnimals: any[];
+  onSuccess: () => void;
+}) {
+  const { t } = useTranslation();
+  const { data: statuses } = trpc.config.getStatuses.useQuery();
+  const exitStatuses = (statuses ?? []).filter((s: any) => s.isExitStatus);
+
+  const [exitDate, setExitDate] = useState(new Date().toISOString().split("T")[0]);
+  const [exitReason, setExitReason] = useState("");
+  const [newStatusId, setNewStatusId] = useState("");
+  const [buyerName, setBuyerName] = useState("");
+  const [saleNotes, setSaleNotes] = useState("");
+  const [perAnimal, setPerAnimal] = useState<Record<number, { salePrice: string; amountPaid: string; weightAtSale: string }>>({});
+
+  // initialize per-animal entries when selection changes
+  React.useEffect(() => {
+    const next: typeof perAnimal = {};
+    for (const a of selectedAnimals) {
+      next[a.animal.id] = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
+    }
+    setPerAnimal(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAnimals.length]);
+
+  const utils = trpc.useUtils();
+  const bulkExit = trpc.animals.bulkExit.useMutation({
+    onSuccess: (r: any) => {
+      toast.success(`${r.count} ${t("animals.title").toLowerCase()} — ${t("sales.recorded")}`);
+      utils.animals.list.invalidate();
+      utils.sales.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      onOpenChange(false);
+      setExitReason(""); setBuyerName(""); setSaleNotes(""); setPerAnimal({});
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // totals
+  const totalPrice = Object.values(perAnimal).reduce((s, v) => s + (parseFloat(v.salePrice) || 0), 0);
+  const totalPaid = Object.values(perAnimal).reduce((s, v) => s + (parseFloat(v.amountPaid || v.salePrice || "0") || 0), 0);
+  const totalOutstanding = totalPrice - totalPaid;
+
+  const onSubmit = () => {
+    if (!exitDate || !exitReason || !newStatusId) {
+      toast.error(t("common.required"));
+      return;
+    }
+    bulkExit.mutate({
+      exitDate,
+      exitReason,
+      newStatusId: Number(newStatusId),
+      buyerName: buyerName || undefined,
+      saleNotes: saleNotes || undefined,
+      animals: selectedAnimals.map((a) => ({
+        id: a.animal.id,
+        salePrice: perAnimal[a.animal.id]?.salePrice || undefined,
+        amountPaid: perAnimal[a.animal.id]?.amountPaid || undefined,
+        weightAtSale: perAnimal[a.animal.id]?.weightAtSale || undefined,
+      })),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-primary" />
+            {t("animals.bulkSell")} ({selectedAnimals.length})
+          </DialogTitle>
+        </DialogHeader>
+
+        {/* Shared fields */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border rounded-lg p-4 bg-muted/30">
+          <div className="space-y-1.5">
+            <Label>{t("animals.exitDate")} *</Label>
+            <Input type="date" value={exitDate} onChange={(e) => setExitDate(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("common.status")} *</Label>
+            <Select value={newStatusId} onValueChange={setNewStatusId}>
+              <SelectTrigger><SelectValue placeholder={t("animals.selectExitStatus")} /></SelectTrigger>
+              <SelectContent>
+                {exitStatuses.map((s: any) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5 sm:col-span-2">
+            <Label>{t("animals.exitReason")} *</Label>
+            <Input value={exitReason} onChange={(e) => setExitReason(e.target.value)} placeholder={t("animals.exitReasonPlaceholder")} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("sales.buyerName")}</Label>
+            <Input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("common.notes")}</Label>
+            <Input value={saleNotes} onChange={(e) => setSaleNotes(e.target.value)} />
+          </div>
+        </div>
+
+        {/* Per-animal price + paid + weight */}
+        <div className="border rounded-lg overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("animals.animalId")}</TableHead>
+                <TableHead>{t("common.weight")} (kg)</TableHead>
+                <TableHead>{t("sales.salePrice")}</TableHead>
+                <TableHead>{t("sales.amountPaid")}</TableHead>
+                <TableHead>{t("sales.outstanding")}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {selectedAnimals.map((a: any) => {
+                const row = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
+                const price = parseFloat(row.salePrice) || 0;
+                const paid = parseFloat(row.amountPaid || (row.salePrice || "0")) || 0;
+                const outstanding = price - paid;
+                return (
+                  <TableRow key={a.animal.id}>
+                    <TableCell className="font-mono font-semibold text-primary">{a.animal.animalId}</TableCell>
+                    <TableCell>
+                      <Input type="number" placeholder="0" value={row.weightAtSale}
+                        onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, weightAtSale: e.target.value } }))}
+                        className="w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Input type="number" placeholder="0.00" value={row.salePrice}
+                        onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, salePrice: e.target.value } }))}
+                        className="w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Input type="number" placeholder={row.salePrice || "0.00"} value={row.amountPaid}
+                        onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, amountPaid: e.target.value } }))}
+                        className="w-32" />
+                    </TableCell>
+                    <TableCell className={outstanding > 0 ? "text-amber-600 font-medium" : "text-muted-foreground"}>
+                      {outstanding.toFixed(2)}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Totals */}
+        <div className="grid grid-cols-3 gap-3 text-sm border rounded-lg p-3 bg-muted/30">
+          <div><span className="text-muted-foreground">{t("sales.totalPrice")}: </span><strong>{totalPrice.toFixed(2)}</strong></div>
+          <div><span className="text-muted-foreground">{t("sales.totalPaid")}: </span><strong className="text-green-700">{totalPaid.toFixed(2)}</strong></div>
+          <div><span className="text-muted-foreground">{t("sales.totalOutstanding")}: </span><strong className={totalOutstanding > 0 ? "text-amber-600" : ""}>{totalOutstanding.toFixed(2)}</strong></div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+          <Button onClick={onSubmit} disabled={bulkExit.isPending}>
+            {bulkExit.isPending ? "..." : `${t("animals.bulkSell")} (${selectedAnimals.length})`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Animals() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
@@ -234,6 +429,9 @@ export default function Animals() {
   const [filterSpecies, setFilterSpecies] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterActive, setFilterActive] = useState<string>("active");
+  const [filterOwner, setFilterOwner] = useState<string>("all");
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkSellOpen, setBulkSellOpen] = useState(false);
   const utils = trpc.useUtils();
   const deleteAnimalMutation = trpc.recycleBin.deleteAnimal.useMutation({
     onSuccess: () => {
@@ -251,10 +449,12 @@ export default function Animals() {
     isActive: filterActive === "active" ? true : filterActive === "inactive" ? false : undefined,
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     statusId: filterStatus !== "all" ? Number(filterStatus) : undefined,
+    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: statuses } = trpc.config.getStatuses.useQuery();
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
 
   const filtered = (animals ?? []).filter((a: any) => {
     if (!search) return true;
@@ -263,9 +463,30 @@ export default function Animals() {
       a.animal.animalId?.toLowerCase().includes(q) ||
       a.categoryName?.toLowerCase().includes(q) ||
       a.speciesName?.toLowerCase().includes(q) ||
-      a.groupName?.toLowerCase().includes(q)
+      a.groupName?.toLowerCase().includes(q) ||
+      a.ownerName?.toLowerCase().includes(q)
     );
   });
+
+  const selectedAnimals = filtered.filter((a: any) => selectedIds.has(a.animal.id));
+  const allSelected = filtered.length > 0 && filtered.every((a: any) => selectedIds.has(a.animal.id));
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((a: any) => a.animal.id)));
+    }
+  };
+
+  const toggleOne = (id: number) => {
+    setSelectedIds((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -328,6 +549,23 @@ export default function Animals() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={filterOwner} onValueChange={setFilterOwner}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder={t("owners.owner")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
+                {(ownersList ?? []).map((o: any) => (
+                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedIds.size > 0 && (
+              <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2 ms-auto">
+                <DollarSign className="h-4 w-4" />
+                {t("animals.bulkSell")} ({selectedIds.size})
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -344,10 +582,18 @@ export default function Animals() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={toggleAll}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>{t("animals.animalId")}</TableHead>
                     <TableHead>{t("common.species")}</TableHead>
                     <TableHead>{t("common.category")}</TableHead>
                     <TableHead>{t("common.group")}</TableHead>
+                    <TableHead>{t("owners.owner")}</TableHead>
                     <TableHead>{t("common.sex")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
                     <TableHead>{t("animals.acquisitionDate")}</TableHead>
@@ -358,7 +604,7 @@ export default function Animals() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
                         {t("animals.noAnimalsFound")}
                       </TableCell>
                     </TableRow>
@@ -367,12 +613,22 @@ export default function Animals() {
                       const acqDate = new Date(a.animal.acquisitionDate);
                       const exitDate = a.animal.exitDate ? new Date(a.animal.exitDate) : new Date();
                       const days = Math.floor((exitDate.getTime() - acqDate.getTime()) / (1000 * 60 * 60 * 24));
+                      const isSelected = selectedIds.has(a.animal.id);
                       return (
-                        <TableRow key={a.animal.id} className="cursor-pointer hover:bg-muted/40" onClick={() => setLocation(`/animals/${a.animal.id}`)}>
+                        <TableRow key={a.animal.id} className={`cursor-pointer hover:bg-muted/40 ${isSelected ? "bg-primary/5" : ""}`} onClick={() => setLocation(`/animals/${a.animal.id}`)}>
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleOne(a.animal.id)}
+                              disabled={!a.animal.isActive}
+                              aria-label={`Select ${a.animal.animalId}`}
+                            />
+                          </TableCell>
                           <TableCell className="font-mono font-semibold text-primary">{a.animal.animalId}</TableCell>
                           <TableCell>{a.speciesName}</TableCell>
                           <TableCell>{a.categoryName}</TableCell>
                           <TableCell>{a.groupName}</TableCell>
+                          <TableCell className="text-sm">{a.ownerName ?? <span className="text-muted-foreground">—</span>}</TableCell>
                           <TableCell className="capitalize">{a.animal.sex}</TableCell>
                           <TableCell><StatusBadge status={a.statusName ?? ""} /></TableCell>
                           <TableCell className="text-sm text-muted-foreground">
@@ -432,6 +688,13 @@ export default function Animals() {
           )}
         </CardContent>
       </Card>
+
+      <BulkSellDialog
+        open={bulkSellOpen}
+        onOpenChange={setBulkSellOpen}
+        selectedAnimals={selectedAnimals}
+        onSuccess={() => { setSelectedIds(new Set()); refetch(); }}
+      />
     </div>
   );
 }

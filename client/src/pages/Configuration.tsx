@@ -377,6 +377,99 @@ function StatusesTab() {
   );
 }
 // ── Birth Types Tab ──────────────────────────────────────────────────────────
+function OwnersTab() {
+  const { t } = useTranslation();
+  const { data: owners } = trpc.config.getOwners.useQuery({ activeOnly: false });
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
+  const utils = trpc.useUtils();
+  const create = trpc.config.createOwner.useMutation({
+    onSuccess: () => {
+      toast.success(`${t("owners.owner")} ${t("common.created")}`);
+      utils.config.getOwners.invalidate();
+      setOpen(false);
+      setForm({ name: "", phone: "", email: "", notes: "" });
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const update = trpc.config.updateOwner.useMutation({
+    onSuccess: () => {
+      toast.success(`${t("owners.owner")} ${t("common.updated")}`);
+      utils.config.getOwners.invalidate();
+      setEditOpen(false);
+      setEditItem(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+  function openEdit(o: any) { setEditItem({ ...o }); setEditOpen(true); }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">{t("owners.owners")}</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("owners.addOwner")}</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>{t("owners.addOwner")}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5"><Label>{t("common.name")} *</Label><Input placeholder={t("owners.ownerNamePlaceholder")} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>{t("owners.phone")}</Label><Input placeholder="+20 ..." value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>{t("owners.email")}</Label><Input type="email" placeholder="name@example.com" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>{t("common.notes")}</Label><Input placeholder={t("common.none")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} /></div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, phone: form.phone || undefined, email: form.email || undefined, notes: form.notes || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+      {editItem && (
+        <EditDialog title={t("owners.editOwner")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, phone: editItem.phone || null, email: editItem.email || undefined, notes: editItem.notes || undefined, isActive: editItem.isActive })}>
+          <div className="space-y-1.5"><Label>{t("common.name")} *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("owners.phone")}</Label><Input value={editItem.phone ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, phone: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("owners.email")}</Label><Input value={editItem.email ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, email: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("common.notes")}</Label><Input value={editItem.notes ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, notes: e.target.value }))} /></div>
+          <div className="flex items-center gap-2">
+            <input id="ownerActive" type="checkbox" checked={editItem.isActive} onChange={(e) => setEditItem((p: any) => ({ ...p, isActive: e.target.checked }))} />
+            <Label htmlFor="ownerActive">{t("common.active")}</Label>
+          </div>
+        </EditDialog>
+      )}
+      <Table>
+        <TableHeader><TableRow>
+          <TableHead>{t("common.name")}</TableHead>
+          <TableHead>{t("owners.phone")}</TableHead>
+          <TableHead>{t("owners.email")}</TableHead>
+          <TableHead>{t("common.notes")}</TableHead>
+          <TableHead>{t("common.status")}</TableHead>
+          <TableHead className="w-16"></TableHead>
+        </TableRow></TableHeader>
+        <TableBody>
+          {(owners ?? []).map((o: any) => (
+            <TableRow key={o.id}>
+              <TableCell className="font-medium">{o.name}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{o.phone ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{o.email ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">{o.notes ?? "—"}</TableCell>
+              <TableCell>{o.isActive ? <Badge className="bg-green-100 text-green-800 border-green-200">{t("common.active")}</Badge> : <Badge variant="outline">{t("common.inactive")}</Badge>}</TableCell>
+              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+            </TableRow>
+          ))}
+          {(owners ?? []).length === 0 && (
+            <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t("owners.noOwners")}</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 function BirthTypesTab() {
   const { t } = useTranslation();
   const { data: birthTypes } = trpc.config.getBirthTypes.useQuery();
@@ -609,6 +702,7 @@ export default function Configuration() {
               <TabsTrigger value="species">{t("config.species")}</TabsTrigger>
               <TabsTrigger value="categories">{t("config.categories")}</TabsTrigger>
               <TabsTrigger value="groups">{t("config.groups")}</TabsTrigger>
+              <TabsTrigger value="owners">{t("owners.owners")}</TabsTrigger>
               <TabsTrigger value="feed">{t("config.feedItems")}</TabsTrigger>
               <TabsTrigger value="expenses">{t("config.expenseCategories")}</TabsTrigger>
               <TabsTrigger value="statuses">{t("config.statusesLabel")}</TabsTrigger>
@@ -619,6 +713,7 @@ export default function Configuration() {
             <TabsContent value="species"><SpeciesTab /></TabsContent>
             <TabsContent value="categories"><CategoriesTab /></TabsContent>
             <TabsContent value="groups"><GroupsTab /></TabsContent>
+            <TabsContent value="owners"><OwnersTab /></TabsContent>
             <TabsContent value="feed"><FeedItemsTab /></TabsContent>
             <TabsContent value="expenses"><ExpenseCategoriesTab /></TabsContent>
             <TabsContent value="statuses"><StatusesTab /></TabsContent>

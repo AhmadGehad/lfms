@@ -518,6 +518,7 @@ export default function AnimalProfile() {
               { label: "Species", value: animal.speciesName },
               { label: "Category", value: animal.categoryName },
               { label: "Group", value: animal.groupName },
+              { label: "Owner", value: animal.ownerName ?? "—" },
               { label: "Sex", value: animal.animal.sex },
               { label: "Status", value: animal.statusName },
               { label: "Acquisition Type", value: animal.animal.acquisitionType },

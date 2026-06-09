@@ -88,6 +88,24 @@ export const groups = mysqlTable("groups", {
   deletedBy: int("deletedBy"),
 });
 
+// ─── OWNERS ───────────────────────────────────────────────────────────────────
+// People (or entities) who own one or more animals on the farm. Animals link
+// to an owner via animals.ownerId. Used to filter the animal registry,
+// expenses, sales, and P&L by owner.
+export const owners = mysqlTable("owners", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 100 }),
+  notes: text("notes"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
+});
+
 export const birthTypes = mysqlTable("birth_types", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 50 }).notNull().unique(),
@@ -169,6 +187,7 @@ export const animals = mysqlTable("animals", {
   birthDate: date("birthDate").notNull(),
   damId: int("damId"),
   sireId: int("sireId"),
+  ownerId: int("ownerId"),
   purchaseCost: decimal("purchaseCost", { precision: 10, scale: 2 }).default("0"),
   weightAtAcquisition: decimal("weightAtAcquisition", { precision: 8, scale: 2 }),
   exitDate: date("exitDate"),
@@ -199,6 +218,7 @@ export const sales = mysqlTable("sales", {
   animalId: int("animalId").notNull(),
   saleDate: date("saleDate").notNull(),
   salePrice: decimal("salePrice", { precision: 10, scale: 2 }).notNull(),
+  amountPaid: decimal("amountPaid", { precision: 10, scale: 2 }).default("0").notNull(),
   weightAtSale: decimal("weightAtSale", { precision: 8, scale: 2 }),
   pricePerKg: decimal("pricePerKg", { precision: 10, scale: 2 }),
   buyerName: varchar("buyerName", { length: 100 }),
@@ -333,6 +353,8 @@ export type Species = typeof species.$inferSelect;
 export type AnimalCategory = typeof animalCategories.$inferSelect;
 export type AnimalStatus = typeof animalStatuses.$inferSelect;
 export type Group = typeof groups.$inferSelect;
+export type Owner = typeof owners.$inferSelect;
+export type InsertOwner = typeof owners.$inferInsert;
 export type BirthType = typeof birthTypes.$inferSelect;
 export type FeedItem = typeof feedItems.$inferSelect;
 export type FeedItemPriceHistory = typeof feedItemPriceHistory.$inferSelect;

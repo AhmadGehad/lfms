@@ -179,8 +179,18 @@ export default function Expenses() {
     return d.toISOString().split("T")[0];
   });
   const [toDate] = useState(new Date().toISOString().split("T")[0]);
+  const [filterOwner, setFilterOwner] = useState<string>("all");
+  const [filterVendor, setFilterVendor] = useState<string>("");
+  const [filterTargetType, setFilterTargetType] = useState<string>("all");
 
-  const { data: expenses, isLoading, refetch } = trpc.expenses.list.useQuery({ fromDate, toDate });
+  const { data: expenses, isLoading, refetch } = trpc.expenses.list.useQuery({
+    fromDate,
+    toDate,
+    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    vendor: filterVendor || undefined,
+    targetType: filterTargetType !== "all" ? (filterTargetType as "general" | "category" | "head") : undefined,
+  });
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
   const utils = trpc.useUtils();
 
   const deleteExpense = trpc.recycleBin.deleteExpense.useMutation({
@@ -210,12 +220,49 @@ export default function Expenses() {
         <AddExpenseDialog onSuccess={refetch} />
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
-        <Label className="text-sm">From:</Label>
-        <Input type="date" className="w-36" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        <Label className="text-sm">To:</Label>
-        <Input type="date" className="w-36" value={toDate} readOnly />
-      </div>
+      <Card>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">{t("common.from")}:</Label>
+              <Input type="date" className="w-36" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-sm">{t("common.to")}:</Label>
+              <Input type="date" className="w-36" value={toDate} readOnly />
+            </div>
+            <Select value={filterTargetType} onValueChange={setFilterTargetType}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder={t("expenses.allocation")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("expenses.allAllocations")}</SelectItem>
+                <SelectItem value="general">{t("expenses.general")}</SelectItem>
+                <SelectItem value="category">{t("expenses.category")}</SelectItem>
+                <SelectItem value="head">{t("expenses.head")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterOwner} onValueChange={setFilterOwner}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder={t("owners.owner")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
+                {(ownersList ?? []).map((o: any) => (
+                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="text"
+              placeholder={t("expenses.searchVendor")}
+              className="w-44"
+              value={filterVendor}
+              onChange={(e) => setFilterVendor(e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="p-0">
@@ -228,6 +275,7 @@ export default function Expenses() {
                   <TableHead>{t("expenses.subCategory")}</TableHead>
                   <TableHead>Amount (EGP)</TableHead>
                   <TableHead>{t("expenses.allocation")}</TableHead>
+                  <TableHead>{t("owners.owner")}</TableHead>
                   <TableHead>{t("expenses.vendor")}</TableHead>
                   <TableHead>{t("common.notes")}</TableHead>
                   <TableHead className="text-right">{t("common.actions")}</TableHead>
@@ -237,13 +285,13 @@ export default function Expenses() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 8 }).map((_, j) => (
+                      {Array.from({ length: 9 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (expenses ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">{t("expenses.noExpensesPeriod")}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">{t("expenses.noExpensesPeriod")}</TableCell></TableRow>
                 ) : (
                   (expenses ?? []).map((e: any) => (
                     <TableRow key={e.expense.id}>
@@ -254,6 +302,7 @@ export default function Expenses() {
                         {parseFloat(String(e.expense.amount)).toLocaleString("en-EG", { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="capitalize text-sm">{e.expense.targetType}</TableCell>
+                      <TableCell className="text-sm">{e.ownerName ?? <span className="text-muted-foreground">—</span>}</TableCell>
                       <TableCell className="text-muted-foreground">{e.expense.vendorName ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm max-w-32 truncate">{e.expense.notes ?? "—"}</TableCell>
                       <TableCell className="text-right">

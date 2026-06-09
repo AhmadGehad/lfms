@@ -1,4 +1,4 @@
-import { protectedProcedure, supervisorProcedure, privilegedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, staffProcedure, supervisorProcedure, privilegedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import {
@@ -6,6 +6,7 @@ import {
   getAllCategories, createCategory, updateCategory,
   getAllStatuses, createStatus, updateStatus,
   getAllGroups, createGroup, updateGroup,
+  getAllOwners, createOwner, updateOwner, deleteOwner,
   getAllBirthTypes, createBirthType, updateBirthType,
   getAllFeedItems, createFeedItem, updateFeedItem,
   getFeedItemPriceHistory, addFeedItemPrice,
@@ -124,6 +125,48 @@ export const configRouter = router({
       const result = await updateGroup(id, data);
       await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
       return result;
+    }),
+
+  // ─── OWNERS ─────────────────────────────────────────────────────────────────
+  getOwners: protectedProcedure
+    .input(z.object({ activeOnly: z.boolean().optional() }).optional())
+    .query(({ input }) => getAllOwners(input?.activeOnly ?? true)),
+
+  createOwner: staffProcedure
+    .input(z.object({
+      name: z.string().min(1).max(100),
+      phone: z.string().max(30).optional(),
+      email: z.string().max(100).email().optional().or(z.literal("")),
+      notes: z.string().max(2000).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await createOwner({ ...input, email: input.email || undefined });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "owner", entityId: String((result as any).insertId), action: "create", newValues: input as any, ipAddress: getClientIp(ctx) });
+      return result;
+    }),
+
+  updateOwner: staffProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(1).max(100).optional(),
+      phone: z.string().max(30).nullable().optional(),
+      email: z.string().max(100).optional(),
+      notes: z.string().max(2000).optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const before = (await getAllOwners(false)).find((o: any) => o.id === id);
+      await updateOwner(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "owner", entityId: String(id), action: "update", oldValues: before as any, newValues: data as any, ipAddress: getClientIp(ctx) });
+      return { success: true };
+    }),
+
+  deleteOwner: supervisorProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await deleteOwner(input.id, ctx.user?.id);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "owner", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx) });
+      return { success: true };
     }),
 
   // ─── BIRTH TYPES ────────────────────────────────────────────────────────────

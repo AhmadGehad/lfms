@@ -16,6 +16,7 @@ import {
   groups,
   lambingLog,
   notifications,
+  owners,
   rationPlans,
   sales,
   species,
@@ -59,6 +60,7 @@ export const CANONICAL_TABLES: CanonicalTableSpec[] = [
     table: animalCategories,
   },
   { key: "groups", sheetName: "Data - Groups", table: groups },
+  { key: "owners", sheetName: "Data - Owners", table: owners },
   {
     key: "expense_sub_categories",
     sheetName: "Data - Expense Subcats",

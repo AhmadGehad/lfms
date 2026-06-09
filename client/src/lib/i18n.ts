@@ -199,7 +199,11 @@ const en = {
     exited: "Exited",
     noAnimalsFound: "No animals found. Register the first animal to get started.",
     searchPlaceholder: "Search by ID, category, species...",
-    movedToBin: "Animal moved to Recycle Bin"
+    movedToBin: "Animal moved to Recycle Bin",
+    bulkSell: "Sell Selected",
+    selectExitStatus: "Select exit status",
+    exitReasonPlaceholder: "e.g. Sold to buyer X",
+
   },
 
   // Breeding
@@ -346,7 +350,12 @@ const en = {
     recorded: "Expense recorded",
     selectCategoryForCat: "Select a category for CATEGORY expense",
     selectAnimalForHead: "Select an animal for HEAD expense",
-    selectAnimal: "Select animal"
+    selectAnimal: "Select animal",
+    allAllocations: "All Allocations",
+    category: "Category",
+    head: "Head",
+    searchVendor: "Search vendor...",
+
   },
 
   // P&L
@@ -402,7 +411,26 @@ const en = {
     recorded: "Sale recorded successfully",
     updated: "Sale updated",
     editSale: "Edit Sale — {{code}}",
-    pendingPriceEntry: "{{count}} pending price entry"
+    pendingPriceEntry: "{{count}} pending price entry",
+    paid: "Paid",
+    amountPaid: "Amount Paid",
+    outstanding: "Outstanding",
+    outstandingOnly: "Outstanding only",
+    salesWithOutstanding: "sales with outstanding balance",
+    totalPrice: "Total Price",
+    totalPaid: "Total Paid",
+    totalOutstanding: "Total Outstanding",
+    salePrice: "Sale Price",
+    searchBuyer: "Search buyer...",
+    payment: "Payment",
+    recordPayment: "Record Payment",
+    recordPaymentFor: "Record Payment for",
+    paymentRecorded: "Payment recorded",
+    paymentAmount: "Payment Amount",
+    currentOutstanding: "Current Outstanding",
+    newOutstanding: "New Outstanding",
+    paymentExceedsOutstanding: "Payment exceeds outstanding balance",
+
   },
 
   // Income Statement
@@ -619,6 +647,19 @@ const en = {
     emptiedPermanently: "Recycle bin emptied permanently",
     deleteAllRecords: "permanently delete all {{count}} records"
   },
+  owners: {
+    owner: "Owner",
+    owners: "Owners",
+    allOwners: "All Owners",
+    addOwner: "Add Owner",
+    editOwner: "Edit Owner",
+    selectOwner: "Select Owner",
+    noOwner: "No Owner",
+    noOwners: "No owners yet. Click 'Add Owner' to create one.",
+    phone: "Phone",
+    email: "Email",
+    ownerNamePlaceholder: "Owner full name",
+  },
   notFound: {
     title: "Page Not Found",
     message: "Sorry, the page you are looking for doesn't exist.",
@@ -819,7 +860,11 @@ const ar = {
     exited: "خرج",
     noAnimalsFound: "لا توجد حيوانات. سجّل أول حيوان للبدء.",
     searchPlaceholder: "ابحث بالمعرّف أو الفئة أو النوع...",
-    movedToBin: "تم نقل الحيوان إلى سلة المحذوفات"
+    movedToBin: "تم نقل الحيوان إلى سلة المحذوفات",
+    bulkSell: "بيع المحدد",
+    selectExitStatus: "اختر حالة الخروج",
+    exitReasonPlaceholder: "مثل: بيع للمشتري س",
+
   },
 
   breeding: {
@@ -962,7 +1007,12 @@ const ar = {
     recorded: "تم تسجيل المصروف",
     selectCategoryForCat: "اختر فئة لمصروف الفئة",
     selectAnimalForHead: "اختر حيوانًا لمصروف الرأس",
-    selectAnimal: "اختر الحيوان"
+    selectAnimal: "اختر الحيوان",
+    allAllocations: "كل التخصيصات",
+    category: "فئة",
+    head: "رأس",
+    searchVendor: "ابحث عن مورد...",
+
   },
 
   pnl: {
@@ -1016,7 +1066,26 @@ const ar = {
     recorded: "تم تسجيل البيع بنجاح",
     updated: "تم تحديث البيع",
     editSale: "تعديل البيع — {{code}}",
-    pendingPriceEntry: "{{count}} إدخال سعر معلّق"
+    pendingPriceEntry: "{{count}} إدخال سعر معلّق",
+    paid: "مدفوع",
+    amountPaid: "المبلغ المدفوع",
+    outstanding: "متبقي",
+    outstandingOnly: "المتبقي فقط",
+    salesWithOutstanding: "مبيعات بها مبالغ متبقية",
+    totalPrice: "إجمالي السعر",
+    totalPaid: "إجمالي المدفوع",
+    totalOutstanding: "إجمالي المتبقي",
+    salePrice: "سعر البيع",
+    searchBuyer: "ابحث عن مشتري...",
+    payment: "دفعة",
+    recordPayment: "تسجيل دفعة",
+    recordPaymentFor: "تسجيل دفعة لـ",
+    paymentRecorded: "تم تسجيل الدفعة",
+    paymentAmount: "مبلغ الدفعة",
+    currentOutstanding: "المتبقي الحالي",
+    newOutstanding: "المتبقي الجديد",
+    paymentExceedsOutstanding: "الدفعة تتجاوز المبلغ المتبقي",
+
   },
 
   incomeStatement: {
@@ -1227,6 +1296,19 @@ const ar = {
     permanentlyDeleted: "تم حذفه نهائيًا",
     emptiedPermanently: "تم إفراغ سلة المحذوفات نهائيًا",
     deleteAllRecords: "حذف جميع السجلات نهائيًا ({{count}})"
+  },
+  owners: {
+    owner: "المالك",
+    owners: "الملاك",
+    allOwners: "كل الملاك",
+    addOwner: "إضافة مالك",
+    editOwner: "تعديل المالك",
+    selectOwner: "اختر مالك",
+    noOwner: "بلا مالك",
+    noOwners: "لا يوجد ملاك بعد. اضغط 'إضافة مالك' لإنشاء واحد.",
+    phone: "الهاتف",
+    email: "البريد الإلكتروني",
+    ownerNamePlaceholder: "الاسم الكامل للمالك",
   },
   notFound: {
     title: "الصفحة غير موجودة",

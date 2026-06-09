@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { toMinor, toMajor, divMinor } from "./_core/money";
-import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, rationPlans, sales, species, systemSettings, users, weightLog } from "../drizzle/schema";
+import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, rationPlans, sales, species, systemSettings, users, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -232,6 +232,38 @@ export async function updateGroup(id: number, data: Partial<typeof groups.$infer
   await db.update(groups).set(data).where(eq(groups.id, id));
 }
 
+// ─── OWNERS ───────────────────────────────────────────────────────────────────
+
+export async function getAllOwners(activeOnly = true) {
+  const db = await getDb();
+  if (!db) return [];
+  const where = activeOnly
+    ? and(isNull(owners.deletedAt), eq(owners.isActive, true))
+    : isNull(owners.deletedAt);
+  return db.select().from(owners).where(where).orderBy(owners.name);
+}
+
+export async function createOwner(data: { name: string; phone?: string; email?: string; notes?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [result] = await db.insert(owners).values(data);
+  return result;
+}
+
+export async function updateOwner(id: number, data: Partial<typeof owners.$inferInsert>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(owners).set(data).where(eq(owners.id, id));
+}
+
+export async function deleteOwner(id: number, deletedBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(owners)
+    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null, isActive: false })
+    .where(eq(owners.id, id));
+}
+
 // ─── BIRTH TYPES ──────────────────────────────────────────────────────────────
 
 export async function getAllBirthTypes() {
@@ -367,7 +399,7 @@ export async function upsertSetting(key: string, value: string, updatedBy?: numb
 
 // ─── ANIMALS ──────────────────────────────────────────────────────────────────
 
-export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; isActive?: boolean; search?: string }) {
+export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; ownerId?: number; isActive?: boolean; search?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions: ReturnType<typeof eq>[] = [];
@@ -376,6 +408,7 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
   if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
   if (filters?.groupId) conditions.push(eq(animals.groupId, filters.groupId));
   if (filters?.statusId) conditions.push(eq(animals.statusId, filters.statusId));
+  if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
   if (filters?.isActive !== undefined) conditions.push(eq(animals.isActive, filters.isActive));
 
   const query = db
@@ -389,6 +422,7 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
       groupName: groups.name,
       statusName: animalStatuses.name,
       isExitStatus: animalStatuses.isExitStatus,
+      ownerName: owners.name,
       latestWeightKg: sql<string | null>`(
         SELECT wl.weightKg FROM weight_log wl
         WHERE wl.animalId = ${animals.id} AND wl.deletedAt IS NULL
@@ -399,7 +433,8 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
     .leftJoin(species, eq(animals.speciesId, species.id))
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
     .leftJoin(groups, eq(animals.groupId, groups.id))
-    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id));
+    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id));
 
   if (conditions.length > 0) {
     return query.where(and(...conditions)).orderBy(desc(animals.createdAt));
@@ -420,13 +455,15 @@ export async function getAnimalById(id: number) {
       groupCode: groups.groupCode,
       groupName: groups.name,
       statusName: animalStatuses.name,
-      isExitStatus: animalStatuses.isExitStatus
+      isExitStatus: animalStatuses.isExitStatus,
+      ownerName: owners.name,
     })
     .from(animals)
     .leftJoin(species, eq(animals.speciesId, species.id))
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
     .leftJoin(groups, eq(animals.groupId, groups.id))
     .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id))
     .where(eq(animals.id, id))
     .limit(1);
   return rows.length > 0 ? rows[0] : null;
@@ -503,24 +540,30 @@ export async function recordStatusChange(
 
 // ─── SALES ────────────────────────────────────────────────────────────────────
 
-export async function getSales(filters?: { animalId?: number; fromDate?: string; toDate?: string }) {
+export async function getSales(filters?: { animalId?: number; fromDate?: string; toDate?: string; ownerId?: number; outstandingOnly?: boolean; buyer?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
   if (filters?.animalId) conditions.push(eq(sales.animalId, filters.animalId));
   if (filters?.fromDate) conditions.push(sql`${sales.saleDate} >= ${filters.fromDate}`);
   if (filters?.toDate) conditions.push(sql`${sales.saleDate} <= ${filters.toDate}`);
+  if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
+  if (filters?.buyer) conditions.push(sql`${sales.buyerName} LIKE ${'%' + filters.buyer + '%'}`);
+  if (filters?.outstandingOnly) conditions.push(sql`(${sales.salePrice} - ${sales.amountPaid}) > 0`);
   const query = db
     .select({
       sale: sales,
       animalCode: animals.animalId,
       speciesName: species.name,
-      categoryName: animalCategories.name
+      categoryName: animalCategories.name,
+      ownerName: owners.name,
+      outstanding: sql<string>`(${sales.salePrice} - ${sales.amountPaid})`,
     })
     .from(sales)
     .leftJoin(animals, eq(sales.animalId, animals.id))
     .leftJoin(species, eq(animals.speciesId, species.id))
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id));
+    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id));
   conditions.push(isNull(sales.deletedAt));
   return query.where(and(...conditions)).orderBy(desc(sales.saleDate));
 }
@@ -536,6 +579,7 @@ export async function updateSale(
   data: Partial<{
     animalId: number;
     salePrice: string;
+    amountPaid: string;
     weightAtSale: string | null;
     pricePerKg: string | null;
     saleDate: string;
@@ -867,7 +911,7 @@ export async function updateFeedStockEntry(
 
 // ─── EXPENSESS ─────────────────────────────────────────────────────────────────
 
-export async function getExpenses(filters?: { fromDate?: string; toDate?: string; categoryId?: number; targetType?: "general" | "category" | "head"; headId?: number }) {
+export async function getExpenses(filters?: { fromDate?: string; toDate?: string; categoryId?: number; targetType?: "general" | "category" | "head"; headId?: number; ownerId?: number; vendor?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
@@ -876,17 +920,31 @@ export async function getExpenses(filters?: { fromDate?: string; toDate?: string
   if (filters?.categoryId) conditions.push(eq(expenses.categoryId, filters.categoryId));
   if (filters?.targetType) conditions.push(eq(expenses.targetType, filters.targetType));
   if (filters?.headId) conditions.push(eq(expenses.headId, filters.headId));
+  if (filters?.vendor) conditions.push(sql`${expenses.vendorName} LIKE ${'%' + filters.vendor + '%'}`);
+  if (filters?.ownerId) {
+    // An expense is "related to" an owner if (a) it's targeted at a head owned by them,
+    // OR (b) it's targeted at a category in which the owner has at least one animal.
+    const ownerId = filters.ownerId;
+    conditions.push(sql`(
+      (${expenses.targetType} = 'head'     AND ${expenses.headId} IN (SELECT id FROM animals WHERE ownerId = ${ownerId} AND deletedAt IS NULL))
+      OR
+      (${expenses.targetType} = 'category' AND ${expenses.categoryTarget} IN (SELECT DISTINCT categoryId FROM animals WHERE ownerId = ${ownerId} AND deletedAt IS NULL))
+    )`);
+  }
   const query = db
     .select({
       expense: expenses,
       categoryName: expenseCategories.name,
       subCategoryName: expenseSubCategories.name,
-      animalCode: animals.animalId
+      animalCode: animals.animalId,
+      animalOwnerId: animals.ownerId,
+      ownerName: owners.name,
     })
     .from(expenses)
     .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
     .leftJoin(expenseSubCategories, eq(expenses.subCategoryId, expenseSubCategories.id))
-    .leftJoin(animals, eq(expenses.headId, animals.id));
+    .leftJoin(animals, eq(expenses.headId, animals.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id));
   conditions.push(isNull(expenses.deletedAt));
   return query.where(and(...conditions)).orderBy(desc(expenses.expenseDate));
 }

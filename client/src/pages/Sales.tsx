@@ -237,9 +237,84 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
   );
 }
 
+function RecordPaymentDialog({ saleId, animalCode, outstanding, onSuccess }: { saleId: number; animalCode: string; outstanding: number; onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [payment, setPayment] = useState("");
+
+  const recordPayment = trpc.sales.recordPayment.useMutation({
+    onSuccess: () => {
+      toast.success(t("sales.paymentRecorded"));
+      setOpen(false);
+      setPayment("");
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const amount = parseFloat(payment) || 0;
+  const newOutstanding = Math.max(0, outstanding - amount);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm" className="text-green-700 hover:bg-green-50 h-8 px-2 gap-1" title={t("sales.recordPayment")}>
+          <span className="text-xs font-semibold">+ {t("sales.payment")}</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t("sales.recordPaymentFor")} {animalCode}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="text-sm text-muted-foreground">
+            {t("sales.currentOutstanding")}: <strong className="text-amber-600">EGP {outstanding.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</strong>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("sales.paymentAmount")} (EGP) *</Label>
+            <Input
+              type="number"
+              placeholder="0.00"
+              value={payment}
+              onChange={(e) => setPayment(e.target.value)}
+              max={outstanding}
+              autoFocus
+            />
+          </div>
+          {amount > outstanding && (
+            <div className="text-sm text-red-600">{t("sales.paymentExceedsOutstanding")}</div>
+          )}
+          {amount > 0 && amount <= outstanding && (
+            <div className="text-sm text-muted-foreground">
+              {t("sales.newOutstanding")}: <strong>{newOutstanding.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</strong>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+          <Button
+            disabled={amount <= 0 || amount > outstanding || recordPayment.isPending}
+            onClick={() => recordPayment.mutate({ id: saleId, payment: String(amount) })}
+          >
+            {recordPayment.isPending ? "..." : t("sales.recordPayment")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Sales() {
   const { t } = useTranslation();
-  const { data: sales, isLoading, refetch } = trpc.sales.list.useQuery();
+  const [filterOwner, setFilterOwner] = useState<string>("all");
+  const [filterBuyer, setFilterBuyer] = useState<string>("");
+  const [outstandingOnly, setOutstandingOnly] = useState<boolean>(false);
+  const { data: sales, isLoading, refetch } = trpc.sales.list.useQuery({
+    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    buyer: filterBuyer || undefined,
+    outstandingOnly: outstandingOnly || undefined,
+  });
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
   const utils = trpc.useUtils();
 
   const deleteSale = trpc.recycleBin.deleteSale.useMutation({
@@ -252,8 +327,11 @@ export default function Sales() {
     onError: (e) => toast.error(e.message),
   });
 
-  const totalRevenue = (sales ?? []).reduce((sum: number, s: any) => sum + parseFloat(String(s.sale?.salePrice ?? s.salePrice ?? 0)), 0);
-  const pendingCount = (sales ?? []).filter((s: any) => parseFloat(String(s.sale?.salePrice ?? s.salePrice ?? 0)) === 0).length;
+  const totalRevenue = (sales ?? []).reduce((sum: number, s: any) => sum + parseFloat(String(s.sale?.salePrice ?? 0)), 0);
+  const totalPaid = (sales ?? []).reduce((sum: number, s: any) => sum + parseFloat(String(s.sale?.amountPaid ?? 0)), 0);
+  const totalOutstanding = totalRevenue - totalPaid;
+  const pendingCount = (sales ?? []).filter((s: any) => parseFloat(String(s.sale?.salePrice ?? 0)) === 0).length;
+  const outstandingCount = (sales ?? []).filter((s: any) => parseFloat(String(s.outstanding ?? 0)) > 0).length;
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -265,11 +343,20 @@ export default function Sales() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {(sales ?? []).length} sales · Total Revenue: EGP {totalRevenue.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
+            · <span className="text-green-700">{t("sales.paid")}: EGP {totalPaid.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>
+            {totalOutstanding > 0 && <span className="ml-1 text-amber-600 font-medium">· {t("sales.outstanding")}: EGP {totalOutstanding.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>}
             {pendingCount > 0 && <span className="ml-2 text-amber-600 font-medium">· {t("sales.pendingPriceEntry", { count: pendingCount })}</span>}
           </p>
         </div>
         <RecordSaleDialog onSuccess={refetch} />
       </div>
+
+      {outstandingCount > 0 && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>{outstandingCount} {t("sales.salesWithOutstanding")}</span>
+        </div>
+      )}
 
       {pendingCount > 0 && (
         <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
@@ -279,6 +366,40 @@ export default function Sales() {
       )}
 
       <Card>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            <Select value={filterOwner} onValueChange={setFilterOwner}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder={t("owners.owner")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
+                {(ownersList ?? []).map((o: any) => (
+                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="text"
+              placeholder={t("sales.searchBuyer")}
+              className="w-44"
+              value={filterBuyer}
+              onChange={(e) => setFilterBuyer(e.target.value)}
+            />
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={outstandingOnly}
+                onChange={(e) => setOutstandingOnly(e.target.checked)}
+                className="rounded"
+              />
+              {t("sales.outstandingOnly")}
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -286,12 +407,14 @@ export default function Sales() {
                 <TableRow>
                   <TableHead>{t("animals.animalId")}</TableHead>
                   <TableHead>{t("sales.speciesCategory")}</TableHead>
+                  <TableHead>{t("owners.owner")}</TableHead>
                   <TableHead>{t("common.date")}</TableHead>
                   <TableHead>Sale Price (EGP)</TableHead>
+                  <TableHead>{t("sales.paid")} (EGP)</TableHead>
+                  <TableHead>{t("sales.outstanding")} (EGP)</TableHead>
                   <TableHead>{t("pnl.weightAtSale")}</TableHead>
                   <TableHead>{t("pnl.pricePerKg")}</TableHead>
                   <TableHead>{t("pnl.buyer")}</TableHead>
-                  <TableHead>{t("common.notes")}</TableHead>
                   <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -299,19 +422,22 @@ export default function Sales() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 11 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (sales ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">{t("sales.noSalesYet")}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-12 text-muted-foreground">{t("sales.noSalesYet")}</TableCell></TableRow>
                 ) : (
                   (sales ?? []).map((s: any) => {
                     // Support both flat and nested response shapes
                     const saleId = s.sale?.id ?? s.id;
                     const animalCode = s.animalCode ?? s.sale?.animalCode ?? s.animalId;
                     const salePrice = parseFloat(String(s.sale?.salePrice ?? s.salePrice ?? 0));
+                    const amountPaid = parseFloat(String(s.sale?.amountPaid ?? 0));
+                    const outstanding = parseFloat(String(s.outstanding ?? (salePrice - amountPaid)));
+                    const ownerName = s.ownerName;
                     const weightAtSale = s.sale?.weightAtSale ?? s.weightAtSale;
                     const saleDate = s.sale?.saleDate ?? s.saleDate;
                     const buyerName = s.sale?.buyerName ?? s.buyerName;
@@ -335,9 +461,10 @@ export default function Sales() {
                     };
 
                     return (
-                      <TableRow key={saleId} className={isPending ? "bg-amber-50/40" : ""}>
+                      <TableRow key={saleId} className={isPending ? "bg-amber-50/40" : (outstanding > 0 ? "bg-amber-50/20" : "")}>
                         <TableCell className="font-mono font-semibold text-primary">{animalCode}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{speciesName} / {categoryName}</TableCell>
+                        <TableCell className="text-sm">{ownerName ?? <span className="text-muted-foreground">—</span>}</TableCell>
                         <TableCell>{saleDate ? new Date(saleDate).toLocaleDateString() : "—"}</TableCell>
                         <TableCell>
                           {isPending
@@ -345,12 +472,22 @@ export default function Sales() {
                             : <span className="font-semibold text-green-600">{salePrice.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>
                           }
                         </TableCell>
+                        <TableCell>
+                          <span className="text-green-700">{amountPaid.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>
+                        </TableCell>
+                        <TableCell>
+                          {outstanding > 0
+                            ? <span className="font-semibold text-amber-600">{outstanding.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>
+                            : <span className="text-muted-foreground">—</span>}
+                        </TableCell>
                         <TableCell>{weightAtSale ? `${parseFloat(String(weightAtSale)).toFixed(1)} kg` : "—"}</TableCell>
                         <TableCell>{pricePerKg !== "—" ? `EGP ${pricePerKg}` : "—"}</TableCell>
                         <TableCell className="text-muted-foreground">{buyerName ?? "—"}</TableCell>
-                        <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">{notes ?? "—"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {outstanding > 0 && !isPending && (
+                              <RecordPaymentDialog saleId={saleId} animalCode={animalCode} outstanding={outstanding} onSuccess={refetch} />
+                            )}
                             <EditSaleDialog sale={saleForEdit} onSuccess={refetch} />
                             <AlertDialog>
                               <AlertDialogTrigger asChild>

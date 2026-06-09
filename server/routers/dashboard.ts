@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { protectedProcedure, privilegedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, staffProcedure, privilegedProcedure, router } from "../_core/trpc";
 import {
   createAuditEntry,
   getDashboardKPIs,
@@ -132,14 +132,18 @@ export const salesRouter = router({
         animalId: z.number().optional(),
         fromDate: z.string().optional(),
         toDate: z.string().optional(),
+        ownerId: z.number().optional(),
+        outstandingOnly: z.boolean().optional(),
+        buyer: z.string().optional(),
       }).optional()
     )
     .query(({ input }) => getSales(input ?? {})),
 
-  update: protectedProcedure
+  update: staffProcedure
     .input(z.object({
       id: z.number(),
       salePrice: z.string().optional(),
+      amountPaid: z.string().optional(),
       weightAtSale: z.string().optional(),
       saleDate: z.string().optional(),
       buyerName: z.string().optional(),
@@ -156,6 +160,33 @@ export const salesRouter = router({
         newValues: data as any,
       });
       return result;
+    }),
+
+  // Record an additional payment toward an outstanding balance. amountPaid is
+  // incremented by the given delta. The endpoint refuses to overpay.
+  recordPayment: staffProcedure
+    .input(z.object({
+      id: z.number(),
+      payment: z.string().refine(v => parseFloat(v) > 0, "Payment must be greater than zero"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const existing = (await getSales({})).find((s: any) => s.sale.id === input.id);
+      if (!existing) throw new Error("Sale not found");
+      const price = parseFloat(existing.sale.salePrice);
+      const currentPaid = parseFloat(existing.sale.amountPaid ?? "0");
+      const newPaid = currentPaid + parseFloat(input.payment);
+      if (newPaid > price + 0.001) throw new Error("Payment would exceed sale price");
+      await updateSale(input.id, { amountPaid: String(newPaid) });
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        ipAddress: getClientIp(ctx),
+        entityType: "sale",
+        entityId: String(input.id),
+        oldValues: { amountPaid: existing.sale.amountPaid } as any,
+        newValues: { amountPaid: String(newPaid), paymentDelta: input.payment } as any,
+      });
+      return { success: true, amountPaid: String(newPaid), outstanding: String(price - newPaid) };
     }),
 });
 

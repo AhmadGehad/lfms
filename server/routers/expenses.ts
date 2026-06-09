@@ -13,6 +13,8 @@ export const expensesRouter = router({
         categoryId: z.number().optional(),
         targetType: z.enum(["general", "category", "head"]).optional(),
         headId: z.number().optional(),
+        ownerId: z.number().optional(),
+        vendor: z.string().optional(),
       }).optional()
     )
     .query(({ input }) => getExpenses(input ?? {})),

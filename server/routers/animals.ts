@@ -34,6 +34,7 @@ export const animalsRouter = router({
         categoryId: z.number().optional(),
         groupId: z.number().optional(),
         statusId: z.number().optional(),
+        ownerId: z.number().optional(),
         isActive: z.boolean().optional(),
       }).optional()
     )
@@ -62,6 +63,7 @@ export const animalsRouter = router({
         birthDate: pastOrTodayDate,
         damId: z.number().int().positive().optional(),
         sireId: z.number().int().positive().optional(),
+        ownerId: z.number().int().positive().optional(),
         purchaseCost: optionalMoneyString,
         weightAtAcquisition: optionalWeightString,
         notes: z.string().max(2000).optional(),
@@ -115,6 +117,7 @@ export const animalsRouter = router({
         id: z.number(),
         groupId: z.number().optional(),
         statusId: z.number().optional(),
+        ownerId: z.number().int().positive().nullable().optional(),
         notes: z.string().optional(),
         exitDate: z.string().optional(),
         exitReason: z.string().optional(),
@@ -169,6 +172,7 @@ export const animalsRouter = router({
         newStatusId: z.number().int().positive(),
         // Sale details (optional)
         salePrice: optionalMoneyString,
+        amountPaid: optionalMoneyString,
         weightAtSale: optionalWeightString,
         buyerName: z.string().max(100).optional(),
         saleNotes: z.string().max(2000).optional(),
@@ -184,6 +188,10 @@ export const animalsRouter = router({
       }
       if (input.salePrice !== undefined && parseFloat(input.salePrice) < 0) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Sale price cannot be negative" });
+      }
+      if (input.amountPaid !== undefined && input.salePrice !== undefined &&
+          parseFloat(input.amountPaid) > parseFloat(input.salePrice)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Amount paid cannot exceed sale price" });
       }
 
       const db = await getDb();
@@ -211,6 +219,7 @@ export const animalsRouter = router({
             animalId: input.id,
             saleDate: input.exitDate as any,
             salePrice: input.salePrice,
+            amountPaid: input.amountPaid ?? input.salePrice,
             weightAtSale: input.weightAtSale,
             pricePerKg: input.weightAtSale && input.salePrice
               ? String(parseFloat(input.salePrice) / parseFloat(input.weightAtSale))
@@ -233,6 +242,114 @@ export const animalsRouter = router({
 
       return { success: true };
     }),
+
+  // ─── BULK EXIT / SELL MANY ──────────────────────────────────────────────────
+  // Sell or exit several animals together in a single atomic transaction.
+  // Shared: exit date, reason, status, optional buyer + sale notes.
+  // Per animal: sale price + amount paid + weight at sale.
+  bulkExit: staffProcedure
+    .input(
+      z.object({
+        exitDate: pastOrTodayDate,
+        exitReason: z.string().min(1).max(1000),
+        newStatusId: z.number().int().positive(),
+        buyerName: z.string().max(100).optional(),
+        saleNotes: z.string().max(2000).optional(),
+        animals: z
+          .array(
+            z.object({
+              id: z.number().int().positive(),
+              salePrice: optionalMoneyString,
+              amountPaid: optionalMoneyString,
+              weightAtSale: optionalWeightString,
+            })
+          )
+          .min(1, "Select at least one animal")
+          .max(500, "Too many animals in one batch"),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Pre-validate everything before touching any row.
+      const prepared: Array<{
+        id: number;
+        existing: any;
+        salePrice?: string;
+        amountPaid?: string;
+        weightAtSale?: string;
+      }> = [];
+      for (const a of input.animals) {
+        const existing = await getAnimalById(a.id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: `Animal ${a.id} not found` });
+        if (new Date(input.exitDate) < new Date(String(existing.animal.acquisitionDate))) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Exit date is before acquisition for ${existing.animal.animalId}` });
+        }
+        if (a.salePrice !== undefined && parseFloat(a.salePrice) < 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Sale price cannot be negative for ${existing.animal.animalId}` });
+        }
+        if (a.amountPaid !== undefined && a.salePrice !== undefined &&
+            parseFloat(a.amountPaid) > parseFloat(a.salePrice)) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: `Amount paid exceeds sale price for ${existing.animal.animalId}` });
+        }
+        prepared.push({ id: a.id, existing, salePrice: a.salePrice, amountPaid: a.amountPaid, weightAtSale: a.weightAtSale });
+      }
+
+      // All-or-nothing: every animal's update + history + sale + audit in one transaction.
+      await db.transaction(async (tx) => {
+        for (const p of prepared) {
+          await updateAnimal(p.id, {
+            statusId: input.newStatusId,
+            exitDate: input.exitDate as any,
+            exitReason: input.exitReason,
+            isActive: false,
+          }, tx);
+
+          await recordStatusChange({
+            animalId: p.id,
+            previousStatusId: p.existing.animal.statusId,
+            newStatusId: input.newStatusId,
+            changedBy: ctx.user?.id,
+            notes: input.exitReason,
+          }, tx);
+
+          if (p.salePrice) {
+            await createSale({
+              animalId: p.id,
+              saleDate: input.exitDate as any,
+              salePrice: p.salePrice,
+              amountPaid: p.amountPaid ?? p.salePrice,
+              weightAtSale: p.weightAtSale,
+              pricePerKg: p.weightAtSale && p.salePrice
+                ? String(parseFloat(p.salePrice) / parseFloat(p.weightAtSale))
+                : undefined,
+              buyerName: input.buyerName,
+              notes: input.saleNotes,
+              createdBy: ctx.user?.id,
+            }, tx);
+          }
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "exit",
+            ipAddress: getClientIp(ctx),
+            entityType: "animal",
+            entityId: String(p.id),
+            newValues: {
+              bulkExit: true,
+              exitDate: input.exitDate,
+              exitReason: input.exitReason,
+              salePrice: p.salePrice,
+              amountPaid: p.amountPaid,
+            } as any,
+          }, tx);
+        }
+      });
+
+      return { success: true, count: prepared.length };
+    }),
+
 
   // ─── STATUS HISTORY ─────────────────────────────────────────────────────────
   getStatusHistory: protectedProcedure
