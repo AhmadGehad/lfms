@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import * as React from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -648,9 +648,151 @@ function BulkSellDialog({
   );
 }
 
+function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalId: number | null; open: boolean; onOpenChange: (v: boolean) => void; onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const { data: animal } = trpc.animals.getById.useQuery({ id: animalId! }, { enabled: !!animalId });
+  const { data: groups } = trpc.config.getGroups.useQuery({});
+  const { data: statuses } = trpc.config.getStatuses.useQuery();
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const utils = trpc.useUtils();
+  const { control, handleSubmit, reset } = useForm<any>();
+  React.useEffect(() => {
+    if (animal) {
+      reset({
+        groupId: String(animal.animal.groupId ?? ""),
+        statusId: String(animal.animal.statusId ?? ""),
+        ownerId: animal.animal.ownerId ? String(animal.animal.ownerId) : "none",
+        notes: animal.animal.notes ?? "",
+        exitDate: animal.animal.exitDate ? new Date(animal.animal.exitDate).toISOString().split("T")[0] : "",
+        exitReason: animal.animal.exitReason ?? "",
+      });
+    }
+  }, [animal, reset]);
+  const updateAnimal = trpc.animals.update.useMutation({
+    onSuccess: () => {
+      toast.success(t("common.saved") || "Saved");
+      utils.animals.list.invalidate();
+      utils.animals.getById.invalidate({ id: animalId! });
+      onSuccess();
+      onOpenChange(false);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const onSubmit = handleSubmit((data) => {
+    updateAnimal.mutate({
+      id: animalId!,
+      groupId: data.groupId ? Number(data.groupId) : undefined,
+      statusId: data.statusId ? Number(data.statusId) : undefined,
+      ownerId: data.ownerId && data.ownerId !== "none" ? Number(data.ownerId) : null,
+      notes: data.notes || undefined,
+      exitDate: data.exitDate || undefined,
+      exitReason: data.exitReason || undefined,
+    });
+  });
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("common.edit")} {animal?.animal.animalId}</DialogTitle>
+        </DialogHeader>
+        {!animal ? (
+          <div className="py-8"><Skeleton className="h-40 w-full" /></div>
+        ) : (
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>{t("common.group")}</Label>
+                <Controller name="groupId" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder={t("common.group")} /></SelectTrigger>
+                    <SelectContent>
+                      {(groups ?? []).map((g: any) => (
+                        <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("common.status")}</Label>
+                <Controller name="statusId" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder={t("common.status")} /></SelectTrigger>
+                    <SelectContent>
+                      {(statuses ?? []).map((s: any) => (
+                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{t("owners.owner")}</Label>
+                <Controller name="ownerId" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder={t("owners.selectOwner")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("owners.noOwner")}</SelectItem>
+                      {(ownersList ?? []).map((o: any) => (
+                        <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("animals.exitDate")}</Label>
+                <Controller name="exitDate" control={control} render={({ field }) => (
+                  <Input type="date" {...field} />
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("animals.exitReason")}</Label>
+                <Controller name="exitReason" control={control} render={({ field }) => (
+                  <Input placeholder={t("animals.exitReason")} {...field} />
+                )} />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{t("common.notes")}</Label>
+                <Controller name="notes" control={control} render={({ field }) => (
+                  <Input placeholder={t("common.notes")} {...field} />
+                )} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+              <Button type="submit" disabled={updateAnimal.isPending}>
+                {updateAnimal.isPending ? "..." : t("common.save")}
+              </Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Animals() {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const searchStr = useSearch();
+  const editIdFromUrl = React.useMemo(() => {
+    const p = new URLSearchParams(searchStr);
+    const v = p.get("edit");
+    return v ? Number(v) : null;
+  }, [searchStr]);
+  const [editAnimalId, setEditAnimalId] = React.useState<number | null>(null);
+  const [editOpen, setEditOpen] = React.useState(false);
+  React.useEffect(() => {
+    if (editIdFromUrl) {
+      setEditAnimalId(editIdFromUrl);
+      setEditOpen(true);
+    }
+  }, [editIdFromUrl]);
+  const handleEditClose = (v: boolean) => {
+    setEditOpen(v);
+    if (!v) setLocation("/animals");
+  };
   const [search, setSearch] = useState("");
   const [filterSpecies, setFilterSpecies] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -933,6 +1075,12 @@ export default function Animals() {
         onOpenChange={setBulkSellOpen}
         selectedAnimals={selectedAnimals}
         onSuccess={() => { setSelectedIds(new Set()); refetch(); }}
+      />
+      <EditAnimalDialog
+        animalId={editAnimalId}
+        open={editOpen}
+        onOpenChange={handleEditClose}
+        onSuccess={refetch}
       />
     </div>
   );
