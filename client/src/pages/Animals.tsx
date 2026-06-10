@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign } from "lucide-react";
+import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign, Pencil } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -246,6 +246,232 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function BulkEditDialog({
+  open,
+  onOpenChange,
+  selectedAnimals,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedAnimals: any[];
+  onSuccess: () => void;
+}) {
+  const { t } = useTranslation();
+  const { data: groups } = trpc.config.getGroups.useQuery();
+  const { data: statuses } = trpc.config.getStatuses.useQuery();
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+
+  // "" / "__keep" means leave the field alone; "__clear" means set to null
+  // (only valid for nullable fields: group, owner, notes).
+  const KEEP = "__keep";
+  const CLEAR = "__clear";
+  const [groupId, setGroupId] = useState<string>(KEEP);
+  const [statusId, setStatusId] = useState<string>(KEEP);
+  const [ownerId, setOwnerId] = useState<string>(KEEP);
+  const [sex, setSex] = useState<string>(KEEP);
+  const [acquisitionDate, setAcquisitionDate] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [setNotesEnabled, setSetNotesEnabled] = useState(false);
+  const [exitDate, setExitDate] = useState<string>("");
+  const [exitReason, setExitReason] = useState<string>("");
+  const [isActiveChoice, setIsActiveChoice] = useState<string>(KEEP);
+
+  // reset when dialog reopens
+  React.useEffect(() => {
+    if (open) {
+      setGroupId(KEEP); setStatusId(KEEP); setOwnerId(KEEP); setSex(KEEP);
+      setAcquisitionDate(""); setNotes(""); setSetNotesEnabled(false);
+      setExitDate(""); setExitReason(""); setIsActiveChoice(KEEP);
+    }
+  }, [open]);
+
+  const utils = trpc.useUtils();
+  const bulkUpdate = trpc.animals.bulkUpdate.useMutation({
+    onSuccess: (r: any) => {
+      toast.success(`${r.count} ${t("animals.title").toLowerCase()} — ${t("common.updated")}`);
+      utils.animals.list.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      onOpenChange(false);
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const fieldsChanged = (
+    (groupId !== KEEP ? 1 : 0) +
+    (statusId !== KEEP ? 1 : 0) +
+    (ownerId !== KEEP ? 1 : 0) +
+    (sex !== KEEP ? 1 : 0) +
+    (acquisitionDate ? 1 : 0) +
+    (setNotesEnabled ? 1 : 0) +
+    (exitDate ? 1 : 0) +
+    (exitReason ? 1 : 0) +
+    (isActiveChoice !== KEEP ? 1 : 0)
+  );
+
+  const onSubmit = () => {
+    if (fieldsChanged === 0) {
+      toast.error(t("animals.bulkEditNoFields"));
+      return;
+    }
+    bulkUpdate.mutate({
+      animalIds: selectedAnimals.map((a) => a.animal.id),
+      groupId: groupId === KEEP ? undefined : groupId === CLEAR ? null : Number(groupId),
+      statusId: statusId === KEEP ? undefined : Number(statusId),
+      ownerId: ownerId === KEEP ? undefined : ownerId === CLEAR ? null : Number(ownerId),
+      sex: sex === KEEP ? undefined : (sex as "M" | "F"),
+      acquisitionDate: acquisitionDate || undefined,
+      notes: setNotesEnabled ? (notes || null) : undefined,
+      exitDate: exitDate || undefined,
+      exitReason: exitReason || undefined,
+      isActive: isActiveChoice === KEEP ? undefined : isActiveChoice === "true",
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("animals.bulkEdit")} ({selectedAnimals.length})</DialogTitle>
+        </DialogHeader>
+
+        <p className="text-sm text-muted-foreground -mt-2">
+          {t("animals.bulkEditHint")}
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label>{t("common.group")}</Label>
+            <Select value={groupId} onValueChange={setGroupId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                <SelectItem value={CLEAR}>{t("animals.bulkEditClear")}</SelectItem>
+                {(groups ?? []).map((g: any) => (
+                  <SelectItem key={g.id} value={String(g.id)}>{g.groupCode} — {g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("common.status")}</Label>
+            <Select value={statusId} onValueChange={setStatusId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                {(statuses ?? []).map((s: any) => (
+                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("owners.owner")}</Label>
+            <Select value={ownerId} onValueChange={setOwnerId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                <SelectItem value={CLEAR}>{t("animals.bulkEditClear")}</SelectItem>
+                {(ownersList ?? []).map((o: any) => (
+                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("common.sex")}</Label>
+            <Select value={sex} onValueChange={setSex}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                <SelectItem value="M">{t("common.male")}</SelectItem>
+                <SelectItem value="F">{t("common.female")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("animals.acquisitionDate")}</Label>
+            <Input
+              type="date"
+              value={acquisitionDate}
+              placeholder={t("animals.bulkEditKeep")}
+              onChange={(e) => setAcquisitionDate(e.target.value)}
+            />
+            {acquisitionDate && <p className="text-xs text-muted-foreground">{t("animals.bulkEditWillApply")}</p>}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("animals.active")}?</Label>
+            <Select value={isActiveChoice} onValueChange={setIsActiveChoice}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                <SelectItem value="true">{t("animals.active")}</SelectItem>
+                <SelectItem value="false">{t("animals.inactive")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("animals.exitDate")}</Label>
+            <Input
+              type="date"
+              value={exitDate}
+              onChange={(e) => setExitDate(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("animals.exitReason")}</Label>
+            <Input
+              value={exitReason}
+              onChange={(e) => setExitReason(e.target.value)}
+              placeholder={t("animals.bulkEditKeep")}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="setNotesEnabled"
+              checked={setNotesEnabled}
+              onChange={(e) => setSetNotesEnabled(e.target.checked)}
+            />
+            <Label htmlFor="setNotesEnabled" className="cursor-pointer">{t("animals.bulkEditSetNotes")}</Label>
+          </div>
+          {setNotesEnabled && (
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={t("common.notes")}
+            />
+          )}
+        </div>
+
+        <div className="text-sm text-muted-foreground border-t pt-3">
+          {fieldsChanged === 0
+            ? t("animals.bulkEditNoFields")
+            : `${fieldsChanged} ${t("animals.bulkEditFieldsCount")}`}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+          <Button onClick={onSubmit} disabled={bulkUpdate.isPending || fieldsChanged === 0}>
+            {bulkUpdate.isPending ? "..." : `${t("animals.bulkEdit")} (${selectedAnimals.length})`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function BulkSellDialog({
   open,
   onOpenChange,
@@ -432,6 +658,7 @@ export default function Animals() {
   const [filterOwner, setFilterOwner] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSellOpen, setBulkSellOpen] = useState(false);
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const utils = trpc.useUtils();
   const deleteAnimalMutation = trpc.recycleBin.deleteAnimal.useMutation({
     onSuccess: () => {
@@ -561,10 +788,16 @@ export default function Animals() {
               </SelectContent>
             </Select>
             {selectedIds.size > 0 && (
-              <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2 ms-auto">
-                <DollarSign className="h-4 w-4" />
-                {t("animals.bulkSell")} ({selectedIds.size})
-              </Button>
+              <div className="flex gap-2 ms-auto">
+                <Button onClick={() => setBulkEditOpen(true)} variant="outline" className="gap-2">
+                  <Pencil className="h-4 w-4" />
+                  {t("animals.bulkEdit")} ({selectedIds.size})
+                </Button>
+                <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  {t("animals.bulkSell")} ({selectedIds.size})
+                </Button>
+              </div>
             )}
           </div>
         </CardContent>
@@ -620,7 +853,6 @@ export default function Animals() {
                             <Checkbox
                               checked={isSelected}
                               onCheckedChange={() => toggleOne(a.animal.id)}
-                              disabled={!a.animal.isActive}
                               aria-label={`Select ${a.animal.animalId}`}
                             />
                           </TableCell>
@@ -688,6 +920,13 @@ export default function Animals() {
           )}
         </CardContent>
       </Card>
+
+      <BulkEditDialog
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        selectedAnimals={selectedAnimals}
+        onSuccess={() => { setSelectedIds(new Set()); refetch(); }}
+      />
 
       <BulkSellDialog
         open={bulkSellOpen}

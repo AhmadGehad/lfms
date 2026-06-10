@@ -351,6 +351,128 @@ export const animalsRouter = router({
     }),
 
 
+  // ─── BULK UPDATE ────────────────────────────────────────────────────────────
+  // Apply the same changes to multiple animals at once. Every field is
+  // optional — only fields the operator actually sets get written.
+  // Works on both active and exited animals.
+  bulkUpdate: staffProcedure
+    .input(
+      z.object({
+        animalIds: z.array(z.number().int().positive()).min(1).max(500),
+        // Each field is optional; undefined means "leave alone".
+        groupId: z.number().int().positive().nullable().optional(),
+        statusId: z.number().int().positive().optional(),
+        ownerId: z.number().int().positive().nullable().optional(),
+        sex: z.enum(["M", "F"]).optional(),
+        acquisitionDate: pastOrTodayDate.optional(),
+        notes: z.string().max(2000).nullable().optional(),
+        isActive: z.boolean().optional(),
+        exitDate: pastOrTodayDate.optional(),
+        exitReason: z.string().max(1000).optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { animalIds, ...changes } = input;
+
+      // Reject empty change sets — nothing to do.
+      const changeKeys = Object.keys(changes).filter((k) => (changes as any)[k] !== undefined);
+      if (changeKeys.length === 0) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "No fields to update" });
+      }
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Pre-load all targets so we can validate and capture before-values for audit.
+      const targets: any[] = [];
+      for (const id of animalIds) {
+        const existing = await getAnimalById(id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: `Animal ${id} not found` });
+        targets.push(existing);
+      }
+
+      // Cross-field validation: if acquisitionDate is being changed, it cannot
+      // land after any existing exit date for the same animal.
+      if (changes.acquisitionDate) {
+        for (const t of targets) {
+          const exit = t.animal.exitDate ? String(t.animal.exitDate).split("T")[0] : null;
+          if (exit && changes.acquisitionDate > exit) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Acquisition date is after exit date for ${t.animal.animalId}`,
+            });
+          }
+        }
+      }
+      // exit date must be ≥ acquisition for each animal it applies to.
+      if (changes.exitDate) {
+        for (const t of targets) {
+          const acq = changes.acquisitionDate ?? String(t.animal.acquisitionDate).split("T")[0];
+          if (changes.exitDate < acq) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Exit date is before acquisition date for ${t.animal.animalId}`,
+            });
+          }
+        }
+      }
+
+      // Build the update payload for updateAnimal, normalising nullable fields.
+      const updatePayload: any = {};
+      if (changes.groupId !== undefined) updatePayload.groupId = changes.groupId;
+      if (changes.statusId !== undefined) updatePayload.statusId = changes.statusId;
+      if (changes.ownerId !== undefined) updatePayload.ownerId = changes.ownerId;
+      if (changes.sex !== undefined) updatePayload.sex = changes.sex;
+      if (changes.acquisitionDate !== undefined) updatePayload.acquisitionDate = changes.acquisitionDate;
+      if (changes.notes !== undefined) updatePayload.notes = changes.notes;
+      if (changes.isActive !== undefined) updatePayload.isActive = changes.isActive;
+      if (changes.exitDate !== undefined) updatePayload.exitDate = changes.exitDate;
+      if (changes.exitReason !== undefined) updatePayload.exitReason = changes.exitReason;
+
+      // All-or-nothing transaction. Each animal updated, status change recorded
+      // when applicable, and a per-animal audit entry written.
+      await db.transaction(async (tx) => {
+        for (const t of targets) {
+          const before: any = {
+            groupId: t.animal.groupId,
+            statusId: t.animal.statusId,
+            ownerId: t.animal.ownerId,
+            sex: t.animal.sex,
+            acquisitionDate: t.animal.acquisitionDate,
+            notes: t.animal.notes,
+            isActive: t.animal.isActive,
+            exitDate: t.animal.exitDate,
+            exitReason: t.animal.exitReason,
+          };
+
+          await updateAnimal(t.animal.id, updatePayload, tx);
+
+          // Record a status-history row when statusId actually changed.
+          if (changes.statusId !== undefined && changes.statusId !== t.animal.statusId) {
+            await recordStatusChange({
+              animalId: t.animal.id,
+              previousStatusId: t.animal.statusId,
+              newStatusId: changes.statusId,
+              changedBy: ctx.user?.id,
+              notes: "Bulk update",
+            }, tx);
+          }
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "bulk_update",
+            ipAddress: getClientIp(ctx),
+            entityType: "animal",
+            entityId: String(t.animal.id),
+            oldValues: before,
+            newValues: updatePayload,
+          }, tx);
+        }
+      });
+
+      return { success: true, count: targets.length, fieldsChanged: changeKeys };
+    }),
+
   // ─── STATUS HISTORY ─────────────────────────────────────────────────────────
   getStatusHistory: protectedProcedure
     .input(z.object({ animalId: z.number() }))

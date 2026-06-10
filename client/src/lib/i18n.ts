@@ -204,6 +204,17 @@ const en = {
     selectExitStatus: "Select exit status",
     exitReasonPlaceholder: "e.g. Sold to buyer X",
 
+    bulkEdit: "Bulk Edit",
+    bulkEditHint: "Only the fields you change are applied. Leave fields untouched to keep their existing values.",
+    bulkEditKeep: "Keep current",
+    bulkEditClear: "Clear (remove)",
+    bulkEditNoFields: "No fields to change",
+    bulkEditFieldsCount: "field(s) will change",
+    bulkEditSetNotes: "Set notes (replaces existing notes)",
+    bulkEditWillApply: "Will apply to all selected animals",
+    active: "Active",
+    inactive: "Inactive",
+
   },
 
   // Breeding
@@ -864,6 +875,17 @@ const ar = {
     bulkSell: "بيع المحدد",
     selectExitStatus: "اختر حالة الخروج",
     exitReasonPlaceholder: "مثل: بيع للمشتري س",
+
+    bulkEdit: "تعديل جماعي",
+    bulkEditHint: "يتم تطبيق الحقول التي تغيّرها فقط. اترك الحقول كما هي للإبقاء على قيمها الحالية.",
+    bulkEditKeep: "إبقاء الحالي",
+    bulkEditClear: "مسح (إزالة)",
+    bulkEditNoFields: "لا توجد حقول لتغييرها",
+    bulkEditFieldsCount: "حقل/حقول سيتغيّر",
+    bulkEditSetNotes: "تعيين ملاحظات (يستبدل الملاحظات الحالية)",
+    bulkEditWillApply: "سيُطبَّق على جميع الحيوانات المحددة",
+    active: "نشط",
+    inactive: "غير نشط",
 
   },
 
