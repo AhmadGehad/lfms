@@ -196,13 +196,13 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Acquisition Date *</Label>
+              <Label>{t("animals.acquisitionDate")} *</Label>
               <Controller name="acquisitionDate" control={control} render={({ field }) => (
                 <Input type="date" {...field} />
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Birth Date *</Label>
+              <Label>{t("animals.birthDate")} *</Label>
               <Controller name="birthDate" control={control} render={({ field }) => (
                 <Input type="date" {...field} />
               )} />
@@ -320,7 +320,7 @@ function BulkEditDialog({
       groupId: groupId === KEEP ? undefined : groupId === CLEAR ? null : Number(groupId),
       statusId: statusId === KEEP ? undefined : Number(statusId),
       ownerId: ownerId === KEEP ? undefined : ownerId === CLEAR ? null : Number(ownerId),
-      sex: sex === KEEP ? undefined : (sex as "M" | "F"),
+      sex: sex === KEEP ? undefined : (sex as "male" | "female"),
       acquisitionDate: acquisitionDate || undefined,
       notes: setNotesEnabled ? (notes || null) : undefined,
       exitDate: exitDate || undefined,
@@ -388,8 +388,8 @@ function BulkEditDialog({
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
-                <SelectItem value="M">{t("common.male")}</SelectItem>
-                <SelectItem value="F">{t("common.female")}</SelectItem>
+                <SelectItem value="male">{t("common.male")}</SelectItem>
+                <SelectItem value="female">{t("common.female")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -662,6 +662,10 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
         groupId: String(animal.animal.groupId ?? ""),
         statusId: String(animal.animal.statusId ?? ""),
         ownerId: animal.animal.ownerId ? String(animal.animal.ownerId) : "none",
+        sex: animal.animal.sex ?? "",
+        acquisitionDate: animal.animal.acquisitionDate ? new Date(animal.animal.acquisitionDate).toISOString().split("T")[0] : "",
+        birthDate: animal.animal.birthDate ? new Date(animal.animal.birthDate).toISOString().split("T")[0] : "",
+        purchaseCost: animal.animal.purchaseCost != null ? String(animal.animal.purchaseCost) : "",
         notes: animal.animal.notes ?? "",
         exitDate: animal.animal.exitDate ? new Date(animal.animal.exitDate).toISOString().split("T")[0] : "",
         exitReason: animal.animal.exitReason ?? "",
@@ -684,6 +688,10 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
       groupId: data.groupId ? Number(data.groupId) : undefined,
       statusId: data.statusId ? Number(data.statusId) : undefined,
       ownerId: data.ownerId && data.ownerId !== "none" ? Number(data.ownerId) : null,
+      sex: data.sex || undefined,
+      acquisitionDate: data.acquisitionDate || undefined,
+      birthDate: data.birthDate || undefined,
+      purchaseCost: data.purchaseCost !== "" ? data.purchaseCost : undefined,
       notes: data.notes || undefined,
       exitDate: data.exitDate || undefined,
       exitReason: data.exitReason || undefined,
@@ -738,6 +746,36 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
                       ))}
                     </SelectContent>
                   </Select>
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("common.sex")}</Label>
+                <Controller name="sex" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder={t("common.sex")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">{t("common.male")}</SelectItem>
+                      <SelectItem value="female">{t("common.female")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("animals.purchaseCost")}</Label>
+                <Controller name="purchaseCost" control={control} render={({ field }) => (
+                  <Input type="number" step="0.01" placeholder="0.00" {...field} />
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("animals.birthDate")}</Label>
+                <Controller name="birthDate" control={control} render={({ field }) => (
+                  <Input type="date" {...field} />
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("animals.acquisitionDate")}</Label>
+                <Controller name="acquisitionDate" control={control} render={({ field }) => (
+                  <Input type="date" {...field} />
                 )} />
               </div>
               <div className="space-y-1.5">
@@ -836,6 +874,78 @@ export default function Animals() {
       a.ownerName?.toLowerCase().includes(q)
     );
   });
+
+  // ── Sorting ──────────────────────────────────────────────────────────────
+  // Sortable by ID (animal code), Birth Date, Acquisition Date (default),
+  // Age (inverse of birth date), and Cost.
+  type SortKey = "id" | "birthDate" | "acquisitionDate" | "age" | "cost";
+  const [sortBy, setSortBy] = useState<SortKey>("acquisitionDate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const toggleSort = (key: SortKey) => {
+    if (sortBy === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      // Dates default to newest-first; text defaults to A→Z
+      setSortDir(key === "id" ? "asc" : "desc");
+    }
+  };
+
+  const sorted = React.useMemo(() => {
+    const arr = [...filtered];
+    const dir = sortDir === "asc" ? 1 : -1;
+    arr.sort((a: any, b: any) => {
+      switch (sortBy) {
+        case "id":
+          return dir * String(a.animal.animalId).localeCompare(String(b.animal.animalId), undefined, { numeric: true });
+        case "birthDate":
+          return dir * (new Date(a.animal.birthDate ?? 0).getTime() - new Date(b.animal.birthDate ?? 0).getTime());
+        case "age":
+          // Older first when desc — age sorts inversely to birth date
+          return -dir * (new Date(a.animal.birthDate ?? 0).getTime() - new Date(b.animal.birthDate ?? 0).getTime());
+        case "cost":
+          return dir * ((parseFloat(a.animal.purchaseCost ?? "0") || 0) - (parseFloat(b.animal.purchaseCost ?? "0") || 0));
+        case "acquisitionDate":
+        default:
+          return dir * (new Date(a.animal.acquisitionDate ?? 0).getTime() - new Date(b.animal.acquisitionDate ?? 0).getTime());
+      }
+    });
+    return arr;
+  }, [filtered, sortBy, sortDir]);
+
+  /** Human age from birth date: "2y 3m", "7m", or "15d". */
+  const formatAge = (birthDate: string | Date | null | undefined): string => {
+    if (!birthDate) return "—";
+    const b = new Date(birthDate);
+    if (isNaN(b.getTime())) return "—";
+    const now = new Date();
+    let months = (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth());
+    if (now.getDate() < b.getDate()) months -= 1;
+    if (months < 0) return "—";
+    if (months === 0) {
+      const days = Math.max(0, Math.floor((now.getTime() - b.getTime()) / 86400000));
+      return `${days}${t("animals.ageDaysSuffix")}`;
+    }
+    const years = Math.floor(months / 12);
+    const rem = months % 12;
+    if (years === 0) return `${rem}${t("animals.ageMonthsSuffix")}`;
+    return rem === 0
+      ? `${years}${t("animals.ageYearsSuffix")}`
+      : `${years}${t("animals.ageYearsSuffix")} ${rem}${t("animals.ageMonthsSuffix")}`;
+  };
+
+  const SortableHead = ({ k, children, className }: { k: SortKey; children: any; className?: string }) => (
+    <TableHead
+      className={`cursor-pointer select-none hover:text-foreground ${className ?? ""}`}
+      onClick={() => toggleSort(k)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {children}
+        {sortBy === k && <span className="text-xs">{sortDir === "asc" ? "▲" : "▼"}</span>}
+      </span>
+    </TableHead>
+  );
 
   const selectedAnimals = filtered.filter((a: any) => selectedIds.has(a.animal.id));
   const allSelected = filtered.length > 0 && filtered.every((a: any) => selectedIds.has(a.animal.id));
@@ -964,27 +1074,30 @@ export default function Animals() {
                         aria-label="Select all"
                       />
                     </TableHead>
-                    <TableHead>{t("animals.animalId")}</TableHead>
+                    <SortableHead k="id">{t("animals.animalId")}</SortableHead>
                     <TableHead>{t("common.species")}</TableHead>
                     <TableHead>{t("common.category")}</TableHead>
                     <TableHead>{t("common.group")}</TableHead>
                     <TableHead>{t("owners.owner")}</TableHead>
                     <TableHead>{t("common.sex")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
-                    <TableHead>{t("animals.acquisitionDate")}</TableHead>
+                    <SortableHead k="birthDate">{t("animals.birthDate")}</SortableHead>
+                    <SortableHead k="age">{t("animals.age")}</SortableHead>
+                    <SortableHead k="acquisitionDate">{t("animals.acquisitionDate")}</SortableHead>
+                    <SortableHead k="cost">{t("animals.purchaseCost")}</SortableHead>
                     <TableHead>{t("animals.daysOnFarm")}</TableHead>
                     <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.length === 0 ? (
+                  {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={11} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={14} className="text-center py-12 text-muted-foreground">
                         {t("animals.noAnimalsFound")}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filtered.map((a: any) => {
+                    sorted.map((a: any) => {
                       const acqDate = new Date(a.animal.acquisitionDate);
                       const exitDate = a.animal.exitDate ? new Date(a.animal.exitDate) : new Date();
                       const days = Math.floor((exitDate.getTime() - acqDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -1006,11 +1119,28 @@ export default function Animals() {
                           <TableCell className="capitalize">{a.animal.sex}</TableCell>
                           <TableCell><StatusBadge status={a.statusName ?? ""} /></TableCell>
                           <TableCell className="text-sm text-muted-foreground">
+                            {a.animal.birthDate ? new Date(a.animal.birthDate).toLocaleDateString() : "—"}
+                          </TableCell>
+                          <TableCell className="text-sm">{formatAge(a.animal.birthDate)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
                             {new Date(a.animal.acquisitionDate).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {a.animal.purchaseCost && parseFloat(a.animal.purchaseCost) > 0
+                              ? parseFloat(a.animal.purchaseCost).toLocaleString("en-EG", { minimumFractionDigits: 2 })
+                              : <span className="text-muted-foreground">—</span>}
                           </TableCell>
                           <TableCell>{days}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                title={t("common.edit")}
+                                onClick={(e) => { e.stopPropagation(); setEditAnimalId(a.animal.id); setEditOpen(true); }}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"

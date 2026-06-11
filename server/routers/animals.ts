@@ -12,6 +12,8 @@ import {
   createWeightEntry,
   getDb,
   getAnimalById,
+  getAnimalsByIds,
+  getStatusById,
   getAllAnimalsPnL,
   getAnimalPnL,
   getAnimalStatusHistory,
@@ -118,6 +120,10 @@ export const animalsRouter = router({
         groupId: z.number().optional(),
         statusId: z.number().optional(),
         ownerId: z.number().int().positive().nullable().optional(),
+        sex: z.enum(["male", "female"]).optional(),
+        acquisitionDate: pastOrTodayDate.optional(),
+        birthDate: pastOrTodayDate.optional(),
+        purchaseCost: optionalMoneyString,
         notes: z.string().optional(),
         exitDate: z.string().optional(),
         exitReason: z.string().optional(),
@@ -127,6 +133,18 @@ export const animalsRouter = router({
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const existing = await getAnimalById(id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Cross-field date sanity using incoming values where provided,
+      // falling back to the stored ones.
+      const birth = data.birthDate ?? String(existing.animal.birthDate).split("T")[0];
+      const acq = data.acquisitionDate ?? String(existing.animal.acquisitionDate).split("T")[0];
+      const exit = data.exitDate ?? (existing.animal.exitDate ? String(existing.animal.exitDate).split("T")[0] : null);
+      if (birth && acq && birth > acq) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Birth date cannot be after acquisition date" });
+      }
+      if (exit && acq && exit < acq) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Exit date cannot be before acquisition date" });
+      }
 
       // If status changed, record history
       if (data.statusId && data.statusId !== existing.animal.statusId) {
@@ -145,6 +163,8 @@ export const animalsRouter = router({
 
       await updateAnimal(id, {
         ...data,
+        acquisitionDate: data.acquisitionDate as any,
+        birthDate: data.birthDate as any,
         exitDate: data.exitDate as any,
         updatedAt: new Date(),
       });
@@ -181,6 +201,24 @@ export const animalsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const existing = await getAnimalById(input.id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // F3 guard: refuse to re-exit an animal that is already inactive/exited.
+      if (existing.animal.isActive === false) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `${existing.animal.animalId} is already exited. Use the Sales page to edit its sale instead.`,
+        });
+      }
+
+      // F4 guard: the chosen new status must actually be an exit status.
+      const newStatus = await getStatusById(input.newStatusId);
+      if (!newStatus) throw new TRPCError({ code: "BAD_REQUEST", message: "Selected status not found" });
+      if (!newStatus.isExitStatus) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot exit into status "${newStatus.name}" — it is not marked as an exit status. Pick a status flagged isExitStatus in Configuration.`,
+        });
+      }
 
       // Validate exit date is not before acquisition
       if (new Date(input.exitDate) < new Date(String(existing.animal.acquisitionDate))) {
@@ -272,7 +310,22 @@ export const animalsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Pre-validate everything before touching any row.
+      // F4 guard: the chosen new status must actually be an exit status.
+      const newStatus = await getStatusById(input.newStatusId);
+      if (!newStatus) throw new TRPCError({ code: "BAD_REQUEST", message: "Selected status not found" });
+      if (!newStatus.isExitStatus) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot exit into status "${newStatus.name}" — it is not marked as an exit status.`,
+        });
+      }
+
+      // P1 perf + F3 guard: ONE query for all selected animals. Reject already-
+      // exited animals BEFORE any write so a stray click can't double-sell.
+      const ids = input.animals.map((a) => a.id);
+      const fetched = await getAnimalsByIds(ids);
+      const byId = new Map(fetched.map((r: any) => [r.animal.id, r]));
+
       const prepared: Array<{
         id: number;
         existing: any;
@@ -281,8 +334,14 @@ export const animalsRouter = router({
         weightAtSale?: string;
       }> = [];
       for (const a of input.animals) {
-        const existing = await getAnimalById(a.id);
+        const existing = byId.get(a.id);
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: `Animal ${a.id} not found` });
+        if (existing.animal.isActive === false) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `${existing.animal.animalId} is already exited. Remove it from the selection.`,
+          });
+        }
         if (new Date(input.exitDate) < new Date(String(existing.animal.acquisitionDate))) {
           throw new TRPCError({ code: "BAD_REQUEST", message: `Exit date is before acquisition for ${existing.animal.animalId}` });
         }
@@ -363,7 +422,7 @@ export const animalsRouter = router({
         groupId: z.number().int().positive().nullable().optional(),
         statusId: z.number().int().positive().optional(),
         ownerId: z.number().int().positive().nullable().optional(),
-        sex: z.enum(["M", "F"]).optional(),
+        sex: z.enum(["male", "female"]).optional(),
         acquisitionDate: pastOrTodayDate.optional(),
         notes: z.string().max(2000).nullable().optional(),
         isActive: z.boolean().optional(),
@@ -383,10 +442,12 @@ export const animalsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Pre-load all targets so we can validate and capture before-values for audit.
+      // P1 perf: ONE query for all selected animals (was N+1).
+      const fetched = await getAnimalsByIds(animalIds);
+      const byId = new Map(fetched.map((r: any) => [r.animal.id, r]));
       const targets: any[] = [];
       for (const id of animalIds) {
-        const existing = await getAnimalById(id);
+        const existing = byId.get(id);
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: `Animal ${id} not found` });
         targets.push(existing);
       }

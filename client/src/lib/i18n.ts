@@ -153,7 +153,10 @@ const en = {
     costHeadDay: "Cost / Head / Day",
     dataLoading: "Data still loading, try again in a moment",
     pdfDownloaded: "PDF report downloaded",
-    headsDays: "{{heads}} heads · {{days}} days"
+    headsDays: "{{heads}} heads · {{days}} days",
+    outstandingReceivables: "Outstanding Receivables",
+    cashReceived: "Cash Received",
+
   },
 
   // Animals
@@ -214,6 +217,11 @@ const en = {
     bulkEditWillApply: "Will apply to all selected animals",
     active: "Active",
     inactive: "Inactive",
+
+    age: "Age",
+    ageDaysSuffix: "d",
+    ageMonthsSuffix: "m",
+    ageYearsSuffix: "y",
 
   },
 
@@ -472,7 +480,10 @@ const en = {
     excelExported: "Excel exported successfully",
     excelFailed: "Failed to export Excel",
     pdfExported: "PDF exported successfully",
-    pdfFailed: "Failed to export PDF"
+    pdfFailed: "Failed to export PDF",
+    cashReceived: "Cash received",
+    outstandingReceivables: "Outstanding receivables",
+
   },
 
   // Configuration
@@ -826,7 +837,10 @@ const ar = {
     costHeadDay: "التكلفة / رأس / يوم",
     dataLoading: "البيانات قيد التحميل، حاول مرة أخرى بعد لحظات",
     pdfDownloaded: "تم تنزيل تقرير PDF",
-    headsDays: "{{heads}} رأس · {{days}} يوم"
+    headsDays: "{{heads}} رأس · {{days}} يوم",
+    outstandingReceivables: "مستحقات غير محصلة",
+    cashReceived: "النقد المُستلم",
+
   },
 
   animals: {
@@ -886,6 +900,11 @@ const ar = {
     bulkEditWillApply: "سيُطبَّق على جميع الحيوانات المحددة",
     active: "نشط",
     inactive: "غير نشط",
+
+    age: "العمر",
+    ageDaysSuffix: " يوم",
+    ageMonthsSuffix: " شهر",
+    ageYearsSuffix: " سنة",
 
   },
 
@@ -1137,7 +1156,10 @@ const ar = {
     excelExported: "تم تصدير Excel بنجاح",
     excelFailed: "فشل تصدير Excel",
     pdfExported: "تم تصدير PDF بنجاح",
-    pdfFailed: "فشل تصدير PDF"
+    pdfFailed: "فشل تصدير PDF",
+    cashReceived: "النقد المُستلم",
+    outstandingReceivables: "مستحقات غير محصلة",
+
   },
 
   config: {

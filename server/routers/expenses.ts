@@ -2,7 +2,7 @@ import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import { moneyString, optionalMoneyString, pastOrTodayDate } from "../_core/validators";
-import { createExpense, deleteExpense, getExpenses, updateExpense, createAuditEntry } from "../db";
+import { createExpense, deleteExpense, getExpenseById, getExpenses, updateExpense, createAuditEntry } from "../db";
 
 export const expensesRouter = router({
   list: protectedProcedure
@@ -31,6 +31,24 @@ export const expensesRouter = router({
         headId: z.number().int().positive().optional(),
         vendorName: z.string().max(100).optional(),
         notes: z.string().max(2000).optional(),
+      }).superRefine((data, ctx) => {
+        // B4: cross-field consistency — a head expense needs a head, a
+        // category expense needs a category; general must have neither.
+        if (data.targetType === "head" && !data.headId) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["headId"], message: "headId is required when targetType is 'head'" });
+        }
+        if (data.targetType === "category" && !data.categoryTarget) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["categoryTarget"], message: "categoryTarget is required when targetType is 'category'" });
+        }
+        if (data.targetType === "general" && (data.headId || data.categoryTarget)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["targetType"], message: "General expenses must not specify headId or categoryTarget" });
+        }
+        if (data.targetType === "head" && data.categoryTarget) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["categoryTarget"], message: "Head expenses must not also specify a categoryTarget" });
+        }
+        if (data.targetType === "category" && data.headId) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["headId"], message: "Category expenses must not also specify a headId" });
+        }
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -64,7 +82,7 @@ export const expensesRouter = router({
       })
     )
     .mutation(async ({ input: { id, ...data }, ctx }) => {
-      const before = (await getExpenses({})).find((e: any) => e.expense?.id === id)?.expense;
+      const before = await getExpenseById(id);
       const result = await updateExpense(id, data);
       await createAuditEntry({
         userId: ctx.user?.id,
@@ -81,7 +99,7 @@ export const expensesRouter = router({
   delete: staffProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const before = (await getExpenses({})).find((e: any) => e.expense?.id === input.id)?.expense;
+      const before = await getExpenseById(input.id);
       const result = await deleteExpense(input.id, ctx.user?.id);
       await createAuditEntry({
         userId: ctx.user?.id,

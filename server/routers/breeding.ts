@@ -11,6 +11,8 @@ import {
   getAllStatuses,
   getAllGroups,
   getLambingLog,
+  getLambingRecordById,
+  getRawAnimalById,
   updateLambingRecord,
   incrementCategorySequence,
   recordStatusChange,
@@ -94,11 +96,6 @@ export const breedingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const lambRecords = await getLambingLog();
-      const lamb = lambRecords.find((l: any) => l.id === input.lambingLogId);
-      if (!lamb) throw new Error("Lambing record not found");
-      if (lamb.isPromoted) throw new Error("Lamb already promoted");
-
       const cats = await getAllCategories();
       const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
       const prefix = cat?.idPrefix ?? "A-";
@@ -106,8 +103,23 @@ export const breedingRouter = router({
       const db = await getDb();
       if (!db) throw new Error("DB unavailable");
 
-      // All-or-nothing: sequence bump + animal insert + status history + lamb update
+      // All-or-nothing: lamb re-check + sequence bump + animal insert +
+      // status history + lamb update — all inside ONE transaction.
       const out = await db.transaction(async (tx) => {
+        // F8: re-read the lamb INSIDE the transaction so a concurrent
+        // promotion of the same lamb cannot pass the isPromoted check twice.
+        const lamb = await getLambingRecordById(input.lambingLogId, tx);
+        if (!lamb) throw new Error("Lambing record not found");
+        if (lamb.isPromoted) throw new Error("Lamb already promoted");
+
+        // F7: inherit the dam's owner so animals born on-farm stay attributed
+        // to the same owner as their mother (owner can be changed later).
+        let inheritedOwnerId: number | null = null;
+        if (lamb.damId) {
+          const dam = await getRawAnimalById(lamb.damId, tx);
+          inheritedOwnerId = dam?.ownerId ?? null;
+        }
+
         const seq = await incrementCategorySequence(input.categoryId, tx);
         const animalId = `${prefix}${String(seq).padStart(4, "0")}`;
 
@@ -117,6 +129,7 @@ export const breedingRouter = router({
           categoryId: input.categoryId,
           groupId: input.groupId,
           statusId: input.statusId,
+          ownerId: inheritedOwnerId,
           sex: lamb.sex,
           acquisitionType: "born",
           acquisitionDate: input.acquisitionDate as any,

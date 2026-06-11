@@ -243,6 +243,18 @@ export default function IncomeStatement() {
                     <span className="text-muted-foreground">{t("incomeStatement.animalSales")}</span>
                     <span className="font-medium">{fmt(statement?.revenue?.animalSales ?? 0)}</span>
                   </div>
+                  {((statement?.revenue as any)?.outstandingReceivables ?? 0) > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground ps-3">↳ {t("incomeStatement.cashReceived")}</span>
+                        <span className="text-green-700">{fmt((statement?.revenue as any)?.cashReceived ?? 0)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground ps-3">↳ {t("incomeStatement.outstandingReceivables")}</span>
+                        <span className="text-amber-600 font-medium">{fmt((statement?.revenue as any)?.outstandingReceivables ?? 0)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
                 <div className="flex justify-between font-semibold border-t mt-3 pt-3">
                   <span>{t("incomeStatement.totalRevenue")}</span>

@@ -297,6 +297,19 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Outstanding receivables banner — accrued revenue not yet collected */}
+      {kpis && (kpis as any).outstandingReceivables > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3 flex items-center justify-between text-sm">
+          <span className="text-amber-800 dark:text-amber-300">{t("dashboard.outstandingReceivables")}</span>
+          <span className="text-lg font-bold text-amber-700 dark:text-amber-400">
+            {fmt((kpis as any).outstandingReceivables)}
+            <span className="text-xs font-normal text-muted-foreground ms-2">
+              ({t("dashboard.cashReceived")}: {fmt((kpis as any).cashReceived ?? 0)})
+            </span>
+          </span>
+        </div>
+      )}
+
       {/* Charts Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Head Count by Category */}

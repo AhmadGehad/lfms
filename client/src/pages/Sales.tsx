@@ -21,6 +21,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import { Plus, ShoppingCart, Trash2, AlertTriangle, Pencil } from "lucide-react";
 import { useState } from "react";
+import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -31,12 +32,26 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
     animalId: "",
     saleDate: new Date().toISOString().split("T")[0],
     salePrice: "",
+    amountPaid: "",
     weightAtSale: "",
     buyerName: "",
     notes: "",
+    statusId: "",
   });
 
   const { data: animals } = trpc.animals.list.useQuery({ isActive: true });
+  const { data: statuses } = trpc.config.getStatuses.useQuery();
+  // F1: only exit statuses are valid here; default to the one named "sold"
+  // when present, otherwise the first exit status.
+  const exitStatuses = (statuses ?? []).filter((s: any) => s.isExitStatus);
+  React.useEffect(() => {
+    if (!form.statusId && exitStatuses.length > 0) {
+      const sold = exitStatuses.find((s: any) => String(s.name).toLowerCase().includes("sold"));
+      setForm((f) => ({ ...f, statusId: String((sold ?? exitStatuses[0]).id) }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exitStatuses.length]);
+
   const utils = trpc.useUtils();
 
   const exitAnimal = trpc.animals.exit.useMutation({
@@ -53,14 +68,21 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const priceNum = parseFloat(form.salePrice) || 0;
+  const paidNum = form.amountPaid === "" ? priceNum : (parseFloat(form.amountPaid) || 0);
+  const outstandingPreview = Math.max(0, priceNum - paidNum);
+
   const handleSubmit = () => {
     if (!form.animalId || !form.salePrice) { toast.error(t("sales.animalPriceRequired")); return; }
+    if (!form.statusId) { toast.error(t("animals.selectExitStatus")); return; }
+    if (paidNum > priceNum) { toast.error(t("sales.paymentExceedsOutstanding")); return; }
     exitAnimal.mutate({
       id: Number(form.animalId),
       exitDate: form.saleDate,
       exitReason: "sold",
-      newStatusId: 6,
+      newStatusId: Number(form.statusId),
       salePrice: form.salePrice,
+      amountPaid: form.amountPaid === "" ? undefined : form.amountPaid,
       weightAtSale: form.weightAtSale || undefined,
       buyerName: form.buyerName || undefined,
       saleNotes: form.notes || undefined,
@@ -94,6 +116,24 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5">
               <Label>Sale Price (EGP) *</Label>
               <Input type="number" placeholder="0.00" value={form.salePrice} onChange={(e) => setForm((f) => ({ ...f, salePrice: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("sales.amountPaid")} (EGP)</Label>
+              <Input type="number" placeholder={form.salePrice || "0.00"} value={form.amountPaid} onChange={(e) => setForm((f) => ({ ...f, amountPaid: e.target.value }))} />
+              {outstandingPreview > 0 && (
+                <p className="text-xs text-amber-600">{t("sales.outstanding")}: {outstandingPreview.toLocaleString("en-EG", { minimumFractionDigits: 2 })}</p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("common.status")} *</Label>
+              <Select value={form.statusId} onValueChange={(v) => setForm((f) => ({ ...f, statusId: v }))}>
+                <SelectTrigger><SelectValue placeholder={t("animals.selectExitStatus")} /></SelectTrigger>
+                <SelectContent>
+                  {exitStatuses.map((s: any) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Weight at Sale (kg)</Label>

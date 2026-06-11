@@ -192,6 +192,59 @@ export async function getAllStatuses() {
   return db.select().from(animalStatuses).where(isNull(animalStatuses.deletedAt)).orderBy(animalStatuses.name);
 }
 
+/** Fetch a single status row (used to verify isExitStatus on exits). */
+export async function getStatusById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(animalStatuses).where(eq(animalStatuses.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+/**
+ * Fetch one lambing record by id, optionally inside a transaction. Used by
+ * promoteLamb to re-read inside the transaction so the isPromoted check
+ * cannot race against another concurrent promotion of the same lamb.
+ */
+export async function getLambingRecordById(id: number, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return null;
+  const rows = await db.select().from(lambingLog).where(eq(lambingLog.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Fetch one animal row (no joins), inside or outside a tx. */
+export async function getRawAnimalById(id: number, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return null;
+  const rows = await db.select().from(animals).where(eq(animals.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Fetch many animals + joins in ONE query (avoids N+1 in bulk ops). */
+export async function getAnimalsByIds(ids: number[]) {
+  const db = await getDb();
+  if (!db || ids.length === 0) return [];
+  return db
+    .select({
+      animal: animals,
+      speciesName: species.name,
+      categoryName: animalCategories.name,
+      categoryPrefix: animalCategories.idPrefix,
+      groupCode: groups.groupCode,
+      groupName: groups.name,
+      statusName: animalStatuses.name,
+      isExitStatus: animalStatuses.isExitStatus,
+      ownerName: owners.name,
+    })
+    .from(animals)
+    .leftJoin(species, eq(animals.speciesId, species.id))
+    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
+    .leftJoin(groups, eq(animals.groupId, groups.id))
+    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id))
+    .where(inArray(animals.id, ids));
+}
+
 export async function createStatus(data: { name: string; description?: string; isExitStatus?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -573,6 +626,22 @@ export async function createSale(data: typeof sales.$inferInsert, tx?: DbOrTx) {
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(sales).values(data);
   return result;
+}
+
+/** Single sale row (P2 perf: replaces load-all-then-find patterns). */
+export async function getSaleById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(sales).where(and(eq(sales.id, id), isNull(sales.deletedAt))).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Single expense row (P2 perf: replaces load-all-then-find patterns). */
+export async function getExpenseById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(expenses).where(and(eq(expenses.id, id), isNull(expenses.deletedAt))).limit(1);
+  return rows[0] ?? null;
 }
 export async function updateSale(
   id: number,
@@ -1332,7 +1401,12 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
 
 /**
  * Check if an animal should be auto-staged to another category based on its latest weight.
- * Called after every weight log entry. Returns the new categoryId if staged, null otherwise.
+ * Called after every weight log entry. Returns the new categoryId if staged.
+ *
+ * IMPORTANT (F5): the animal KEEPS its lifetime animalId code. Changing the
+ * display code on promotion broke historical references (audit entries,
+ * expense notes, exported reports all pointed at a code that no longer
+ * existed). Identity is for life; the category change alone is recorded.
  */
 export async function checkAndStageAnimal(animalId: number, currentWeightKg: number, changedBy?: number): Promise<{ staged: boolean; newCategoryId?: number; newAnimalId?: string }> {
   const db = await getDb();
@@ -1356,51 +1430,41 @@ export async function checkAndStageAnimal(animalId: number, currentWeightKg: num
   const threshold = parseFloat(catRow.autoStageWeightKg);
   if (currentWeightKg < threshold) return { staged: false };
 
-  // Get target category
+  // Confirm target category exists
   const [targetCat] = await db
-    .select({
-      id: animalCategories.id,
-      idPrefix: animalCategories.idPrefix,
-      idSequence: animalCategories.idSequence
-    })
+    .select({ id: animalCategories.id })
     .from(animalCategories)
     .where(eq(animalCategories.id, catRow.autoStageTargetCategoryId))
     .limit(1);
 
   if (!targetCat) return { staged: false };
 
-  // Generate new animal ID in target category
-  const newSeq = await incrementCategorySequence(targetCat.id);
-  const newAnimalId = `${targetCat.idPrefix}${String(newSeq).padStart(4, "0")}`;
+  // F6: category change + audit entry are atomic.
+  await db.transaction(async (tx) => {
+    await tx
+      .update(animals)
+      .set({
+        categoryId: targetCat.id,
+        updatedAt: new Date()
+      })
+      .where(eq(animals.id, animalId));
 
-  // Update the animal — change category and update animalId
-  await db
-    .update(animals)
-    .set({
-      categoryId: targetCat.id,
-      animalId: newAnimalId,
-      updatedAt: new Date()
-    })
-    .where(eq(animals.id, animalId));
-
-  // Record status history as a note
-  await createAuditEntry({
-    userId: changedBy,
-    action: "update",
-    entityType: "animal",
-    entityId: String(animalId),
-    oldValues: {
-      categoryId: animal.animal.categoryId,
-      animalId: animal.animal.animalId
-    } as any,
-    newValues: {
-      categoryId: targetCat.id,
-      animalId: newAnimalId,
-      autoStagedAtWeightKg: currentWeightKg
-    } as any
+    await createAuditEntry({
+      userId: changedBy,
+      action: "auto_stage",
+      entityType: "animal",
+      entityId: String(animalId),
+      oldValues: {
+        categoryId: animal.animal.categoryId,
+      } as any,
+      newValues: {
+        categoryId: targetCat.id,
+        autoStagedAtWeightKg: currentWeightKg
+      } as any
+    }, tx);
   });
 
-  return { staged: true, newCategoryId: targetCat.id, newAnimalId };
+  return { staged: true, newCategoryId: targetCat.id, newAnimalId: animal.animal.animalId };
 }
 
 export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number }) {
@@ -1436,11 +1500,37 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     .from(feedStockLedger)
     .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${fromDate}`, sql`${feedStockLedger.transactionDate} <= ${toDate}`, isNull(feedStockLedger.deletedAt)));
 
-  // Total sales revenue in period
+  // Total sales revenue in period — F9: track BOTH accrued (salePrice) and
+  // cash actually received (amountPaid) so the dashboard can show outstanding.
   const totalRevenue = await db
-    .select({ total: sql<number>`SUM(salePrice)` })
+    .select({
+      total: sql<number>`SUM(salePrice)`,
+      paid: sql<number>`SUM(amountPaid)`,
+    })
     .from(sales)
     .where(and(sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt)));
+
+  // B3: AVERAGE head count over the period (not today's count). An animal
+  // contributes the fraction of the period it was actually on the farm:
+  // overlapDays(animal, period) summed across animals / periodDays.
+  const periodDaysForAvg = Math.max(1, Math.ceil((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86400000));
+  const avgHeadRows = await db
+    .select({
+      totalHeadDays: sql<number>`SUM(
+        GREATEST(0, DATEDIFF(
+          LEAST(COALESCE(exitDate, ${toDate}), ${toDate}),
+          GREATEST(acquisitionDate, ${fromDate})
+        ) + 1)
+      )`,
+    })
+    .from(animals)
+    .where(and(
+      isNull(animals.deletedAt),
+      sql`${animals.acquisitionDate} <= ${toDate}`,
+      sql`(${animals.exitDate} IS NULL OR ${animals.exitDate} >= ${fromDate})`,
+    ));
+  const totalHeadDays = Number(avgHeadRows[0]?.totalHeadDays ?? 0);
+  const avgHeads = totalHeadDays / periodDaysForAvg;
 
   // Category breakdown (active animals only)
   const categoryBreakdown = await db
@@ -1458,6 +1548,8 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const feedExpensesMinor = toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
   const totalExpensesMinor = otherExpensesMinor + feedExpensesMinor;
   const revenueMinor = toMinor(String(totalRevenue[0]?.total ?? 0));
+  const cashReceivedMinor = toMinor(String(totalRevenue[0]?.paid ?? 0));
+  const outstandingMinor = revenueMinor - cashReceivedMinor;
   const activeHeads = Number(headCount[0]?.count ?? 0);
 
   const otherExpenses = toMajor(otherExpensesMinor);
@@ -1465,16 +1557,20 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const totalExpenses = toMajor(totalExpensesMinor);
   const revenueNum = toMajor(revenueMinor);
 
-  // Cost per head per day (Excel's primary daily metric)
-  const periodDays = Math.max(1, Math.ceil((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86400000));
-  const costPerHeadPerDay = activeHeads > 0 && periodDays > 0 ? toMajor(divMinor(totalExpensesMinor, activeHeads * periodDays)) : 0;
+  // Cost per head per day (Excel's primary daily metric) — B3: divide by the
+  // AVERAGE headcount over the period so selling animals mid-period doesn't
+  // inflate the metric. totalHeadDays is exactly Σ(days each head was present).
+  const costPerHeadPerDay = totalHeadDays > 0 ? toMajor(divMinor(totalExpensesMinor, totalHeadDays)) : 0;
 
   return {
     totalActiveHeads: activeHeads,
+    averageHeads: Math.round(avgHeads * 10) / 10,
     otherExpenses,
     feedExpenses,
     totalExpenses,
     totalRevenue: revenueNum,
+    cashReceived: toMajor(cashReceivedMinor),
+    outstandingReceivables: toMajor(outstandingMinor),
     grossPnL: toMajor(revenueMinor - totalExpensesMinor),
     costPerHeadPerDay,
     categoryBreakdown,
@@ -1642,9 +1738,13 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const db = await getDb();
   if (!db) return null;
 
-  // Revenue: animal sales (exclude soft-deleted)
+  // Revenue: animal sales (exclude soft-deleted). F9: capture both accrued
+  // (salePrice) and cash actually received (amountPaid).
   const salesData = await db
-    .select({ total: sql<number>`SUM(salePrice)` })
+    .select({
+      total: sql<number>`SUM(salePrice)`,
+      paid: sql<number>`SUM(amountPaid)`,
+    })
     .from(sales)
     .where(and(sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`, isNull(sales.deletedAt)));
 
@@ -1672,6 +1772,8 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
     .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
   const totalFeedCostMinor = toMinor(String(feedPurchases[0]?.total ?? 0));
   const totalRevenueMinor = toMinor(String(salesData[0]?.total ?? 0));
+  const cashReceivedMinor = toMinor(String(salesData[0]?.paid ?? 0));
+  const outstandingMinor = totalRevenueMinor - cashReceivedMinor;
   const totalAnimalCostMinor = toMinor(String(purchaseCosts[0]?.total ?? 0));
   const totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
   const totalCostMinor = totalAnimalCostMinor + totalFeedCostMinor + totalOtherCostMinor;
@@ -1685,7 +1787,12 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const grossProfit = toMajor(grossProfitMinor);
   return {
     period: { fromDate: filters.fromDate, toDate: filters.toDate },
-    revenue: { animalSales: totalRevenue, total: totalRevenue },
+    revenue: {
+      animalSales: totalRevenue,
+      total: totalRevenue,
+      cashReceived: toMajor(cashReceivedMinor),
+      outstandingReceivables: toMajor(outstandingMinor),
+    },
     costs: {
       animalPurchases: totalAnimalCost,
       feedPurchases: totalFeedCost,
