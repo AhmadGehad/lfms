@@ -128,6 +128,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="general">General (Farm-wide)</SelectItem>
+                  <SelectItem value="herd">{t("expenses.herd")}</SelectItem>
                   <SelectItem value="category">Category (shared by group)</SelectItem>
                   <SelectItem value="head">{t("expenses.specificAnimal")}</SelectItem>
                 </SelectContent>
@@ -196,7 +197,7 @@ export default function Expenses() {
     toDate,
     ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
     vendor: filterVendor || undefined,
-    targetType: filterTargetType !== "all" ? (filterTargetType as "general" | "category" | "head") : undefined,
+    targetType: filterTargetType !== "all" ? (filterTargetType as "general" | "category" | "head" | "herd") : undefined,
   });
   const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
   const utils = trpc.useUtils();
@@ -246,6 +247,7 @@ export default function Expenses() {
               <SelectContent>
                 <SelectItem value="all">{t("expenses.allAllocations")}</SelectItem>
                 <SelectItem value="general">{t("expenses.general")}</SelectItem>
+                <SelectItem value="herd">{t("expenses.herd")}</SelectItem>
                 <SelectItem value="category">{t("expenses.category")}</SelectItem>
                 <SelectItem value="head">{t("expenses.head")}</SelectItem>
               </SelectContent>

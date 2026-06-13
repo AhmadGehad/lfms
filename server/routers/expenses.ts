@@ -11,7 +11,7 @@ export const expensesRouter = router({
         fromDate: z.string().optional(),
         toDate: z.string().optional(),
         categoryId: z.number().optional(),
-        targetType: z.enum(["general", "category", "head"]).optional(),
+        targetType: z.enum(["general", "category", "head", "herd"]).optional(),
         headId: z.number().optional(),
         ownerId: z.number().optional(),
         vendor: z.string().optional(),
@@ -26,7 +26,7 @@ export const expensesRouter = router({
         categoryId: z.number().int().positive(),
         subCategoryId: z.number().int().positive().optional(),
         amount: moneyString,
-        targetType: z.enum(["general", "category", "head"]),
+        targetType: z.enum(["general", "category", "head", "herd"]),
         categoryTarget: z.number().int().positive().optional(),
         headId: z.number().int().positive().optional(),
         vendorName: z.string().max(100).optional(),
@@ -42,6 +42,9 @@ export const expensesRouter = router({
         }
         if (data.targetType === "general" && (data.headId || data.categoryTarget)) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["targetType"], message: "General expenses must not specify headId or categoryTarget" });
+        }
+        if (data.targetType === "herd" && (data.headId || data.categoryTarget)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["targetType"], message: "Herd (animal-wide) expenses must not specify headId or categoryTarget" });
         }
         if (data.targetType === "head" && data.categoryTarget) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["categoryTarget"], message: "Head expenses must not also specify a categoryTarget" });

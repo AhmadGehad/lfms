@@ -375,6 +375,8 @@ const en = {
     head: "Head",
     searchVendor: "Search vendor...",
 
+    herd: "Animal-wide (all active heads)",
+
   },
 
   // P&L
@@ -1053,6 +1055,8 @@ const ar = {
     category: "فئة",
     head: "رأس",
     searchVendor: "ابحث عن مورد...",
+
+    herd: "على مستوى القطيع (كل الرؤوس النشطة)",
 
   },
 

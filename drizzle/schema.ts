@@ -306,7 +306,7 @@ export const expenses = mysqlTable("expenses", {
   categoryId: int("categoryId").notNull(),
   subCategoryId: int("subCategoryId"),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  targetType: mysqlEnum("targetType", ["general", "category", "head"]).notNull(),
+  targetType: mysqlEnum("targetType", ["general", "category", "head", "herd"]).notNull(),
   categoryTarget: int("categoryTarget"),
   headId: int("headId"),
   vendorName: varchar("vendorName", { length: 100 }),

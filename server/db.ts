@@ -925,6 +925,22 @@ export async function getCategoryHeadCountDuring(categoryId: number, windowStart
   return Math.max(1, Number(rows[0]?.count ?? 1));
 }
 
+/**
+ * Total herd head count alive on a specific date — animals acquired on/before
+ * the date and not exited before it. Used to split "herd" (animal-wide)
+ * expenses equally across the whole farm on the expense date.
+ */
+export async function getHerdHeadCountOnDate(dateStr: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 1;
+  const d = dateStr.split("T")[0];
+  const rows = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(animals)
+    .where(and(isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${d}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${d}`)));
+  return Math.max(1, Number(rows[0]?.count ?? 1));
+}
+
 // ─── FEED STOCK ───────────────────────────────────────────────────────────────
 
 export async function getFeedStockLedger(feedItemId?: number) {
@@ -980,7 +996,7 @@ export async function updateFeedStockEntry(
 
 // ─── EXPENSESS ─────────────────────────────────────────────────────────────────
 
-export async function getExpenses(filters?: { fromDate?: string; toDate?: string; categoryId?: number; targetType?: "general" | "category" | "head"; headId?: number; ownerId?: number; vendor?: string }) {
+export async function getExpenses(filters?: { fromDate?: string; toDate?: string; categoryId?: number; targetType?: "general" | "category" | "head" | "herd"; headId?: number; ownerId?: number; vendor?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [];
@@ -1150,6 +1166,19 @@ export async function getAnimalPnL(animalId: number) {
   const catHeadCount = await getCategoryHeadCountDuring(animal.categoryId, acqDateStr, exitDateStr);
   const categoryExpenseAllocationMinor = divMinor(catExpTotalMinor, catHeadCount);
 
+  // Herd (animal-wide) expenses: each such expense in the animal's window is
+  // split equally across all animals alive on the expense's date.
+  const herdExpenseRows = await db
+    .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
+    .from(expenses)
+    .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
+  let herdExpenseAllocationMinor = 0;
+  for (const he of herdExpenseRows) {
+    const dStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
+    const herdCount = await getHerdHeadCountOnDate(dStr);
+    herdExpenseAllocationMinor += divMinor(toMinor(String(he.amount)), herdCount);
+  }
+
   // Sale revenue (exclude soft-deleted sales)
   const saleRows = await db
     .select()
@@ -1165,13 +1194,14 @@ export async function getAnimalPnL(animalId: number) {
   const feedCostMinor = toMinor(feedCost);
 
   const purchaseCostMinor = toMinor(animal.purchaseCost ?? "0");
-  const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor;
+  const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
   const netPnLMinor = revenueMinor - totalCostMinor;
 
   // Convert back to major-unit numbers at the boundary
   const purchaseCost = toMajor(purchaseCostMinor);
   const directExpenseTotal = toMajor(directExpenseTotalMinor);
   const categoryExpenseAllocation = toMajor(categoryExpenseAllocationMinor);
+  const herdExpenseAllocation = toMajor(herdExpenseAllocationMinor);
   const revenue = toMajor(revenueMinor);
   const totalCost = toMajor(totalCostMinor);
   const netPnL = toMajor(netPnLMinor);
@@ -1210,6 +1240,7 @@ export async function getAnimalPnL(animalId: number) {
     feedCost,
     directExpenseTotal,
     categoryExpenseAllocation,
+    herdExpenseAllocation,
     totalCost,
     revenue,
     netPnL,
@@ -1300,6 +1331,27 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     animalsByCategory.get(a.categoryId)!.push({ acq, exit });
   }
 
+  // Herd (animal-wide) expenses: each split equally across all animals alive on
+  // its date. Load them once and precompute the per-expense allocation in minor
+  // units using an in-memory herd-count-on-date over allAnimals.
+  const allHerdExp = await db
+    .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
+    .from(expenses)
+    .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt)));
+  const allAnimalDates = allAnimals.map((r: any) => {
+    const a = r.animal;
+    const acq = a.acquisitionDate instanceof Date ? a.acquisitionDate.toISOString().split("T")[0] : String(a.acquisitionDate ?? today).split("T")[0];
+    const exit = a.exitDate ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0]) : null;
+    return { acq, exit };
+  });
+  const herdCountOnDate = (dateStr: string) => Math.max(1, allAnimalDates.filter((a) => a.acq <= dateStr && (a.exit === null || a.exit >= dateStr)).length);
+  // Pre-split each herd expense → { date, perHeadMinor } so each animal alive
+  // that day picks up the same per-head share.
+  const herdExpenseShares = allHerdExp.map((he: any) => {
+    const dateStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
+    return { date: dateStr, perHeadMinor: divMinor(toMinor(String(he.amount)), herdCountOnDate(dateStr)) };
+  });
+
   // 5. Pre-fetch ALL ration plans (active + historical) for accurate per-period cost
   const allPlans = await db.select().from(rationPlans).where(isNull(rationPlans.deletedAt));
   // Group by categoryId
@@ -1366,7 +1418,16 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       }
     }
 
-    const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor;
+    // Herd (animal-wide) allocation: this animal's per-head share of each herd
+    // expense that fell within its time on farm.
+    let herdExpenseAllocationMinor = 0;
+    for (const hs of herdExpenseShares) {
+      if (hs.date >= acqDateStr && hs.date <= exitDateStr) {
+        herdExpenseAllocationMinor += hs.perHeadMinor;
+      }
+    }
+
+    const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
     const netPnLMinor = revenueMinor - totalCostMinor;
 
     const purchaseCost = toMajor(purchaseCostMinor);
@@ -1389,6 +1450,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       feedCost,
       directExpenseTotal,
       categoryExpenseAllocation: toMajor(categoryExpenseAllocationMinor),
+      herdExpenseAllocation: toMajor(herdExpenseAllocationMinor),
       totalCost,
       revenue,
       netPnL,
