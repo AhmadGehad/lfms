@@ -831,11 +831,22 @@ export default function Animals() {
     setEditOpen(v);
     if (!v) setLocation("/animals");
   };
-  const [search, setSearch] = useState("");
-  const [filterSpecies, setFilterSpecies] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [filterActive, setFilterActive] = useState<string>("active");
-  const [filterOwner, setFilterOwner] = useState<string>("all");
+  // Persist filters + sort across navigation (e.g. viewing an animal then
+  // returning) using sessionStorage, so the registry comes back the way the
+  // user left it. Keyed under a single object for one read/write.
+  const FILTERS_KEY = "lfms.animals.filters";
+  const savedFilters = React.useMemo(() => {
+    try {
+      const raw = sessionStorage.getItem(FILTERS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  }, []);
+
+  const [search, setSearch] = useState<string>(savedFilters.search ?? "");
+  const [filterSpecies, setFilterSpecies] = useState<string>(savedFilters.filterSpecies ?? "all");
+  const [filterStatus, setFilterStatus] = useState<string>(savedFilters.filterStatus ?? "all");
+  const [filterActive, setFilterActive] = useState<string>(savedFilters.filterActive ?? "active");
+  const [filterOwner, setFilterOwner] = useState<string>(savedFilters.filterOwner ?? "all");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSellOpen, setBulkSellOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -879,8 +890,16 @@ export default function Animals() {
   // Sortable by ID (animal code), Birth Date, Acquisition Date (default),
   // Age (inverse of birth date), and Cost.
   type SortKey = "id" | "birthDate" | "acquisitionDate" | "age" | "cost";
-  const [sortBy, setSortBy] = useState<SortKey>("acquisitionDate");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortBy, setSortBy] = useState<SortKey>(savedFilters.sortBy ?? "acquisitionDate");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(savedFilters.sortDir ?? "desc");
+
+  React.useEffect(() => {
+    try {
+      sessionStorage.setItem(FILTERS_KEY, JSON.stringify({
+        search, filterSpecies, filterStatus, filterActive, filterOwner, sortBy, sortDir,
+      }));
+    } catch { /* ignore quota / disabled storage */ }
+  }, [search, filterSpecies, filterStatus, filterActive, filterOwner, sortBy, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortBy === key) {
