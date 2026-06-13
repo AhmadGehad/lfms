@@ -109,10 +109,18 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
                 <SelectTrigger><SelectValue placeholder={t("expenses.selectSubCategory")} /></SelectTrigger>
                 <SelectContent>
                   {(subCategories ?? []).map((sc: any) => (
-                    <SelectItem key={sc.id} value={String(sc.id)}>{sc.name}</SelectItem>
+                    <SelectItem key={sc.id} value={String(sc.id)}>
+                      {sc.name}{sc.description ? ` — ${sc.description}` : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {(() => {
+                const sc = (subCategories ?? []).find((s: any) => String(s.id) === form.subCategoryId);
+                return sc?.description
+                  ? <p className="text-xs text-muted-foreground">{sc.description}</p>
+                  : null;
+              })()}
             </div>
             <div className="space-y-1.5">
               <Label>Allocation Type *</Label>
