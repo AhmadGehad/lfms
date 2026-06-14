@@ -1198,7 +1198,11 @@ export async function getAnimalPnL(animalId: number) {
   const feedCostMinor = toMinor(feedCost);
 
   const purchaseCostMinor = toMinor(String(animal.purchaseCost ?? "0"));
-const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+  // Operating cost = everything EXCEPT purchase cost. Computed by direct
+  // addition (not totalCost - purchaseCost) so it's immune to purchaseCost
+  // parsing issues.
+  const operatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+  const totalCostMinor = purchaseCostMinor + operatingCostMinor;
   const netPnLMinor = revenueMinor - totalCostMinor;
 
   const purchaseCost = toMajor(purchaseCostMinor);
@@ -1208,7 +1212,6 @@ const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMin
   const revenue = toMajor(revenueMinor);
   const totalCost = toMajor(totalCostMinor);
   const netPnL = toMajor(netPnLMinor);
-  const operatingCostMinor = totalCostMinor - purchaseCostMinor;
   const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(operatingCostMinor, daysOnFarm)) : 0;
   const costPerMonth = daysOnFarm > 0 ? toMajor(operatingCostMinor * 30 / daysOnFarm) : 0;
   const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
@@ -1433,7 +1436,10 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       }
     }
 
-    const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+    // Operating cost = feed + direct + category + herd (NOT purchase cost).
+    // Direct sum avoids any purchaseCost parsing issues.
+    const operatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+    const totalCostMinor = purchaseCostMinor + operatingCostMinor;
     const netPnLMinor = revenueMinor - totalCostMinor;
 
     const purchaseCost = toMajor(purchaseCostMinor);
@@ -1441,7 +1447,6 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const revenue = toMajor(revenueMinor);
     const totalCost = toMajor(totalCostMinor);
     const netPnL = toMajor(netPnLMinor);
-    const operatingCostMinor = totalCostMinor - purchaseCostMinor;
     const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(operatingCostMinor, daysOnFarm)) : 0;
     const costPerMonth = daysOnFarm > 0 ? toMajor(operatingCostMinor * 30 / daysOnFarm) : 0;
     const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
