@@ -893,6 +893,8 @@ export default function Animals() {
   const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
 
   const filtered = (animals ?? []).filter((a: any) => {
+    // Client-side acquisitionType filter — belt-and-suspenders with server filter
+    if (filterAcquisitionType !== "all" && a.animal.acquisitionType !== filterAcquisitionType) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
