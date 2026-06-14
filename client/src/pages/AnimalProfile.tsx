@@ -142,6 +142,10 @@ function PnLCard({ animalId }: { animalId: number }) {
               <p className="text-lg font-bold">{fmt(pnl.costPerDay ?? 0)}</p>
             </div>
             <div>
+              <p className="text-xs text-muted-foreground">{t("animalProfile.costMonth")}</p>
+              <p className="text-lg font-bold">{fmt(pnl.costPerMonth ?? 0)}</p>
+            </div>
+            <div>
               <p className="text-xs text-muted-foreground">{t("animals.daysOnFarm")}</p>
               <p className="text-lg font-bold">{pnl.daysOnFarm ?? 0}</p>
             </div>
@@ -191,10 +195,18 @@ function WeightChart({ animalId }: { animalId: number }) {
     onError: (e) => toast.error(e.message),
   });
 
-  const chartData = (weights ?? []).map((w: any) => ({
-    date: new Date(w.weighDate).toLocaleDateString("en-EG", { month: "short", day: "numeric" }),
-    weight: parseFloat(w.weightKg),
-  }));
+  const chartData = (weights ?? []).map((w: any, i: number, arr: any[]) => {
+    const currentWeight = parseFloat(w.weightKg);
+    const prevWeight = i > 0 ? parseFloat(arr[i - 1].weightKg) : null;
+    const diffPct = prevWeight && prevWeight > 0
+      ? ((currentWeight - prevWeight) / prevWeight * 100).toFixed(1)
+      : null;
+    return {
+      date: new Date(w.weighDate).toLocaleDateString("en-EG", { month: "short", day: "numeric" }),
+      weight: currentWeight,
+      diff: diffPct ? parseFloat(diffPct) : 0,
+    };
+  });
 
   return (
     <div className="space-y-4">
@@ -250,17 +262,30 @@ function WeightChart({ animalId }: { animalId: number }) {
             <TableRow>
               <TableHead>{t("common.date")}</TableHead>
               <TableHead>Weight (kg)</TableHead>
+              <TableHead>Δ %</TableHead>
               <TableHead>{t("common.notes")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(weights ?? []).map((w: any) => (
+            {(weights ?? []).map((w: any, i: number, arr: any[]) => {
+              const currentWeight = parseFloat(w.weightKg);
+              const prevWeight = i > 0 ? parseFloat(arr[i - 1].weightKg) : null;
+              const diffPct = prevWeight && prevWeight > 0
+                ? ((currentWeight - prevWeight) / prevWeight * 100)
+                : null;
+              return (
               <TableRow key={w.id}>
                 <TableCell>{new Date(w.weighDate).toLocaleDateString()}</TableCell>
                 <TableCell className="font-medium">{parseFloat(w.weightKg).toFixed(1)} kg</TableCell>
+                <TableCell className={
+                  diffPct === null ? "text-muted-foreground" :
+                  diffPct > 0 ? "text-green-600" : diffPct < 0 ? "text-red-600" : "text-muted-foreground"
+                }>
+                  {diffPct !== null ? `${diffPct > 0 ? "+" : ""}${diffPct.toFixed(1)}%` : "—"}
+                </TableCell>
                 <TableCell className="text-muted-foreground text-sm">{w.notes ?? "—"}</TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       )}
@@ -579,7 +604,7 @@ export default function AnimalProfile() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {[
+{[
               { label: "Animal ID", value: animal.animal.animalId },
               { label: "Species", value: animal.speciesName },
               { label: "Category", value: animal.categoryName },
@@ -593,6 +618,15 @@ export default function AnimalProfile() {
               { label: "Purchase Cost", value: animal.animal.purchaseCost ? `EGP ${parseFloat(String(animal.animal.purchaseCost)).toFixed(2)}` : "—" },
               { label: "Weight at Acquisition", value: animal.animal.weightAtAcquisition ? `${parseFloat(String(animal.animal.weightAtAcquisition)).toFixed(1)} kg` : "—" },
               { label: "Target Weight", value: animal.targetWeightKg ? `${parseFloat(String(animal.targetWeightKg)).toFixed(1)} kg` : "—" },
+              { label: "% Left to Target", value: (() => {
+                const tw = parseFloat(String(animal.targetWeightKg ?? "0"));
+                const cw = animal.animal.weightAtAcquisition ? parseFloat(String(animal.animal.weightAtAcquisition)) : 0;
+                if (tw > 0 && cw > 0) {
+                  const pct = Math.max(0, Math.round((1 - cw / tw) * 100));
+                  return `${pct}% remaining`;
+                }
+                return "—";
+              })() },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-start">
                 <span className="text-sm text-muted-foreground">{label}</span>

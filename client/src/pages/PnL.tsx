@@ -46,15 +46,19 @@ export default function PnL() {
     return { label: fmt(a.netPnL), color: "text-red-600", icon: "down" };
   };
 
-  // Summary stats — only count inactive (sold/dead) animals for P&L totals
+  // Summary stats
+  const activeAnimals = filtered.filter((a: any) => a.isActive);
   const closedAnimals = filtered.filter((a: any) => !a.isActive);
   const totalRevenue = closedAnimals.reduce((s: number, a: any) => s + (a.revenue ?? 0), 0);
   const totalCost = closedAnimals.reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
   const totalNetPnL = totalRevenue - totalCost;
   const profitableCount = closedAnimals.filter((a: any) => a.netPnL > 0).length;
   const lossCount = closedAnimals.filter((a: any) => a.netPnL < 0).length;
-  const activeCount = filtered.filter((a: any) => a.isActive).length;
-  const runningCost = filtered.filter((a: any) => a.isActive).reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
+  const activeCount = activeAnimals.length;
+  const runningCost = activeAnimals.reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
+  const runningCostMonthly = activeAnimals.reduce((s: number, a: any) => s + (a.costPerMonth ?? 0), 0);
+  const capitalMoney = filtered.reduce((s: number, a: any) => s + (a.purchaseCost ?? 0), 0);
+  const currentAccountValue = totalRevenue + capitalMoney - runningCost;
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -85,8 +89,8 @@ export default function PnL() {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Running Cost (Active)</p>
-              <p className="text-xl sm:text-2xl font-bold text-amber-600">{fmt(runningCost)}</p>
+              <p className="text-xs text-muted-foreground">{t("pnl.runningCostMonth")}</p>
+              <p className="text-xl sm:text-2xl font-bold text-amber-600">{fmt(runningCostMonthly)}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalsOngoing", { count: activeCount })}</p>
             </CardContent>
           </Card>
@@ -97,8 +101,31 @@ export default function PnL() {
                 {fmt(totalNetPnL)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {profitableCount} profitable · {lossCount} at loss
+                {profitableCount} prof · {lossCount} loss
               </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">Capital Money (Purchased)</p>
+              <p className="text-xl sm:text-2xl font-bold text-blue-600">{fmt(capitalMoney)}</p>
+              <p className="text-xs text-muted-foreground mt-1">Total purchase cost</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">Running Cost Total (Active)</p>
+              <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(runningCost)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalsOngoing", { count: activeCount })}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">Current Account Value</p>
+              <p className={`text-xl sm:text-2xl font-bold ${currentAccountValue >= 0 ? "text-green-600" : "text-red-600"}`}>
+                {fmt(currentAccountValue)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Revenue + Capital - Running</p>
             </CardContent>
           </Card>
         </div>
@@ -188,12 +215,13 @@ export default function PnL() {
                     <TableHead className="text-right">{t("pnl.revenue")}</TableHead>
                     <TableHead className="text-right">{t("pnl.netPnL")}</TableHead>
                     <TableHead className="text-right">{t("pnl.costDay")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.costMonth")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={14} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
                         {t("pnl.noAnimals")}
                       </TableCell>
                     </TableRow>
@@ -260,6 +288,9 @@ export default function PnL() {
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-muted-foreground text-xs">
                             {fmt(a.costPerDay)}/day
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-muted-foreground text-xs">
+                            {fmt(a.costPerMonth ?? 0)}/m
                           </TableCell>
                         </TableRow>
                       );

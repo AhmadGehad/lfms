@@ -452,7 +452,7 @@ export async function upsertSetting(key: string, value: string, updatedBy?: numb
 
 // ─── ANIMALS ──────────────────────────────────────────────────────────────────
 
-export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; ownerId?: number; isActive?: boolean; search?: string }) {
+export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; ownerId?: number; acquisitionType?: string; isActive?: boolean; search?: string }) {
   const db = await getDb();
   if (!db) return [];
   const conditions: ReturnType<typeof eq>[] = [];
@@ -462,6 +462,7 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
   if (filters?.groupId) conditions.push(eq(animals.groupId, filters.groupId));
   if (filters?.statusId) conditions.push(eq(animals.statusId, filters.statusId));
   if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
+  if (filters?.acquisitionType) conditions.push(eq(animals.acquisitionType, filters.acquisitionType as "purchased" | "born"));
   if (filters?.isActive !== undefined) conditions.push(eq(animals.isActive, filters.isActive));
 
   const query = db
@@ -678,13 +679,16 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
       sex: lambingLog.sex,
       birthTypeId: lambingLog.birthTypeId,
       birthWeightKg: lambingLog.birthWeightKg,
+      valueUsed: lambingLog.valueUsed,
       groupId: lambingLog.groupId,
       notes: lambingLog.notes,
       isPromoted: lambingLog.isPromoted,
       promotedHeadId: lambingLog.promotedHeadId,
       createdAt: lambingLog.createdAt,
       birthTypeName: birthTypes.name,
-      groupCode: groups.groupCode
+      groupCode: groups.groupCode,
+      damAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.damId})`,
+      sireAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.sireId})`
     })
     .from(lambingLog)
     .leftJoin(birthTypes, eq(lambingLog.birthTypeId, birthTypes.id))
@@ -1194,10 +1198,9 @@ export async function getAnimalPnL(animalId: number) {
   const feedCostMinor = toMinor(feedCost);
 
   const purchaseCostMinor = toMinor(animal.purchaseCost ?? "0");
-  const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
   const netPnLMinor = revenueMinor - totalCostMinor;
 
-  // Convert back to major-unit numbers at the boundary
   const purchaseCost = toMajor(purchaseCostMinor);
   const directExpenseTotal = toMajor(directExpenseTotalMinor);
   const categoryExpenseAllocation = toMajor(categoryExpenseAllocationMinor);
@@ -1205,7 +1208,9 @@ export async function getAnimalPnL(animalId: number) {
   const revenue = toMajor(revenueMinor);
   const totalCost = toMajor(totalCostMinor);
   const netPnL = toMajor(netPnLMinor);
-  const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(totalCostMinor, daysOnFarm)) : 0;
+  const operatingCostMinor = totalCostMinor - purchaseCostMinor;
+  const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(operatingCostMinor, daysOnFarm)) : 0;
+  const costPerMonth = toMajor(operatingCostMinor * 30 / daysOnFarm);
   const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
   // Projected cost for active animals — based on actual growth rate and the
@@ -1224,13 +1229,13 @@ export async function getAnimalPnL(animalId: number) {
   // if we don't have enough data to measure it.
   const adg = currentWeight > acqWeight && daysOnFarm > 0 ? (currentWeight - acqWeight) / daysOnFarm : 0;
   let projectedCost: number | null = null;
-  if (animal.isActive && targetWeight > currentWeight && totalCostMinor > 0 && daysOnFarm > 0) {
+  if (animal.isActive && targetWeight > currentWeight && operatingCostMinor > 0 && daysOnFarm > 0) {
     const effectiveAdg = adg > 0 ? adg : 0.15;
     const daysToTarget = Math.ceil((targetWeight - currentWeight) / effectiveAdg);
     // cap projection horizon at 1 year to avoid runaway estimates
     const horizon = Math.min(daysToTarget, 365);
-    const costPerDayMinor = divMinor(totalCostMinor, daysOnFarm);
-    projectedCost = toMajor(totalCostMinor + costPerDayMinor * horizon);
+    const costPerDayMinor = divMinor(operatingCostMinor, daysOnFarm);
+    projectedCost = toMajor(operatingCostMinor + costPerDayMinor * horizon);
   }
 
   return {
@@ -1245,6 +1250,7 @@ export async function getAnimalPnL(animalId: number) {
     revenue,
     netPnL,
     costPerDay,
+    costPerMonth,
     pricePerKg,
     projectedCost,
     isActive: animal.isActive,
@@ -1435,7 +1441,9 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const revenue = toMajor(revenueMinor);
     const totalCost = toMajor(totalCostMinor);
     const netPnL = toMajor(netPnLMinor);
-    const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(totalCostMinor, daysOnFarm)) : 0;
+    const operatingCostMinor = totalCostMinor - purchaseCostMinor;
+    const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(operatingCostMinor, daysOnFarm)) : 0;
+    const costPerMonth = daysOnFarm > 0 ? toMajor(operatingCostMinor * 30 / daysOnFarm) : 0;
     const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
     results.push({
@@ -1455,6 +1463,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       revenue,
       netPnL,
       costPerDay,
+      costPerMonth,
       pricePerKg
     });
   }

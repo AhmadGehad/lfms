@@ -252,11 +252,11 @@ function GroupsTab() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", groupCode: "", description: "" });
+  const [form, setForm] = useState({ name: "", groupCode: "", description: "", latitude: "", longitude: "" });
   const utils = trpc.useUtils();
 
   const create = trpc.config.createGroup.useMutation({
-    onSuccess: () => { toast.success(`${t("config.groups")} ${t("common.created")}`); utils.config.getGroups.invalidate(); setOpen(false); setForm({ name: "", groupCode: "", description: "" }); },
+    onSuccess: () => { toast.success(`${t("config.groups")} ${t("common.created")}`); utils.config.getGroups.invalidate(); setOpen(false); setForm({ name: "", groupCode: "", description: "", latitude: "", longitude: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateGroup.useMutation({
@@ -280,10 +280,14 @@ function GroupsTab() {
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Pen A" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} /></div>
               <div className="space-y-1.5"><Label>Group Code *</Label><Input placeholder="e.g. PEN-A" value={form.groupCode} onChange={(e) => setForm((f) => ({ ...f, groupCode: e.target.value.toUpperCase() }))} /></div>
               <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5"><Label>Latitude</Label><Input type="number" step="any" placeholder="e.g. 30.0444" value={form.latitude} onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))} /></div>
+                <div className="space-y-1.5"><Label>Longitude</Label><Input type="number" step="any" placeholder="e.g. 31.2357" value={form.longitude} onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))} /></div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name: form.name, groupCode: form.groupCode || form.name.toUpperCase().replace(/\s+/g, '-'), description: form.description || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, groupCode: form.groupCode || form.name.toUpperCase().replace(/\s+/g, '-'), description: form.description || undefined, latitude: form.latitude || undefined, longitude: form.longitude || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -291,10 +295,14 @@ function GroupsTab() {
 
       {editItem && (
         <EditDialog title={t("config.editGroupPen")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined, latitude: editItem.latitude ?? undefined, longitude: editItem.longitude ?? undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.groupCode")}</Label><Input value={editItem.groupCode ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, groupCode: e.target.value.toUpperCase() }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5"><Label>Latitude</Label><Input type="number" step="any" value={editItem.latitude ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, latitude: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Longitude</Label><Input type="number" step="any" value={editItem.longitude ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, longitude: e.target.value }))} /></div>
+          </div>
         </EditDialog>
       )}
 

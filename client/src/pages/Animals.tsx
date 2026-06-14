@@ -654,11 +654,13 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
   const { data: groups } = trpc.config.getGroups.useQuery({});
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: categories } = trpc.config.getCategories.useQuery();
   const utils = trpc.useUtils();
   const { control, handleSubmit, reset } = useForm<any>();
   React.useEffect(() => {
     if (animal) {
       reset({
+        categoryId: String(animal.animal.categoryId ?? ""),
         groupId: String(animal.animal.groupId ?? ""),
         statusId: String(animal.animal.statusId ?? ""),
         ownerId: animal.animal.ownerId ? String(animal.animal.ownerId) : "none",
@@ -685,6 +687,7 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
   const onSubmit = handleSubmit((data) => {
     updateAnimal.mutate({
       id: animalId!,
+      categoryId: data.categoryId ? Number(data.categoryId) : undefined,
       groupId: data.groupId ? Number(data.groupId) : undefined,
       statusId: data.statusId ? Number(data.statusId) : undefined,
       ownerId: data.ownerId && data.ownerId !== "none" ? Number(data.ownerId) : null,
@@ -708,6 +711,19 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
         ) : (
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>{t("common.category")}</Label>
+                <Controller name="categoryId" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder={t("common.category")} /></SelectTrigger>
+                    <SelectContent>
+                      {(categories ?? []).map((c: any) => (
+                        <SelectItem key={c.id} value={String(c.id)}>{c.name} ({c.idPrefix})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
               <div className="space-y-1.5">
                 <Label>{t("common.group")}</Label>
                 <Controller name="groupId" control={control} render={({ field }) => (
@@ -847,6 +863,7 @@ export default function Animals() {
   const [filterStatus, setFilterStatus] = useState<string>(savedFilters.filterStatus ?? "all");
   const [filterActive, setFilterActive] = useState<string>(savedFilters.filterActive ?? "active");
   const [filterOwner, setFilterOwner] = useState<string>(savedFilters.filterOwner ?? "all");
+  const [filterAcquisitionType, setFilterAcquisitionType] = useState<string>(savedFilters.filterAcquisitionType ?? "all");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSellOpen, setBulkSellOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -868,6 +885,7 @@ export default function Animals() {
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     statusId: filterStatus !== "all" ? Number(filterStatus) : undefined,
     ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    acquisitionType: filterAcquisitionType !== "all" ? filterAcquisitionType : undefined,
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
@@ -896,10 +914,10 @@ export default function Animals() {
   React.useEffect(() => {
     try {
       sessionStorage.setItem(FILTERS_KEY, JSON.stringify({
-        search, filterSpecies, filterStatus, filterActive, filterOwner, sortBy, sortDir,
+        search, filterSpecies, filterStatus, filterActive, filterOwner, filterAcquisitionType, sortBy, sortDir,
       }));
     } catch { /* ignore quota / disabled storage */ }
-  }, [search, filterSpecies, filterStatus, filterActive, filterOwner, sortBy, sortDir]);
+  }, [search, filterSpecies, filterStatus, filterActive, filterOwner, filterAcquisitionType, sortBy, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortBy === key) {
@@ -1058,6 +1076,16 @@ export default function Animals() {
                 ))}
               </SelectContent>
             </Select>
+            <Select value={filterAcquisitionType} onValueChange={setFilterAcquisitionType}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder={t("animals.acquisitionType")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("animals.allTypes")}</SelectItem>
+                <SelectItem value="purchased">{t("common.purchased")}</SelectItem>
+                <SelectItem value="born">{t("animals.bornOnFarm")}</SelectItem>
+              </SelectContent>
+            </Select>
             {selectedIds.size > 0 && (
               <div className="flex gap-2 ms-auto">
                 <Button onClick={() => setBulkEditOpen(true)} variant="outline" className="gap-2">
@@ -1100,6 +1128,7 @@ export default function Animals() {
                     <TableHead>{t("owners.owner")}</TableHead>
                     <TableHead>{t("common.sex")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("animals.acquisitionType")}</TableHead>
                     <SortableHead k="birthDate">{t("animals.birthDate")}</SortableHead>
                     <SortableHead k="age">{t("animals.age")}</SortableHead>
                     <SortableHead k="acquisitionDate">{t("animals.acquisitionDate")}</SortableHead>
@@ -1111,7 +1140,7 @@ export default function Animals() {
                 <TableBody>
                   {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={14} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
                         {t("animals.noAnimalsFound")}
                       </TableCell>
                     </TableRow>
@@ -1142,6 +1171,7 @@ export default function Animals() {
                           <TableCell className="text-sm">{a.ownerName ?? <span className="text-muted-foreground">—</span>}</TableCell>
                           <TableCell className="capitalize">{a.animal.sex}</TableCell>
                           <TableCell><StatusBadge status={a.statusName ?? ""} /></TableCell>
+                          <TableCell className="capitalize text-sm">{a.animal.acquisitionType}</TableCell>
                           <TableCell className="text-sm text-muted-foreground">
                             {a.animal.birthDate ? new Date(a.animal.birthDate).toLocaleDateString() : "—"}
                           </TableCell>

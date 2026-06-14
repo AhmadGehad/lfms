@@ -200,6 +200,7 @@ const en = {
     deleteAnimal: "Delete Animal",
     allSpecies: "All Species",
     allStatuses: "All Statuses",
+    allTypes: "All Types",
     bornOnFarm: "Born on Farm",
     exited: "Exited",
     noAnimalsFound: "No animals found. Register the first animal to get started.",
@@ -255,7 +256,8 @@ const en = {
     promote: "Promote",
     promoteLambToRegistry: "Promote Lamb to Animal Registry",
     promoted: "Promoted",
-    recordNewBirth: "Record New Birth"
+    recordNewBirth: "Record New Birth",
+    valueUsed: "Value (EGP)"
   },
 
   // Fattening
@@ -398,6 +400,8 @@ const en = {
     animalIdCol: "Animal ID",
     catExp: "Cat. Exp.",
     costDay: "Cost/Day",
+    costMonth: "Cost/Month",
+    runningCostMonth: "Running Cost/Month",
     daysOnFarm: "Days on Farm",
     directExp: "Direct Exp.",
     feedCost: "Feed Cost",
@@ -664,6 +668,7 @@ const en = {
     loadingData: "Loading data, try again in a moment",
     pdfDownloaded: "PDF downloaded",
     costDay: "Cost / Day",
+    costMonth: "Cost / Month",
     photoUpdated: "Photo updated",
     photoRemoved: "Photo removed",
     photoTooLarge: "Image too large (max 3MB)",
@@ -902,6 +907,7 @@ const ar = {
     deleteAnimal: "حذف الحيوان",
     allSpecies: "جميع الأنواع",
     allStatuses: "جميع الحالات",
+    allTypes: "جميع الأنواع",
     bornOnFarm: "مولود في المزرعة",
     exited: "خرج",
     noAnimalsFound: "لا توجد حيوانات. سجّل أول حيوان للبدء.",
@@ -956,7 +962,8 @@ const ar = {
     promote: "ترقية",
     promoteLambToRegistry: "ترقية الحمل إلى سجل الحيوانات",
     promoted: "تمت الترقية",
-    recordNewBirth: "تسجيل ولادة جديدة"
+    recordNewBirth: "تسجيل ولادة جديدة",
+    valueUsed: "القيمة (جنيه)"
   },
 
   fattening: {
@@ -1095,6 +1102,8 @@ const ar = {
     animalIdCol: "معرّف الحيوان",
     catExp: "مصروف الفئة",
     costDay: "التكلفة/يوم",
+    costMonth: "التكلفة/شهر",
+    runningCostMonth: "التكلفة الجارية/شهر",
     daysOnFarm: "أيام في المزرعة",
     directExp: "مصروف مباشر",
     feedCost: "تكلفة العلف",
@@ -1355,6 +1364,7 @@ const ar = {
     loadingData: "جارٍ تحميل البيانات، حاول مرة أخرى بعد لحظات",
     pdfDownloaded: "تم تنزيل PDF",
     costDay: "التكلفة / يوم",
+    costMonth: "التكلفة / شهر",
     photoUpdated: "تم تحديث الصورة",
     photoRemoved: "تمت إزالة الصورة",
     photoTooLarge: "الصورة كبيرة جدًا (الحد 3 ميجابايت)",
