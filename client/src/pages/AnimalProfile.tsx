@@ -13,6 +13,7 @@ import { ArrowLeft, DollarSign, FileDown, GitBranch, Pencil, Plus, Scale, Shoppi
 import { generateAnimalPnLPdf } from "@/lib/pdfReports";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useState } from "react";
+import * as React from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -25,6 +26,69 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
+function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boolean }) {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const { data: photo } = trpc.animals.getPhotoUrl.useQuery({ id: animalId });
+  const [uploading, setUploading] = useState(false);
+
+  const setPhoto = trpc.animals.setPhoto.useMutation({
+    onSuccess: () => {
+      toast.success(t("animalProfile.photoUpdated"));
+      utils.animals.getPhotoUrl.invalidate({ id: animalId });
+      utils.animals.getById.invalidate({ id: animalId });
+      setUploading(false);
+    },
+    onError: (e) => { toast.error(e.message); setUploading(false); },
+  });
+  const removePhoto = trpc.animals.removePhoto.useMutation({
+    onSuccess: () => {
+      toast.success(t("animalProfile.photoRemoved"));
+      utils.animals.getPhotoUrl.invalidate({ id: animalId });
+      utils.animals.getById.invalidate({ id: animalId });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) { toast.error(t("animalProfile.photoTooLarge")); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setUploading(true);
+      setPhoto.mutate({ id: animalId, dataUrl: String(reader.result) });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const url = photo?.url ?? null;
+
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="h-24 w-24 rounded-lg overflow-hidden border bg-muted flex items-center justify-center shrink-0">
+        {url ? (
+          <img src={url} alt="animal" className="h-full w-full object-cover" />
+        ) : (
+          <span className="text-3xl">🐑</span>
+        )}
+      </div>
+      <div className="flex items-center gap-1">
+        <label className="text-xs text-primary cursor-pointer hover:underline">
+          {hasPhoto ? t("animalProfile.changePhoto") : t("animalProfile.addPhoto")}
+          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFile} disabled={uploading} />
+        </label>
+        {hasPhoto && (
+          <button className="text-xs text-red-500 hover:underline" onClick={() => removePhoto.mutate({ id: animalId })}>
+            · {t("common.remove")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function PnLCard({ animalId }: { animalId: number }) {
   const { t } = useTranslation();
@@ -469,6 +533,7 @@ export default function AnimalProfile() {
           <ArrowLeft className="h-4 w-4" />
           {t("animalProfile.back")}
         </Button>
+        <AnimalPhoto animalId={animal.animal.id} hasPhoto={!!animal.animal.photoUrl} />
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold font-mono">{animal.animal.animalId}</h1>

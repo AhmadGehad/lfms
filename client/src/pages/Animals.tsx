@@ -1130,7 +1130,12 @@ export default function Animals() {
                               aria-label={`Select ${a.animal.animalId}`}
                             />
                           </TableCell>
-                          <TableCell className="font-mono font-semibold text-primary">{a.animal.animalId}</TableCell>
+                          <TableCell className="font-mono font-semibold text-primary">
+                            <span className="inline-flex items-center gap-1.5">
+                              {a.animal.photoUrl && <span title="Has photo" className="text-xs">📷</span>}
+                              {a.animal.animalId}
+                            </span>
+                          </TableCell>
                           <TableCell>{a.speciesName}</TableCell>
                           <TableCell>{a.categoryName}</TableCell>
                           <TableCell>{a.groupName}</TableCell>

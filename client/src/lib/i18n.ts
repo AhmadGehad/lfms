@@ -123,7 +123,9 @@ const en = {
     settingSaved: "Setting saved",
     valueEmpty: "Value cannot be empty",
     noGroup: "No group",
-    animal: "Animal"
+    animal: "Animal",
+    remove: "Remove",
+
   },
 
   // Dashboard
@@ -661,7 +663,13 @@ const en = {
     weightRecorded: "Weight recorded",
     loadingData: "Loading data, try again in a moment",
     pdfDownloaded: "PDF downloaded",
-    costDay: "Cost / Day"
+    costDay: "Cost / Day",
+    photoUpdated: "Photo updated",
+    photoRemoved: "Photo removed",
+    photoTooLarge: "Image too large (max 3MB)",
+    addPhoto: "Add photo",
+    changePhoto: "Change photo",
+
   },
   recycleBin: {
     title: "Recycle Bin",
@@ -819,7 +827,9 @@ const ar = {
     settingSaved: "تم حفظ الإعداد",
     valueEmpty: "القيمة لا يمكن أن تكون فارغة",
     noGroup: "بدون مجموعة",
-    animal: "الحيوان"
+    animal: "الحيوان",
+    remove: "إزالة",
+
   },
 
   dashboard: {
@@ -1344,7 +1354,13 @@ const ar = {
     weightRecorded: "تم تسجيل الوزن",
     loadingData: "جارٍ تحميل البيانات، حاول مرة أخرى بعد لحظات",
     pdfDownloaded: "تم تنزيل PDF",
-    costDay: "التكلفة / يوم"
+    costDay: "التكلفة / يوم",
+    photoUpdated: "تم تحديث الصورة",
+    photoRemoved: "تمت إزالة الصورة",
+    photoTooLarge: "الصورة كبيرة جدًا (الحد 3 ميجابايت)",
+    addPhoto: "إضافة صورة",
+    changePhoto: "تغيير الصورة",
+
   },
   recycleBin: {
     title: "سلة المحذوفات",

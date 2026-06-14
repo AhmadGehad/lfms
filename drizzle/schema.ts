@@ -188,6 +188,7 @@ export const animals = mysqlTable("animals", {
   damId: int("damId"),
   sireId: int("sireId"),
   ownerId: int("ownerId"),
+  photoUrl: varchar("photoUrl", { length: 500 }),
   purchaseCost: decimal("purchaseCost", { precision: 10, scale: 2 }).default("0"),
   weightAtAcquisition: decimal("weightAtAcquisition", { precision: 8, scale: 2 }),
   exitDate: date("exitDate"),

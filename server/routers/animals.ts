@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
 import { optionalMoneyString, optionalWeightString, weightString, pastOrTodayDate } from "../_core/validators";
+import { storagePut, storageGetSignedUrl } from "../storage";
 import {
   checkAndStageAnimal,
   createAnimal,
@@ -652,5 +653,74 @@ export const animalsRouter = router({
       );
 
       return { animal, dam, sire, damDam, damSire, sireDam, sireSire, offspring };
+    }),
+
+  // ─── PHOTO ──────────────────────────────────────────────────────────────────
+  // Upload an animal photo as a base64 data URL. Stored via the storage layer;
+  // the returned key is saved on animals.photoUrl.
+  setPhoto: staffProcedure
+    .input(z.object({
+      id: z.number().int().positive(),
+      // data URL: "data:image/jpeg;base64,...."
+      dataUrl: z.string().refine((s) => /^data:image\/(jpeg|jpg|png|webp);base64,/.test(s), "Must be a JPEG, PNG, or WebP data URL"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const existing = await getAnimalById(input.id);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const match = input.dataUrl.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+      if (!match) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid image data" });
+      const contentType = match[1];
+      const buffer = Buffer.from(match[2], "base64");
+
+      // Guard size (~3MB after decode) to avoid runaway uploads.
+      if (buffer.length > 3 * 1024 * 1024) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Image too large (max 3MB)" });
+      }
+
+      const ext = contentType.split("/")[1].replace("jpeg", "jpg");
+      const { key } = await storagePut(`animals/${existing.animal.animalId}.${ext}`, buffer, contentType);
+
+      await updateAnimal(input.id, { photoUrl: key } as any);
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        ipAddress: getClientIp(ctx),
+        entityType: "animal",
+        entityId: String(input.id),
+        newValues: { photoUrl: key } as any,
+      });
+      return { success: true, key };
+    }),
+
+  removePhoto: staffProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const existing = await getAnimalById(input.id);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+      await updateAnimal(input.id, { photoUrl: null } as any);
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        ipAddress: getClientIp(ctx),
+        entityType: "animal",
+        entityId: String(input.id),
+        newValues: { photoUrl: null } as any,
+      });
+      return { success: true };
+    }),
+
+  // Resolve a short-lived signed URL for an animal's stored photo key.
+  getPhotoUrl: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .query(async ({ input }) => {
+      const existing = await getAnimalById(input.id);
+      if (!existing?.animal.photoUrl) return { url: null };
+      try {
+        const url = await storageGetSignedUrl(existing.animal.photoUrl);
+        return { url };
+      } catch {
+        return { url: null };
+      }
     }),
 });
