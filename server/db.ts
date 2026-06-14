@@ -272,7 +272,7 @@ export async function getAllGroups(speciesId?: number) {
   return db.select().from(groups).where(isNull(groups.deletedAt)).orderBy(groups.groupCode);
 }
 
-export async function createGroup(data: { groupCode: string; name: string; speciesId?: number; categoryId?: number; description?: string }) {
+export async function createGroup(data: { groupCode: string; name: string; speciesId?: number; categoryId?: number; description?: string; latitude?: string | null; longitude?: string | null }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(groups).values(data);
@@ -1197,7 +1197,7 @@ export async function getAnimalPnL(animalId: number) {
   const feedCost = await computeFeedCostForPeriod(animal.categoryId, acquisitionDate, exitDate);
   const feedCostMinor = toMinor(feedCost);
 
-  const purchaseCostMinor = toMinor(animal.purchaseCost ?? "0");
+  const purchaseCostMinor = toMinor(String(animal.purchaseCost ?? "0"));
 const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
   const netPnLMinor = revenueMinor - totalCostMinor;
 
@@ -1210,7 +1210,7 @@ const totalCostMinor = purchaseCostMinor + feedCostMinor + directExpenseTotalMin
   const netPnL = toMajor(netPnLMinor);
   const operatingCostMinor = totalCostMinor - purchaseCostMinor;
   const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(operatingCostMinor, daysOnFarm)) : 0;
-  const costPerMonth = toMajor(operatingCostMinor * 30 / daysOnFarm);
+  const costPerMonth = daysOnFarm > 0 ? toMajor(operatingCostMinor * 30 / daysOnFarm) : 0;
   const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
   // Projected cost for active animals — based on actual growth rate and the
@@ -1399,7 +1399,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const exitDateStr = animal.exitDate ? (animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0]) : today;
     const daysOnFarm = Math.max(1, Math.floor((new Date(exitDateStr).getTime() - new Date(acqDateStr).getTime()) / 86400000));
 
-    const purchaseCostMinor = toMinor(animal.purchaseCost ?? "0");
+    const purchaseCostMinor = toMinor(String(animal.purchaseCost ?? "0"));
     const directExpenseTotalMinor = directExpByAnimal.get(animal.id) ?? 0; // already minor
 
     const saleRow = saleByAnimal.get(animal.id);

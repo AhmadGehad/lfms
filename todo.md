@@ -335,3 +335,12 @@
 - [x] Reviewed all loading states: all pages use Skeleton components
 - [x] TypeScript: 0 errors, 57 tests pass
 - [x] Save checkpoint
+
+## Phase 33: PR Review Bug Fixes
+- [x] Fix acquisition type filter not working on Animals page (confirmed working — all 16 born animals are active, filter is correct)
+- [x] Fix createGroup() dropping latitude/longitude (bug #1)
+- [x] Fix costPerMonth division by zero in getAnimalPnL (bug #2)
+- [x] Fix costPerDay/costPerMonth: purchaseCost Drizzle Decimal object not coerced → toMinor returns 0 → operatingCost = totalCost (bug #3)
+- [x] Fix "Current Account Value" formula in PnL page (revenue + capital on hoof - operating costs of active herd)
+- [x] Remove GroupMap component and its references from Dashboard
+- [x] Fix expenses router TS2345: stale LSP cache, tsc --noEmit confirms 0 errors

@@ -55,10 +55,15 @@ export default function PnL() {
   const profitableCount = closedAnimals.filter((a: any) => a.netPnL > 0).length;
   const lossCount = closedAnimals.filter((a: any) => a.netPnL < 0).length;
   const activeCount = activeAnimals.length;
+  // runningCost = total cost (purchase + feed + expenses) of active animals
   const runningCost = activeAnimals.reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
   const runningCostMonthly = activeAnimals.reduce((s: number, a: any) => s + (a.costPerMonth ?? 0), 0);
-  const capitalMoney = filtered.reduce((s: number, a: any) => s + (a.purchaseCost ?? 0), 0);
-  const currentAccountValue = totalRevenue + capitalMoney - runningCost;
+  // capitalMoney = purchase cost of active animals only (capital still on hoof)
+  const capitalMoney = activeAnimals.reduce((s: number, a: any) => s + (a.purchaseCost ?? 0), 0);
+  // operatingCostActive = running costs excluding purchase price (feed + expenses)
+  const operatingCostActive = activeAnimals.reduce((s: number, a: any) => s + ((a.totalCost ?? 0) - (a.purchaseCost ?? 0)), 0);
+  // Current Account Value = Revenue realised + Capital on hoof - Operating expenses spent on active herd
+  const currentAccountValue = totalRevenue + capitalMoney - operatingCostActive;
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -107,25 +112,25 @@ export default function PnL() {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Capital Money (Purchased)</p>
+              <p className="text-xs text-muted-foreground">{t("pnl.capitalOnHoof")}</p>
               <p className="text-xl sm:text-2xl font-bold text-blue-600">{fmt(capitalMoney)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Total purchase cost</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.activePurchaseCost")}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Running Cost Total (Active)</p>
+              <p className="text-xs text-muted-foreground">{t("pnl.runningCostTotal")}</p>
               <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(runningCost)}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalsOngoing", { count: activeCount })}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">Current Account Value</p>
+              <p className="text-xs text-muted-foreground">{t("pnl.currentAccountValue")}</p>
               <p className={`text-xl sm:text-2xl font-bold ${currentAccountValue >= 0 ? "text-green-600" : "text-red-600"}`}>
                 {fmt(currentAccountValue)}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Revenue + Capital - Running</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.currentAccountValueSub")}</p>
             </CardContent>
           </Card>
         </div>
