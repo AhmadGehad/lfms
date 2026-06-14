@@ -42,8 +42,8 @@ export function GroupMap() {
     markersRef.current = [];
 
     for (const group of groupsWithCoords) {
-      const lat = parseFloat(group.latitude);
-      const lng = parseFloat(group.longitude);
+      const lat = parseFloat(group.latitude!);
+      const lng = parseFloat(group.longitude!);
       const count = getAnimalCount(group.id);
 
       const markerContent = document.createElement("div");
