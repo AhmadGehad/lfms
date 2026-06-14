@@ -66,6 +66,7 @@ export function generateAnimalPnLPdf(opts: {
       ["Feed Cost (historical)", fmt(pnl?.feedCost ?? 0)],
       ["Direct Expenses", fmt(pnl?.directExpenseTotal ?? 0)],
       ["Allocated Category Expenses", fmt(pnl?.categoryExpenseAllocation ?? 0)],
+      ["Allocated Animal-wide Expenses", fmt((pnl as any)?.herdExpenseAllocation ?? 0)],
       [
         { content: "TOTAL COST", styles: { fontStyle: "bold", fillColor: [240, 230, 220] } },
         { content: fmt(pnl?.totalCost ?? 0), styles: { fontStyle: "bold", fillColor: [240, 230, 220] } },

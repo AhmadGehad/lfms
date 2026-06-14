@@ -33,16 +33,17 @@ function PnLCard({ animalId }: { animalId: number }) {
   if (isLoading) return <Skeleton className="h-40 w-full" />;
 
   const fmt = (v: number) =>
-    new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
+    new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
 
   const items = [
-    { label: "Purchase Cost", value: pnl?.purchaseCost ?? 0, type: "cost" },
-    { label: "Feed Cost (historical)", value: pnl?.feedCost ?? 0, type: "cost" },
-    { label: "Direct Expenses", value: pnl?.directExpenseTotal ?? 0, type: "cost" },
-    { label: "Allocated Cat. Expenses", value: pnl?.categoryExpenseAllocation ?? 0, type: "cost" },
-    { label: "Total Cost", value: pnl?.totalCost ?? 0, type: "total-cost" },
-    { label: "Sale Revenue", value: pnl?.revenue ?? 0, type: "revenue" },
-    { label: "Net P&L", value: pnl?.netPnL ?? 0, type: "pnl" },
+    { label: t("pnl.purchaseCost"), value: pnl?.purchaseCost ?? 0, type: "cost" },
+    { label: t("pnl.feedCost"), value: pnl?.feedCost ?? 0, type: "cost" },
+    { label: t("pnl.directExpenses"), value: pnl?.directExpenseTotal ?? 0, type: "cost" },
+    { label: t("pnl.allocatedCatExpenses"), value: pnl?.categoryExpenseAllocation ?? 0, type: "cost" },
+    { label: t("pnl.allocatedHerdExpenses"), value: (pnl as any)?.herdExpenseAllocation ?? 0, type: "cost" },
+    { label: t("pnl.totalCost"), value: pnl?.totalCost ?? 0, type: "total-cost" },
+    { label: t("pnl.saleRevenue"), value: pnl?.revenue ?? 0, type: "revenue" },
+    { label: t("pnl.netPnL"), value: pnl?.netPnL ?? 0, type: "pnl" },
   ];
 
   return (
@@ -88,7 +89,7 @@ function PnLCard({ animalId }: { animalId: number }) {
             )}
             {pnl.projectedCost != null && pnl.isActive && (
               <div>
-                <p className="text-xs text-muted-foreground">Projected cost (+30d)</p>
+                <p className="text-xs text-muted-foreground">{t("pnl.projectedCostToTarget")}</p>
                 <p className="text-lg font-bold text-amber-600">{fmt(pnl.projectedCost)}</p>
               </div>
             )}

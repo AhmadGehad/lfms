@@ -183,6 +183,7 @@ export default function PnL() {
                     <TableHead className="text-right">{t("pnl.feedCost")}</TableHead>
                     <TableHead className="text-right">{t("pnl.directExp")}</TableHead>
                     <TableHead className="text-right">{t("pnl.catExp")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.herdExp")}</TableHead>
                     <TableHead className="text-right">{t("pnl.totalCost")}</TableHead>
                     <TableHead className="text-right">{t("pnl.revenue")}</TableHead>
                     <TableHead className="text-right">{t("pnl.netPnL")}</TableHead>
@@ -192,7 +193,7 @@ export default function PnL() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={14} className="text-center py-12 text-muted-foreground">
                         {t("pnl.noAnimals")}
                       </TableCell>
                     </TableRow>
@@ -240,6 +241,9 @@ export default function PnL() {
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-orange-600 text-xs">
                             {a.categoryExpenseAllocation > 0 ? fmt(a.categoryExpenseAllocation) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-orange-600 text-xs">
+                            {a.herdExpenseAllocation > 0 ? fmt(a.herdExpenseAllocation) : "—"}
                           </TableCell>
                           <TableCell className="text-right tabular-nums font-medium text-red-600">
                             {fmt(a.totalCost)}

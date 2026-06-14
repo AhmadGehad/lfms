@@ -411,7 +411,16 @@ const en = {
     totalCost: "Total Cost",
     searchPlaceholder: "Search by animal ID...",
     activeClosed: "{{active}} active · {{closed}} closed",
-    animalsOngoing: "{{count}} animals ongoing"
+    animalsOngoing: "{{count}} animals ongoing",
+    purchaseCost: "Purchase Cost",
+    directExpenses: "Direct Expenses",
+    allocatedCatExpenses: "Allocated Category Expenses",
+    allocatedHerdExpenses: "Allocated Animal-wide Expenses",
+    saleRevenue: "Sale Revenue",
+    projectedCostToTarget: "Projected cost to target",
+
+    herdExp: "Herd Exp.",
+
   },
 
   // Sales
@@ -1091,7 +1100,16 @@ const ar = {
     totalCost: "التكلفة الإجمالية",
     searchPlaceholder: "ابحث بمعرّف الحيوان...",
     activeClosed: "{{active}} نشط · {{closed}} مغلق",
-    animalsOngoing: "{{count}} حيوان قيد المتابعة"
+    animalsOngoing: "{{count}} حيوان قيد المتابعة",
+    purchaseCost: "تكلفة الشراء",
+    directExpenses: "مصروفات مباشرة",
+    allocatedCatExpenses: "مصروفات الفئة المخصصة",
+    allocatedHerdExpenses: "مصروفات على مستوى القطيع المخصصة",
+    saleRevenue: "إيراد البيع",
+    projectedCostToTarget: "التكلفة المتوقعة حتى الوزن الهدف",
+
+    herdExp: "مصروف القطيع",
+
   },
 
   sales: {
