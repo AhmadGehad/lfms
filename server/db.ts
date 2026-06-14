@@ -491,9 +491,9 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
     .leftJoin(owners, eq(animals.ownerId, owners.id));
 
   if (conditions.length > 0) {
-    return query.where(and(...conditions)).orderBy(desc(animals.createdAt));
+    return query.where(and(...conditions)).orderBy(desc(animals.acquisitionDate));
   }
-  return query.orderBy(desc(animals.createdAt));
+  return query.orderBy(desc(animals.acquisitionDate));
 }
 
 export async function getAnimalById(id: number) {
