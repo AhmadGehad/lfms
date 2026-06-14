@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { GroupMap } from "@/components/GroupMap";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -486,6 +487,9 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Group Map View */}
+      <GroupMap />
     </div>
   );
 }

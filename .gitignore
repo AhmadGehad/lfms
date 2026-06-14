@@ -111,3 +111,18 @@ temp/
 
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
+
+# Graphify generated knowledge graph
+graphify-out/
+
+# AI tool local configs
+.claude/
+.config/
+.manus/
+.kilo/
+.kilocode/
+.opencode/
+CLAUDE.md
+GEMINI.md
+AGENTS.md
+CODEBUDDY.md

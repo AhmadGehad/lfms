@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
-import { optionalWeightString, pastOrTodayDate } from "../_core/validators";
+import { optionalMoneyString, optionalWeightString, pastOrTodayDate } from "../_core/validators";
 import {
   createLambingRecord,
   createAnimal,
@@ -34,6 +34,7 @@ export const breedingRouter = router({
         sex: z.enum(["male", "female"]),
         birthTypeId: z.number().int().positive(),
         birthWeightKg: optionalWeightString,
+        valueUsed: optionalMoneyString,
         groupId: z.number().int().positive().optional(),
         notes: z.string().max(2000).optional(),
         // If multiple births (twins/triplets), call multiple times
@@ -63,6 +64,7 @@ export const breedingRouter = router({
           sex: input.sex,
           birthTypeId: input.birthTypeId,
           birthWeightKg: input.birthWeightKg,
+          valueUsed: input.valueUsed,
           groupId: input.groupId,
           notes: input.notes,
           createdBy: ctx.user?.id,

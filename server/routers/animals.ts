@@ -12,6 +12,7 @@ import {
   createSale,
   createWeightEntry,
   getDb,
+  getAllCategories,
   getAnimalById,
   getAnimalsByIds,
   getStatusById,
@@ -38,6 +39,7 @@ export const animalsRouter = router({
         groupId: z.number().optional(),
         statusId: z.number().optional(),
         ownerId: z.number().optional(),
+        acquisitionType: z.string().optional(),
         isActive: z.boolean().optional(),
       }).optional()
     )
@@ -118,6 +120,7 @@ export const animalsRouter = router({
     .input(
       z.object({
         id: z.number(),
+        categoryId: z.number().int().positive().optional(),
         groupId: z.number().optional(),
         statusId: z.number().optional(),
         ownerId: z.number().int().positive().nullable().optional(),
@@ -134,6 +137,17 @@ export const animalsRouter = router({
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const existing = await getAnimalById(id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // If category changed, regenerate the animalId
+      if (data.categoryId && data.categoryId !== existing.animal.categoryId) {
+        const cats = await getAllCategories();
+        const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === data.categoryId);
+        if (cat) {
+          const seq = await incrementCategorySequence(data.categoryId);
+          const newAnimalId = `${cat.idPrefix}${String(seq).padStart(4, "0")}`;
+          await updateAnimal(id, { animalId: newAnimalId } as any);
+        }
+      }
 
       // Cross-field date sanity using incoming values where provided,
       // falling back to the stored ones.

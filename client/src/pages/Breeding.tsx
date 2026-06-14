@@ -36,6 +36,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
       sex: "",
       birthTypeId: "",
       birthWeightKg: "",
+      valueUsed: "",
       groupId: "",
       notes: "",
     },
@@ -72,6 +73,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
       sex: data.sex as "male" | "female",
       birthTypeId: Number(data.birthTypeId),
       birthWeightKg: data.birthWeightKg || undefined,
+      valueUsed: data.valueUsed || undefined,
       groupId: data.groupId ? Number(data.groupId) : undefined,
       notes: data.notes || undefined,
     });
@@ -121,6 +123,12 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>{t("breeding.birthWeight")}</Label>
               <Controller name="birthWeightKg" control={control} render={({ field }) => (
                 <Input type="number" placeholder="0.0" {...field} />
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("breeding.valueUsed")}</Label>
+              <Controller name="valueUsed" control={control} render={({ field }) => (
+                <Input type="number" placeholder="0.00" {...field} />
               )} />
             </div>
             <div className="space-y-1.5">
@@ -255,6 +263,7 @@ export default function Breeding() {
                   <TableHead>Sex</TableHead>
                   <TableHead>{t("breeding.birthType")}</TableHead>
                   <TableHead>{t("breeding.birthWeight")}</TableHead>
+                  <TableHead>Value (EGP)</TableHead>
                   <TableHead>{t("breeding.dam")}</TableHead>
                   <TableHead>{t("breeding.sire")}</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
@@ -265,13 +274,13 @@ export default function Breeding() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 9 }).map((_, j) => (
+                      {Array.from({ length: 10 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (lambingLog ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">{t("breeding.noBirthRecords")}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">{t("breeding.noBirthRecords")}</TableCell></TableRow>
                 ) : (
                   (lambingLog ?? []).map((l: any) => (
                     <TableRow key={l.id}>
@@ -280,6 +289,7 @@ export default function Breeding() {
                       <TableCell className="capitalize">{l.sex}</TableCell>
                       <TableCell>{l.birthTypeName ?? "—"}</TableCell>
                       <TableCell>{l.birthWeightKg ? `${parseFloat(l.birthWeightKg).toFixed(1)} kg` : "—"}</TableCell>
+                      <TableCell>{l.valueUsed ? `${parseFloat(l.valueUsed).toFixed(2)} EGP` : "—"}</TableCell>
                       <TableCell className="font-mono text-xs">{l.damAnimalId ?? "—"}</TableCell>
                       <TableCell className="font-mono text-xs">{l.sireAnimalId ?? "—"}</TableCell>
                       <TableCell>

@@ -104,6 +104,8 @@ export const configRouter = router({
       speciesId: z.number().optional(),
       categoryId: z.number().optional(),
       description: z.string().optional(),
+      latitude: z.string().optional(),
+      longitude: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await createGroup(input);
@@ -119,6 +121,8 @@ export const configRouter = router({
       speciesId: z.number().optional(),
       categoryId: z.number().optional(),
       description: z.string().optional(),
+      latitude: z.string().nullable().optional(),
+      longitude: z.string().nullable().optional(),
       isActive: z.boolean().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
