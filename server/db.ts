@@ -1168,20 +1168,29 @@ export async function getAnimalPnL(animalId: number) {
 
   // Allocate by the head count that overlapped the animal's time on farm —
   // not today's count — so historical P&L stays stable as the herd changes.
-  const catHeadCount = await getCategoryHeadCountDuring(animal.categoryId, acqDateStr, exitDateStr);
-  const categoryExpenseAllocationMinor = divMinor(catExpTotalMinor, catHeadCount);
+  let categoryExpenseAllocationMinor = 0;
+  try {
+    const catHeadCount = await getCategoryHeadCountDuring(animal.categoryId, acqDateStr, exitDateStr);
+    categoryExpenseAllocationMinor = divMinor(catExpTotalMinor, catHeadCount);
+  } catch (err) {
+    console.error(`getAnimalPnL: category allocation failed for animal ${animalId}:`, err);
+  }
 
   // Herd (animal-wide) expenses: each such expense in the animal's window is
   // split equally across all animals alive on the expense's date.
-  const herdExpenseRows = await db
-    .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
-    .from(expenses)
-    .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
   let herdExpenseAllocationMinor = 0;
-  for (const he of herdExpenseRows) {
-    const dStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
-    const herdCount = await getHerdHeadCountOnDate(dStr);
-    herdExpenseAllocationMinor += divMinor(toMinor(String(he.amount)), herdCount);
+  try {
+    const herdExpenseRows = await db
+      .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
+      .from(expenses)
+      .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
+    for (const he of herdExpenseRows) {
+      const dStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
+      const herdCount = await getHerdHeadCountOnDate(dStr);
+      herdExpenseAllocationMinor += divMinor(toMinor(String(he.amount)), herdCount);
+    }
+  } catch (err) {
+    console.error(`getAnimalPnL: herd allocation failed for animal ${animalId}:`, err);
   }
 
   // Sale revenue (exclude soft-deleted sales)
@@ -1194,8 +1203,14 @@ export async function getAnimalPnL(animalId: number) {
   const weightAtSale = saleRows.length > 0 ? parseFloat(saleRows[0].weightAtSale ?? "0") : 0;
 
   // Feed cost: time-segmented across ration-plan AND price changes over the
-  // animal's life (not a single acquisition-date snapshot).
-  const feedCost = await computeFeedCostForPeriod(animal.categoryId, acquisitionDate, exitDate);
+  // animal's life (not a single acquisition-date snapshot). Wrapped so a
+  // failure here can't zero out the entire financial summary.
+  let feedCost = 0;
+  try {
+    feedCost = await computeFeedCostForPeriod(animal.categoryId, acquisitionDate, exitDate);
+  } catch (err) {
+    console.error(`getAnimalPnL: feed cost failed for animal ${animalId}:`, err);
+  }
   const feedCostMinor = toMinor(feedCost);
 
   const purchaseCostMinor = toMinor(String(animal.purchaseCost ?? "0"));
