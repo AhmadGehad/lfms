@@ -98,8 +98,8 @@ export const feedRouter = router({
         action: "update",
         ipAddress: getClientIp(ctx),
         entityType: "rationPlan",
-        entityId: input.ids.join(","),
-        newValues: { effectiveDate: input.effectiveDate, ids: input.ids } as any,
+        entityId: `bulk:${input.ids.length}`,
+        newValues: { effectiveDate: input.effectiveDate, count: input.ids.length } as any,
       });
       return { updated: input.ids.length };
     }),
