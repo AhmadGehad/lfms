@@ -198,12 +198,12 @@ function CategoriesTab() {
               <div className="space-y-1.5">
                 <Label>{t("config.moveToCategory")}</Label>
                 <Select
-                  value={editItem.autoStageTargetCategoryId}
-                  onValueChange={(v) => setEditItem((p: any) => ({ ...p, autoStageTargetCategoryId: v }))}
+                  value={editItem.autoStageTargetCategoryId ? String(editItem.autoStageTargetCategoryId) : "none"}
+                  onValueChange={(v) => setEditItem((p: any) => ({ ...p, autoStageTargetCategoryId: v === "none" ? null : v }))}
                 >
                   <SelectTrigger><SelectValue placeholder={t("config.selectTargetCategory")} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None (disable auto-stage)</SelectItem>
+                    <SelectItem value="none">{t("config.noneDisableAutoStage")}</SelectItem>
                     {(categories ?? []).filter((c: any) => c.id !== editItem.id).map((c: any) => (
                       <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
                     ))}

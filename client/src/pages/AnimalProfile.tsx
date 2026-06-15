@@ -195,18 +195,21 @@ function WeightChart({ animalId }: { animalId: number }) {
     onError: (e) => toast.error(e.message),
   });
 
-  const chartData = (weights ?? []).map((w: any, i: number, arr: any[]) => {
-    const currentWeight = parseFloat(w.weightKg);
-    const prevWeight = i > 0 ? parseFloat(arr[i - 1].weightKg) : null;
-    const diffPct = prevWeight && prevWeight > 0
-      ? ((currentWeight - prevWeight) / prevWeight * 100).toFixed(1)
-      : null;
-    return {
-      date: new Date(w.weighDate).toLocaleDateString("en-EG", { month: "short", day: "numeric" }),
-      weight: currentWeight,
-      diff: diffPct ? parseFloat(diffPct) : 0,
-    };
-  });
+  const chartData = (weights ?? [])
+    .slice()
+    .sort((a: any, b: any) => new Date(a.weighDate).getTime() - new Date(b.weighDate).getTime())
+    .map((w: any, i: number, arr: any[]) => {
+      const currentWeight = parseFloat(w.weightKg);
+      const prevWeight = i > 0 ? parseFloat(arr[i - 1].weightKg) : null;
+      const diffPct = prevWeight && prevWeight > 0
+        ? ((currentWeight - prevWeight) / prevWeight * 100).toFixed(1)
+        : null;
+      return {
+        date: new Date(w.weighDate).toLocaleDateString("en-EG", { month: "short", day: "numeric" }),
+        weight: currentWeight,
+        diff: diffPct ? parseFloat(diffPct) : 0,
+      };
+    });
 
   return (
     <div className="space-y-4">
@@ -247,7 +250,7 @@ function WeightChart({ animalId }: { animalId: number }) {
             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} unit=" kg" />
             <Tooltip formatter={(v: number) => [`${v} kg`, "Weight"]} />
-            <Line type="monotone" dataKey="weight" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+            <Line type="monotone" dataKey="weight" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       ) : (

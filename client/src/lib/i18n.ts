@@ -565,6 +565,8 @@ const en = {
     priceUpdated: "Price updated",
     priceEffectiveToday: "Effective from today. Past feed costs use the earliest recorded price.",
 
+    noneDisableAutoStage: "None (disable auto-stage)",
+
   },
 
   // Notifications
@@ -1275,6 +1277,8 @@ const ar = {
     setPrice: "تحديد السعر",
     priceUpdated: "تم تحديث السعر",
     priceEffectiveToday: "ساري من اليوم. تكاليف العلف السابقة تستخدم أقدم سعر مسجل.",
+
+    noneDisableAutoStage: "بلا (تعطيل الترقية التلقائية)",
 
   },
 
