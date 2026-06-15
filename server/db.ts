@@ -1490,8 +1490,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const plans = (plansByCategory.get(categoryId) ?? []).map(p => ({
       feedItemId: p.feedItemId,
       qtyPerHeadPerDay: p.qtyPerHeadPerDay,
-      effectiveDate: String(p.effectiveDate).split("T")[0],
-      endDate: p.endDate ? String(p.endDate).split("T")[0] : null,
+      effectiveDate: p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0],
+      endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
       isActive: p.isActive
     }));
     return segmentedFeedCostPure(plans, pricesByItem, startStr, endStr);
