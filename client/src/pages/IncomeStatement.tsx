@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -15,8 +16,14 @@ export default function IncomeStatement() {
   const now = new Date();
   const [fromDate, setFromDate] = useState(new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0]);
   const [toDate, setToDate] = useState(now.toISOString().split("T")[0]);
+  const [filterOwner, setFilterOwner] = useState("all");
 
-  const { data: statement, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({ fromDate, toDate });
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: statement, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({
+    fromDate,
+    toDate,
+    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+  });
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 2 }).format(v);
@@ -38,7 +45,9 @@ export default function IncomeStatement() {
       doc.setFontSize(10);
       doc.setTextColor(120, 120, 120);
       doc.text(`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`, 105, 38, { align: "center" });
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 105, 44, { align: "center" });
+      const ownerLabel = filterOwner !== "all" ? ((ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? "") : "";
+      if (ownerLabel) doc.text(`Owner: ${ownerLabel}`, 105, 44, { align: "center" });
+      doc.text(`Generated: ${new Date().toLocaleString()}`, 105, ownerLabel ? 50 : 44, { align: "center" });
 
       // Revenue section
       autoTable(doc, {
@@ -100,7 +109,24 @@ export default function IncomeStatement() {
         margin: { left: 20, right: 20 },
       });
 
-      // Footer
+      // Running cost per month
+      const rc = (statement as any)?.runningCostPerMonth;
+      if (rc) {
+        autoTable(doc, {
+          startY: (doc as any).lastAutoTable.finalY + 8,
+          head: [["RUNNING COST / MONTH", "Amount (EGP)"]],
+          body: [
+            ["Farm-wide (general + feed)", `${fmt(rc.farmWide)}/mo`],
+            ["Animal-wide (per-animal)", `${fmt(rc.animalWide)}/mo`],
+            ["Total Running Cost", `${fmt(rc.total)}/mo`],
+          ],
+          headStyles: { fillColor: [80, 60, 30], textColor: 255, fontStyle: "bold" },
+          bodyStyles: { fontSize: 11 },
+          alternateRowStyles: { fillColor: [250, 247, 240] },
+          columnStyles: { 1: { halign: "right", fontStyle: "bold" } },
+          margin: { left: 20, right: 20 },
+        });
+      }
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
@@ -110,7 +136,8 @@ export default function IncomeStatement() {
         doc.text("Azal Farms - Confidential", 20, 290);
       }
 
-      doc.save(`azal-farms-income-statement-${fromDate}-to-${toDate}.pdf`);
+      const _oSlug = filterOwner !== "all" ? "-" + ((ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? "owner").replace(/\s+/g, "_") : "";
+      doc.save(`azal-farms-income-statement${_oSlug}-${fromDate}-to-${toDate}.pdf`);
       toast.success(t("incomeStatement.pdfExported"));
     } catch (err) {
       console.error(err);
@@ -129,6 +156,7 @@ export default function IncomeStatement() {
         ["Azal Farms - مزارع أزَل"],
         [t("incomeStatement.title")],
         [`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`],
+        ...(filterOwner !== "all" ? [[`Owner: ${(ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? ""}`]] : []),
         [`Generated: ${new Date().toLocaleString()}`],
         [],
         ["REVENUE", "Amount (EGP)"],
@@ -145,6 +173,11 @@ export default function IncomeStatement() {
         ["Total Expenses", statement?.costs?.total ?? 0],
         ["Gross Profit / (Loss)", statement?.grossProfit ?? 0],
         ["Profit Margin (%)", `${(statement?.profitMargin ?? 0).toFixed(1)}%`],
+        [],
+        ["RUNNING COST / MONTH", "Amount (EGP)"],
+        ["Farm-wide (general + feed)", (statement as any)?.runningCostPerMonth?.farmWide ?? 0],
+        ["Animal-wide (per-animal)", (statement as any)?.runningCostPerMonth?.animalWide ?? 0],
+        ["Total Running Cost / Month", (statement as any)?.runningCostPerMonth?.total ?? 0],
       ];
 
       const ws = XLSX.utils.aoa_to_sheet(summaryData);
@@ -167,7 +200,8 @@ export default function IncomeStatement() {
       wsExpenses["!cols"] = [{ wch: 30 }, { wch: 20 }];
       XLSX.utils.book_append_sheet(wb, wsExpenses, "Expense Breakdown");
 
-      XLSX.writeFile(wb, `azal-farms-income-statement-${fromDate}-to-${toDate}.xlsx`);
+      const _oSlugX = filterOwner !== "all" ? "-" + ((ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? "owner").replace(/\s+/g, "_") : "";
+      XLSX.writeFile(wb, `azal-farms-income-statement${_oSlugX}-${fromDate}-to-${toDate}.xlsx`);
       toast.success(t("incomeStatement.excelExported"));
     } catch (err) {
       console.error(err);
@@ -209,6 +243,18 @@ export default function IncomeStatement() {
         <div className="space-y-1.5">
           <Label>{t("incomeStatement.toDate")}</Label>
           <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-36" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("owners.owner")}</Label>
+          <Select value={filterOwner} onValueChange={setFilterOwner}>
+            <SelectTrigger className="w-44"><SelectValue placeholder={t("owners.allOwners")} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
+              {(ownersList ?? []).map((o: any) => (
+                <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -312,6 +358,31 @@ export default function IncomeStatement() {
                   <span className={(statement?.grossProfit ?? 0) >= 0 ? "text-green-700" : "text-red-700"}>
                     {fmt(statement?.grossProfit ?? 0)}
                   </span>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Running Cost per Month */}
+              <div className="rounded-lg border p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm">{t("incomeStatement.runningCostMonth")}</h4>
+                  <span className="text-xs text-muted-foreground">
+                    {t("incomeStatement.overMonths", { months: (statement as any)?.runningCostPerMonth?.monthsInPeriod ?? 0 })}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("incomeStatement.farmWide")}</span>
+                  <span className="font-medium">{fmt((statement as any)?.runningCostPerMonth?.farmWide ?? 0)}/mo</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("incomeStatement.animalWide")}</span>
+                  <span className="font-medium">{fmt((statement as any)?.runningCostPerMonth?.animalWide ?? 0)}/mo</span>
+                </div>
+                <Separator className="my-1" />
+                <div className="flex justify-between font-semibold">
+                  <span>{t("incomeStatement.totalRunningCost")}</span>
+                  <span>{fmt((statement as any)?.runningCostPerMonth?.total ?? 0)}/mo</span>
                 </div>
               </div>
 

@@ -43,6 +43,7 @@ export const dashboardRouter = router({
         toDate: z.string(),
         speciesId: z.number().optional(),
         categoryId: z.number().optional(),
+        ownerId: z.number().optional(),
       })
     )
     .query(({ input }) => getIncomeStatement(input)),

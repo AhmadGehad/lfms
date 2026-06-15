@@ -2071,9 +2071,21 @@ export async function getFeedShrinkage(): Promise<{
   return { rows, byItemLatest, byMonth };
 }
 
-export async function getIncomeStatement(filters: { fromDate: string; toDate: string; speciesId?: number; categoryId?: number }) {
+export async function getIncomeStatement(filters: { fromDate: string; toDate: string; speciesId?: number; categoryId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return null;
+
+  // When scoped to an owner, restrict sales + animal purchases + head/category
+  // expenses to that owner's animals. Farm-wide (general) costs and feed are
+  // NOT owner-specific, so they're only included in the unscoped (whole-farm)
+  // statement.
+  const ownerId = filters.ownerId;
+  const ownedAnimalIds: number[] = ownerId
+    ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.id)
+    : [];
+  const ownerSalesCond = ownerId
+    ? (ownedAnimalIds.length > 0 ? inArray(sales.animalId, ownedAnimalIds) : sql`1 = 0`)
+    : sql`1 = 1`;
 
   // Revenue: animal sales (exclude soft-deleted). F9: capture both accrued
   // (salePrice) and cash actually received (amountPaid).
@@ -2083,15 +2095,32 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       paid: sql<number>`SUM(amountPaid)`,
     })
     .from(sales)
-    .where(and(sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`, isNull(sales.deletedAt)));
+    .where(and(sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`, isNull(sales.deletedAt), ownerSalesCond));
 
   // Animal purchase costs (exclude soft-deleted)
   const purchaseCosts = await db
     .select({ total: sql<number>`SUM(purchaseCost)` })
     .from(animals)
-    .where(and(sql`${animals.acquisitionDate} >= ${filters.fromDate}`, sql`${animals.acquisitionDate} <= ${filters.toDate}`, isNull(animals.deletedAt)));
+    .where(and(
+      sql`${animals.acquisitionDate} >= ${filters.fromDate}`,
+      sql`${animals.acquisitionDate} <= ${filters.toDate}`,
+      isNull(animals.deletedAt),
+      ownerId ? eq(animals.ownerId, ownerId) : sql`1 = 1`,
+    ));
 
-  // Expenses by category (exclude soft-deleted)
+  // Expenses by category (exclude soft-deleted). When owner-scoped, only
+  // head/category expenses tied to that owner's animals count.
+  const ownerCategoryIds: number[] = ownerId
+    ? Array.from(new Set(
+        (await db.select({ categoryId: animals.categoryId }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.categoryId)
+      ))
+    : [];
+  const ownerExpenseConds: any[] = [];
+  if (ownedAnimalIds.length > 0) ownerExpenseConds.push(inArray(expenses.headId, ownedAnimalIds));
+  if (ownerCategoryIds.length > 0) ownerExpenseConds.push(inArray(expenses.categoryTarget, ownerCategoryIds));
+  const ownerExpenseCond = ownerId
+    ? (ownerExpenseConds.length > 0 ? or(...ownerExpenseConds) : sql`1 = 0`)
+    : sql`1 = 1`;
   const expensesByCategory = await db
     .select({
       categoryName: expenseCategories.name,
@@ -2099,15 +2128,28 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
     })
     .from(expenses)
     .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
+    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt), ownerExpenseCond))
     .groupBy(expenseCategories.name);
 
-  // Feed stock purchases in period (exclude soft-deleted)
+  // Expenses split by allocation type, for the running-cost farm-wide vs
+  // animal-wide breakdown. general = farm-wide; head/category/herd = animal-wide.
+  const expensesByTarget = await db
+    .select({
+      targetType: expenses.targetType,
+      total: sql<number>`SUM(${expenses.amount})`,
+    })
+    .from(expenses)
+    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt), ownerExpenseCond))
+    .groupBy(expenses.targetType);
+  const expByTarget: Record<string, number> = {};
+  for (const r of expensesByTarget) expByTarget[r.targetType] = toMinor(String(r.total ?? 0));
+
+  // Feed stock purchases in period (exclude soft-deleted). Feed is farm-wide.
   const feedPurchases = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
     .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
-  const totalFeedCostMinor = toMinor(String(feedPurchases[0]?.total ?? 0));
+  const totalFeedCostMinor = ownerId ? 0 : toMinor(String(feedPurchases[0]?.total ?? 0));
   const totalRevenueMinor = toMinor(String(salesData[0]?.total ?? 0));
   const cashReceivedMinor = toMinor(String(salesData[0]?.paid ?? 0));
   const outstandingMinor = totalRevenueMinor - cashReceivedMinor;
@@ -2115,6 +2157,19 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
   const totalCostMinor = totalAnimalCostMinor + totalFeedCostMinor + totalOtherCostMinor;
   const grossProfitMinor = totalRevenueMinor - totalCostMinor;
+
+  // ── Running cost per month ────────────────────────────────────────────────
+  // Operating cost only (excludes one-off animal purchases): farm-wide
+  // (general expenses + feed) + animal-wide (head/category/herd expenses),
+  // normalized to a month over the selected period.
+  const farmWideGeneralMinor = expByTarget["general"] ?? 0;
+  const farmWideOperatingMinor = farmWideGeneralMinor + totalFeedCostMinor;
+  const animalWideOperatingMinor = (expByTarget["head"] ?? 0) + (expByTarget["category"] ?? 0) + (expByTarget["herd"] ?? 0);
+  const totalOperatingMinor = farmWideOperatingMinor + animalWideOperatingMinor;
+
+  const periodDays = Math.max(1, Math.round((new Date(filters.toDate).getTime() - new Date(filters.fromDate).getTime()) / 86400000) + 1);
+  const months = periodDays / 30.4375; // average days per month
+  const perMonth = (minor: number) => toMajor(Math.round(minor / months));
 
   const totalFeedCost = toMajor(totalFeedCostMinor);
   const totalRevenue = toMajor(totalRevenueMinor);
@@ -2124,6 +2179,7 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const grossProfit = toMajor(grossProfitMinor);
   return {
     period: { fromDate: filters.fromDate, toDate: filters.toDate },
+    ownerId: ownerId ?? null,
     revenue: {
       animalSales: totalRevenue,
       total: totalRevenue,
@@ -2136,6 +2192,16 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       byCategory: expensesByCategory,
       totalOther: totalOtherCost,
       total: totalCost
+    },
+    runningCostPerMonth: {
+      farmWide: perMonth(farmWideOperatingMinor),
+      animalWide: perMonth(animalWideOperatingMinor),
+      total: perMonth(totalOperatingMinor),
+      // also expose the raw period operating totals for transparency
+      periodFarmWide: toMajor(farmWideOperatingMinor),
+      periodAnimalWide: toMajor(animalWideOperatingMinor),
+      periodTotal: toMajor(totalOperatingMinor),
+      monthsInPeriod: Math.round(months * 100) / 100,
     },
     grossProfit,
     profitMargin: totalRevenueMinor > 0 ? Math.round((grossProfitMinor / totalRevenueMinor) * 10000) / 100 : 0

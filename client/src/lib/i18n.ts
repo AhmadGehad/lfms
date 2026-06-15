@@ -529,6 +529,12 @@ const en = {
     cashReceived: "Cash received",
     outstandingReceivables: "Outstanding receivables",
 
+    runningCostMonth: "Running Cost / Month",
+    farmWide: "Farm-wide (general + feed)",
+    animalWide: "Animal-wide (per-animal)",
+    totalRunningCost: "Total Running Cost",
+    overMonths: "over {{months}} months",
+
   },
 
   // Configuration
@@ -1269,6 +1275,12 @@ const ar = {
     pdfFailed: "فشل تصدير PDF",
     cashReceived: "النقد المُستلم",
     outstandingReceivables: "مستحقات غير محصلة",
+
+    runningCostMonth: "التكلفة التشغيلية / الشهر",
+    farmWide: "على مستوى المزرعة (عام + علف)",
+    animalWide: "على مستوى الحيوان (لكل حيوان)",
+    totalRunningCost: "إجمالي التكلفة التشغيلية",
+    overMonths: "خلال {{months}} شهر",
 
   },
 
