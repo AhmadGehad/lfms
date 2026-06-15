@@ -275,14 +275,12 @@ export default function Fattening() {
                         ? parseFloat(a.animal.weightAtAcquisition)
                         : null;
                     const targetWeight = a.targetWeightKg ? parseFloat(a.targetWeightKg) : null;
-                    const acqWeight = a.animal.weightAtAcquisition ? parseFloat(a.animal.weightAtAcquisition) : null;
-                    // Has the animal actually been weighed since acquisition? If
-                    // latestWeightKg is missing we only know the acquisition
-                    // weight, so % to target is unknown (show "—"), not 0%.
-                    const hasWeighIn = a.latestWeightKg != null;
+                    // % to target = current weight as a fraction of target weight.
+                    // Uses the latest weigh-in when available, else acquisition
+                    // weight as the best-known current weight.
                     const pctToTarget =
-                      hasWeighIn && currentWeight != null && targetWeight && acqWeight != null && (targetWeight - acqWeight) > 0
-                        ? Math.max(0, Math.min(100, Math.round(((currentWeight - acqWeight) / (targetWeight - acqWeight)) * 100)))
+                      currentWeight != null && targetWeight && targetWeight > 0
+                        ? Math.max(0, Math.min(100, Math.round((currentWeight / targetWeight) * 100)))
                         : null;
 
                     return (

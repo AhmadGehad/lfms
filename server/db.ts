@@ -341,23 +341,34 @@ export async function updateBirthType(id: number, data: Partial<{ name: string; 
 export async function getAllFeedItems() {
   const db = await getDb();
   if (!db) return [];
-  return db
+  const items = await db.select().from(feedItems).where(isNull(feedItems.deletedAt)).orderBy(feedItems.name);
+  if (items.length === 0) return [];
+
+  // Latest price per feed item — fetch all price rows once, reduce to the
+  // newest per item in JS (robust, no fragile correlated subquery).
+  const allPrices = await db
     .select({
-      id: feedItems.id,
-      name: feedItems.name,
-      unit: feedItems.unit,
-      isActive: feedItems.isActive,
-      createdAt: feedItems.createdAt,
-      updatedAt: feedItems.updatedAt,
-      currentPrice: sql<string | null>`(
-        SELECT ph.pricePerUnit FROM feed_item_price_history ph
-        WHERE ph.feedItemId = ${feedItems.id}
-        ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1
-      )`,
+      feedItemId: feedItemPriceHistory.feedItemId,
+      pricePerUnit: feedItemPriceHistory.pricePerUnit,
+      effectiveDate: feedItemPriceHistory.effectiveDate,
+      id: feedItemPriceHistory.id,
     })
-    .from(feedItems)
-    .where(isNull(feedItems.deletedAt))
-    .orderBy(feedItems.name);
+    .from(feedItemPriceHistory);
+
+  const latestByItem = new Map<number, { price: string; eff: string; id: number }>();
+  for (const p of allPrices) {
+    const eff = p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0];
+    const cur = latestByItem.get(p.feedItemId);
+    // newest by effective date, then by id (latest write wins on same date)
+    if (!cur || eff > cur.eff || (eff === cur.eff && p.id > cur.id)) {
+      latestByItem.set(p.feedItemId, { price: p.pricePerUnit, eff, id: p.id });
+    }
+  }
+
+  return items.map((it) => ({
+    ...it,
+    currentPrice: latestByItem.get(it.id)?.price ?? null,
+  }));
 }
 
 export async function createFeedItem(data: { name: string; unit?: string; initialPrice?: string; priceEffectiveDate?: string }) {
@@ -406,15 +417,15 @@ export async function getFeedItemPriceHistory(feedItemId: number) {
 export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate: string; pricePerUnit: string; notes?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const effDate = data.effectiveDate.split("T")[0]; // normalize to YYYY-MM-DD
   // If a price already exists for this item on the same effective date,
-  // update it in place instead of stacking a duplicate row (which made the
-  // "latest" lookup ambiguous and could show a stale value).
+  // update it in place instead of stacking a duplicate row.
   const existing = await db
     .select({ id: feedItemPriceHistory.id })
     .from(feedItemPriceHistory)
     .where(and(
       eq(feedItemPriceHistory.feedItemId, data.feedItemId),
-      sql`${feedItemPriceHistory.effectiveDate} = ${data.effectiveDate}`
+      eq(feedItemPriceHistory.effectiveDate, effDate as any)
     ))
     .limit(1);
   if (existing.length > 0) {
@@ -425,10 +436,10 @@ export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate
   }
   const [result] = await db.insert(feedItemPriceHistory).values({
     feedItemId: data.feedItemId,
-    effectiveDate: sql`${data.effectiveDate}`,
+    effectiveDate: effDate as any,
     pricePerUnit: data.pricePerUnit,
     notes: data.notes
-  } as any);
+  });
   return result;
 }
 
