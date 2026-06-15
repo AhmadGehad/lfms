@@ -344,3 +344,8 @@
 - [x] Fix "Current Account Value" formula in PnL page (revenue + capital on hoof - operating costs of active herd)
 - [x] Remove GroupMap component and its references from Dashboard
 - [x] Fix expenses router TS2345: stale LSP cache, tsc --noEmit confirms 0 errors
+
+## Phase 34: Bulk Ration Plan Date Update
+- [x] Add tRPC procedure `feed.bulkUpdateRationPlanDates` — accepts array of plan IDs + new effectiveDate, updates all in one transaction
+- [x] Add bulk update UI in Feed Management page — checkbox selection on ration plan rows + "Update Date" action button with date picker dialog
+- [x] Add i18n keys (EN + AR) for bulk date update UI

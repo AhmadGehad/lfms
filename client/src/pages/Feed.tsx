@@ -20,10 +20,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Pencil, Wheat, Trash2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Pencil, Wheat, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { Checkbox } from "@/components/ui/checkbox";
 
 function StockStatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
@@ -493,6 +494,37 @@ export default function Feed() {
     onError: (e) => toast.error(e.message),
   });
 
+  const [selectedPlanIds, setSelectedPlanIds] = useState<Set<number>>(new Set());
+  const [bulkDateOpen, setBulkDateOpen] = useState(false);
+  const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split("T")[0]);
+
+  const bulkUpdateDates = trpc.feed.bulkUpdateRationPlanDates.useMutation({
+    onSuccess: (res) => {
+      toast.success(t("feed.bulkDateUpdated", { count: res.updated }));
+      setSelectedPlanIds(new Set());
+      setBulkDateOpen(false);
+      utils.feed.getRationPlans.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const togglePlanSelect = (id: number) => {
+    setSelectedPlanIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const allIds = (rationPlans ?? []).map((p: any) => p.id as number);
+    if (selectedPlanIds.size === allIds.length) {
+      setSelectedPlanIds(new Set());
+    } else {
+      setSelectedPlanIds(new Set(allIds));
+    }
+  };
+
   const criticalCount = (stockStatus ?? []).filter((s: any) => s.status === "critical").length;
   const lowCount = (stockStatus ?? []).filter((s: any) => s.status === "low").length;
   const alertItems = (stockStatus ?? []).filter((s: any) => s.status === "critical" || s.status === "low");
@@ -691,7 +723,52 @@ export default function Feed() {
         </TabsContent>
 
         <TabsContent value="rations">
-          <div className="flex justify-end mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              {selectedPlanIds.size > 0 && (
+                <>
+                  <span className="text-sm text-muted-foreground">{selectedPlanIds.size} {t("feed.plansSelected")}</span>
+                  <Dialog open={bulkDateOpen} onOpenChange={setBulkDateOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="gap-2">
+                        <CalendarDays className="h-4 w-4" />
+                        {t("feed.updateEffectiveDate")}
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-sm">
+                      <DialogHeader>
+                        <DialogTitle>{t("feed.updateEffectiveDate")}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3 py-2">
+                        <p className="text-sm text-muted-foreground">
+                          {t("feed.bulkDateHint", { count: selectedPlanIds.size })}
+                        </p>
+                        <div className="space-y-1">
+                          <Label>{t("feed.effectiveDate")}</Label>
+                          <Input
+                            type="date"
+                            value={bulkDate}
+                            onChange={(e) => setBulkDate(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setBulkDateOpen(false)}>{t("common.cancel")}</Button>
+                        <Button
+                          disabled={!bulkDate || bulkUpdateDates.isPending}
+                          onClick={() => bulkUpdateDates.mutate({ ids: Array.from(selectedPlanIds), effectiveDate: bulkDate })}
+                        >
+                          {bulkUpdateDates.isPending ? t("common.saving") : t("common.save")}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => setSelectedPlanIds(new Set())}>
+                    {t("common.clearSelection")}
+                  </Button>
+                </>
+              )}
+            </div>
             <AddRationPlanDialog onSuccess={() => {}} />
           </div>
           <Card>
@@ -700,6 +777,13 @@ export default function Feed() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={(rationPlans ?? []).length > 0 && selectedPlanIds.size === (rationPlans ?? []).length}
+                          onCheckedChange={toggleSelectAll}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
                       <TableHead>{t("common.category")}</TableHead>
                       <TableHead>{t("feed.feedItem")}</TableHead>
                       <TableHead>{t("feed.qtyHeadDay")}</TableHead>
@@ -713,20 +797,27 @@ export default function Feed() {
                     {rationLoading ? (
                       Array.from({ length: 6 }).map((_, i) => (
                         <TableRow key={i}>
-                          {Array.from({ length: 7 }).map((_, j) => (
+                          {Array.from({ length: 8 }).map((_, j) => (
                             <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                           ))}
                         </TableRow>
                       ))
                     ) : (rationPlans ?? []).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                        <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
                           {t("feed.noRationPlansConfigured")}
                         </TableCell>
                       </TableRow>
                     ) : (
                       (rationPlans ?? []).map((plan: any) => (
-                        <TableRow key={plan.id}>
+                        <TableRow key={plan.id} className={selectedPlanIds.has(plan.id) ? "bg-muted/50" : ""}>
+                          <TableCell className="w-10">
+                            <Checkbox
+                              checked={selectedPlanIds.has(plan.id)}
+                              onCheckedChange={() => togglePlanSelect(plan.id)}
+                              aria-label={`Select plan ${plan.id}`}
+                            />
+                          </TableCell>
                           <TableCell>{plan.categoryName}</TableCell>
                           <TableCell>{plan.feedItemName}</TableCell>
                           <TableCell>{parseFloat(plan.qtyPerHeadPerDay).toFixed(2)} {plan.unit}</TableCell>

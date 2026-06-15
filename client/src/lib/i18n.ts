@@ -125,6 +125,8 @@ const en = {
     noGroup: "No group",
     animal: "Animal",
     remove: "Remove",
+    saving: "Saving...",
+    clearSelection: "Clear selection",
 
   },
 
@@ -342,7 +344,11 @@ const en = {
     daysLabel: "days",
     outDate: "out {{date}}",
     perDayUnit: "{{qty}} {{unit}}/day",
-    kgRemainingDays: "{{qty}} {{unit}} remaining ({{days}} days)"
+    kgRemainingDays: "{{qty}} {{unit}} remaining ({{days}} days)",
+    plansSelected: "plans selected",
+    updateEffectiveDate: "Update Effective Date",
+    bulkDateHint: "Set a new effective date for {{count}} selected ration plan(s).",
+    bulkDateUpdated: "{{count}} ration plan(s) updated"
   },
 
   // Expenses
@@ -855,6 +861,8 @@ const ar = {
     noGroup: "بدون مجموعة",
     animal: "الحيوان",
     remove: "إزالة",
+    saving: "جارٍ الحفظ...",
+    clearSelection: "إلغاء التحديد",
 
   },
 
@@ -1067,7 +1075,11 @@ const ar = {
     daysLabel: "يوم",
     outDate: "ينفد {{date}}",
     perDayUnit: "{{qty}} {{unit}}/يوم",
-    kgRemainingDays: "{{qty}} {{unit}} متبقٍ ({{days}} يوم)"
+    kgRemainingDays: "{{qty}} {{unit}} متبقٍ ({{days}} يوم)",
+    plansSelected: "خطط محددة",
+    updateEffectiveDate: "تحديث تاريخ السريان",
+    bulkDateHint: "تعيين تاريخ سريان جديد لـ {{count}} خطة تغذية محددة.",
+    bulkDateUpdated: "تم تحديث {{count}} خطة تغذية"
   },
 
   expenses: {

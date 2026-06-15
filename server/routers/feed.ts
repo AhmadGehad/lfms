@@ -77,6 +77,33 @@ export const feedRouter = router({
       return result;
     }),
 
+  bulkUpdateRationPlanDates: staffProcedure
+    .input(
+      z.object({
+        ids: z.array(z.number().int().positive()).min(1),
+        effectiveDate: isoDate,
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await (await import("../db")).getDb();
+      if (!db) throw new Error("DB unavailable");
+      const { rationPlans } = await import("../../drizzle/schema");
+      const { inArray } = await import("drizzle-orm");
+      await db
+        .update(rationPlans)
+        .set({ effectiveDate: input.effectiveDate as any, updatedAt: new Date() })
+        .where(inArray(rationPlans.id, input.ids));
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "update",
+        ipAddress: getClientIp(ctx),
+        entityType: "rationPlan",
+        entityId: input.ids.join(","),
+        newValues: { effectiveDate: input.effectiveDate, ids: input.ids } as any,
+      });
+      return { updated: input.ids.length };
+    }),
+
   // ─── STOCK LEDGER ───────────────────────────────────────────────────────────
   getStockLedger: protectedProcedure
     .input(z.object({ feedItemId: z.number().optional() }).optional())
