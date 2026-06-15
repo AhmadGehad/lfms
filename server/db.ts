@@ -835,7 +835,12 @@ export async function getRationPlans(categoryId?: number) {
       createdAt: rationPlans.createdAt,
       feedItemName: feedItems.name,
       unit: feedItems.unit,
-      categoryName: animalCategories.name
+      categoryName: animalCategories.name,
+      currentPrice: sql<string | null>`(
+        SELECT ph.pricePerUnit FROM feed_item_price_history ph
+        WHERE ph.feedItemId = ${rationPlans.feedItemId}
+        ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1
+      )`
     })
     .from(rationPlans)
     .leftJoin(feedItems, eq(rationPlans.feedItemId, feedItems.id))

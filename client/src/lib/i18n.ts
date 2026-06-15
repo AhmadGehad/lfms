@@ -432,6 +432,9 @@ const en = {
     currentAccountValue: "Current Account Value",
     currentAccountValueSub: "Revenue + Capital − Operating Costs",
 
+    feedHintNoPlan: "Feed cost is 0 because this animal's category has no active ration plan. Add one under Feed Management.",
+    feedHintNoPrice: "Feed cost is 0 because one or more feed items in the ration plan have no price set. Set prices under Configuration → Feed Items.",
+
   },
 
   // Sales
@@ -1147,6 +1150,9 @@ const ar = {
     runningCostTotal: "إجمالي التكلفة الجارية (النشطة)",
     currentAccountValue: "قيمة الحساب الجاري",
     currentAccountValueSub: "الإيراد + رأس المال − التكاليف التشغيلية",
+
+    feedHintNoPlan: "تكلفة العلف صفر لأن فئة هذا الحيوان ليس لها خطة تغذية نشطة. أضف واحدة من إدارة الأعلاف.",
+    feedHintNoPrice: "تكلفة العلف صفر لأن أحد أصناف العلف في خطة التغذية ليس له سعر. حدّد الأسعار من الإعدادات ← أصناف العلف.",
 
   },
 

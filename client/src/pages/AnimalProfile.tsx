@@ -93,11 +93,25 @@ function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boole
 function PnLCard({ animalId }: { animalId: number }) {
   const { t } = useTranslation();
   const { data: pnl, isLoading } = trpc.animals.getPnL.useQuery({ animalId });
+  const { data: animal } = trpc.animals.getById.useQuery({ id: animalId });
+  const { data: rationPlans } = trpc.feed.getRationPlans.useQuery(
+    { categoryId: animal?.animal.categoryId },
+    { enabled: !!animal?.animal.categoryId }
+  );
 
   if (isLoading) return <Skeleton className="h-40 w-full" />;
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+
+  // Diagnose why feed cost is zero, so it's not mistaken for a bug.
+  const activePlans = (rationPlans ?? []).filter((p: any) => p.isActive);
+  const feedCostZero = (pnl?.feedCost ?? 0) === 0;
+  let feedHint: string | null = null;
+  if (feedCostZero) {
+    if (activePlans.length === 0) feedHint = t("pnl.feedHintNoPlan");
+    else if (activePlans.some((p: any) => p.currentPrice == null)) feedHint = t("pnl.feedHintNoPrice");
+  }
 
   const items = [
     { label: t("pnl.purchaseCost"), value: pnl?.purchaseCost ?? 0, type: "cost" },
@@ -135,6 +149,11 @@ function PnLCard({ animalId }: { animalId: number }) {
             </div>
           ))}
         </div>
+        {feedHint && (
+          <div className="mt-3 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+            <span>⚠️</span><span>{feedHint}</span>
+          </div>
+        )}
         {pnl && (
           <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-4">
             <div>
@@ -577,7 +596,7 @@ export default function AnimalProfile() {
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
             <DollarSign className="h-3.5 w-3.5" />
-            {t("animals.addExpense")}
+            {t("expenses.addExpense")}
           </Button>
           {animal.animal.isActive && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/sales?animalId=${animal.animal.id}`)}>
