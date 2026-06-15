@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT a.id, a.code, a.categoryId, ac.name as categoryName, a.acquisitionDate,\n  rp.effectiveDate as planEffectiveDate, rp.endDate as planEndDate, rp.qtyPerHeadPerDay,\n  fi.name as feedItem, ph.pricePerUnit, ph.effectiveDate as priceEffectiveDate\nFROM animals a\nLEFT JOIN animal_categories ac ON ac.id = a.categoryId\nLEFT JOIN ration_plans rp ON rp.categoryId = a.categoryId AND rp.isActive = 1 AND rp.deletedAt IS NULL\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nLEFT JOIN feed_item_price_history ph ON ph.feedItemId = fi.id\nWHERE a.categoryId = 5\nORDER BY a.id, ph.effectiveDate DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT a.id, a.code, a.categoryId, ac.name as categoryName, a.acquisitionDate,\n  rp.effectiveDate as planEffectiveDate, rp.endDate as planEndDate, rp.qtyPerHeadPerDay,\n  fi.name as feedItem, ph.pricePerUnit, ph.effectiveDate as priceEffectiveDate\nFROM animals a\nLEFT JOIN animal_categories ac ON ac.id = a.categoryId\nLEFT JOIN ration_plans rp ON rp.categoryId = a.categoryId AND rp.isActive = 1 AND rp.deletedAt IS NULL\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nLEFT JOIN feed_item_price_history ph ON ph.feedItemId = fi.id\nWHERE a.categoryId = 5\nORDER BY a.id, ph.effectiveDate DESC;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'a.code' in 'field list'"
+  ]
+}

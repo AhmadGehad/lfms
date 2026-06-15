@@ -1,0 +1,13 @@
+{
+  "query": "\n-- Direct head expenses for BEE0003\nSELECT 'direct' as type, id, expenseDate, amount FROM expenses \nWHERE headId = 120003 AND targetType = 'head' AND deletedAt IS NULL;\n\n-- Category expenses for Beef Calf (categoryId=2) \nSELECT 'category' as type, id, expenseDate, amount FROM expenses \nWHERE targetType = 'category' AND categoryTarget = 2 AND deletedAt IS NULL \nAND expenseDate >= '2026-06-13';\n\n-- How many Beef Calf animals existed on 2026-06-13\nSELECT COUNT(*) as beefCalfCount FROM animals \nWHERE categoryId = 2 AND deletedAt IS NULL \nAND acquisitionDate <= '2026-06-14' \nAND (exitDate IS NULL OR exitDate >= '2026-06-13');\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Direct head expenses for BEE0003\nSELECT 'direct' as type, id, expenseDate, amount FROM expenses \nWHERE headId = 120003 AND targetType = 'head' AND deletedAt IS NULL;\n\n-- Category expenses for Beef Calf (categoryId=2) \nSELECT 'category' as type, id, expenseDate, amount FROM expenses \nWHERE targetType = 'category' AND categoryTarget = 2 AND deletedAt IS NULL \nAND expenseDate >= '2026-06-13';\n\n-- How many Beef Calf animals existed on 2026-06-13\nSELECT COUNT(*) as beefCalfCount FROM animals \nWHERE categoryId = 2 AND deletedAt IS NULL \nAND acquisitionDate <= '2026-06-14' \nAND (exitDate IS NULL OR exitDate >= '2026-06-13');\n",
+  "rows": [
+    {
+      "beefCalfCount": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "beefCalfCount\n6\n",
+  "stderr": "",
+  "execution_time_ms": 2271
+}

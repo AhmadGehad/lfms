@@ -1,0 +1,9 @@
+{
+  "query": "\nSELECT id, expenseDate, amount, targetType FROM expenses \nWHERE headId = 120003 AND deletedAt IS NULL;\n\n-- Also check ALL expenses for Beef Calf category since Jun 13\nSELECT id, expenseDate, amount, targetType, categoryTarget, headId FROM expenses \nWHERE deletedAt IS NULL AND expenseDate >= '2026-06-13'\nORDER BY expenseDate DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT id, expenseDate, amount, targetType FROM expenses \nWHERE headId = 120003 AND deletedAt IS NULL;\n\n-- Also check ALL expenses for Beef Calf category since Jun 13\nSELECT id, expenseDate, amount, targetType, categoryTarget, headId FROM expenses \nWHERE deletedAt IS NULL AND expenseDate >= '2026-06-13'\nORDER BY expenseDate DESC;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1950
+}

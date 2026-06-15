@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `expenses` MODIFY COLUMN `targetType` enum('general','category','head','herd') NOT NULL;\nALTER TABLE `animals` ADD COLUMN `photoUrl` varchar(500) NULL;\nALTER TABLE `lambing_log` ADD COLUMN `valueUsed` decimal(10,2) NULL;\nALTER TABLE `groups` ADD COLUMN `latitude` decimal(10,7) NULL;\nALTER TABLE `groups` ADD COLUMN `longitude` decimal(10,7) NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute ALTER TABLE `expenses` MODIFY COLUMN `targetType` enum('general','category','head','herd') NOT NULL;\nALTER TABLE `animals` ADD COLUMN `photoUrl` varchar(500) NULL;\nALTER TABLE `lambing_log` ADD COLUMN `valueUsed` decimal(10,2) NULL;\nALTER TABLE `groups` ADD COLUMN `latitude` decimal(10,7) NULL;\nALTER TABLE `groups` ADD COLUMN `longitude` decimal(10,7) NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3600
+}

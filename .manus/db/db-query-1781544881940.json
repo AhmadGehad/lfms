@@ -1,0 +1,80 @@
+{
+  "query": "\nSELECT rp.id, rp.categoryId, rp.feedItemId, fi.name as feedItemName,\n  (SELECT ph.pricePerUnit FROM feed_item_price_history ph WHERE ph.feedItemId = rp.feedItemId ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1) as currentPrice\nFROM ration_plans rp\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.isActive = 1 AND rp.deletedAt IS NULL\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT rp.id, rp.categoryId, rp.feedItemId, fi.name as feedItemName,\n  (SELECT ph.pricePerUnit FROM feed_item_price_history ph WHERE ph.feedItemId = rp.feedItemId ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1) as currentPrice\nFROM ration_plans rp\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.isActive = 1 AND rp.deletedAt IS NULL\nLIMIT 10;\n",
+  "rows": [
+    {
+      "id": "60009",
+      "categoryId": "6",
+      "feedItemId": "2",
+      "feedItemName": "Alfalfa Hay",
+      "currentPrice": "11.00"
+    },
+    {
+      "id": "60007",
+      "categoryId": "7",
+      "feedItemId": "2",
+      "feedItemName": "Alfalfa Hay",
+      "currentPrice": "11.00"
+    },
+    {
+      "id": "60002",
+      "categoryId": "4",
+      "feedItemId": "2",
+      "feedItemName": "Alfalfa Hay",
+      "currentPrice": "11.00"
+    },
+    {
+      "id": "30001",
+      "categoryId": "2",
+      "feedItemId": "2",
+      "feedItemName": "Alfalfa Hay",
+      "currentPrice": "11.00"
+    },
+    {
+      "id": "60003",
+      "categoryId": "4",
+      "feedItemId": "3",
+      "feedItemName": "Milking concentrate",
+      "currentPrice": "20.00"
+    },
+    {
+      "id": "60006",
+      "categoryId": "7",
+      "feedItemId": "4",
+      "feedItemName": "Concentrate 16%",
+      "currentPrice": "16000.00"
+    },
+    {
+      "id": "60001",
+      "categoryId": "2",
+      "feedItemId": "4",
+      "feedItemName": "Concentrate 16%",
+      "currentPrice": "16000.00"
+    },
+    {
+      "id": "60008",
+      "categoryId": "7",
+      "feedItemId": "7",
+      "feedItemName": "Hay",
+      "currentPrice": "6.00"
+    },
+    {
+      "id": "60004",
+      "categoryId": "4",
+      "feedItemId": "7",
+      "feedItemName": "Hay",
+      "currentPrice": "6.00"
+    },
+    {
+      "id": "60005",
+      "categoryId": "5",
+      "feedItemId": "8",
+      "feedItemName": "Chicken",
+      "currentPrice": "10.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcategoryId\tfeedItemId\tfeedItemName\tcurrentPrice\n60009\t6\t2\tAlfalfa Hay\t11.00\n60007\t7\t2\tAlfalfa Hay\t11.00\n60002\t4\t2\tAlfalfa Hay\t11.00\n30001\t2\t2\tAlfalfa Hay\t11.00\n60003\t4\t3\tMilking concentrate\t20.00\n60006\t7\t4\tConcentrate 16%\t16000.00\n60001\t2\t4\tConcentrate 16%\t16000.00\n60008\t7\t7\tHay\t6.00\n60004\t4\t7\tHay\t6.00\n60005\t5\t8\tChicken\t10.00\n",
+  "stderr": "",
+  "execution_time_ms": 1809
+}

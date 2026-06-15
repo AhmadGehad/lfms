@@ -1,0 +1,32 @@
+{
+  "query": "\nSELECT rp.id, rp.categoryId, rp.feedItemId, rp.qtyPerHeadPerDay, rp.effectiveDate, rp.endDate, rp.isActive,\n       fi.name as feedName,\n       (SELECT fph.pricePerUnit FROM feed_item_price_history fph WHERE fph.feedItemId = fi.id ORDER BY fph.effectiveDate DESC LIMIT 1) as latestPrice\nFROM ration_plans rp\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.categoryId = 2 AND rp.deletedAt IS NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT rp.id, rp.categoryId, rp.feedItemId, rp.qtyPerHeadPerDay, rp.effectiveDate, rp.endDate, rp.isActive,\n       fi.name as feedName,\n       (SELECT fph.pricePerUnit FROM feed_item_price_history fph WHERE fph.feedItemId = fi.id ORDER BY fph.effectiveDate DESC LIMIT 1) as latestPrice\nFROM ration_plans rp\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.categoryId = 2 AND rp.deletedAt IS NULL;\n",
+  "rows": [
+    {
+      "id": "30001",
+      "categoryId": "2",
+      "feedItemId": "2",
+      "qtyPerHeadPerDay": "0.200",
+      "effectiveDate": "2026-06-09",
+      "endDate": "2026-12-31",
+      "isActive": "1",
+      "feedName": "Alfalfa Hay",
+      "latestPrice": "11.00"
+    },
+    {
+      "id": "60001",
+      "categoryId": "2",
+      "feedItemId": "4",
+      "qtyPerHeadPerDay": "0.100",
+      "effectiveDate": "2026-06-10",
+      "endDate": "2026-12-31",
+      "isActive": "1",
+      "feedName": "Concentrate 16%",
+      "latestPrice": "16.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcategoryId\tfeedItemId\tqtyPerHeadPerDay\teffectiveDate\tendDate\tisActive\tfeedName\tlatestPrice\n30001\t2\t2\t0.200\t2026-06-09\t2026-12-31\t1\tAlfalfa Hay\t11.00\n60001\t2\t4\t0.100\t2026-06-10\t2026-12-31\t1\tConcentrate 16%\t16.00\n",
+  "stderr": "",
+  "execution_time_ms": 1740
+}

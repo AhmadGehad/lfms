@@ -1,0 +1,17 @@
+{
+  "query": "\nSELECT e.id, e.expenseDate, e.amount, e.targetType, e.categoryTarget\nFROM expenses e\nWHERE e.targetType = 'category' AND e.categoryTarget = 2 AND e.deletedAt IS NULL\nORDER BY e.expenseDate DESC\nLIMIT 20;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT e.id, e.expenseDate, e.amount, e.targetType, e.categoryTarget\nFROM expenses e\nWHERE e.targetType = 'category' AND e.categoryTarget = 2 AND e.deletedAt IS NULL\nORDER BY e.expenseDate DESC\nLIMIT 20;\n",
+  "rows": [
+    {
+      "id": "60002",
+      "expenseDate": "2026-06-12",
+      "amount": "1000.00",
+      "targetType": "category",
+      "categoryTarget": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\texpenseDate\tamount\ttargetType\tcategoryTarget\n60002\t2026-06-12\t1000.00\tcategory\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1796
+}

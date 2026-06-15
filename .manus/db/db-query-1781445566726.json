@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, animalId, categoryId, acquisitionDate, exitDate, purchaseCost, isActive FROM animals WHERE animalId = 'BEE0003' AND deletedAt IS NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SELECT id, animalId, categoryId, acquisitionDate, exitDate, purchaseCost, isActive FROM animals WHERE animalId = 'BEE0003' AND deletedAt IS NULL;",
+  "rows": [
+    {
+      "id": "120003",
+      "animalId": "BEE0003",
+      "categoryId": "2",
+      "acquisitionDate": "2026-06-13",
+      "exitDate": "NULL",
+      "purchaseCost": "26500.00",
+      "isActive": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tanimalId\tcategoryId\tacquisitionDate\texitDate\tpurchaseCost\tisActive\n120003\tBEE0003\t2\t2026-06-13\tNULL\t26500.00\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1774
+}

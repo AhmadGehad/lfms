@@ -1,0 +1,65 @@
+{
+  "query": "\nSELECT a.id, a.animalId, a.acquisitionDate,\n  rp.effectiveDate as planEffectiveDate, rp.endDate as planEndDate, rp.qtyPerHeadPerDay,\n  fi.name as feedItem, ph.pricePerUnit, ph.effectiveDate as priceEffectiveDate\nFROM animals a\nLEFT JOIN ration_plans rp ON rp.categoryId = a.categoryId AND rp.isActive = 1 AND rp.deletedAt IS NULL\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nLEFT JOIN feed_item_price_history ph ON ph.feedItemId = fi.id\nWHERE a.categoryId = 5\nORDER BY a.id, ph.effectiveDate DESC\nLIMIT 10;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT a.id, a.animalId, a.acquisitionDate,\n  rp.effectiveDate as planEffectiveDate, rp.endDate as planEndDate, rp.qtyPerHeadPerDay,\n  fi.name as feedItem, ph.pricePerUnit, ph.effectiveDate as priceEffectiveDate\nFROM animals a\nLEFT JOIN ration_plans rp ON rp.categoryId = a.categoryId AND rp.isActive = 1 AND rp.deletedAt IS NULL\nLEFT JOIN feed_items fi ON fi.id = rp.feedItemId\nLEFT JOIN feed_item_price_history ph ON ph.feedItemId = fi.id\nWHERE a.categoryId = 5\nORDER BY a.id, ph.effectiveDate DESC\nLIMIT 10;\n",
+  "rows": [
+    {
+      "id": "76",
+      "animalId": "D-001",
+      "acquisitionDate": "2025-11-01",
+      "planEffectiveDate": "2026-06-10",
+      "planEndDate": "2026-12-31",
+      "qtyPerHeadPerDay": "2.000",
+      "feedItem": "Chicken",
+      "pricePerUnit": "10.00",
+      "priceEffectiveDate": "2026-01-01"
+    },
+    {
+      "id": "77",
+      "animalId": "D-002",
+      "acquisitionDate": "2025-11-01",
+      "planEffectiveDate": "2026-06-10",
+      "planEndDate": "2026-12-31",
+      "qtyPerHeadPerDay": "2.000",
+      "feedItem": "Chicken",
+      "pricePerUnit": "10.00",
+      "priceEffectiveDate": "2026-01-01"
+    },
+    {
+      "id": "78",
+      "animalId": "D-003",
+      "acquisitionDate": "2025-11-01",
+      "planEffectiveDate": "2026-06-10",
+      "planEndDate": "2026-12-31",
+      "qtyPerHeadPerDay": "2.000",
+      "feedItem": "Chicken",
+      "pricePerUnit": "10.00",
+      "priceEffectiveDate": "2026-01-01"
+    },
+    {
+      "id": "79",
+      "animalId": "D-004",
+      "acquisitionDate": "2025-11-01",
+      "planEffectiveDate": "2026-06-10",
+      "planEndDate": "2026-12-31",
+      "qtyPerHeadPerDay": "2.000",
+      "feedItem": "Chicken",
+      "pricePerUnit": "10.00",
+      "priceEffectiveDate": "2026-01-01"
+    },
+    {
+      "id": "80",
+      "animalId": "D-005",
+      "acquisitionDate": "2025-11-01",
+      "planEffectiveDate": "2026-06-10",
+      "planEndDate": "2026-12-31",
+      "qtyPerHeadPerDay": "2.000",
+      "feedItem": "Chicken",
+      "pricePerUnit": "10.00",
+      "priceEffectiveDate": "2026-01-01"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tanimalId\tacquisitionDate\tplanEffectiveDate\tplanEndDate\tqtyPerHeadPerDay\tfeedItem\tpricePerUnit\tpriceEffectiveDate\n76\tD-001\t2025-11-01\t2026-06-10\t2026-12-31\t2.000\tChicken\t10.00\t2026-01-01\n77\tD-002\t2025-11-01\t2026-06-10\t2026-12-31\t2.000\tChicken\t10.00\t2026-01-01\n78\tD-003\t2025-11-01\t2026-06-10\t2026-12-31\t2.000\tChicken\t10.00\t2026-01-01\n79\tD-004\t2025-11-01\t2026-06-10\t2026-12-31\t2.000\tChicken\t10.00\t2026-01-01\n80\tD-005\t2025-11-01\t2026-06-10\t2026-12-31\t2.000\tChicken\t10.00\t2026-01-01\n",
+  "stderr": "",
+  "execution_time_ms": 1805
+}

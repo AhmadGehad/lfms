@@ -1,0 +1,74 @@
+{
+  "query": "\nSELECT fi.id, fi.name, fi.unit, fi.isActive,\n  (SELECT ph.pricePerUnit FROM feed_item_price_history ph WHERE ph.feedItemId = fi.id ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1) as latestPrice,\n  (SELECT COUNT(*) FROM feed_item_price_history ph WHERE ph.feedItemId = fi.id) as priceHistoryCount\nFROM feed_items fi\nWHERE fi.deletedAt IS NULL\nORDER BY fi.name;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \nSELECT fi.id, fi.name, fi.unit, fi.isActive,\n  (SELECT ph.pricePerUnit FROM feed_item_price_history ph WHERE ph.feedItemId = fi.id ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1) as latestPrice,\n  (SELECT COUNT(*) FROM feed_item_price_history ph WHERE ph.feedItemId = fi.id) as priceHistoryCount\nFROM feed_items fi\nWHERE fi.deletedAt IS NULL\nORDER BY fi.name;\n",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Alfalfa",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "22.00",
+      "priceHistoryCount": "2"
+    },
+    {
+      "id": "2",
+      "name": "Alfalfa Hay",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "11.00",
+      "priceHistoryCount": "1"
+    },
+    {
+      "id": "8",
+      "name": "Chicken",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "10.00",
+      "priceHistoryCount": "1"
+    },
+    {
+      "id": "5",
+      "name": "Concentrate 14%",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "15.00",
+      "priceHistoryCount": "1"
+    },
+    {
+      "id": "4",
+      "name": "Concentrate 16%",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "16000.00",
+      "priceHistoryCount": "3"
+    },
+    {
+      "id": "6",
+      "name": "Corn",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "15.00",
+      "priceHistoryCount": "1"
+    },
+    {
+      "id": "7",
+      "name": "Hay",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "6.00",
+      "priceHistoryCount": "1"
+    },
+    {
+      "id": "3",
+      "name": "Milking concentrate",
+      "unit": "kg",
+      "isActive": "1",
+      "latestPrice": "20.00",
+      "priceHistoryCount": "1"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tunit\tisActive\tlatestPrice\tpriceHistoryCount\n1\tAlfalfa\tkg\t1\t22.00\t2\n2\tAlfalfa Hay\tkg\t1\t11.00\t1\n8\tChicken\tkg\t1\t10.00\t1\n5\tConcentrate 14%\tkg\t1\t15.00\t1\n4\tConcentrate 16%\tkg\t1\t16000.00\t3\n6\tCorn\tkg\t1\t15.00\t1\n7\tHay\tkg\t1\t6.00\t1\n3\tMilking concentrate\tkg\t1\t20.00\t1\n",
+  "stderr": "",
+  "execution_time_ms": 1785
+}
