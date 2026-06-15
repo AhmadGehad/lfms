@@ -196,7 +196,12 @@ export const configRouter = router({
   getFeedItems: protectedProcedure.query(() => getAllFeedItems()),
 
   createFeedItem: supervisorProcedure
-    .input(z.object({ name: z.string().min(1), unit: z.string().optional() }))
+    .input(z.object({
+      name: z.string().min(1),
+      unit: z.string().optional(),
+      initialPrice: z.string().optional(),
+      priceEffectiveDate: z.string().optional(),
+    }))
     .mutation(async ({ input, ctx }) => {
       const result = await createFeedItem(input);
       await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });

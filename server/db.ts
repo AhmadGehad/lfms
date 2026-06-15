@@ -341,14 +341,54 @@ export async function updateBirthType(id: number, data: Partial<{ name: string; 
 export async function getAllFeedItems() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(feedItems).where(isNull(feedItems.deletedAt)).orderBy(feedItems.name);
+  return db
+    .select({
+      id: feedItems.id,
+      name: feedItems.name,
+      unit: feedItems.unit,
+      isActive: feedItems.isActive,
+      createdAt: feedItems.createdAt,
+      updatedAt: feedItems.updatedAt,
+      currentPrice: sql<string | null>`(
+        SELECT ph.pricePerUnit FROM feed_item_price_history ph
+        WHERE ph.feedItemId = ${feedItems.id}
+        ORDER BY ph.effectiveDate DESC LIMIT 1
+      )`,
+    })
+    .from(feedItems)
+    .where(isNull(feedItems.deletedAt))
+    .orderBy(feedItems.name);
 }
 
-export async function createFeedItem(data: { name: string; unit?: string }) {
+export async function createFeedItem(data: { name: string; unit?: string; initialPrice?: string; priceEffectiveDate?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(feedItems).values(data);
+  const [result] = await db.insert(feedItems).values({ name: data.name, unit: data.unit });
+  const feedItemId = (result as any).insertId;
+  // Seed an initial price-history row so feed cost isn't zero until a price is
+  // added separately. Without at least one price, segmented feed costing can't
+  // value the ration plan.
+  if (feedItemId && data.initialPrice != null && data.initialPrice !== "" && parseFloat(data.initialPrice) > 0) {
+    await db.insert(feedItemPriceHistory).values({
+      feedItemId,
+      effectiveDate: (data.priceEffectiveDate ?? new Date().toISOString().split("T")[0]) as any,
+      pricePerUnit: data.initialPrice,
+    });
+  }
   return result;
+}
+
+/** Latest price for a feed item (for display in the feed items list). */
+export async function getCurrentFeedItemPrice(feedItemId: number): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select({ pricePerUnit: feedItemPriceHistory.pricePerUnit })
+    .from(feedItemPriceHistory)
+    .where(eq(feedItemPriceHistory.feedItemId, feedItemId))
+    .orderBy(desc(feedItemPriceHistory.effectiveDate))
+    .limit(1);
+  return rows.length > 0 ? rows[0].pricePerUnit : null;
 }
 
 export async function updateFeedItem(id: number, data: Partial<typeof feedItems.$inferInsert>) {

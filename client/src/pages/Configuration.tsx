@@ -545,13 +545,20 @@ function FeedItemsTab() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", unit: "kg" });
+  const [form, setForm] = useState({ name: "", unit: "kg", initialPrice: "" });
   const utils = trpc.useUtils();
 
   const create = trpc.config.createFeedItem.useMutation({
-    onSuccess: () => { toast.success(`${t("config.feedItems")} ${t("common.created")}`); utils.config.getFeedItems.invalidate(); setOpen(false); setForm({ name: "", unit: "kg" }); },
+    onSuccess: () => { toast.success(`${t("config.feedItems")} ${t("common.created")}`); utils.config.getFeedItems.invalidate(); setOpen(false); setForm({ name: "", unit: "kg", initialPrice: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
+  const addPrice = trpc.config.addFeedItemPrice.useMutation({
+    onSuccess: () => { toast.success(t("config.priceUpdated")); utils.config.getFeedItems.invalidate(); setPriceOpen(false); setPriceItem(null); setNewPrice(""); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const [priceOpen, setPriceOpen] = useState(false);
+  const [priceItem, setPriceItem] = useState<any>(null);
+  const [newPrice, setNewPrice] = useState("");
   const update = trpc.config.updateFeedItem.useMutation({
     onSuccess: () => { toast.success(`${t("config.feedItems")} ${t("common.updated")}`); utils.config.getFeedItems.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
@@ -580,10 +587,15 @@ function FeedItemsTab() {
                   <SelectContent>{unitOptions.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div className="space-y-1.5">
+                <Label>{t("config.pricePerUnit")} (EGP)</Label>
+                <Input type="number" step="0.01" placeholder="0.00" value={form.initialPrice} onChange={(e) => setForm((f) => ({ ...f, initialPrice: e.target.value }))} />
+                <p className="text-xs text-muted-foreground">{t("config.priceNeededForFeedCost")}</p>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name: form.name, unit: form.unit })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, unit: form.unit, initialPrice: form.initialPrice || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -604,18 +616,50 @@ function FeedItemsTab() {
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.unit")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.unit")}</TableHead><TableHead>{t("config.pricePerUnit")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-24"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(feedItems ?? []).map((fi: any) => (
             <TableRow key={fi.id}>
               <TableCell className="font-medium">{fi.name}</TableCell>
               <TableCell>{fi.unit}</TableCell>
+              <TableCell>
+                {fi.currentPrice != null
+                  ? <span>EGP {parseFloat(fi.currentPrice).toLocaleString("en-EG", { minimumFractionDigits: 2 })}</span>
+                  : <Badge variant="outline" className="border-amber-400 text-amber-700 text-xs">{t("config.noPriceSet")}</Badge>}
+              </TableCell>
               <TableCell><Badge className={fi.isActive ? "bg-green-100 text-green-800 border-green-200 text-xs" : "bg-gray-100 text-gray-600 text-xs"}>{fi.isActive ? "Active" : "Inactive"}</Badge></TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(fi)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setPriceItem(fi); setNewPrice(fi.currentPrice ?? ""); setPriceOpen(true); }}>{t("config.setPrice")}</Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(fi)}><Pencil className="h-3.5 w-3.5" /></Button>
+                </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+
+      {priceItem && (
+        <Dialog open={priceOpen} onOpenChange={setPriceOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>{t("config.setPrice")} — {priceItem.name}</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>{t("config.pricePerUnit")} (EGP) *</Label>
+                <Input type="number" step="0.01" placeholder="0.00" value={newPrice} onChange={(e) => setNewPrice(e.target.value)} autoFocus />
+                <p className="text-xs text-muted-foreground">{t("config.priceEffectiveToday")}</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setPriceOpen(false)}>{t("common.cancel")}</Button>
+              <Button
+                disabled={!newPrice || parseFloat(newPrice) <= 0 || addPrice.isPending}
+                onClick={() => addPrice.mutate({ feedItemId: priceItem.id, effectiveDate: new Date().toISOString().split("T")[0], pricePerUnit: newPrice })}
+              >{t("common.save")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

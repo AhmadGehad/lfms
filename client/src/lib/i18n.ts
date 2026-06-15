@@ -557,7 +557,14 @@ const en = {
     editExpenseCategory: "Edit Expense Category",
     editFeedItem: "Edit Feed Item",
     editGroupPen: "Edit Group / Pen",
-    editSpecies: "Edit Species"
+    editSpecies: "Edit Species",
+    pricePerUnit: "Price / Unit",
+    priceNeededForFeedCost: "Required so feed cost can be calculated from ration plans.",
+    noPriceSet: "No price set",
+    setPrice: "Set Price",
+    priceUpdated: "Price updated",
+    priceEffectiveToday: "Effective from today. Past feed costs use the earliest recorded price.",
+
   },
 
   // Notifications
@@ -1261,7 +1268,14 @@ const ar = {
     editExpenseCategory: "تعديل فئة المصروف",
     editFeedItem: "تعديل صنف العلف",
     editGroupPen: "تعديل المجموعة / القلم",
-    editSpecies: "تعديل الفصيلة"
+    editSpecies: "تعديل الفصيلة",
+    pricePerUnit: "السعر / الوحدة",
+    priceNeededForFeedCost: "مطلوب حتى يتم حساب تكلفة العلف من خطط التغذية.",
+    noPriceSet: "لا يوجد سعر",
+    setPrice: "تحديد السعر",
+    priceUpdated: "تم تحديث السعر",
+    priceEffectiveToday: "ساري من اليوم. تكاليف العلف السابقة تستخدم أقدم سعر مسجل.",
+
   },
 
   notifications: {
