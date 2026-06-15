@@ -63,13 +63,15 @@ describe("segmentedFeedCostPure", () => {
     expect(segmentedFeedCostPure(plans, prices, "2026-01-11", "2026-01-01")).toBe(0);
   });
 
-  it("uses price 0 before the first effective price (no negative/NaN)", () => {
+  it("falls back to the earliest known price for dates before the first effective price", () => {
     const plans = [
       { feedItemId: 1, qtyPerHeadPerDay: "2", effectiveDate: "2026-01-01", endDate: null, isActive: true },
     ];
-    // price only becomes effective mid-period
+    // price only recorded from mid-period; dates before it use the earliest
+    // known price (10) instead of 0, so an animal acquired before the first
+    // price entry doesn't show falsely-zero feed cost.
     const prices = new Map([[1, [{ eff: "2026-01-06", price: 10 }]]]);
-    // Jan1-6 (5d) × 2 × 0 = 0 ; Jan6-11 (5d) × 2 × 10 = 100 ; total 100
-    expect(segmentedFeedCostPure(plans, prices, "2026-01-01", "2026-01-11")).toBe(100);
+    // Jan1-6 (5d) × 2 × 10 = 100 ; Jan6-11 (5d) × 2 × 10 = 100 ; total 200
+    expect(segmentedFeedCostPure(plans, prices, "2026-01-01", "2026-01-11")).toBe(200);
   });
 });

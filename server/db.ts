@@ -823,12 +823,18 @@ export function segmentedFeedCostPure(
 
   const priceOnDate = (feedItemId: number, dateStr: string): number => {
     const arr = pricesByItem.get(feedItemId);
-    if (!arr) return 0;
+    if (!arr || arr.length === 0) return 0;
     let price = 0;
+    let found = false;
     for (const r of arr) {
-      if (r.eff <= dateStr) price = r.price;
+      if (r.eff <= dateStr) { price = r.price; found = true; }
       else break;
     }
+    // If the date is BEFORE the first recorded price, fall back to the
+    // earliest known price rather than 0 — otherwise an animal acquired
+    // before the first price entry shows zero feed cost for its whole life.
+    // arr is sorted ascending by effective date.
+    if (!found) price = arr[0].price;
     return price;
   };
 
@@ -847,20 +853,28 @@ export function segmentedFeedCostPure(
     }
   }
   const sorted = Array.from(cps).sort((a, b) => a - b);
+  // Earliest-effective active plan per feed item — used as a fallback when a
+  // segment predates the plan's effectiveDate (e.g. plan entered after the
+  // animal was acquired), so feed cost isn't falsely zero for early days.
   let totalMinor = 0;
   for (let i = 0; i < sorted.length - 1; i++) {
     const segStart = sorted[i];
     const segDays = Math.round((sorted[i + 1] - segStart) / 86400000);
     if (segDays <= 0) continue;
     const segStartStr = new Date(segStart).toISOString().split("T")[0];
-    for (const p of active) {
-      const eff = p.effectiveDate;
-      const endD = p.endDate;
-      if (eff <= segStartStr && (!endD || endD >= segStartStr)) {
-        // price is money → minor units; qty and days are plain multipliers.
-        const priceMinor = Math.round(priceOnDate(p.feedItemId, segStartStr) * 100);
-        totalMinor += Math.round(priceMinor * parseFloat(p.qtyPerHeadPerDay) * segDays);
-      }
+    // Plans whose window covers this segment.
+    let segPlans = active.filter(p => p.effectiveDate <= segStartStr && (!p.endDate || p.endDate >= segStartStr));
+    // Fallback: if no plan is effective yet at this (early) segment, use the
+    // active plans that have the earliest effective date — the best estimate
+    // of what the animal was being fed before the plan was formally recorded.
+    if (segPlans.length === 0 && active.length > 0) {
+      const earliestEff = active.reduce((min, p) => (p.effectiveDate < min ? p.effectiveDate : min), active[0].effectiveDate);
+      segPlans = active.filter(p => p.effectiveDate === earliestEff && (!p.endDate || p.endDate >= segStartStr));
+    }
+    for (const p of segPlans) {
+      // price is money → minor units; qty and days are plain multipliers.
+      const priceMinor = Math.round(priceOnDate(p.feedItemId, segStartStr) * 100);
+      totalMinor += Math.round(priceMinor * parseFloat(p.qtyPerHeadPerDay) * segDays);
     }
   }
   return Math.round(totalMinor) / 100;
