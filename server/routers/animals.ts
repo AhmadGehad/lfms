@@ -11,6 +11,8 @@ import {
   createNotification,
   createSale,
   createWeightEntry,
+  getWeightEntryById,
+  softDeleteWeightEntry,
   getDb,
   getAllCategories,
   getAnimalById,
@@ -613,6 +615,24 @@ export const animalsRouter = router({
       return { ...result, autoStaged: stageResult.staged, newAnimalId: stageResult.newAnimalId };
     }),
 
+  // ─── DELETE WEIGHT ENTRY ──────────────────────────────────────────────────
+  deleteWeight: staffProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const existing = await getWeightEntryById(input.id);
+      if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Weight entry not found" });
+      await softDeleteWeightEntry(input.id, ctx.user?.id);
+      await createAuditEntry({
+        userId: ctx.user?.id,
+        action: "delete",
+        ipAddress: getClientIp(ctx),
+        entityType: "weightLog",
+        entityId: String(input.id),
+        oldValues: { animalId: existing.animalId, weighDate: existing.weighDate, weightKg: existing.weightKg } as any,
+      });
+      return { success: true };
+    }),
+
   // ─── P&L ────────────────────────────────────────────────────────────────────
   getPnL: protectedProcedure
     .input(z.object({ animalId: z.number() }))
@@ -622,6 +642,7 @@ export const animalsRouter = router({
     .input(z.object({
       speciesId: z.number().optional(),
       categoryId: z.number().optional(),
+      ownerId: z.number().optional(),
     }).optional())
     .query(({ input }) => getAllAnimalsPnL(input ?? undefined)),
 

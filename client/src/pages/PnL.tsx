@@ -18,13 +18,16 @@ export default function PnL() {
   const [filterSpecies, setFilterSpecies] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterOwner, setFilterOwner] = useState("all");
 
   const { data: pnlData, isLoading } = trpc.animals.getAllPnL.useQuery({
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
+    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
   });
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
+  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
@@ -173,6 +176,15 @@ export default function PnL() {
             <SelectItem value="all">{t("pnl.allStatus")}</SelectItem>
             {allStatuses.map((s) => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterOwner} onValueChange={setFilterOwner}>
+          <SelectTrigger className="w-40"><SelectValue placeholder={t("owners.owner")} /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
+            {(ownersList ?? []).map((o: any) => (
+              <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

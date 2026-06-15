@@ -692,6 +692,10 @@ const en = {
     addPhoto: "Add photo",
     changePhoto: "Change photo",
 
+    weightDeleted: "Weight entry deleted",
+    deleteWeightTitle: "Delete weight entry?",
+    deleteWeightConfirm: "Delete the {{weight}} kg entry from {{date}}? This cannot be undone from here.",
+
   },
   recycleBin: {
     title: "Recycle Bin",
@@ -1404,6 +1408,10 @@ const ar = {
     photoTooLarge: "الصورة كبيرة جدًا (الحد 3 ميجابايت)",
     addPhoto: "إضافة صورة",
     changePhoto: "تغيير الصورة",
+
+    weightDeleted: "تم حذف قياس الوزن",
+    deleteWeightTitle: "حذف قياس الوزن؟",
+    deleteWeightConfirm: "حذف قياس {{weight}} كجم بتاريخ {{date}}؟ لا يمكن التراجع من هنا.",
 
   },
   recycleBin: {

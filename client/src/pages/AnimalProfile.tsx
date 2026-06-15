@@ -9,7 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, DollarSign, FileDown, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp } from "lucide-react";
+import { ArrowLeft, DollarSign, FileDown, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateAnimalPnLPdf } from "@/lib/pdfReports";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useState } from "react";
@@ -214,6 +215,17 @@ function WeightChart({ animalId }: { animalId: number }) {
     onError: (e) => toast.error(e.message),
   });
 
+  const deleteWeight = trpc.animals.deleteWeight.useMutation({
+    onSuccess: () => {
+      toast.success(t("animalProfile.weightDeleted"));
+      utils.animals.getWeightLog.invalidate({ animalId });
+      utils.animals.getPnL.invalidate({ animalId });
+      utils.animals.getById.invalidate({ id: animalId });
+      utils.animals.getAllPnL.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const chartData = (weights ?? [])
     .slice()
     .sort((a: any, b: any) => new Date(a.weighDate).getTime() - new Date(b.weighDate).getTime())
@@ -286,6 +298,7 @@ function WeightChart({ animalId }: { animalId: number }) {
               <TableHead>Weight (kg)</TableHead>
               <TableHead>Δ %</TableHead>
               <TableHead>{t("common.notes")}</TableHead>
+              <TableHead className="text-right">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -306,6 +319,29 @@ function WeightChart({ animalId }: { animalId: number }) {
                   {diffPct !== null ? `${diffPct > 0 ? "+" : ""}${diffPct.toFixed(1)}%` : "—"}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">{w.notes ?? "—"}</TableCell>
+                <TableCell className="text-right">
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t("animalProfile.deleteWeightTitle")}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t("animalProfile.deleteWeightConfirm", { weight: parseFloat(w.weightKg).toFixed(1), date: new Date(w.weighDate).toLocaleDateString() })}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                        <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteWeight.mutate({ id: w.id })}>
+                          {t("common.delete")}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </TableCell>
               </TableRow>
             )})}
           </TableBody>

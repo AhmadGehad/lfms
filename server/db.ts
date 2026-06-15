@@ -798,6 +798,23 @@ export async function createWeightEntry(data: typeof weightLog.$inferInsert, tx?
   return result;
 }
 
+/** Fetch one weight-log row (for validation before delete). */
+export async function getWeightEntryById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(weightLog).where(and(eq(weightLog.id, id), isNull(weightLog.deletedAt))).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Soft-delete a weight-log entry. */
+export async function softDeleteWeightEntry(id: number, deletedBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(weightLog)
+    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null })
+    .where(eq(weightLog.id, id));
+}
+
 export async function getLatestWeightForAnimals(animalIds: number[]) {
   const db = await getDb();
   if (!db) return [];
@@ -1368,7 +1385,7 @@ export async function getAnimalPnL(animalId: number) {
  * Bulk P&L for all animals — runs in a single pass using pre-fetched lookup tables
  * to avoid N+1 queries. Returns one row per animal.
  */
-export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryId?: number }) {
+export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return [];
 
@@ -1378,18 +1395,21 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const conditions = [isNotNull(animals.id), isNull(animals.deletedAt)];
   if (filters?.speciesId) conditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
+  if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
 
   const allAnimals = await db
     .select({
       animal: animals,
       categoryName: animalCategories.name,
       speciesName: species.name,
-      statusName: animalStatuses.name
+      statusName: animalStatuses.name,
+      ownerName: owners.name
     })
     .from(animals)
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
     .leftJoin(species, eq(animals.speciesId, species.id))
     .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id))
     .where(and(...conditions))
     .orderBy(animals.animalId);
 
@@ -1559,6 +1579,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       animalCode: animal.animalId,
       categoryName: row.categoryName ?? "",
       speciesName: row.speciesName ?? "",
+      ownerName: row.ownerName ?? null,
       isActive: animal.isActive,
       statusName: row.statusName ?? (animal.isActive ? "Active" : "Inactive"),
       daysOnFarm,
