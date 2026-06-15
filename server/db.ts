@@ -1138,6 +1138,7 @@ export async function getAnimalPnL(animalId: number) {
     .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
     .where(and(eq(animals.id, animalId), isNull(animals.deletedAt)));
 
+  if (animalRows.length === 0) return null;
   const animal = animalRows[0].animal;
   const category = animalRows[0].category;
 
