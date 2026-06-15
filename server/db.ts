@@ -352,7 +352,7 @@ export async function getAllFeedItems() {
       currentPrice: sql<string | null>`(
         SELECT ph.pricePerUnit FROM feed_item_price_history ph
         WHERE ph.feedItemId = ${feedItems.id}
-        ORDER BY ph.effectiveDate DESC LIMIT 1
+        ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1
       )`,
     })
     .from(feedItems)
@@ -406,6 +406,23 @@ export async function getFeedItemPriceHistory(feedItemId: number) {
 export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate: string; pricePerUnit: string; notes?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  // If a price already exists for this item on the same effective date,
+  // update it in place instead of stacking a duplicate row (which made the
+  // "latest" lookup ambiguous and could show a stale value).
+  const existing = await db
+    .select({ id: feedItemPriceHistory.id })
+    .from(feedItemPriceHistory)
+    .where(and(
+      eq(feedItemPriceHistory.feedItemId, data.feedItemId),
+      sql`${feedItemPriceHistory.effectiveDate} = ${data.effectiveDate}`
+    ))
+    .limit(1);
+  if (existing.length > 0) {
+    await db.update(feedItemPriceHistory)
+      .set({ pricePerUnit: data.pricePerUnit, notes: data.notes })
+      .where(eq(feedItemPriceHistory.id, existing[0].id));
+    return existing[0];
+  }
   const [result] = await db.insert(feedItemPriceHistory).values({
     feedItemId: data.feedItemId,
     effectiveDate: sql`${data.effectiveDate}`,
