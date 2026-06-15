@@ -1230,8 +1230,12 @@ export async function getAnimalPnL(animalId: number) {
   const category = animalRows[0].category;
 
   const today = new Date().toISOString().split("T")[0];
-  const exitDate = animal.exitDate ? String(animal.exitDate) : today;
-  const acquisitionDate = String(animal.acquisitionDate);
+  const exitDate = animal.exitDate
+    ? (animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0])
+    : today;
+  const acquisitionDate = animal.acquisitionDate instanceof Date
+    ? animal.acquisitionDate.toISOString().split("T")[0]
+    : String(animal.acquisitionDate).split("T")[0];
 
   // Days on farm
   const daysOnFarm = Math.max(1, Math.floor((new Date(exitDate).getTime() - new Date(acquisitionDate).getTime()) / 86400000));
