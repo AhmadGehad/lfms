@@ -348,7 +348,21 @@ const en = {
     plansSelected: "plans selected",
     updateEffectiveDate: "Update Effective Date",
     bulkDateHint: "Set a new effective date for {{count}} selected ration plan(s).",
-    bulkDateUpdated: "{{count}} ration plan(s) updated"
+    bulkDateUpdated: "{{count}} ration plan(s) updated",
+    shrinkage: "Shrinkage",
+    shrinkageMonthly: "Shrinkage by month",
+    shrinkageExplain: "Stock lost or wasted: the gap between expected stock (previous count + purchases − ration consumption) and the quantity actually counted.",
+    shrinkageNone: "No shrinkage yet — record at least two stock counts for a feed item to measure it.",
+    shrinkageDetail: "Detail by stock count",
+    shrinkageQty: "Shrinkage (qty)",
+    shrinkageValue: "Value (EGP)",
+    shrinkageLost: "{{qty}} {{unit}} lost",
+    shrinkageSurplus: "{{qty}} {{unit}} surplus",
+    month: "Month",
+    period: "Period",
+    expected: "Expected",
+    counted: "Counted",
+
   },
 
   // Expenses
@@ -1079,7 +1093,21 @@ const ar = {
     plansSelected: "خطط محددة",
     updateEffectiveDate: "تحديث تاريخ السريان",
     bulkDateHint: "تعيين تاريخ سريان جديد لـ {{count}} خطة تغذية محددة.",
-    bulkDateUpdated: "تم تحديث {{count}} خطة تغذية"
+    bulkDateUpdated: "تم تحديث {{count}} خطة تغذية",
+    shrinkage: "الهالك",
+    shrinkageMonthly: "الهالك حسب الشهر",
+    shrinkageExplain: "المخزون المفقود أو المهدر: الفرق بين المخزون المتوقع (الجرد السابق + المشتريات − استهلاك العليقة) والكمية المجرودة فعليًا.",
+    shrinkageNone: "لا يوجد هالك بعد — سجّل جردين على الأقل لصنف العلف لقياسه.",
+    shrinkageDetail: "التفصيل حسب الجرد",
+    shrinkageQty: "الهالك (كمية)",
+    shrinkageValue: "القيمة (ج.م)",
+    shrinkageLost: "{{qty}} {{unit}} مفقود",
+    shrinkageSurplus: "{{qty}} {{unit}} فائض",
+    month: "الشهر",
+    period: "الفترة",
+    expected: "المتوقع",
+    counted: "المجرود",
+
   },
 
   expenses: {

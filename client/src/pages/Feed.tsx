@@ -473,6 +473,7 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
 export default function Feed() {
   const { t } = useTranslation();
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
+  const { data: shrinkage } = trpc.feed.getShrinkage.useQuery();
   const { data: stockLedger, isLoading: ledgerLoading } = trpc.feed.getStockLedger.useQuery();
   const { data: rationPlans, isLoading: rationLoading } = trpc.feed.getRationPlans.useQuery();
   const utils = trpc.useUtils();
@@ -603,6 +604,18 @@ export default function Feed() {
                       −{t("feed.kgUsedSince", { qty: parseFloat(item.consumedSinceCount).toFixed(0), days: item.daysSinceCount })}
                     </p>
                   )}
+                  {(() => {
+                    const sh = shrinkage?.byItemLatest?.[item.feedItemId];
+                    if (!sh || Math.abs(sh.shrinkageQty) < 0.01) return null;
+                    const lost = sh.shrinkageQty > 0;
+                    return (
+                      <p className={`text-xs mt-0.5 ${lost ? "text-red-600" : "text-green-600"}`}>
+                        {lost
+                          ? t("feed.shrinkageLost", { qty: Math.abs(sh.shrinkageQty).toFixed(1), unit: item.unit })
+                          : t("feed.shrinkageSurplus", { qty: Math.abs(sh.shrinkageQty).toFixed(1), unit: item.unit })}
+                      </p>
+                    );
+                  })()}
                 </div>
                 <div className="text-right">
                   <StockStatusBadge status={item.status} />
@@ -636,6 +649,7 @@ export default function Feed() {
         <TabsList>
           <TabsTrigger value="ledger">{t("feed.stockLedger")}</TabsTrigger>
           <TabsTrigger value="rations">{t("feed.rationPlans")}</TabsTrigger>
+          <TabsTrigger value="shrinkage">{t("feed.shrinkage")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ledger">
@@ -868,6 +882,77 @@ export default function Feed() {
                   </TableBody>
                 </Table>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="shrinkage">
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <div>
+                <h4 className="font-semibold text-sm mb-1">{t("feed.shrinkageMonthly")}</h4>
+                <p className="text-xs text-muted-foreground mb-3">{t("feed.shrinkageExplain")}</p>
+                {(shrinkage?.byMonth ?? []).length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">{t("feed.shrinkageNone")}</p>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("feed.month")}</TableHead>
+                        <TableHead className="text-right">{t("feed.shrinkageQty")}</TableHead>
+                        <TableHead className="text-right">{t("feed.shrinkageValue")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(shrinkage?.byMonth ?? []).map((m: any) => (
+                        <TableRow key={m.month}>
+                          <TableCell>{m.month}</TableCell>
+                          <TableCell className={`text-right ${m.shrinkageQty > 0 ? "text-red-600" : "text-green-600"}`}>
+                            {m.shrinkageQty > 0 ? "" : "+"}{(-m.shrinkageQty).toFixed(1) === "0.0" ? m.shrinkageQty.toFixed(1) : m.shrinkageQty.toFixed(1)} kg
+                          </TableCell>
+                          <TableCell className={`text-right ${m.shrinkageValue > 0 ? "text-red-600" : "text-green-600"}`}>
+                            EGP {m.shrinkageValue.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+
+              {(shrinkage?.rows ?? []).length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">{t("feed.shrinkageDetail")}</h4>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("feed.feedItem")}</TableHead>
+                          <TableHead>{t("feed.period")}</TableHead>
+                          <TableHead className="text-right">{t("feed.expected")}</TableHead>
+                          <TableHead className="text-right">{t("feed.counted")}</TableHead>
+                          <TableHead className="text-right">{t("feed.shrinkage")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(shrinkage?.rows ?? []).slice().reverse().map((r: any, idx: number) => (
+                          <TableRow key={`${r.feedItemId}-${r.toDate}-${idx}`}>
+                            <TableCell className="font-medium">{r.feedItemName}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {new Date(r.fromDate).toLocaleDateString()} → {new Date(r.toDate).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-right">{r.expectedQty.toFixed(1)} {r.unit}</TableCell>
+                            <TableCell className="text-right">{r.actualQty.toFixed(1)} {r.unit}</TableCell>
+                            <TableCell className={`text-right font-medium ${r.shrinkageQty > 0 ? "text-red-600" : r.shrinkageQty < 0 ? "text-green-600" : "text-muted-foreground"}`}>
+                              {r.shrinkageQty > 0 ? "−" : r.shrinkageQty < 0 ? "+" : ""}{Math.abs(r.shrinkageQty).toFixed(1)} {r.unit}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

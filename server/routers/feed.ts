@@ -9,6 +9,7 @@ import {
   createRationPlan,
   getFeedStockLedger,
   getFeedStockStatus,
+  getFeedShrinkage,
   getRationPlans,
   updateFeedStockEntry,
   updateRationPlan,
@@ -195,4 +196,6 @@ export const feedRouter = router({
 
   // ─── STOCK STATUS (always unfiltered per requirements) ──────────────────────────────────────────────
   getStockStatus: protectedProcedure.query(() => getFeedStockStatus()),
+
+  getShrinkage: protectedProcedure.query(() => getFeedShrinkage()),
 });

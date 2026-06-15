@@ -1938,6 +1938,139 @@ export async function getFeedStockStatus() {
   return result;
 }
 
+/**
+ * Feed shrinkage = stock lost/wasted: the gap between the stock the system
+ * EXPECTED at a stock count and the quantity actually counted.
+ *
+ *   expectedAtCount = previousCountQty + purchasesBetween + adjustmentsBetween
+ *                     − rationConsumptionBetween
+ *   shrinkage       = expectedAtCount − actualCountedQty   (positive = loss)
+ *
+ * Computed per consecutive pair of stock_count rows for each feed item.
+ * Returns the rows plus, per feed item, the most recent shrinkage (for the
+ * stock table) and a monthly roll-up (for statistics).
+ */
+async function computeRationConsumptionBetween(
+  feedItemId: number,
+  startStr: string,
+  endStr: string
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const days = Math.max(0, Math.floor((new Date(endStr).getTime() - new Date(startStr).getTime()) / 86400000));
+  if (days === 0) return 0;
+  // Active plans for this feed item, with the head count over the window.
+  const plans = await db
+    .select({ qty: rationPlans.qtyPerHeadPerDay, categoryId: rationPlans.categoryId })
+    .from(rationPlans)
+    .where(and(eq(rationPlans.feedItemId, feedItemId), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
+  let total = 0;
+  for (const p of plans) {
+    const heads = await getCategoryHeadCountDuring(p.categoryId, startStr, endStr);
+    total += parseFloat(p.qty) * heads * days;
+  }
+  return total;
+}
+
+export interface ShrinkageRow {
+  feedItemId: number;
+  feedItemName: string;
+  unit: string;
+  fromDate: string;
+  toDate: string;
+  expectedQty: number;
+  actualQty: number;
+  shrinkageQty: number;   // positive = lost/wasted
+  shrinkageValue: number; // EGP, using the item's current price
+}
+
+export async function getFeedShrinkage(): Promise<{
+  rows: ShrinkageRow[];
+  byItemLatest: Record<number, { shrinkageQty: number; shrinkageValue: number; toDate: string } | undefined>;
+  byMonth: Array<{ month: string; shrinkageQty: number; shrinkageValue: number }>;
+}> {
+  const db = await getDb();
+  if (!db) return { rows: [], byItemLatest: {}, byMonth: [] };
+
+  const items = await getAllFeedItems();
+  const rows: ShrinkageRow[] = [];
+  const byItemLatest: Record<number, { shrinkageQty: number; shrinkageValue: number; toDate: string } | undefined> = {};
+
+  const ds = (d: any) => (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]);
+
+  for (const item of items) {
+    const price = item.currentPrice != null ? parseFloat(item.currentPrice) : 0;
+
+    // All stock counts for this item, oldest → newest.
+    const counts = await db
+      .select({ qty: feedStockLedger.qty, transactionDate: feedStockLedger.transactionDate })
+      .from(feedStockLedger)
+      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "stock_count"), isNull(feedStockLedger.deletedAt)))
+      .orderBy(feedStockLedger.transactionDate);
+
+    for (let i = 1; i < counts.length; i++) {
+      const fromDate = ds(counts[i - 1].transactionDate);
+      const toDate = ds(counts[i].transactionDate);
+      const startQty = parseFloat(counts[i - 1].qty);
+      const actualQty = parseFloat(counts[i].qty);
+
+      // Purchases + adjustments strictly between the two counts.
+      const pa = await db
+        .select({
+          purchases: sql<number>`SUM(CASE WHEN ${feedStockLedger.transactionType} = 'purchase' THEN ${feedStockLedger.qty} ELSE 0 END)`,
+          adjustments: sql<number>`SUM(CASE WHEN ${feedStockLedger.transactionType} = 'adjustment' THEN ${feedStockLedger.qty} ELSE 0 END)`,
+        })
+        .from(feedStockLedger)
+        .where(and(
+          eq(feedStockLedger.feedItemId, item.id),
+          isNull(feedStockLedger.deletedAt),
+          sql`${feedStockLedger.transactionDate} > ${fromDate}`,
+          sql`${feedStockLedger.transactionDate} <= ${toDate}`,
+        ));
+      const purchases = parseFloat(String(pa[0]?.purchases ?? 0));
+      const adjustments = parseFloat(String(pa[0]?.adjustments ?? 0));
+
+      const consumption = await computeRationConsumptionBetween(item.id, fromDate, toDate);
+      const expectedQty = startQty + purchases + adjustments - consumption;
+      const shrinkageQty = Math.round((expectedQty - actualQty) * 1000) / 1000;
+      const shrinkageValue = Math.round(shrinkageQty * price * 100) / 100;
+
+      const row: ShrinkageRow = {
+        feedItemId: item.id,
+        feedItemName: item.name,
+        unit: item.unit,
+        fromDate,
+        toDate,
+        expectedQty: Math.round(expectedQty * 1000) / 1000,
+        actualQty,
+        shrinkageQty,
+        shrinkageValue,
+      };
+      rows.push(row);
+      byItemLatest[item.id] = { shrinkageQty, shrinkageValue, toDate };
+    }
+  }
+
+  // Monthly roll-up keyed by the closing count's month (YYYY-MM).
+  const monthMap = new Map<string, { qty: number; value: number }>();
+  for (const r of rows) {
+    const month = r.toDate.slice(0, 7);
+    const cur = monthMap.get(month) ?? { qty: 0, value: 0 };
+    cur.qty += r.shrinkageQty;
+    cur.value += r.shrinkageValue;
+    monthMap.set(month, cur);
+  }
+  const byMonth = Array.from(monthMap.entries())
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([month, v]) => ({
+      month,
+      shrinkageQty: Math.round(v.qty * 1000) / 1000,
+      shrinkageValue: Math.round(v.value * 100) / 100,
+    }));
+
+  return { rows, byItemLatest, byMonth };
+}
+
 export async function getIncomeStatement(filters: { fromDate: string; toDate: string; speciesId?: number; categoryId?: number }) {
   const db = await getDb();
   if (!db) return null;
