@@ -983,13 +983,13 @@ export async function computeFeedCostForPeriod(categoryId: number, startDate: st
   const plansForPure = planRows.map(p => ({
     feedItemId: p.feedItemId,
     qtyPerHeadPerDay: p.qtyPerHeadPerDay,
-    effectiveDate: String(p.effectiveDate).split("T")[0],
-    endDate: p.endDate ? String(p.endDate).split("T")[0] : null,
+    effectiveDate: p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0],
+    endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
     isActive: true
   }));
   const pricesMap = new Map<number, Array<{ eff: string; price: number }>>();
   for (const pr of priceRows) {
-    const eff = String(pr.effectiveDate).split("T")[0];
+    const eff = pr.effectiveDate instanceof Date ? pr.effectiveDate.toISOString().split("T")[0] : String(pr.effectiveDate).split("T")[0];
     if (!pricesMap.has(pr.feedItemId)) pricesMap.set(pr.feedItemId, []);
     pricesMap.get(pr.feedItemId)!.push({ eff, price: parseFloat(pr.pricePerUnit) });
   }
