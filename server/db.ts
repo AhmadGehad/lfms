@@ -984,8 +984,16 @@ export async function computeFeedCostForPeriod(categoryId: number, startDate: st
   const db = await getDb();
   if (!db) return 0;
 
-  const start = new Date(startDate.split("T")[0]);
-  const end = new Date(endDate.split("T")[0]);
+  // Normalize to YYYY-MM-DD — guard against Date objects or locale strings
+  // accidentally passed as startDate/endDate (e.g. "Fri Nov 01 2025...").
+  const normalizeDate = (d: string): string => {
+    if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split("T")[0];
+    const parsed = new Date(d);
+    if (isNaN(parsed.getTime())) throw new Error(`computeFeedCostForPeriod: invalid date "${d}"`);
+    return parsed.toISOString().split("T")[0];
+  };
+  const start = new Date(normalizeDate(startDate));
+  const end = new Date(normalizeDate(endDate));
   if (end <= start) return 0;
 
   // Fetch this category's active ration plans + the price history for their feed items.

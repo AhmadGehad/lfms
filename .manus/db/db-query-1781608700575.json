@@ -1,0 +1,37 @@
+{
+  "query": "\n-- Ration plan for category 7 (Fattening)\nSELECT rp.id, rp.effectiveDate, rp.endDate, rp.isActive,\n  rp.qtyPerHeadPerDay, rp.feedItemId, fi.name AS feedItem\nFROM ration_plans rp\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.categoryId = 7 AND rp.isActive = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Ration plan for category 7 (Fattening)\nSELECT rp.id, rp.effectiveDate, rp.endDate, rp.isActive,\n  rp.qtyPerHeadPerDay, rp.feedItemId, fi.name AS feedItem\nFROM ration_plans rp\nJOIN feed_items fi ON fi.id = rp.feedItemId\nWHERE rp.categoryId = 7 AND rp.isActive = 1;\n",
+  "rows": [
+    {
+      "id": "60006",
+      "effectiveDate": "2025-11-04",
+      "endDate": "2026-12-31",
+      "isActive": "1",
+      "qtyPerHeadPerDay": "1.000",
+      "feedItemId": "4",
+      "feedItem": "Concentrate 16%"
+    },
+    {
+      "id": "60007",
+      "effectiveDate": "2025-11-04",
+      "endDate": "2026-12-31",
+      "isActive": "1",
+      "qtyPerHeadPerDay": "0.500",
+      "feedItemId": "2",
+      "feedItem": "Alfalfa Hay"
+    },
+    {
+      "id": "60008",
+      "effectiveDate": "2025-11-04",
+      "endDate": "2026-12-31",
+      "isActive": "1",
+      "qtyPerHeadPerDay": "0.200",
+      "feedItemId": "7",
+      "feedItem": "Hay"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\teffectiveDate\tendDate\tisActive\tqtyPerHeadPerDay\tfeedItemId\tfeedItem\n60006\t2025-11-04\t2026-12-31\t1\t1.000\t4\tConcentrate 16%\n60007\t2025-11-04\t2026-12-31\t1\t0.500\t2\tAlfalfa Hay\n60008\t2025-11-04\t2026-12-31\t1\t0.200\t7\tHay\n",
+  "stderr": "",
+  "execution_time_ms": 1742
+}

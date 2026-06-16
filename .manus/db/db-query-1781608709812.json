@@ -1,0 +1,25 @@
+{
+  "query": "\n-- Latest prices for Concentrate 16% (4), Alfalfa Hay (2), Hay (7)\nSELECT feedItemId, pricePerUnit, effectiveDate\nFROM feed_item_price_history\nWHERE feedItemId IN (4, 2, 7)\n  AND effectiveDate = (SELECT MAX(effectiveDate) FROM feed_item_price_history fip2 WHERE fip2.feedItemId = feed_item_price_history.feedItemId);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Latest prices for Concentrate 16% (4), Alfalfa Hay (2), Hay (7)\nSELECT feedItemId, pricePerUnit, effectiveDate\nFROM feed_item_price_history\nWHERE feedItemId IN (4, 2, 7)\n  AND effectiveDate = (SELECT MAX(effectiveDate) FROM feed_item_price_history fip2 WHERE fip2.feedItemId = feed_item_price_history.feedItemId);\n",
+  "rows": [
+    {
+      "feedItemId": "2",
+      "pricePerUnit": "11.00",
+      "effectiveDate": "2026-01-01"
+    },
+    {
+      "feedItemId": "7",
+      "pricePerUnit": "6.00",
+      "effectiveDate": "2026-01-01"
+    },
+    {
+      "feedItemId": "4",
+      "pricePerUnit": "16.00",
+      "effectiveDate": "2026-06-16"
+    }
+  ],
+  "messages": [],
+  "stdout": "feedItemId\tpricePerUnit\teffectiveDate\n2\t11.00\t2026-01-01\n7\t6.00\t2026-01-01\n4\t16.00\t2026-06-16\n",
+  "stderr": "",
+  "execution_time_ms": 1749
+}

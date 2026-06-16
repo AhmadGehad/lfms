@@ -1,0 +1,8 @@
+{
+  "query": "\n-- Ration plan items for category 7\nSELECT rp.effectiveDate, rp.endDate, rp.isActive,\n  rpi.qtyPerHeadPerDay, fi.name AS feedItem, fip.pricePerUnit\nFROM ration_plans rp\nJOIN ration_plan_items rpi ON rpi.planId = rp.id\nJOIN feed_items fi ON fi.id = rpi.feedItemId\nLEFT JOIN (\n  SELECT feedItemId, pricePerUnit\n  FROM feed_item_prices\n  WHERE (feedItemId, effectiveDate) IN (\n    SELECT feedItemId, MAX(effectiveDate) FROM feed_item_prices GROUP BY feedItemId\n  )\n) fip ON fip.feedItemId = rpi.feedItemId\nWHERE rp.categoryId = 7 AND rp.isActive = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Ration plan items for category 7\nSELECT rp.effectiveDate, rp.endDate, rp.isActive,\n  rpi.qtyPerHeadPerDay, fi.name AS feedItem, fip.pricePerUnit\nFROM ration_plans rp\nJOIN ration_plan_items rpi ON rpi.planId = rp.id\nJOIN feed_items fi ON fi.id = rpi.feedItemId\nLEFT JOIN (\n  SELECT feedItemId, pricePerUnit\n  FROM feed_item_prices\n  WHERE (feedItemId, effectiveDate) IN (\n    SELECT feedItemId, MAX(effectiveDate) FROM feed_item_prices GROUP BY feedItemId\n  )\n) fip ON fip.feedItemId = rpi.feedItemId\nWHERE rp.categoryId = 7 AND rp.isActive = 1;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 3: Table 'boywmbm5odtbpptclrtk7n.ration_plan_items' doesn't exist"
+  ]
+}

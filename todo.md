@@ -349,3 +349,7 @@
 - [x] Add tRPC procedure `feed.bulkUpdateRationPlanDates` — accepts array of plan IDs + new effectiveDate, updates all in one transaction
 - [x] Add bulk update UI in Feed Management page — checkbox selection on ration plan rows + "Update Date" action button with date picker dialog
 - [x] Add i18n keys (EN + AR) for bulk date update UI
+
+## Phase 35: Defensive Date Normalization in computeFeedCostForPeriod
+- [x] Add normalizeDate() guard inside computeFeedCostForPeriod to handle any non-ISO date strings (e.g. locale strings from String(Date)) — throws descriptive error instead of RangeError at toISOString()
+- [x] TypeScript: 0 errors, 87/87 tests pass

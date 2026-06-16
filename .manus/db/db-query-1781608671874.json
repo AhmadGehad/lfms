@@ -1,0 +1,26 @@
+{
+  "query": "\n-- Direct head expenses\nSELECT 'direct_expense' AS type, SUM(amount) AS total\nFROM expenses WHERE headId = 90006 AND targetType = 'head'\n\nUNION ALL\n\n-- Category expenses allocated to FAT0003's category (id=7) during its time on farm\nSELECT 'category_expense_raw', SUM(amount)\nFROM expenses WHERE categoryTarget = 7 AND targetType = 'category'\n  AND expenseDate >= '2026-01-10'\n\nUNION ALL\n\n-- Herd-wide expenses during FAT0003's time on farm\nSELECT 'herd_expense_raw', SUM(amount)\nFROM expenses WHERE targetType = 'herd'\n  AND expenseDate >= '2026-01-10'\n\nUNION ALL\n\n-- Ration plan for category 7\nSELECT 'ration_plan_check', COUNT(*)\nFROM ration_plans WHERE categoryId = 7 AND isActive = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute \n-- Direct head expenses\nSELECT 'direct_expense' AS type, SUM(amount) AS total\nFROM expenses WHERE headId = 90006 AND targetType = 'head'\n\nUNION ALL\n\n-- Category expenses allocated to FAT0003's category (id=7) during its time on farm\nSELECT 'category_expense_raw', SUM(amount)\nFROM expenses WHERE categoryTarget = 7 AND targetType = 'category'\n  AND expenseDate >= '2026-01-10'\n\nUNION ALL\n\n-- Herd-wide expenses during FAT0003's time on farm\nSELECT 'herd_expense_raw', SUM(amount)\nFROM expenses WHERE targetType = 'herd'\n  AND expenseDate >= '2026-01-10'\n\nUNION ALL\n\n-- Ration plan for category 7\nSELECT 'ration_plan_check', COUNT(*)\nFROM ration_plans WHERE categoryId = 7 AND isActive = 1;\n",
+  "rows": [
+    {
+      "type": "category_expense_raw",
+      "total": "NULL"
+    },
+    {
+      "type": "direct_expense",
+      "total": "NULL"
+    },
+    {
+      "type": "herd_expense_raw",
+      "total": "10000.00"
+    },
+    {
+      "type": "ration_plan_check",
+      "total": "3.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "type\ttotal\ncategory_expense_raw\tNULL\ndirect_expense\tNULL\nherd_expense_raw\t10000.00\nration_plan_check\t3.00\n",
+  "stderr": "",
+  "execution_time_ms": 1774
+}
