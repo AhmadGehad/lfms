@@ -42,6 +42,7 @@ const en = {
   // Common
   common: {
     save: "Save",
+    apply: "Apply",
     cancel: "Cancel",
     delete: "Delete",
     edit: "Edit",
@@ -794,6 +795,8 @@ const en = {
     vaccineRequired: "Vaccine is required",
     animalRequired: "Animal is required",
     dateRequired: "Date is required",
+    bulkApply: "Bulk Apply Vaccination",
+    bulkVaccinationApplied: "Vaccination applied to selected animals",
   },
 
   owners: {
@@ -854,6 +857,7 @@ const ar = {
 
   common: {
     save: "حفظ",
+    apply: "تطبيق",
     cancel: "إلغاء",
     delete: "حذف",
     edit: "تعديل",
@@ -1190,6 +1194,8 @@ const ar = {
     vaccineRequired: "اللقاح مطلوب",
     animalRequired: "الحيوان مطلوب",
     dateRequired: "التاريخ مطلوب",
+    bulkApply: "تطبيق التطعيم بكميات كبيرة",
+    bulkVaccinationApplied: "تم تطبيق التطعيم على الحيوانات المختارة",
     stockUpdated: "تم تحديث قيد المخزون",
     rationCreated: "تم إنشاء خطة التغذية",
     rationUpdated: "تم تحديث خطة التغذية",
