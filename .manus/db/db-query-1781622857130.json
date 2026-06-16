@@ -1,0 +1,28 @@
+{
+  "query": "UPDATE users SET role = 'admin' WHERE email IN ('ahmad.gehaid99@gmail.com', 'ahmad.gehaid88@gmail.com', 'mw3406896@gmail.com');\nSELECT id, name, email, role FROM users;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute UPDATE users SET role = 'admin' WHERE email IN ('ahmad.gehaid99@gmail.com', 'ahmad.gehaid88@gmail.com', 'mw3406896@gmail.com');\nSELECT id, name, email, role FROM users;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Ahmed Gehad",
+      "email": "ahmad.gehaid88@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "2730001",
+      "name": "mohamed walid",
+      "email": "mw3406896@gmail.com",
+      "role": "admin"
+    },
+    {
+      "id": "6810010",
+      "name": "Ahmed Gehad",
+      "email": "ahmad.gehaid99@gmail.com",
+      "role": "admin"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\n1\tAhmed Gehad\tahmad.gehaid88@gmail.com\tadmin\n2730001\tmohamed walid\tmw3406896@gmail.com\tadmin\n6810010\tAhmed Gehad\tahmad.gehaid99@gmail.com\tadmin\n",
+  "stderr": "",
+  "execution_time_ms": 2048
+}
