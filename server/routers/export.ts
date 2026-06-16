@@ -555,18 +555,6 @@ async function buildWorkbook(): Promise<Buffer> {
       style: { numFmt: "#,##0.00" }
     },
     {
-      header: "doomedKg",
-      key: "doomedKg",
-      width: 12,
-      style: { numFmt: "#,##0.00" }
-    },
-    {
-      header: "adjustedStock",
-      key: "adjustedStock",
-      width: 14,
-      style: { numFmt: "#,##0.00" }
-    },
-    {
       header: "dailyConsumption",
       key: "dailyConsumption",
       width: 16,
@@ -589,20 +577,15 @@ async function buildWorkbook(): Promise<Buffer> {
       lastCountDate: fmtDate(s.lastCountDate),
       stockOnHand: s.stockOnHand,
       consumedSinceCount: s.consumedSinceCount,
-      doomedKg: s.doomedKg,
       dailyConsumption: s.dailyConsumption,
       runOutDate: fmtDate(s.runOutDate),
       status: s.status
     });
-    // Live formulas: daysSinceCount, adjustedStock, daysRemaining
-    wsStock.getCell(`C${rowNum}`).value = {
-      formula: `IF(ISBLANK(B${rowNum}),0,TODAY()-B${rowNum})`
-    };
-    wsStock.getCell(`G${rowNum}`).value = {
-      formula: `MAX(0,D${rowNum}-F${rowNum})`
-    };
-    wsStock.getCell(`I${rowNum}`).value = {
-      formula: `IFERROR(FLOOR(G${rowNum}/H${rowNum},1),"∞")`
+    // Live formula: daysRemaining = stockOnHand / dailyConsumption
+    // Columns: A name, B lastCountDate, C stockOnHand, D consumedSinceCount,
+    //          E dailyConsumption, F daysRemaining, G runOutDate, H status
+    wsStock.getCell(`F${rowNum}`).value = {
+      formula: `IFERROR(FLOOR(C${rowNum}/E${rowNum},1),"∞")`
     };
   });
   wsStock.views = [{ state: "frozen", ySplit: 1 }];

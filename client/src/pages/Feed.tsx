@@ -592,13 +592,8 @@ export default function Feed() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="font-semibold text-sm">{item.feedItemName}</p>
-                  <p className="text-2xl font-bold mt-1">{parseFloat(item.adjustedStock ?? item.stockOnHand).toFixed(0)}</p>
+                  <p className="text-2xl font-bold mt-1">{parseFloat(item.stockOnHand).toFixed(0)}</p>
                   <p className="text-xs text-muted-foreground">{item.unit}</p>
-                  {item.doomedKg > 0 && (
-                    <p className="text-xs text-red-500 mt-1">
-                      −{t("feed.kgDoomedStock", { qty: parseFloat(item.doomedKg).toFixed(0) })}
-                    </p>
-                  )}
                   {item.consumedSinceCount > 0 && (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       −{t("feed.kgUsedSince", { qty: parseFloat(item.consumedSinceCount).toFixed(0), days: item.daysSinceCount })}

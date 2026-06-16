@@ -468,7 +468,7 @@ export default function Dashboard() {
                   (feedStock ?? []).map((item: any) => (
                     <TableRow key={item.feedItemId} className={item.status === "critical" ? "bg-red-50/50" : item.status === "low" ? "bg-amber-50/50" : ""}>
                       <TableCell className="font-medium">{item.feedItemName}</TableCell>
-                      <TableCell className="font-semibold">{parseFloat(item.adjustedStock ?? item.stockOnHand).toFixed(1)}</TableCell>
+                      <TableCell className="font-semibold">{parseFloat(item.stockOnHand).toFixed(1)}</TableCell>
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>{parseFloat(item.dailyUsage ?? 0).toFixed(2)}</TableCell>
                       <TableCell>

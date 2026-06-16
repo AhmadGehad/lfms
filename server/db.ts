@@ -1782,68 +1782,12 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   };
 }
 
-/** Calculate feed consumed by doomed/exited animals between their exit date and today.
- *  "Doomed stock" = feed already issued/consumed for animals that have since exited
- *  (status isExitStatus=true, exitDate set). Used to show true remaining stock.
- */
-export async function getDoomedFeedConsumption(): Promise<Record<number, number>> {
-  const db = await getDb();
-  if (!db) return {};
-
-  const today = new Date().toISOString().split("T")[0];
-
-  // Animals that exited within the last 90 days (recently doomed)
-  const recentlyExited = await db
-    .select({
-      categoryId: animals.categoryId,
-      exitDate: animals.exitDate,
-      acquisitionDate: animals.acquisitionDate
-    })
-    .from(animals)
-    .where(and(eq(animals.isActive, false), isNotNull(animals.exitDate), isNull(animals.deletedAt), sql`${animals.exitDate} >= DATE_SUB(${today}, INTERVAL 90 DAY)`));
-
-  if (recentlyExited.length === 0) return {};
-
-  // Get all active ration plans
-  const allPlans = await db
-    .select({
-      feedItemId: rationPlans.feedItemId,
-      categoryId: rationPlans.categoryId,
-      qty: rationPlans.qtyPerHeadPerDay
-    })
-    .from(rationPlans)
-    .where(and(eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
-
-  // For each recently-exited animal, compute how many days of feed were consumed
-  const feedConsumed: Record<number, number> = {};
-  for (const animal of recentlyExited) {
-    if (!animal.exitDate) continue;
-    const exitDateStr = animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0];
-    const acqDateStr = animal.acquisitionDate instanceof Date ? animal.acquisitionDate.toISOString().split("T")[0] : String(animal.acquisitionDate).split("T")[0];
-
-    const exitMs = new Date(exitDateStr).getTime();
-    const todayMs = new Date(today).getTime();
-    // Days the animal was consuming feed but is now gone (excess allocated stock)
-    const daysAfterExit = Math.max(0, Math.floor((todayMs - exitMs) / 86400000));
-    if (daysAfterExit === 0) continue;
-
-    const plansForCategory = allPlans.filter(p => p.categoryId === animal.categoryId);
-    for (const plan of plansForCategory) {
-      const qty = parseFloat(plan.qty) * daysAfterExit;
-      feedConsumed[plan.feedItemId] = (feedConsumed[plan.feedItemId] ?? 0) + qty;
-    }
-  }
-
-  return feedConsumed;
-}
-
 export async function getFeedStockStatus() {
   const db = await getDb();
   if (!db) return [];
 
   const allFeedItems = await getAllFeedItems();
   const headCounts = await getActiveHeadCountByCategory();
-  const doomedConsumed = await getDoomedFeedConsumption();
   const result = [];
 
   for (const item of allFeedItems) {
@@ -1903,9 +1847,6 @@ export async function getFeedStockStatus() {
       }
     }
 
-    // Doomed stock: feed that was allocated for now-exited animals
-    const doomedKg = doomedConsumed[item.id] ?? 0;
-
     // Excel formula: StockToday = LastCountQty + PurchSinceCount + Adjustments - (DailyUse × daysSinceCount)
     const lastCountDateStr = lastCount[0]?.transactionDate ? (lastCount[0].transactionDate instanceof Date ? lastCount[0].transactionDate.toISOString().split("T")[0] : String(lastCount[0].transactionDate).split("T")[0]) : "2020-01-01";
     const today = new Date().toISOString().split("T")[0];
@@ -1913,8 +1854,7 @@ export async function getFeedStockStatus() {
     const consumedSinceCount = dailyConsumption * daysSinceCount;
 
     const stockOnHand = Math.max(0, lastCountQty + purchasedQty + adjustmentQty - consumedSinceCount);
-    const adjustedStock = Math.max(0, stockOnHand - doomedKg);
-    const daysRemaining = dailyConsumption > 0 ? Math.floor(adjustedStock / dailyConsumption) : 999;
+    const daysRemaining = dailyConsumption > 0 ? Math.floor(stockOnHand / dailyConsumption) : 999;
     const runOutDate = dailyConsumption > 0 ? new Date(Date.now() + daysRemaining * 86400000).toISOString().split("T")[0] : null;
 
     result.push({
@@ -1922,8 +1862,6 @@ export async function getFeedStockStatus() {
       feedItemName: item.name,
       unit: item.unit,
       stockOnHand,
-      adjustedStock,
-      doomedKg: Math.round(doomedKg * 100) / 100,
       consumedSinceCount: Math.round(consumedSinceCount * 100) / 100,
       daysSinceCount,
       lastCountDate: lastCountDateStr,
