@@ -534,6 +534,8 @@ const en = {
     totalRunningCost: "Total Running Cost",
     overMonths: "over {{months}} months",
 
+    totalExpenses: "Total Expenses",
+
   },
 
   // Configuration
@@ -1279,6 +1281,8 @@ const ar = {
     animalWide: "على مستوى الحيوان (لكل حيوان)",
     totalRunningCost: "إجمالي التكلفة التشغيلية",
     overMonths: "خلال {{months}} شهر",
+
+    totalExpenses: "إجمالي المصروفات",
 
   },
 
