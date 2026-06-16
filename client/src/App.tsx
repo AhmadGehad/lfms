@@ -23,6 +23,7 @@ import UserManagement from "./pages/UserManagement";
 import Configuration from "./pages/Configuration";
 import Data from "./pages/Data";
 import RecycleBin from "./pages/RecycleBin";
+import AnimalVaccinations from "./pages/AnimalVaccinations";
 
 function Router() {
   return (
@@ -44,6 +45,7 @@ function Router() {
         <Route path="/config" component={Configuration} />
         <Route path="/data" component={Data} />
         <Route path="/recycle-bin" component={RecycleBin} />
+        <Route path="/vaccinations" component={AnimalVaccinations} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

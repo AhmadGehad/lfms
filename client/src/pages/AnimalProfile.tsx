@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, DollarSign, FileDown, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2 } from "lucide-react";
+import { ArrowLeft, DollarSign, FileDown, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2, Syringe } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateAnimalPnLPdf } from "@/lib/pdfReports";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -577,6 +577,64 @@ function StatusHistory({ animalId }: { animalId: number }) {
   );
 }
 
+function VaccinationHistoryTab({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
+  const { data: vaccinations } = trpc.vaccination.getVaccinationRecords.useQuery({ animalId });
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-semibold">{t("vaccine.title")}</h3>
+      {(vaccinations ?? []).length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("vaccine.noVaccinations")}</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t("vaccine.vaccineName")}</TableHead>
+              <TableHead>{t("vaccine.vaccinationDate")}</TableHead>
+              <TableHead>{t("vaccine.nextDueDate")}</TableHead>
+              <TableHead>{t("vaccine.batchNumber")}</TableHead>
+              <TableHead>{t("vaccine.veterinarian")}</TableHead>
+              <TableHead>{t("vaccine.status")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {(vaccinations ?? []).map((v: any) => (
+              <TableRow key={v.id}>
+                <TableCell className="font-medium">{v.vaccineName}</TableCell>
+                <TableCell>{new Date(v.vaccinationDate).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  {v.nextDueDate ? (
+                    <span className={(() => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const dueDate = new Date(v.nextDueDate);
+                      dueDate.setHours(0, 0, 0, 0);
+                      const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+                      if (diffDays < 0) return "text-red-600 font-medium";
+                      if (diffDays <= 7) return "text-amber-600 font-medium";
+                      return "";
+                    })()}>
+                      {new Date(v.nextDueDate).toLocaleDateString()}
+                    </span>
+                  ) : "—"}
+                </TableCell>
+                <TableCell>{v.batchNumber ?? "—"}</TableCell>
+                <TableCell>{v.veterinarian ?? "—"}</TableCell>
+                <TableCell>
+                  <Badge variant={v.isCompleted ? "default" : "secondary"}>
+                    {v.isCompleted ? t("vaccine.completed") : t("vaccine.due")}
+                  </Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
+
 export default function AnimalProfile() {
   const { t } = useTranslation();
   const params = useParams<{ id: string }>();
@@ -691,6 +749,29 @@ export default function AnimalProfile() {
                 <span className="text-sm font-medium text-right max-w-32 truncate">{value ?? "—"}</span>
               </div>
             ))}
+            {animal.nextVaccineDate && (
+              <div className="flex justify-between items-start border-t pt-2">
+                <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <Syringe className="h-3.5 w-3.5" />
+                  {t("vaccine.nextVaccine")}
+                </span>
+                <span className="text-sm font-medium flex items-center gap-1.5">
+                  <span className="text-muted-foreground">{animal.nextVaccineName}</span>
+                  <span className={(() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const dueDate = new Date(animal.nextVaccineDate);
+                    dueDate.setHours(0, 0, 0, 0);
+                    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+                    if (diffDays < 0) return "text-red-600 font-medium";
+                    if (diffDays <= 7) return "text-amber-600 font-medium";
+                    return "";
+                  })()}>
+                    {new Date(animal.nextVaccineDate).toLocaleDateString()}
+                  </span>
+                </span>
+              </div>
+            )}
             {animal.animal.exitDate && (
               <div className="flex justify-between items-start border-t pt-2">
                 <span className="text-sm text-muted-foreground">{t("common.exitDate")}</span>
@@ -715,6 +796,7 @@ export default function AnimalProfile() {
             <TabsList className="mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="weights">{t("animalProfile.weightLog")}</TabsTrigger>
               <TabsTrigger value="feed">{t("animals.feedHistory")}</TabsTrigger>
+              <TabsTrigger value="vaccinations">{t("vaccine.title")}</TabsTrigger>
               <TabsTrigger value="expenses">{t("nav.expenses")}</TabsTrigger>
               <TabsTrigger value="sales">{t("nav.sales")}</TabsTrigger>
               <TabsTrigger value="status">{t("animals.statusHistory")}</TabsTrigger>
@@ -724,6 +806,9 @@ export default function AnimalProfile() {
             </TabsContent>
             <TabsContent value="feed">
               <FeedHistoryTab animalId={animalId} />
+            </TabsContent>
+            <TabsContent value="vaccinations">
+              <VaccinationHistoryTab animalId={animalId} />
             </TabsContent>
             <TabsContent value="expenses">
               <ExpenseHistoryTab animalId={animalId} />

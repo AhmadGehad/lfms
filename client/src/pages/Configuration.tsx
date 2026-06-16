@@ -5,13 +5,15 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
-import { Settings, Plus, Pencil } from "lucide-react";
+import { Settings, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // ── Reusable inline edit dialog ───────────────────────────────────────────────
 function EditDialog({ title, open, onOpenChange, onSave, isPending, children }: {
@@ -757,6 +759,7 @@ export default function Configuration() {
               <TabsTrigger value="owners">{t("owners.owners")}</TabsTrigger>
               <TabsTrigger value="feed">{t("config.feedItems")}</TabsTrigger>
               <TabsTrigger value="expenses">{t("config.expenseCategories")}</TabsTrigger>
+              <TabsTrigger value="vaccines">{t("vaccine.title")}</TabsTrigger>
               <TabsTrigger value="statuses">{t("config.statusesLabel")}</TabsTrigger>
               <TabsTrigger value="birthtypes">{t("config.birthTypes")}</TabsTrigger>
               <TabsTrigger value="settings">{t("config.settings")}</TabsTrigger>
@@ -768,12 +771,162 @@ export default function Configuration() {
             <TabsContent value="owners"><OwnersTab /></TabsContent>
             <TabsContent value="feed"><FeedItemsTab /></TabsContent>
             <TabsContent value="expenses"><ExpenseCategoriesTab /></TabsContent>
+            <TabsContent value="vaccines"><VaccinesTab /></TabsContent>
             <TabsContent value="statuses"><StatusesTab /></TabsContent>
             <TabsContent value="birthtypes"><BirthTypesTab /></TabsContent>
             <TabsContent value="settings"><SettingsTab /></TabsContent>
           </Tabs>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+// ── Vaccines Tab ─────────────────────────────────────────────────────────────
+function VaccinesTab() {
+  const { t } = useTranslation();
+  const { data: vaccines, isLoading } = trpc.config.getVaccines.useQuery();
+  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [validityPeriod, setValidityPeriod] = useState("");
+  const [validityUnit, setValidityUnit] = useState<"days" | "months">("days");
+  const [boosterRequired, setBoosterRequired] = useState(false);
+  const [boosterInterval, setBoosterInterval] = useState("");
+  const utils = trpc.useUtils();
+
+  const create = trpc.config.createVaccine.useMutation({
+    onSuccess: () => { toast.success(t("vaccine.vaccineSaved")); utils.config.getVaccines.invalidate(); setOpen(false); resetForm(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const update = trpc.config.updateVaccine.useMutation({
+    onSuccess: () => { toast.success(t("vaccine.vaccineSaved")); utils.config.getVaccines.invalidate(); setEditOpen(false); setEditItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const deleteVaccine = trpc.config.deleteVaccine.useMutation({
+    onSuccess: () => { toast.success(t("vaccine.vaccineDeleted")); utils.config.getVaccines.invalidate(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  function resetForm() {
+    setName("");
+    setDescription("");
+    setValidityPeriod("");
+    setValidityUnit("days");
+    setBoosterRequired(false);
+    setBoosterInterval("");
+  }
+
+  function openEdit(v: any) { 
+    setEditItem({ ...v }); 
+    setEditOpen(true); 
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold">{t("vaccine.title")}</h3>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("vaccine.addVaccine")}</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader><DialogTitle>{t("vaccine.addVaccine")}</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1.5"><Label>{t("vaccine.vaccineName")} *</Label><Input placeholder="e.g. Rabies" value={name} onChange={(e) => setName(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>{t("vaccine.description")}</Label><Input placeholder={t("common.none")} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5"><Label>{t("vaccine.validityPeriod")} *</Label><Input type="number" placeholder="30" value={validityPeriod} onChange={(e) => setValidityPeriod(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>{t("vaccine.validityUnit")}</Label>
+                  <Select value={validityUnit} onValueChange={(v: any) => setValidityUnit(v)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent><SelectItem value="days">{t("vaccine.days")}</SelectItem><SelectItem value="months">{t("vaccine.months")}</SelectItem></SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="booster" checked={boosterRequired} onChange={(e) => setBoosterRequired(e.target.checked)} className="h-4 w-4" />
+                <Label htmlFor="booster">{t("vaccine.boosterRequired")}</Label>
+              </div>
+              {boosterRequired && (
+                <div className="space-y-1.5"><Label>{t("vaccine.boosterInterval")}</Label><Input type="number" placeholder="180" value={boosterInterval} onChange={(e) => setBoosterInterval(e.target.value)} /></div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+              <Button onClick={() => create.mutate({ name, description: description || undefined, validityPeriod: parseInt(validityPeriod), validityUnit, boosterRequired, boosterInterval: boosterInterval ? parseInt(boosterInterval) : undefined })} disabled={!name || !validityPeriod || create.isPending}>{t("common.save")}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {editItem && (
+        <EditDialog title={t("vaccine.editVaccine")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description, validityPeriod: editItem.validityPeriod, validityUnit: editItem.validityUnit, boosterRequired: editItem.boosterRequired, boosterInterval: editItem.boosterInterval })}>
+          <div className="space-y-1.5"><Label>{t("vaccine.vaccineName")} *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("vaccine.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5"><Label>{t("vaccine.validityPeriod")} *</Label><Input type="number" value={editItem.validityPeriod} onChange={(e) => setEditItem((p: any) => ({ ...p, validityPeriod: parseInt(e.target.value) }))} /></div>
+            <div className="space-y-1.5"><Label>{t("vaccine.validityUnit")}</Label>
+              <Select value={editItem.validityUnit} onValueChange={(v: any) => setEditItem((p: any) => ({ ...p, validityUnit: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="days">{t("vaccine.days")}</SelectItem><SelectItem value="months">{t("vaccine.months")}</SelectItem></SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" id="editBooster" checked={editItem.boosterRequired} onChange={(e) => setEditItem((p: any) => ({ ...p, boosterRequired: e.target.checked }))} className="h-4 w-4" />
+            <Label htmlFor="editBooster">{t("vaccine.boosterRequired")}</Label>
+          </div>
+          {editItem.boosterRequired && (
+            <div className="space-y-1.5"><Label>{t("vaccine.boosterInterval")}</Label><Input type="number" value={editItem.boosterInterval ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, boosterInterval: parseInt(e.target.value) || undefined }))} /></div>
+          )}
+        </EditDialog>
+      )}
+
+      <Table>
+        <TableHeader><TableRow><TableHead>{t("vaccine.vaccineName")}</TableHead><TableHead>{t("vaccine.validityPeriod")}</TableHead><TableHead>{t("vaccine.boosterRequired")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableBody>
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <TableRow key={i}>{Array.from({ length: 5 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>))}</TableRow>
+            ))
+          ) : (vaccines ?? []).length === 0 ? (
+            <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">{t("vaccine.noVaccines")}</TableCell></TableRow>
+          ) : (
+            (vaccines ?? []).map((v: any) => (
+              <TableRow key={v.id}>
+                <TableCell className="font-medium">{v.name}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{v.validityPeriod} {v.validityUnit === "days" ? t("vaccine.days") : t("vaccine.months")}</TableCell>
+                <TableCell><Badge variant={v.boosterRequired ? "default" : "secondary"}>{v.boosterRequired ? t("common.yes") : t("common.no")}</Badge></TableCell>
+                <TableCell><Badge className={v.isActive ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}>{v.isActive ? t("common.active") : t("common.inactive")}</Badge></TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(v)}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-destructive" />{t("vaccine.deleteVaccine")}</AlertDialogTitle>
+                          <AlertDialogDescription>{t("vaccine.deleteVaccineConfirm", { name: v.name })}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteVaccine.mutate({ id: v.id })}>{t("common.delete")}</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

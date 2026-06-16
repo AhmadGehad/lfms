@@ -47,6 +47,7 @@ import {
   Moon,
   Sun,
   Wheat,
+  Syringe,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -179,6 +180,7 @@ function DashboardLayoutContent({
       label: t("nav.groups.operations"),
       items: [
         { icon: Wheat, label: t("nav.feed"), path: "/feed" },
+        { icon: Syringe, label: t("vaccine.title"), path: "/vaccinations" },
         { icon: DollarSign, label: t("nav.expenses"), path: "/expenses" },
       ],
     },

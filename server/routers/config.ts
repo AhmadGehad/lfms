@@ -15,6 +15,7 @@ import {
   getAllSettings, upsertSetting,
   getAllUsers, updateUserRole,
   createAuditEntry,
+  getVaccines, addVaccine, updateVaccine, deleteVaccine,
 } from "../db";
 
 export const configRouter = router({
@@ -316,5 +317,48 @@ export const configRouter = router({
       const result = await updateUserRole(input.userId, input.role);
       await createAuditEntry({ userId: ctx.user.id, entityType: "user", entityId: String(input.userId), action: "update", oldValues: before ? { role: before.role } as any : undefined, newValues: { role: input.role }, ipAddress: getClientIp(ctx) });
       return result;
+    }),
+
+  // ─── VACCINES ────────────────────────────────────────────────────────────────
+  getVaccines: protectedProcedure.query(() => getVaccines()),
+
+  createVaccine: supervisorProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      description: z.string().optional(),
+      validityPeriod: z.number().min(1),
+      validityUnit: z.enum(["days", "months"]),
+      boosterRequired: z.boolean(),
+      boosterInterval: z.number().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await addVaccine(input);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "vaccine", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
+      return result;
+    }),
+
+  updateVaccine: supervisorProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      validityPeriod: z.number().optional(),
+      validityUnit: z.enum(["days", "months"]).optional(),
+      boosterRequired: z.boolean().optional(),
+      boosterInterval: z.number().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      await updateVaccine(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "vaccine", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
+      return { id };
+    }),
+
+  deleteVaccine: supervisorProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await deleteVaccine(input.id);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "vaccine", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx) });
+      return { id: input.id };
     }),
 });

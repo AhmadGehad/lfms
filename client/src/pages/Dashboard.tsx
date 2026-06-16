@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp, Syringe } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -114,6 +114,7 @@ export default function Dashboard() {
   // Feed stock - use shared feed.getStockStatus so it updates when Feed page changes stock
   const { data: feedStock } = trpc.feed.getStockStatus.useQuery();
   const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
+  const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery(30);
 
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
     fromDate: dateRange.from,
@@ -138,6 +139,22 @@ export default function Dashboard() {
 
   const criticalAlerts = (feedStock ?? []).filter((s: any) => s.status === "critical").length;
   const lowAlerts = (feedStock ?? []).filter((s: any) => s.status === "low").length;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const overdueVaccinations = (upcomingVaccinations ?? []).filter((v: any) => {
+    if (!v.nextDueDate) return false;
+    const dueDate = new Date(v.nextDueDate instanceof Date ? v.nextDueDate.toISOString() : v.nextDueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  }).length;
+  const dueSoonVaccinations = (upcomingVaccinations ?? []).filter((v: any) => {
+    if (!v.nextDueDate) return false;
+    const dueDate = new Date(v.nextDueDate instanceof Date ? v.nextDueDate.toISOString() : v.nextDueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+    return diffDays >= 0 && diffDays <= 7;
+  }).length;
 
   const presetLabel = preset === "custom" ? `${customFrom || "?"} → ${customTo || "?"}` : PRESET_LABELS[preset];
 
@@ -262,12 +279,14 @@ export default function Dashboard() {
       </div>
 
       {/* Alerts Banner */}
-      {(criticalAlerts > 0 || lowAlerts > 0) && (
-        <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+      {(criticalAlerts > 0 || lowAlerts > 0 || overdueVaccinations > 0 || dueSoonVaccinations > 0) && (
+        <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 || overdueVaccinations > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span className="text-sm font-medium">
             {criticalAlerts > 0 && `${criticalAlerts} ${t("dashboard.critical").toLowerCase()}. `}
-            {lowAlerts > 0 && `${lowAlerts} ${t("dashboard.lowStock").toLowerCase()}.`}
+            {lowAlerts > 0 && `${lowAlerts} ${t("dashboard.lowStock").toLowerCase()}. `}
+            {overdueVaccinations > 0 && `${overdueVaccinations} ${t("vaccine.overdue").toLowerCase()}. `}
+            {dueSoonVaccinations > 0 && `${dueSoonVaccinations} ${t("vaccine.due").toLowerCase()}. `}
           </span>
         </div>
       )}

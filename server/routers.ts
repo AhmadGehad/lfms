@@ -12,6 +12,7 @@ import { recycleBinRouter } from "./routers/softDelete";
 import { exportRouter } from "./routers/export";
 import { importRouter } from "./routers/import";
 import { backupRouter } from "./routers/backup";
+import { vaccinationRouter } from "./routers/vaccination";
 
 export const appRouter = router({
   system: systemRouter,
@@ -39,6 +40,7 @@ export const appRouter = router({
   export: exportRouter,
   import: importRouter,
   backup: backupRouter,
+  vaccination: vaccinationRouter,
 });
 
 export type AppRouter = typeof appRouter;

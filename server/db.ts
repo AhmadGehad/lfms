@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { toMinor, toMajor, divMinor } from "./_core/money";
-import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, rationPlans, sales, species, systemSettings, users, weightLog } from "../drizzle/schema";
+import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, rationPlans, sales, species, systemSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -589,6 +589,17 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
         SELECT wl.weightKg FROM weight_log wl
         WHERE wl.animalId = ${animals.id} AND wl.deletedAt IS NULL
         ORDER BY wl.weighDate DESC LIMIT 1
+      )`,
+      nextVaccineDate: sql<string | null>`(
+        SELECT vr.nextDueDate FROM vaccination_records vr
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        ORDER BY vr.nextDueDate ASC LIMIT 1
+      )`,
+      nextVaccineName: sql<string | null>`(
+        SELECT v.name FROM vaccination_records vr
+        INNER JOIN vaccines v ON vr.vaccineId = v.id
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        ORDER BY vr.nextDueDate ASC LIMIT 1
       )`
     })
     .from(animals)
@@ -619,6 +630,17 @@ export async function getAnimalById(id: number) {
       statusName: animalStatuses.name,
       isExitStatus: animalStatuses.isExitStatus,
       ownerName: owners.name,
+      nextVaccineDate: sql<string | null>`(
+        SELECT vr.nextDueDate FROM vaccination_records vr
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        ORDER BY vr.nextDueDate ASC LIMIT 1
+      )`,
+      nextVaccineName: sql<string | null>`(
+        SELECT v.name FROM vaccination_records vr
+        INNER JOIN vaccines v ON vr.vaccineId = v.id
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        ORDER BY vr.nextDueDate ASC LIMIT 1
+      )`
     })
     .from(animals)
     .leftJoin(species, eq(animals.speciesId, species.id))
@@ -2255,4 +2277,221 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
     grossProfit,
     profitMargin: totalRevenueMinor > 0 ? Math.round((grossProfitMinor / totalRevenueMinor) * 10000) / 100 : 0
   };
+}
+
+// ─── VACCINE MANAGEMENT ─────────────────────────────────────────────────────────────
+
+export async function getVaccines() {
+  const db = await getDb();
+  if (!db) return [];
+  return await db.select().from(vaccines).where(isNull(vaccines.deletedAt)).orderBy(vaccines.name);
+}
+
+export async function addVaccine(data: { name: string; description?: string; validityPeriod: number; validityUnit: "days" | "months"; boosterRequired: boolean; boosterInterval?: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [result] = await db.insert(vaccines).values(data);
+  return result;
+}
+
+export async function updateVaccine(id: number, data: { name?: string; description?: string; validityPeriod?: number; validityUnit?: "days" | "months"; boosterRequired?: boolean; boosterInterval?: number; isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(vaccines).set(data).where(eq(vaccines.id, id));
+}
+
+export async function deleteVaccine(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(vaccines).set({ deletedAt: new Date() }).where(eq(vaccines.id, id));
+}
+
+export async function getVaccinationRecords(animalId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const query = db
+    .select({
+      id: vaccinationRecords.id,
+      animalId: vaccinationRecords.animalId,
+      animalIdStr: animals.animalId,
+      vaccineId: vaccinationRecords.vaccineId,
+      vaccineName: vaccines.name,
+      vaccinationDate: vaccinationRecords.vaccinationDate,
+      nextDueDate: vaccinationRecords.nextDueDate,
+      batchNumber: vaccinationRecords.batchNumber,
+      notes: vaccinationRecords.notes,
+      veterinarian: vaccinationRecords.veterinarian,
+      isCompleted: vaccinationRecords.isCompleted,
+      createdAt: vaccinationRecords.createdAt,
+    })
+    .from(vaccinationRecords)
+    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
+    .innerJoin(animals, eq(vaccinationRecords.animalId, animals.id))
+    .where(isNull(vaccinationRecords.deletedAt))
+    .orderBy(vaccinationRecords.vaccinationDate);
+  
+  if (animalId) {
+    query.where(eq(vaccinationRecords.animalId, animalId));
+  }
+  
+  return await query;
+}
+
+export async function addVaccinationRecord(data: { animalId: number; vaccineId: number; vaccinationDate: string; batchNumber?: string; notes?: string; veterinarian?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  
+  // Get vaccine config to calculate next due date
+  const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, data.vaccineId)).limit(1);
+  if (!vaccine.length) throw new Error("Vaccine not found");
+  
+  const nextDueDate = calculateNextDueDate(vaccine[0], data.vaccinationDate);
+  
+  const [result] = await db.insert(vaccinationRecords).values({
+    ...data,
+    nextDueDate,
+  });
+  return result;
+}
+
+export async function updateVaccinationRecord(id: number, data: { vaccinationDate?: string; batchNumber?: string; notes?: string; veterinarian?: string; isCompleted?: boolean }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  
+  let nextDueDate: string | undefined;
+  if (data.vaccinationDate) {
+    const record = await db.select({ vaccineId: vaccinationRecords.vaccineId }).from(vaccinationRecords).where(eq(vaccinationRecords.id, id)).limit(1);
+    if (record.length) {
+      const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, record[0].vaccineId)).limit(1);
+      if (vaccine.length) {
+        nextDueDate = calculateNextDueDate(vaccine[0], data.vaccinationDate);
+      }
+    }
+  }
+  
+  await db.update(vaccinationRecords).set({ ...data, nextDueDate }).where(eq(vaccinationRecords.id, id));
+}
+
+export async function deleteVaccinationRecord(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(vaccinationRecords).set({ deletedAt: new Date() }).where(eq(vaccinationRecords.id, id));
+}
+
+export function calculateNextDueDate(vaccine: { validityPeriod: number; validityUnit: "days" | "months"; boosterRequired: boolean; boosterInterval?: number }, lastDate: string): string {
+  const date = new Date(lastDate);
+  const daysToAdd = vaccine.validityUnit === "months" ? vaccine.validityPeriod * 30 : vaccine.validityPeriod;
+  date.setDate(date.getDate() + daysToAdd);
+  return date.toISOString().split("T")[0];
+}
+
+export function getVaccinationStatus(record: { nextDueDate: Date | string | null; isCompleted: boolean }): "completed" | "overdue" | "due" | "upcoming" {
+  if (record.isCompleted) return "completed";
+  if (!record.nextDueDate) return "upcoming";
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueDate = new Date(record.nextDueDate instanceof Date ? record.nextDueDate.toISOString() : record.nextDueDate);
+  dueDate.setHours(0, 0, 0, 0);
+  
+  const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+  
+  if (diffDays < 0) return "overdue";
+  if (diffDays <= 7) return "due";
+  return "upcoming";
+}
+
+export async function getUpcomingVaccinations(days: number = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() + days);
+  
+  return await db
+    .select({
+      id: vaccinationRecords.id,
+      animalId: vaccinationRecords.animalId,
+      animalIdStr: animals.animalId,
+      vaccineName: vaccines.name,
+      nextDueDate: vaccinationRecords.nextDueDate,
+      isCompleted: vaccinationRecords.isCompleted,
+    })
+    .from(vaccinationRecords)
+    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
+    .innerJoin(animals, eq(vaccinationRecords.animalId, animals.id))
+    .where(
+      and(
+        isNull(vaccinationRecords.deletedAt),
+        eq(vaccinationRecords.isCompleted, false),
+        sql`${vaccinationRecords.nextDueDate} <= ${cutoff.toISOString().split("T")[0]}`
+      )
+    )
+    .orderBy(vaccinationRecords.nextDueDate);
+}
+
+export async function getVaccinationCompliance() {
+  const db = await getDb();
+  if (!db) return [];
+  
+  const today = new Date().toISOString().split("T")[0];
+  
+  const total = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vaccinationRecords)
+    .where(isNull(vaccinationRecords.deletedAt));
+  
+  const overdue = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vaccinationRecords)
+    .where(
+      and(
+        isNull(vaccinationRecords.deletedAt),
+        eq(vaccinationRecords.isCompleted, false),
+        sql`${vaccinationRecords.nextDueDate} < ${today}`
+      )
+    );
+  
+  const completed = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vaccinationRecords)
+    .where(
+      and(
+        isNull(vaccinationRecords.deletedAt),
+        eq(vaccinationRecords.isCompleted, true)
+      )
+    );
+  
+  return {
+    total: total[0]?.count ?? 0,
+    overdue: overdue[0]?.count ?? 0,
+    completed: completed[0]?.count ?? 0,
+    complianceRate: total[0]?.count ? Math.round(((completed[0]?.count ?? 0) / total[0].count) * 100) : 100,
+  };
+}
+
+export async function getNextVaccinationDate(animalId: number): Promise<{ nextDueDate: string | null; vaccineName: string | null } | null> {
+  const db = await getDb();
+  if (!db) return null;
+  
+  const result = await db
+    .select({
+      nextDueDate: vaccinationRecords.nextDueDate,
+      vaccineName: vaccines.name,
+    })
+    .from(vaccinationRecords)
+    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
+    .where(
+      and(
+        eq(vaccinationRecords.animalId, animalId),
+        isNull(vaccinationRecords.deletedAt),
+        eq(vaccinationRecords.isCompleted, false),
+        isNotNull(vaccinationRecords.nextDueDate)
+      )
+    )
+    .orderBy(vaccinationRecords.nextDueDate)
+    .limit(1);
+  
+  if (result.length === 0) return null;
+  return { nextDueDate: result[0].nextDueDate, vaccineName: result[0].vaccineName };
 }

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign, Pencil } from "lucide-react";
+import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign, Pencil, Syringe } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -1135,6 +1135,7 @@ export default function Animals() {
                     <SortableHead k="age">{t("animals.age")}</SortableHead>
                     <SortableHead k="acquisitionDate">{t("animals.acquisitionDate")}</SortableHead>
                     <SortableHead k="cost">{t("animals.purchaseCost")}</SortableHead>
+                    <TableHead>{t("vaccine.nextVaccine")}</TableHead>
                     <TableHead>{t("animals.daysOnFarm")}</TableHead>
                     <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
@@ -1142,7 +1143,7 @@ export default function Animals() {
                 <TableBody>
                   {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={16} className="text-center py-12 text-muted-foreground">
                         {t("animals.noAnimalsFound")}
                       </TableCell>
                     </TableRow>
@@ -1185,6 +1186,26 @@ export default function Animals() {
                             {a.animal.purchaseCost && parseFloat(a.animal.purchaseCost) > 0
                               ? parseFloat(a.animal.purchaseCost).toLocaleString("en-EG", { minimumFractionDigits: 2 })
                               : <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {a.nextVaccineDate ? (
+                              <div className="flex items-center gap-1.5">
+                                <Syringe className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="text-muted-foreground">{a.nextVaccineName}</span>
+                                <span className={(() => {
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+                                  const dueDate = new Date(a.nextVaccineDate);
+                                  dueDate.setHours(0, 0, 0, 0);
+                                  const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+                                  if (diffDays < 0) return "text-red-600 font-medium";
+                                  if (diffDays <= 7) return "text-amber-600 font-medium";
+                                  return "text-muted-foreground";
+                                })()}>
+                                  {new Date(a.nextVaccineDate).toLocaleDateString()}
+                                </span>
+                              </div>
+                            ) : <span className="text-muted-foreground">—</span>}
                           </TableCell>
                           <TableCell>{days}</TableCell>
                           <TableCell className="text-right">

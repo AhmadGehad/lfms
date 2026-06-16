@@ -142,6 +142,39 @@ export const feedItemPriceHistory = mysqlTable("feed_item_price_history", {
   createdBy: int("createdBy"),
 });
 
+export const vaccines = mysqlTable("vaccines", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  description: text("description"),
+  validityPeriod: int("validityPeriod").notNull(),
+  validityUnit: mysqlEnum("validityUnit", ["days", "months"]).default("days").notNull(),
+  boosterRequired: boolean("boosterRequired").default(false).notNull(),
+  boosterInterval: int("boosterInterval"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
+});
+
+export const vaccinationRecords = mysqlTable("vaccination_records", {
+  id: int("id").autoincrement().primaryKey(),
+  animalId: int("animalId").notNull(),
+  vaccineId: int("vaccineId").notNull(),
+  vaccinationDate: date("vaccinationDate").notNull(),
+  nextDueDate: date("nextDueDate"),
+  batchNumber: varchar("batchNumber", { length: 50 }),
+  notes: text("notes"),
+  veterinarian: varchar("veterinarian", { length: 100 }),
+  isCompleted: boolean("isCompleted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
+});
+
 export const expenseCategories = mysqlTable("expense_categories", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull().unique(),
@@ -362,6 +395,8 @@ export type InsertOwner = typeof owners.$inferInsert;
 export type BirthType = typeof birthTypes.$inferSelect;
 export type FeedItem = typeof feedItems.$inferSelect;
 export type FeedItemPriceHistory = typeof feedItemPriceHistory.$inferSelect;
+export type Vaccine = typeof vaccines.$inferSelect;
+export type VaccinationRecord = typeof vaccinationRecords.$inferSelect;
 export type ExpenseCategory = typeof expenseCategories.$inferSelect;
 export type ExpenseSubCategory = typeof expenseSubCategories.$inferSelect;
 export type Animal = typeof animals.$inferSelect;
