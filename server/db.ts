@@ -1946,13 +1946,49 @@ export async function getFeedShrinkage(): Promise<{
       .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "stock_count"), isNull(feedStockLedger.deletedAt)))
       .orderBy(feedStockLedger.transactionDate);
 
-    for (let i = 1; i < counts.length; i++) {
-      const fromDate = ds(counts[i - 1].transactionDate);
+    if (counts.length === 0) continue;
+
+    // Earliest ledger transaction date for this item — the anchor when there's
+    // no prior stock count (e.g. a purchase happened before the first count).
+    const firstTxn = await db
+      .select({ transactionDate: feedStockLedger.transactionDate })
+      .from(feedStockLedger)
+      .where(and(eq(feedStockLedger.feedItemId, item.id), isNull(feedStockLedger.deletedAt)))
+      .orderBy(feedStockLedger.transactionDate)
+      .limit(1);
+    const firstTxnDate = firstTxn.length > 0 ? ds(firstTxn[0].transactionDate) : null;
+
+    for (let i = 0; i < counts.length; i++) {
       const toDate = ds(counts[i].transactionDate);
-      const startQty = parseFloat(counts[i - 1].qty);
       const actualQty = parseFloat(counts[i].qty);
 
-      // Purchases + adjustments strictly between the two counts.
+      let fromDate: string;
+      let startQty: number;
+      let purchaseLowerExclusive: boolean; // whether to exclude the boundary purchase
+
+      if (i === 0) {
+        // First count: anchor at the earliest transaction (qty 0), and count
+        // ALL purchases up to and including the count date. This lets a single
+        // stock count preceded by purchases still measure shrinkage.
+        if (!firstTxnDate || firstTxnDate >= toDate) {
+          // No prior purchases to establish a baseline → can't measure yet.
+          continue;
+        }
+        fromDate = firstTxnDate;
+        startQty = 0;
+        purchaseLowerExclusive = false; // include purchases ON the first day
+      } else {
+        // Subsequent counts: anchor at the previous count.
+        fromDate = ds(counts[i - 1].transactionDate);
+        startQty = parseFloat(counts[i - 1].qty);
+        purchaseLowerExclusive = true; // exclude the prior count's own day
+      }
+
+      // Purchases + adjustments in (fromDate, toDate] (or [fromDate, toDate]
+      // for the first-count case).
+      const lowerBound = purchaseLowerExclusive
+        ? sql`${feedStockLedger.transactionDate} > ${fromDate}`
+        : sql`${feedStockLedger.transactionDate} >= ${fromDate}`;
       const pa = await db
         .select({
           purchases: sql<number>`SUM(CASE WHEN ${feedStockLedger.transactionType} = 'purchase' THEN ${feedStockLedger.qty} ELSE 0 END)`,
@@ -1962,7 +1998,7 @@ export async function getFeedShrinkage(): Promise<{
         .where(and(
           eq(feedStockLedger.feedItemId, item.id),
           isNull(feedStockLedger.deletedAt),
-          sql`${feedStockLedger.transactionDate} > ${fromDate}`,
+          lowerBound,
           sql`${feedStockLedger.transactionDate} <= ${toDate}`,
         ));
       const purchases = parseFloat(String(pa[0]?.purchases ?? 0));
