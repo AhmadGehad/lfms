@@ -4,8 +4,10 @@ import { getClientIp } from "../_core/audit";
 import {
   getVaccinationRecords, addVaccinationRecord, updateVaccinationRecord, deleteVaccinationRecord,
   getUpcomingVaccinations, getVaccinationCompliance, getVaccinationStatus,
-  createAuditEntry,
+  createAuditEntry, getAnimalById,
 } from "../db";
+import { createNotification } from "../db";
+import { notifyOwner } from "../_core/notification";
 
 export const vaccinationRouter = router({
   // ─── VACCINATION RECORDS ───────────────────────────────────────────────────────
@@ -24,7 +26,27 @@ export const vaccinationRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await addVaccinationRecord(input);
+      const animal = await getAnimalById(input.animalId);
       await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
+      
+      // Create notification for vaccination record added
+      const animalId = animal?.animal?.animalId || `Animal #${input.animalId}`;
+      await createNotification({
+        userId: ctx.user.id,
+        alertType: "vaccination_recorded",
+        title: "Vaccination Record Added",
+        message: `Vaccination record added for ${animalId}`,
+        relatedEntityType: "vaccinationRecord",
+        relatedEntityId: String((result as any).insertId),
+        priority: "medium",
+      });
+      
+      // Notify owner
+      await notifyOwner({
+        title: "Vaccination Record Added",
+        content: `A vaccination record has been added for ${animalId}. Batch: ${input.batchNumber || 'N/A'}, Date: ${input.vaccinationDate}`,
+      });
+      
       return result;
     }),
 
