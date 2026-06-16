@@ -443,6 +443,46 @@ export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate
   return result;
 }
 
+/** All price-history rows across every feed item, newest first, with the feed item name. */
+export async function getAllFeedItemPrices() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: feedItemPriceHistory.id,
+      feedItemId: feedItemPriceHistory.feedItemId,
+      feedItemName: feedItems.name,
+      unit: feedItems.unit,
+      pricePerUnit: feedItemPriceHistory.pricePerUnit,
+      effectiveDate: feedItemPriceHistory.effectiveDate,
+      notes: feedItemPriceHistory.notes,
+      createdAt: feedItemPriceHistory.createdAt,
+    })
+    .from(feedItemPriceHistory)
+    .leftJoin(feedItems, eq(feedItemPriceHistory.feedItemId, feedItems.id))
+    .orderBy(desc(feedItemPriceHistory.effectiveDate), desc(feedItemPriceHistory.id));
+}
+
+export async function updateFeedItemPrice(
+  id: number,
+  data: Partial<{ effectiveDate: string; pricePerUnit: string; notes: string | null }>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const set: Record<string, unknown> = {};
+  if (data.pricePerUnit != null) set.pricePerUnit = data.pricePerUnit;
+  if (data.notes !== undefined) set.notes = data.notes;
+  if (data.effectiveDate) set.effectiveDate = data.effectiveDate.split("T")[0] as any;
+  await db.update(feedItemPriceHistory).set(set).where(eq(feedItemPriceHistory.id, id));
+}
+
+/** Hard delete — this table has no soft-delete column. */
+export async function deleteFeedItemPrice(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(feedItemPriceHistory).where(eq(feedItemPriceHistory.id, id));
+}
+
 export async function getFeedPriceOnDate(feedItemId: number, dateStr: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
@@ -889,6 +929,35 @@ export async function getActivePlanOnDate(categoryId: number, dateStr: string) {
 }
 
 /**
+ * Build the price-by-item map used for segmented feed costing, collapsing any
+ * duplicate rows that share the same (feedItemId, effectiveDate) to the one
+ * with the highest id (the latest-entered correction). Without this, a stray
+ * duplicate price for a day (e.g. a fat-finger 16000 alongside the real 16)
+ * could be the one applied, massively inflating feed cost. Result arrays are
+ * sorted ascending by effective date, as segmentedFeedCostPure expects.
+ */
+export function buildPricesByItem(
+  rows: Array<{ feedItemId: number; effectiveDate: Date | string; pricePerUnit: string; id: number }>
+): Map<number, Array<{ eff: string; price: number }>> {
+  // feedItemId -> (eff -> { price, id }), keeping the highest id per eff.
+  const byItem = new Map<number, Map<string, { price: number; id: number }>>();
+  for (const pr of rows) {
+    const eff = pr.effectiveDate instanceof Date ? pr.effectiveDate.toISOString().split("T")[0] : String(pr.effectiveDate).split("T")[0];
+    if (!byItem.has(pr.feedItemId)) byItem.set(pr.feedItemId, new Map());
+    const perEff = byItem.get(pr.feedItemId)!;
+    const cur = perEff.get(eff);
+    if (!cur || pr.id > cur.id) perEff.set(eff, { price: parseFloat(pr.pricePerUnit), id: pr.id });
+  }
+  const out = new Map<number, Array<{ eff: string; price: number }>>();
+  for (const [itemId, perEff] of Array.from(byItem.entries())) {
+    const arr = Array.from(perEff.entries()).map(([eff, v]) => ({ eff, price: v.price }));
+    arr.sort((a, b) => (a.eff < b.eff ? -1 : 1));
+    out.set(itemId, arr);
+  }
+  return out;
+}
+
+/**
  * Pure feed-cost segmentation math (no DB). Given a category's ration plans
  * and the full price history, compute total feed cost over [startStr, endStr).
  * Exported for unit testing and reused by both single + bulk P&L paths.
@@ -1022,13 +1091,7 @@ export async function computeFeedCostForPeriod(categoryId: number, startDate: st
     endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
     isActive: true
   }));
-  const pricesMap = new Map<number, Array<{ eff: string; price: number }>>();
-  for (const pr of priceRows) {
-    const eff = pr.effectiveDate instanceof Date ? pr.effectiveDate.toISOString().split("T")[0] : String(pr.effectiveDate).split("T")[0];
-    if (!pricesMap.has(pr.feedItemId)) pricesMap.set(pr.feedItemId, []);
-    pricesMap.get(pr.feedItemId)!.push({ eff, price: parseFloat(pr.pricePerUnit) });
-  }
-  for (const arr of Array.from(pricesMap.values())) arr.sort((a, b) => (a.eff < b.eff ? -1 : 1));
+  const pricesMap = buildPricesByItem(priceRows);
 
   return segmentedFeedCostPure(plansForPure, pricesMap, start.toISOString().split("T")[0], end.toISOString().split("T")[0]);
 }
@@ -1518,13 +1581,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   // 6. Build feed price cache — key: `feedItemId:dateStr`
   // 6. Pre-fetch ALL feed price history (one query) for in-memory segmented costing.
   const allPriceRows = await db.select().from(feedItemPriceHistory);
-  const pricesByItem = new Map<number, Array<{ eff: string; price: number }>>();
-  for (const pr of allPriceRows) {
-    const eff = pr.effectiveDate instanceof Date ? pr.effectiveDate.toISOString().split("T")[0] : String(pr.effectiveDate).split("T")[0];
-    if (!pricesByItem.has(pr.feedItemId)) pricesByItem.set(pr.feedItemId, []);
-    pricesByItem.get(pr.feedItemId)!.push({ eff, price: parseFloat(pr.pricePerUnit) });
-  }
-  for (const arr of Array.from(pricesByItem.values())) arr.sort((a, b) => (a.eff < b.eff ? -1 : 1));
+  const pricesByItem = buildPricesByItem(allPriceRows);
 
   // In-memory segmented feed cost for one animal over [start, end), reusing the
   // same pure logic as the single-animal path so both views always agree.

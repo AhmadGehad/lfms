@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
 import { AlertTriangle, CalendarDays, Pencil, Wheat, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -502,6 +502,177 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
   );
 }
 
+function PriceFormDialog({ trigger, price, onSuccess }: { trigger: ReactNode; price?: any; onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const isEdit = !!price;
+  const [open, setOpen] = useState(false);
+  const { data: feedItems } = trpc.config.getFeedItems.useQuery();
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState({
+    feedItemId: price ? String(price.feedItemId) : "",
+    effectiveDate: price
+      ? (price.effectiveDate instanceof Date ? price.effectiveDate.toISOString() : String(price.effectiveDate)).split("T")[0]
+      : new Date().toISOString().split("T")[0],
+    pricePerUnit: price ? String(parseFloat(price.pricePerUnit)) : "",
+    notes: price?.notes ?? "",
+  });
+
+  const invalidate = () => {
+    utils.config.getAllFeedItemPrices.invalidate();
+    setOpen(false);
+    onSuccess();
+  };
+  const addPrice = trpc.config.addFeedItemPrice.useMutation({
+    onSuccess: () => { toast.success(t("feed.priceSaved")); invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updatePrice = trpc.config.updateFeedItemPrice.useMutation({
+    onSuccess: () => { toast.success(t("feed.priceSaved")); invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const submit = () => {
+    if (!form.feedItemId || !form.pricePerUnit || !form.effectiveDate) return toast.error(t("feed.priceFieldsRequired"));
+    if (isEdit) {
+      updatePrice.mutate({ id: price.id, effectiveDate: form.effectiveDate, pricePerUnit: form.pricePerUnit, notes: form.notes || null });
+    } else {
+      addPrice.mutate({ feedItemId: parseInt(form.feedItemId), effectiveDate: form.effectiveDate, pricePerUnit: form.pricePerUnit, notes: form.notes || undefined });
+    }
+  };
+  const pending = addPrice.isPending || updatePrice.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent>
+        <DialogHeader><DialogTitle>{isEdit ? t("feed.editPrice") : t("feed.addPrice")}</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>{t("feed.feedItem")} *</Label>
+            <Select value={form.feedItemId} onValueChange={(v) => setForm((f) => ({ ...f, feedItemId: v }))} disabled={isEdit}>
+              <SelectTrigger><SelectValue placeholder={t("feed.selectFeedItem")} /></SelectTrigger>
+              <SelectContent>
+                {(feedItems ?? []).map((fi: any) => (
+                  <SelectItem key={fi.id} value={String(fi.id)}>{fi.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>{t("feed.effectiveDate")} *</Label>
+              <Input type="date" value={form.effectiveDate} onChange={(e) => setForm((f) => ({ ...f, effectiveDate: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("feed.pricePerUnit")} (EGP) *</Label>
+              <Input type="number" step="0.01" min="0" placeholder="0.00" value={form.pricePerUnit} onChange={(e) => setForm((f) => ({ ...f, pricePerUnit: e.target.value }))} />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("common.notes")}</Label>
+            <Input placeholder={t("common.optionalNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+          <Button onClick={submit} disabled={pending}>{pending ? t("common.saving") : t("common.save")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PriceHistoryTab() {
+  const { t } = useTranslation();
+  const { data: prices, isLoading } = trpc.config.getAllFeedItemPrices.useQuery();
+  const utils = trpc.useUtils();
+  const deletePrice = trpc.config.deleteFeedItemPrice.useMutation({
+    onSuccess: () => { toast.success(t("feed.priceDeleted")); utils.config.getAllFeedItemPrices.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const fmtDate = (d: any) => d ? new Date(d instanceof Date ? d.toISOString() : d).toLocaleDateString() : "—";
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <p className="text-sm text-muted-foreground">{t("feed.priceHistoryHint")}</p>
+        <PriceFormDialog
+          trigger={<Button size="sm" className="gap-2"><span className="text-lg leading-none">+</span> {t("feed.addPrice")}</Button>}
+          onSuccess={() => {}}
+        />
+      </div>
+      <Card>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("feed.feedItem")}</TableHead>
+                  <TableHead className="text-right">{t("feed.pricePerUnit")}</TableHead>
+                  <TableHead>{t("feed.effectiveDate")}</TableHead>
+                  <TableHead>{t("common.notes")}</TableHead>
+                  <TableHead>{t("common.created")}</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>{Array.from({ length: 6 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>))}</TableRow>
+                  ))
+                ) : (prices ?? []).length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">{t("feed.noPrices")}</TableCell></TableRow>
+                ) : (
+                  (prices ?? []).map((p: any) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="font-medium">{p.feedItemName ?? `#${p.feedItemId}`}</TableCell>
+                      <TableCell className="text-right tabular-nums">EGP {parseFloat(p.pricePerUnit).toFixed(2)}{p.unit ? `/${p.unit}` : ""}</TableCell>
+                      <TableCell>{fmtDate(p.effectiveDate)}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{p.notes ?? "—"}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{fmtDate(p.createdAt)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <PriceFormDialog
+                            price={p}
+                            trigger={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></Button>}
+                            onSuccess={() => {}}
+                          />
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="flex items-center gap-2">
+                                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                                  {t("feed.deletePrice")}
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t("feed.deletePriceConfirm", { name: p.feedItemName, price: parseFloat(p.pricePerUnit).toFixed(2), date: fmtDate(p.effectiveDate) })}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deletePrice.mutate({ id: p.id })}>
+                                  {t("common.delete")}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
 export default function Feed() {
   const { t } = useTranslation();
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
@@ -676,6 +847,7 @@ export default function Feed() {
         <TabsList>
           <TabsTrigger value="ledger">{t("feed.stockLedger")}</TabsTrigger>
           <TabsTrigger value="rations">{t("feed.rationPlans")}</TabsTrigger>
+          <TabsTrigger value="prices">{t("feed.priceHistory")}</TabsTrigger>
           <TabsTrigger value="shrinkage">{t("feed.shrinkage")}</TabsTrigger>
         </TabsList>
 
@@ -911,6 +1083,10 @@ export default function Feed() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="prices">
+          <PriceHistoryTab />
         </TabsContent>
 
         <TabsContent value="shrinkage">

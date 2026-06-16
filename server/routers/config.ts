@@ -9,7 +9,7 @@ import {
   getAllOwners, createOwner, updateOwner, deleteOwner,
   getAllBirthTypes, createBirthType, updateBirthType,
   getAllFeedItems, createFeedItem, updateFeedItem,
-  getFeedItemPriceHistory, addFeedItemPrice,
+  getFeedItemPriceHistory, addFeedItemPrice, getAllFeedItemPrices, updateFeedItemPrice, deleteFeedItemPrice,
   getAllExpenseCategories, createExpenseCategory, updateExpenseCategory,
   getAllExpenseSubCategories, createExpenseSubCategory, updateExpenseSubCategory,
   getAllSettings, upsertSetting,
@@ -231,6 +231,29 @@ export const configRouter = router({
       const result = await addFeedItemPrice(input);
       await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(input.feedItemId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       return result;
+    }),
+
+  getAllFeedItemPrices: protectedProcedure.query(() => getAllFeedItemPrices()),
+
+  updateFeedItemPrice: supervisorProcedure
+    .input(z.object({
+      id: z.number(),
+      effectiveDate: z.string().optional(),
+      pricePerUnit: z.string().optional(),
+      notes: z.string().nullable().optional(),
+    }))
+    .mutation(async ({ input: { id, ...data }, ctx }) => {
+      await updateFeedItemPrice(id, data);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
+      return { id };
+    }),
+
+  deleteFeedItemPrice: supervisorProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await deleteFeedItemPrice(input.id);
+      await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(input.id), action: "delete", newValues: input, ipAddress: getClientIp(ctx) });
+      return { id: input.id };
     }),
 
   // ─── EXPENSE CATEGORIES ─────────────────────────────────────────────────────
