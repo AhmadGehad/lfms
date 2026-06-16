@@ -42,6 +42,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
     transactionType: "purchase",
     qty: "",
     unitCost: "",
+    totalCost: "",
     supplierName: "",
     notes: "",
   });
@@ -68,6 +69,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
       transactionType: form.transactionType as any,
       qty: form.qty,
       unitCost: form.unitCost || undefined,
+      totalCost: form.totalCost || undefined,
       supplierName: form.supplierName || undefined,
       notes: form.notes || undefined,
     });
@@ -116,10 +118,14 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
               <Label>{t("feed.unitCost")}</Label>
               <Input type="number" placeholder="0.00" value={form.unitCost} onChange={(e) => setForm((f) => ({ ...f, unitCost: e.target.value }))} />
             </div>
-          </div>
-          <div className="space-y-1.5">
-            <Label>{t("feed.supplier")}</Label>
-            <Input placeholder={t("feed.supplierName")} value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
+            <div className="space-y-1.5">
+              <Label>{t("feed.totalCost")}</Label>
+              <Input type="number" step="0.01" placeholder="0.00" value={form.totalCost} onChange={(e) => setForm((f) => ({ ...f, totalCost: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("feed.supplier")}</Label>
+              <Input placeholder={t("feed.supplierName")} value={form.supplierName} onChange={(e) => setForm((f) => ({ ...f, supplierName: e.target.value }))} />
+            </div>
           </div>
         </div>
         <DialogFooter>
