@@ -116,7 +116,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
               <SelectTrigger><SelectValue placeholder={t("vaccine.selectAnimal")} /></SelectTrigger>
               <SelectContent>
                 {(animals ?? []).map((a: any) => (
-                  <SelectItem key={a.id} value={String(a.id)}>{a.animalId}</SelectItem>
+                  <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
