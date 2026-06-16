@@ -107,7 +107,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
       <DialogTrigger asChild>
         <Button className="gap-2"><Syringe className="h-4 w-4" />{record ? t("vaccine.editVaccination") : t("vaccine.addVaccination")}</Button>
       </DialogTrigger>
-      <DialogContent className="w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{record ? t("vaccine.editVaccination") : t("vaccine.addVaccination")}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
@@ -193,8 +193,7 @@ export default function AnimalVaccinations() {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <p className="text-sm text-muted-foreground">{t("vaccine.noVaccinations")}</p>
+          <div className="flex items-center justify-end gap-2 mb-4">
             <VaccinationRecordFormDialog onSuccess={() => {}} />
           </div>
 
