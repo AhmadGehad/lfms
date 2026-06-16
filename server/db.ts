@@ -54,9 +54,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     values.role = user.role;
     updateSet.role = user.role;
   } else {
-    // Default new users to viewer role
+    // Default NEW users to viewer (insert only). CRITICAL: do NOT put role in
+    // updateSet here — otherwise every session-refresh upsert (which carries
+    // no role) would overwrite an existing user's real role with "viewer",
+    // silently demoting them. Updates must leave the stored role untouched.
     values.role = "viewer";
-    updateSet.role = "viewer";
   }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
