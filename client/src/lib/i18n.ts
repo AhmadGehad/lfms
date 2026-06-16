@@ -633,13 +633,16 @@ const en = {
     staff: "Staff",
     admin: "Admin",
     user: "User",
+    viewer: "Viewer (View-Only)",
+    viewerDescription: "Can view all data but cannot make any changes",
     lastSignIn: "Last Sign In",
     changeRole: "Change Role",
     subtitle: "Manage user roles and access control",
     email: "Email",
     joined: "Joined",
     noUsers: "No users found.",
-    roleUpdated: "User role updated"
+    roleUpdated: "User role updated",
+    viewerCannotModify: "Viewers cannot modify data"
   },
 
   // Audit Log
@@ -1612,28 +1615,7 @@ const ar = {
     email: "البريد الإلكتروني",
     ownerNamePlaceholder: "الاسم الكامل للمالك",
   },
-  users: {
-    title: "إدارة المستخدمين",
-    addUser: "إضافة مستخدم",
-    editUser: "تعديل المستخدم",
-    deleteUser: "حذف المستخدم",
-    name: "الاسم",
-    email: "البريد الإلكتروني",
-    role: "الدور",
-    roleOwner: "المالك",
-    roleAdmin: "مسؤول",
-    roleSupervisor: "مشرف",
-    roleStaff: "موظف",
-    roleUser: "مستخدم",
-    roleViewer: "عارض (عرض فقط)",
-    viewerDescription: "يمكنه عرض جميع البيانات ولكن لا يمكنه إجراء أي تغييرات",
-    createdAt: "تم الإنشاء",
-    lastSignedIn: "آخر تسجيل دخول",
-    noUsers: "لم يتم العثور على مستخدمين",
-    userSaved: "تم حفظ المستخدم",
-    userDeleted: "تم حذف المستخدم",
-    viewerCannotModify: "لا يمكن للعارضين تعديل البيانات",
-  },
+
   notFound: {
     title: "الصفحة غير موجودة",
     message: "عذرًا، الصفحة التي تبحث عنها غير موجودة.",
@@ -1664,26 +1646,3 @@ i18n
 
 export default i18n;
 export type TranslationKeys = typeof en;
-
-  users: {
-    title: "User Management",
-    addUser: "Add User",
-    editUser: "Edit User",
-    deleteUser: "Delete User",
-    name: "Name",
-    email: "Email",
-    role: "Role",
-    roleOwner: "Owner",
-    roleAdmin: "Admin",
-    roleSupervisor: "Supervisor",
-    roleStaff: "Staff",
-    roleUser: "User",
-    roleViewer: "Viewer (View-Only)",
-    viewerDescription: "Can view all data but cannot make any changes",
-    createdAt: "Created",
-    lastSignedIn: "Last Signed In",
-    noUsers: "No users found",
-    userSaved: "User saved",
-    userDeleted: "User deleted",
-    viewerCannotModify: "Viewers cannot modify data",
-  },

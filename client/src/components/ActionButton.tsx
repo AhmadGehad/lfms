@@ -1,6 +1,10 @@
-import { useAuth } from "@/lib/auth";
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import type { ButtonHTMLAttributes } from "react";
+
 import { ReactNode } from "react";
+
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement>;
 
 interface ActionButtonProps extends ButtonProps {
   children: ReactNode;

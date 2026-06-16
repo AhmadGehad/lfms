@@ -1,4 +1,4 @@
-import { useAuth } from "@/lib/auth";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { ReactNode } from "react";
 
 interface ActionButtonGroupProps {
