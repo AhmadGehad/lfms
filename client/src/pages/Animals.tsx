@@ -867,6 +867,7 @@ export default function Animals() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSellOpen, setBulkSellOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkVaccinationOpen, setBulkVaccinationOpen] = useState(false);
   const utils = trpc.useUtils();
   const deleteAnimalMutation = trpc.recycleBin.deleteAnimal.useMutation({
     onSuccess: () => {
@@ -1094,6 +1095,10 @@ export default function Animals() {
                   <Pencil className="h-4 w-4" />
                   {t("animals.bulkEdit")} ({selectedIds.size})
                 </Button>
+                <Button onClick={() => setBulkVaccinationOpen(true)} variant="outline" className="gap-2">
+                  <Syringe className="h-4 w-4" />
+                  {t("vaccine.bulkApply")} ({selectedIds.size})
+                </Button>
                 <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2">
                   <DollarSign className="h-4 w-4" />
                   {t("animals.bulkSell")} ({selectedIds.size})
@@ -1283,6 +1288,44 @@ export default function Animals() {
         selectedAnimals={selectedAnimals}
         onSuccess={() => { setSelectedIds(new Set()); refetch(); }}
       />
+
+      <Dialog open={bulkVaccinationOpen} onOpenChange={setBulkVaccinationOpen}>
+        <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{t("vaccine.bulkApply")}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t("vaccine.selectVaccine")} *</Label>
+              <Select>
+                <SelectTrigger><SelectValue placeholder={t("vaccine.selectVaccine")} /></SelectTrigger>
+                <SelectContent>
+                  {/* Vaccines will be loaded from trpc.config.getVaccines */}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("vaccine.vaccinationDate")} *</Label>
+              <Input type="date" defaultValue={new Date().toISOString().split("T")[0]} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("vaccine.batchNumber")}</Label>
+              <Input placeholder="e.g. BATCH-2024-001" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("vaccine.veterinarian")}</Label>
+              <Input placeholder={t("common.none")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("common.notes")}</Label>
+              <Input placeholder={t("common.optionalNotes")} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkVaccinationOpen(false)}>{t("common.cancel")}</Button>
+            <Button>{t("common.apply")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <EditAnimalDialog
         animalId={editAnimalId}
         open={editOpen}
