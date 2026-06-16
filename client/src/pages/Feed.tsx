@@ -61,6 +61,10 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
     onError: (e) => toast.error(e.message),
   });
 
+  const computedTotal = form.qty && form.unitCost
+    ? (parseFloat(form.qty) * parseFloat(form.unitCost)).toFixed(2)
+    : form.totalCost;
+
   const handleSubmit = () => {
     if (!form.feedItemId || !form.qty) return toast.error(t("feed.feedItemQtyRequired"));
     addStock.mutate({
@@ -69,7 +73,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
       transactionType: form.transactionType as any,
       qty: form.qty,
       unitCost: form.unitCost || undefined,
-      totalCost: form.totalCost || undefined,
+      totalCost: computedTotal || undefined,
       supplierName: form.supplierName || undefined,
       notes: form.notes || undefined,
     });
@@ -120,7 +124,16 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
             </div>
             <div className="space-y-1.5">
               <Label>{t("feed.totalCost")}</Label>
-              <Input type="number" step="0.01" placeholder="0.00" value={form.totalCost} onChange={(e) => setForm((f) => ({ ...f, totalCost: e.target.value }))} />
+              <Input
+                type="number" step="0.01" placeholder="0.00"
+                value={computedTotal ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, totalCost: e.target.value, unitCost: f.unitCost }))}
+                className={form.qty && form.unitCost ? "bg-muted text-muted-foreground" : ""}
+                readOnly={!!(form.qty && form.unitCost)}
+              />
+              {form.qty && form.unitCost && (
+                <p className="text-xs text-muted-foreground">{parseFloat(form.qty).toFixed(1)} × EGP {parseFloat(form.unitCost).toFixed(2)}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>{t("feed.supplier")}</Label>
@@ -154,6 +167,10 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
     notes: entry.notes ?? "",
   });
 
+  const editComputedTotal = form.qty && form.unitCost
+    ? (parseFloat(form.qty) * parseFloat(form.unitCost)).toFixed(2)
+    : form.totalCost;
+
   const { data: feedItems } = trpc.config.getFeedItems.useQuery();
   const utils = trpc.useUtils();
 
@@ -176,7 +193,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
       transactionType: form.transactionType as any,
       qty: form.qty,
       unitCost: form.unitCost || null,
-      totalCost: form.totalCost || null,
+      totalCost: editComputedTotal || null,
       supplierName: form.supplierName || null,
       notes: form.notes || null,
     });
@@ -221,7 +238,16 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
             </div>
             <div className="space-y-1.5">
               <Label>{t("feed.totalCost")}</Label>
-              <Input type="number" step="0.01" placeholder="0.00" value={form.totalCost} onChange={(e) => setForm((f) => ({ ...f, totalCost: e.target.value }))} />
+              <Input
+                type="number" step="0.01" placeholder="0.00"
+                value={editComputedTotal ?? ""}
+                onChange={(e) => setForm((f) => ({ ...f, totalCost: e.target.value }))}
+                className={form.qty && form.unitCost ? "bg-muted text-muted-foreground" : ""}
+                readOnly={!!(form.qty && form.unitCost)}
+              />
+              {form.qty && form.unitCost && (
+                <p className="text-xs text-muted-foreground">{parseFloat(form.qty).toFixed(1)} × EGP {parseFloat(form.unitCost).toFixed(2)}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>{t("feed.supplier")}</Label>
@@ -693,7 +719,7 @@ export default function Feed() {
                           <TableCell className="capitalize">{entry.transactionType.replace("_", " ")}</TableCell>
                           <TableCell>{parseFloat(entry.qty).toFixed(1)}</TableCell>
                           <TableCell>{entry.unitCost ? `EGP ${parseFloat(entry.unitCost).toFixed(2)}` : "—"}</TableCell>
-                          <TableCell>{entry.totalCost ? `EGP ${parseFloat(entry.totalCost).toFixed(2)}` : "—"}</TableCell>
+                          <TableCell>{entry.totalCost ? `EGP ${parseFloat(entry.totalCost).toFixed(2)}` : (entry.qty && entry.unitCost ? `EGP ${(parseFloat(entry.qty) * parseFloat(entry.unitCost)).toFixed(2)}` : "—")}</TableCell>
                           <TableCell className="text-muted-foreground">{entry.supplierName ?? "—"}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
