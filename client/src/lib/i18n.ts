@@ -541,8 +541,8 @@ const en = {
     outstandingReceivables: "Outstanding receivables",
 
     runningCostMonth: "Running Cost / Month",
-    farmWide: "Farm-wide (general + feed)",
-    animalWide: "Animal-wide (per-animal)",
+    farmWide: "Farm-wide (general / overhead)",
+    animalWide: "Animal-wide (feed + per-animal)",
     totalRunningCost: "Total Running Cost",
     overMonths: "over {{months}} months",
 
@@ -1394,8 +1394,8 @@ const ar = {
     outstandingReceivables: "مستحقات غير محصلة",
 
     runningCostMonth: "التكلفة التشغيلية / الشهر",
-    farmWide: "على مستوى المزرعة (عام + علف)",
-    animalWide: "على مستوى الحيوان (لكل حيوان)",
+    farmWide: "على مستوى المزرعة (عام / تشغيلي)",
+    animalWide: "على مستوى الحيوان (علف + لكل حيوان)",
     totalRunningCost: "إجمالي التكلفة التشغيلية",
     overMonths: "خلال {{months}} شهر",
 

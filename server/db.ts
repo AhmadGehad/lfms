@@ -2240,9 +2240,10 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   // Operating cost only (excludes one-off animal purchases): farm-wide
   // (general expenses + feed) + animal-wide (head/category/herd expenses),
   // normalized to a month over the selected period.
-  const farmWideGeneralMinor = expByTarget["general"] ?? 0;
-  const farmWideOperatingMinor = farmWideGeneralMinor + totalFeedCostMinor;
-  const animalWideOperatingMinor = (expByTarget["head"] ?? 0) + (expByTarget["category"] ?? 0) + (expByTarget["herd"] ?? 0);
+  // Farm-wide = general/overhead expenses only (not tied to animals).
+  // Animal-wide = feed (consumed by animals) + head/category/herd expenses.
+  const farmWideOperatingMinor = expByTarget["general"] ?? 0;
+  const animalWideOperatingMinor = totalFeedCostMinor + (expByTarget["head"] ?? 0) + (expByTarget["category"] ?? 0) + (expByTarget["herd"] ?? 0);
   const totalOperatingMinor = farmWideOperatingMinor + animalWideOperatingMinor;
 
   const periodDays = Math.max(1, Math.round((new Date(filters.toDate).getTime() - new Date(filters.fromDate).getTime()) / 86400000) + 1);

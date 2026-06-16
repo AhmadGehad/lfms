@@ -116,8 +116,8 @@ export default function IncomeStatement() {
           startY: (doc as any).lastAutoTable.finalY + 8,
           head: [["RUNNING COST / MONTH", "Amount (EGP)"]],
           body: [
-            ["Farm-wide (general + feed)", `${fmt(rc.farmWide)}/mo`],
-            ["Animal-wide (per-animal)", `${fmt(rc.animalWide)}/mo`],
+            ["Farm-wide (general / overhead)", `${fmt(rc.farmWide)}/mo`],
+            ["Animal-wide (feed + per-animal)", `${fmt(rc.animalWide)}/mo`],
             ["Total Running Cost", `${fmt(rc.total)}/mo`],
           ],
           headStyles: { fillColor: [80, 60, 30], textColor: 255, fontStyle: "bold" },
@@ -175,8 +175,8 @@ export default function IncomeStatement() {
         ["Profit Margin (%)", `${(statement?.profitMargin ?? 0).toFixed(1)}%`],
         [],
         ["RUNNING COST / MONTH", "Amount (EGP)"],
-        ["Farm-wide (general + feed)", (statement as any)?.runningCostPerMonth?.farmWide ?? 0],
-        ["Animal-wide (per-animal)", (statement as any)?.runningCostPerMonth?.animalWide ?? 0],
+        ["Farm-wide (general / overhead)", (statement as any)?.runningCostPerMonth?.farmWide ?? 0],
+        ["Animal-wide (feed + per-animal)", (statement as any)?.runningCostPerMonth?.animalWide ?? 0],
         ["Total Running Cost / Month", (statement as any)?.runningCostPerMonth?.total ?? 0],
       ];
 
