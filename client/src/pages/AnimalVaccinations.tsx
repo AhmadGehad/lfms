@@ -52,7 +52,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
     isCompleted: record?.isCompleted || false,
   });
 
-  const { data: animals } = trpc.animals.getAll.useQuery();
+  const { data: animals } = trpc.animals.list.useQuery();
   const { data: vaccines } = trpc.config.getVaccines.useQuery();
   const utils = trpc.useUtils();
 

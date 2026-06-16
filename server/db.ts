@@ -2309,7 +2309,12 @@ export async function deleteVaccine(id: number) {
 export async function getVaccinationRecords(animalId?: number) {
   const db = await getDb();
   if (!db) return [];
-  const query = db
+  const conditions = [isNull(vaccinationRecords.deletedAt)];
+  if (animalId) {
+    conditions.push(eq(vaccinationRecords.animalId, animalId));
+  }
+  
+  return await db
     .select({
       id: vaccinationRecords.id,
       animalId: vaccinationRecords.animalId,
@@ -2327,14 +2332,8 @@ export async function getVaccinationRecords(animalId?: number) {
     .from(vaccinationRecords)
     .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
     .innerJoin(animals, eq(vaccinationRecords.animalId, animals.id))
-    .where(isNull(vaccinationRecords.deletedAt))
+    .where(and(...conditions))
     .orderBy(vaccinationRecords.vaccinationDate);
-  
-  if (animalId) {
-    query.where(eq(vaccinationRecords.animalId, animalId));
-  }
-  
-  return await query;
 }
 
 export async function addVaccinationRecord(data: { animalId: number; vaccineId: number; vaccinationDate: string; batchNumber?: string; notes?: string; veterinarian?: string }) {
@@ -2345,11 +2344,24 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
   const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, data.vaccineId)).limit(1);
   if (!vaccine.length) throw new Error("Vaccine not found");
   
-  const nextDueDate = calculateNextDueDate(vaccine[0], data.vaccinationDate);
+  const nextDueDateStr = calculateNextDueDate(
+    {
+      validityPeriod: vaccine[0].validityPeriod,
+      validityUnit: vaccine[0].validityUnit as "days" | "months",
+      boosterRequired: vaccine[0].boosterRequired,
+      boosterInterval: vaccine[0].boosterInterval ?? undefined,
+    },
+    data.vaccinationDate
+  );
   
   const [result] = await db.insert(vaccinationRecords).values({
-    ...data,
-    nextDueDate,
+    animalId: data.animalId,
+    vaccineId: data.vaccineId,
+    vaccinationDate: new Date(data.vaccinationDate),
+    batchNumber: data.batchNumber,
+    notes: data.notes,
+    veterinarian: data.veterinarian,
+    nextDueDate: new Date(nextDueDateStr),
   });
   return result;
 }
@@ -2358,18 +2370,27 @@ export async function updateVaccinationRecord(id: number, data: { vaccinationDat
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   
-  let nextDueDate: string | undefined;
+  const updateData: any = { ...data };
   if (data.vaccinationDate) {
     const record = await db.select({ vaccineId: vaccinationRecords.vaccineId }).from(vaccinationRecords).where(eq(vaccinationRecords.id, id)).limit(1);
     if (record.length) {
       const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, record[0].vaccineId)).limit(1);
       if (vaccine.length) {
-        nextDueDate = calculateNextDueDate(vaccine[0], data.vaccinationDate);
+        const nextDueDateStr = calculateNextDueDate(
+          {
+            validityPeriod: vaccine[0].validityPeriod,
+            validityUnit: vaccine[0].validityUnit as "days" | "months",
+            boosterRequired: vaccine[0].boosterRequired,
+            boosterInterval: vaccine[0].boosterInterval ?? undefined,
+          },
+          data.vaccinationDate
+        );
+        updateData.nextDueDate = new Date(nextDueDateStr);
       }
     }
   }
   
-  await db.update(vaccinationRecords).set({ ...data, nextDueDate }).where(eq(vaccinationRecords.id, id));
+  await db.update(vaccinationRecords).set(updateData).where(eq(vaccinationRecords.id, id));
 }
 
 export async function deleteVaccinationRecord(id: number) {
@@ -2401,7 +2422,8 @@ export function getVaccinationStatus(record: { nextDueDate: Date | string | null
   return "upcoming";
 }
 
-export async function getUpcomingVaccinations(days: number = 30) {
+export async function getUpcomingVaccinations(input?: { days?: number } | number) {
+  const days = typeof input === 'number' ? input : (input?.days ?? 30);
   const db = await getDb();
   if (!db) return [];
   
@@ -2493,5 +2515,9 @@ export async function getNextVaccinationDate(animalId: number): Promise<{ nextDu
     .limit(1);
   
   if (result.length === 0) return null;
-  return { nextDueDate: result[0].nextDueDate, vaccineName: result[0].vaccineName };
+  const nextDueDate = result[0].nextDueDate;
+  return {
+    nextDueDate: nextDueDate instanceof Date ? nextDueDate.toISOString().split("T")[0] : nextDueDate,
+    vaccineName: result[0].vaccineName
+  };
 }

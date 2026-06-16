@@ -54,7 +54,7 @@ export const vaccinationRouter = router({
   // ─── DASHBOARD & REPORTS ───────────────────────────────────────────────────────
   getUpcomingVaccinations: protectedProcedure
     .input(z.object({ days: z.number().optional() }).optional())
-    .query(({ input }) => getUpcomingVaccinations(input?.days ?? 30)),
+    .query(({ input }) => getUpcomingVaccinations(input?.days)),
 
   getVaccinationCompliance: protectedProcedure.query(() => getVaccinationCompliance()),
 });

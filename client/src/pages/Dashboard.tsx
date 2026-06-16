@@ -114,7 +114,7 @@ export default function Dashboard() {
   // Feed stock - use shared feed.getStockStatus so it updates when Feed page changes stock
   const { data: feedStock } = trpc.feed.getStockStatus.useQuery();
   const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
-  const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery(30);
+  const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery({ days: 30 });
 
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
     fromDate: dateRange.from,

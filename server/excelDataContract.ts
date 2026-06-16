@@ -22,6 +22,8 @@ import {
   species,
   systemSettings,
   users,
+  vaccines,
+  vaccinationRecords,
   weightLog,
 } from "../drizzle/schema";
 
@@ -93,6 +95,12 @@ export const CANONICAL_TABLES: CanonicalTableSpec[] = [
     table: notifications,
   },
   { key: "audit_log", sheetName: "Data - Audit Log", table: auditLog },
+  { key: "vaccines", sheetName: "Data - Vaccines", table: vaccines },
+  {
+    key: "vaccination_records",
+    sheetName: "Data - Vaccination Records",
+    table: vaccinationRecords,
+  },
 ];
 
 export type CanonicalWorkbookData = Map<string, Record<string, unknown>[]>;
