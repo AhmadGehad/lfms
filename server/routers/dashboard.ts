@@ -212,7 +212,7 @@ export const userManagementRouter = router({
     return db.select().from(users).orderBy(users.createdAt);
   }),
   updateUserRole: privilegedProcedure
-    .input(z.object({ userId: z.number(), role: z.enum(["user", "admin"]) }))
+    .input(z.object({ userId: z.number(), role: z.enum(["viewer", "user", "staff", "supervisor", "admin", "owner"]) }))
     .mutation(async ({ input }) => {
       const { getDb } = await import("../db");
       const db = await getDb();
