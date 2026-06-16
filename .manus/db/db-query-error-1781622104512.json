@@ -1,0 +1,8 @@
+{
+  "query": "UPDATE users SET role = 'admin' WHERE openId = (SELECT OWNER_OPEN_ID FROM ENV LIMIT 1) OR email LIKE '%@%' AND name LIKE '%Ahmed%' LIMIT 1; SELECT id, name, email, role FROM users ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute UPDATE users SET role = 'admin' WHERE openId = (SELECT OWNER_OPEN_ID FROM ENV LIMIT 1) OR email LIKE '%@%' AND name LIKE '%Ahmed%' LIMIT 1; SELECT id, name, email, role FROM users ORDER BY createdAt DESC LIMIT 5;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table 'boywmbm5odtbpptclrtk7n.ENV' doesn't exist"
+  ]
+}
