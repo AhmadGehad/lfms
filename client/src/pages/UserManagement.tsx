@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { Users } from "lucide-react";
 import { toast } from "sonner";
@@ -16,6 +16,15 @@ export default function UserManagement() {
     onSuccess: () => { toast.success(t("users.roleUpdated")); utils.userMgmt.listUsers.invalidate(); },
     onError: (e: any) => toast.error(e.message),
   });
+
+  const roleOptions = [
+    { value: "viewer", label: t("users.viewer") },
+    { value: "user", label: t("users.user") },
+    { value: "staff", label: t("users.staff") },
+    { value: "supervisor", label: t("users.supervisor") },
+    { value: "admin", label: t("users.admin") },
+    { value: "owner", label: t("users.owner") },
+  ];
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -54,8 +63,8 @@ export default function UserManagement() {
                       <TableCell className="font-medium">{u.name ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground">{u.email ?? "—"}</TableCell>
                       <TableCell>
-                        <Badge variant={u.role === "admin" ? "default" : "secondary"} className="capitalize">
-                          {u.role}
+                        <Badge variant={u.role === "admin" || u.role === "owner" ? "default" : "secondary"} className="capitalize">
+                          {roleOptions.find(r => r.value === u.role)?.label || u.role}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
@@ -65,14 +74,22 @@ export default function UserManagement() {
                         {new Date(u.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateRole.mutate({ userId: u.id, role: u.role === "admin" ? "user" : "admin" })}
+                        <Select 
+                          value={u.role} 
+                          onValueChange={(role) => updateRole.mutate({ userId: u.id, role: role as any })}
                           disabled={updateRole.isPending}
                         >
-                          {u.role === "admin" ? "Demote" : "Promote"}
-                        </Button>
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {roleOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                     </TableRow>
                   ))

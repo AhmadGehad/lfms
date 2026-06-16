@@ -52,6 +52,10 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   } else if (user.openId === ENV.ownerOpenId) {
     values.role = "admin";
     updateSet.role = "admin";
+  } else {
+    // Default new users to viewer role
+    values.role = "viewer";
+    updateSet.role = "viewer";
   }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
@@ -71,7 +75,7 @@ export async function getAllUsers() {
   return db.select().from(users).orderBy(desc(users.createdAt));
 }
 
-export async function updateUserRole(userId: number, role: "owner" | "supervisor" | "staff" | "admin" | "user") {
+export async function updateUserRole(userId: number, role: "owner" | "supervisor" | "staff" | "admin" | "user" | "viewer") {
   const db = await getDb();
   if (!db) return;
   await db.update(users).set({ role }).where(eq(users.id, userId));

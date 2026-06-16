@@ -365,3 +365,12 @@
 - [x] Add i18n translations for viewer role (EN + AR)
 - [x] TypeScript: 0 errors (excluding known expenses.ts false positive)
 - [x] All 92 tests passing
+
+
+## Phase 37: User Role Management UI
+- [x] Update user creation to set default role to "viewer" instead of "user" (upsertUser in db.ts)
+- [x] Add role selector dropdown in user management UI (UserManagement.tsx with Select component)
+- [x] Add role change mutation to backend (updateUserRole in config.ts router)
+- [x] Add role change UI in user list/management page (role selector dropdown replaces promote/demote button)
+- [x] Add i18n keys for role management UI (users.viewer, users.user, users.staff, users.supervisor, users.admin, users.owner)
+- [x] Test role changes across all user types (all 92 tests passing)
