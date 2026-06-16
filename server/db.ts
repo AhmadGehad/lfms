@@ -961,7 +961,17 @@ export function segmentedFeedCostPure(
       const earliestEff = active.reduce((min, p) => (p.effectiveDate < min ? p.effectiveDate : min), active[0].effectiveDate);
       segPlans = active.filter(p => p.effectiveDate === earliestEff && (!p.endDate || p.endDate >= segStartStr));
     }
+    // Collapse to ONE plan per feed item: a category may hold several
+    // overlapping active plans for the same feed item (e.g. a new ration was
+    // added without end-dating the old one). The latest-effective plan
+    // supersedes the others — summing them all would multiply feed cost.
+    // Different feed items still each contribute once.
+    const latestPerItem = new Map<number, (typeof segPlans)[number]>();
     for (const p of segPlans) {
+      const cur = latestPerItem.get(p.feedItemId);
+      if (!cur || p.effectiveDate > cur.effectiveDate) latestPerItem.set(p.feedItemId, p);
+    }
+    for (const p of Array.from(latestPerItem.values())) {
       // price is money → minor units; qty and days are plain multipliers.
       const priceMinor = Math.round(priceOnDate(p.feedItemId, segStartStr) * 100);
       totalMinor += Math.round(priceMinor * parseFloat(p.qtyPerHeadPerDay) * segDays);

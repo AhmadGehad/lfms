@@ -63,6 +63,20 @@ describe("segmentedFeedCostPure", () => {
     expect(segmentedFeedCostPure(plans, prices, "2026-01-11", "2026-01-01")).toBe(0);
   });
 
+  it("does NOT double-count overlapping active plans for the same feed item", () => {
+    // A new ration plan was added for feed item 1 without end-dating the old
+    // one, so the category holds two overlapping active plans for the same
+    // item. Only the latest-effective plan should count — otherwise feed cost
+    // (and cost/day) inflates by the number of stale duplicates.
+    const plans = [
+      { feedItemId: 1, qtyPerHeadPerDay: "1", effectiveDate: "2026-01-01", endDate: null, isActive: true },
+      { feedItemId: 1, qtyPerHeadPerDay: "1", effectiveDate: "2026-01-02", endDate: null, isActive: true },
+    ];
+    const prices = new Map([[1, [{ eff: "2026-01-01", price: 5 }]]]);
+    // 10 days × 1 kg × 5 = 50 (NOT 100 from summing both duplicate plans)
+    expect(segmentedFeedCostPure(plans, prices, "2026-01-01", "2026-01-11")).toBe(50);
+  });
+
   it("falls back to the earliest known price for dates before the first effective price", () => {
     const plans = [
       { feedItemId: 1, qtyPerHeadPerDay: "2", effectiveDate: "2026-01-01", endDate: null, isActive: true },
