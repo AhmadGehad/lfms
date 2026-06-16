@@ -352,4 +352,5 @@
 
 ## Phase 35: Defensive Date Normalization in computeFeedCostForPeriod
 - [x] Add normalizeDate() guard inside computeFeedCostForPeriod to handle any non-ISO date strings (e.g. locale strings from String(Date)) — throws descriptive error instead of RangeError at toISOString()
-- [x] TypeScript: 0 errors, 87/87 tests pass
+- [x] Add dateNormalize.test.ts with 4 regression tests covering ISO passthrough, locale string normalization, invalid date error, and math correctness
+- [x] TypeScript: 0 errors, 91/91 tests pass
