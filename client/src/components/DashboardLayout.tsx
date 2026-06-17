@@ -39,6 +39,7 @@ import {
   FileText,
   Leaf,
   LogOut,
+  MapPinned,
   PanelLeft,
   Scale,
   ShoppingCart,
@@ -172,6 +173,7 @@ function DashboardLayoutContent({
       label: t("nav.groups.livestock"),
       items: [
         { icon: Leaf, label: t("nav.animals"), path: "/animals" },
+        { icon: MapPinned, label: t("nav.farmMap"), path: "/farm-map" },
         { icon: Egg, label: t("nav.breeding"), path: "/breeding" },
         { icon: Scale, label: t("nav.fattening"), path: "/fattening" },
       ],

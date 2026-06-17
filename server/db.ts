@@ -272,7 +272,16 @@ export async function getAllGroups(speciesId?: number) {
   return db.select().from(groups).where(isNull(groups.deletedAt)).orderBy(groups.groupCode);
 }
 
-export async function createGroup(data: { groupCode: string; name: string; speciesId?: number; categoryId?: number; description?: string; latitude?: string | null; longitude?: string | null }) {
+export async function createGroup(data: {
+  groupCode: string;
+  name: string;
+  speciesId?: number;
+  categoryId?: number;
+  description?: string;
+  latitude?: string | null;
+  longitude?: string | null;
+  mapShape?: unknown;
+}) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(groups).values(data);

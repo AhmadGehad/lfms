@@ -12,6 +12,7 @@ const en = {
   nav: {
     dashboard: "Dashboard",
     animals: "Animal Registry",
+    farmMap: "Farm Map",
     breeding: "Breeding & Lambing",
     fattening: "Fattening Tracker",
     feed: "Feed Management",
@@ -37,6 +38,30 @@ const en = {
   auth: {
     signIn: "Sign in to continue",
     signOut: "Sign out"
+  },
+
+  farmMap: {
+    title: "Farm Map",
+    subtitle: "Photo-based pen and zone map",
+    group: "Group / Pen",
+    selectGroup: "Select group",
+    selectMode: "Select",
+    rectangleMode: "Rectangle",
+    polygonMode: "Polygon",
+    upload: "Upload map",
+    uploading: "Uploading...",
+    removeImage: "Remove image",
+    imageAlt: "Farm map",
+    zones: "Zones",
+    mapped: "Mapped",
+    unmapped: "Unmapped",
+    undoPoint: "Undo point",
+    clearZone: "Clear zone",
+    zoneSaved: "Zone saved",
+    imageUpdated: "Map image updated",
+    imageRemoved: "Map image removed",
+    invalidImage: "Use JPEG, PNG, or WebP",
+    imageTooLarge: "Image too large (max 8MB)"
   },
 
   // Common
@@ -825,6 +850,7 @@ const ar = {
   nav: {
     dashboard: "لوحة التحكم",
     animals: "سجل الحيوانات",
+    farmMap: "خريطة المزرعة",
     breeding: "التربية والولادة",
     fattening: "متتبع التسمين",
     feed: "إدارة الأعلاف",
@@ -850,6 +876,30 @@ const ar = {
   auth: {
     signIn: "تسجيل الدخول للمتابعة",
     signOut: "تسجيل الخروج"
+  },
+
+  farmMap: {
+    title: "خريطة المزرعة",
+    subtitle: "خريطة الحظائر والمناطق على صورة المزرعة",
+    group: "المجموعة / الحظيرة",
+    selectGroup: "اختر المجموعة",
+    selectMode: "تحديد",
+    rectangleMode: "مستطيل",
+    polygonMode: "مضلع",
+    upload: "رفع الخريطة",
+    uploading: "جار الرفع...",
+    removeImage: "إزالة الصورة",
+    imageAlt: "خريطة المزرعة",
+    zones: "المناطق",
+    mapped: "محددة",
+    unmapped: "غير محددة",
+    undoPoint: "تراجع عن نقطة",
+    clearZone: "مسح المنطقة",
+    zoneSaved: "تم حفظ المنطقة",
+    imageUpdated: "تم تحديث صورة الخريطة",
+    imageRemoved: "تمت إزالة صورة الخريطة",
+    invalidImage: "استخدم JPEG أو PNG أو WebP",
+    imageTooLarge: "الصورة كبيرة جدًا (الحد 8 ميجابايت)"
   },
 
   common: {

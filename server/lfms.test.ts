@@ -29,7 +29,7 @@ vi.mock("./db", () => ({
   createStatus: vi.fn().mockResolvedValue({ id: 7, name: "Transferred", isExitStatus: 1 }),
   updateStatus: vi.fn().mockResolvedValue(undefined),
   getAllGroups: vi.fn().mockResolvedValue([
-    { id: 1, groupCode: "PEN-A", name: "Pen A", speciesId: null, categoryId: null, isActive: 1 },
+    { id: 1, groupCode: "PEN-A", name: "Pen A", speciesId: null, categoryId: null, mapShape: null, isActive: 1 },
   ]),
   createGroup: vi.fn().mockResolvedValue({ id: 2, groupCode: "PEN-B", name: "Pen B" }),
   updateGroup: vi.fn().mockResolvedValue(undefined),
@@ -61,6 +61,7 @@ vi.mock("./db", () => ({
     { key: "currency", value: "EGP" },
     { key: "fiscal_year_start", value: "01-01" },
   ]),
+  getSetting: vi.fn().mockResolvedValue(null),
   upsertSetting: vi.fn().mockResolvedValue(undefined),
   updateSystemSetting: vi.fn().mockResolvedValue(undefined),
   getAnimals: vi.fn().mockResolvedValue([
@@ -243,6 +244,19 @@ describe("config.groups", () => {
     const result = await caller.config.createGroup({ name: "Pen B", groupCode: "PEN-B" });
     expect(result).toBeDefined();
     expect(result.groupCode).toBe("PEN-B");
+  });
+
+  it("updateGroup accepts a farm-map rectangle shape", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.config.updateGroup({
+      id: 1,
+      mapShape: { type: "rect", x: 0.1, y: 0.2, width: 0.3, height: 0.4 },
+    })).resolves.not.toThrow();
+  });
+
+  it("getFarmMapImage returns empty state when no map image is configured", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.config.getFarmMapImage()).resolves.toEqual({ key: null, url: null });
   });
 });
 
