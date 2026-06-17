@@ -354,3 +354,23 @@
 - [x] Add normalizeDate() guard inside computeFeedCostForPeriod to handle any non-ISO date strings (e.g. locale strings from String(Date)) — throws descriptive error instead of RangeError at toISOString()
 - [x] Add dateNormalize.test.ts with 4 regression tests covering ISO passthrough, locale string normalization, invalid date error, and math correctness
 - [x] TypeScript: 0 errors, 91/91 tests pass
+
+## Phase 36: Read-Only Viewer Role
+- [x] Update user role enum in schema to include "viewer" role
+- [x] Generate and apply database migration for new role (ALTER TABLE users MODIFY COLUMN role enum with viewer added)
+- [x] Create blockViewerMutationMiddleware that blocks all mutations for viewers
+- [x] Update all tRPC procedures to use blockViewerMutationMiddleware globally (applied to publicProcedure, protectedProcedure, adminProcedure, and all role-based procedures)
+- [x] Create ActionButton and ActionButtonGroup components to hide/disable actions for viewers
+- [x] Create useIsViewer hook for checking viewer role
+- [x] Add i18n translations for viewer role (EN + AR)
+- [x] TypeScript: 0 errors (excluding known expenses.ts false positive)
+- [x] All 92 tests passing
+
+
+## Phase 37: User Role Management UI
+- [x] Update user creation to set default role to "viewer" instead of "user" (upsertUser in db.ts)
+- [x] Add role selector dropdown in user management UI (UserManagement.tsx with Select component)
+- [x] Add role change mutation to backend (updateUserRole in config.ts router)
+- [x] Add role change UI in user list/management page (role selector dropdown replaces promote/demote button)
+- [x] Add i18n keys for role management UI (users.viewer, users.user, users.staff, users.supervisor, users.admin, users.owner)
+- [x] Test role changes across all user types (all 92 tests passing)

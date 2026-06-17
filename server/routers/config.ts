@@ -395,7 +395,7 @@ export const configRouter = router({
   getUsers: protectedProcedure.query(() => getAllUsers()),
 
   updateUserRole: privilegedProcedure
-    .input(z.object({ userId: z.number(), role: z.enum(["owner", "supervisor", "staff", "admin", "user"]) }))
+    .input(z.object({ userId: z.number(), role: z.enum(["owner", "supervisor", "staff", "admin", "user", "viewer"]) }))
     .mutation(async ({ input, ctx }) => {
       const before = (await getAllUsers()).find((u: any) => u.id === input.userId);
       const result = await updateUserRole(input.userId, input.role);

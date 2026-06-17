@@ -7,8 +7,17 @@ const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
 });
 
+// Middleware to block mutations for viewers
+const blockViewerMutationMiddleware = t.middleware(async opts => {
+  const { ctx, next, type } = opts;
+  if (type === "mutation" && ctx.user?.role === "viewer") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Viewers cannot modify data" });
+  }
+  return next();
+});
+
 export const router = t.router;
-export const publicProcedure = t.procedure;
+export const publicProcedure = t.procedure.use(blockViewerMutationMiddleware);
 
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
@@ -25,7 +34,7 @@ const requireUser = t.middleware(async opts => {
   });
 });
 
-export const protectedProcedure = t.procedure.use(requireUser);
+export const protectedProcedure = t.procedure.use(requireUser).use(blockViewerMutationMiddleware);
 
 export const adminProcedure = t.procedure.use(
   t.middleware(async opts => {
@@ -42,14 +51,15 @@ export const adminProcedure = t.procedure.use(
       },
     });
   }),
-);
+).use(blockViewerMutationMiddleware);
 
 // ─── ROLE HIERARCHY ───────────────────────────────────────────────────────────
 // Higher number = more privilege. A user satisfies a tier if their rank >= the
 // tier's rank. owner and admin are top-level (full control).
-export type AppRole = "owner" | "admin" | "supervisor" | "staff" | "user";
+export type AppRole = "owner" | "admin" | "supervisor" | "staff" | "user" | "viewer";
 
 const ROLE_RANK: Record<string, number> = {
+  viewer: -1,     // view-only, no mutations allowed
   user: 0,        // read-only
   staff: 1,       // record day-to-day data (animals, weights, sales, expenses, feed)
   supervisor: 2,  // + edit/configure, manage ration plans & categories
@@ -68,7 +78,7 @@ function makeRoleProcedure(minRole: AppRole) {
       }
       return next({ ctx: { ...ctx, user: ctx.user! } });
     }),
-  );
+  ).use(blockViewerMutationMiddleware);
 }
 
 /** Can record day-to-day operational data (staff and above). */
@@ -79,3 +89,13 @@ export const supervisorProcedure = makeRoleProcedure("supervisor");
 
 /** Destructive / privileged ops: permanent delete, restore, user management (admin/owner). */
 export const privilegedProcedure = makeRoleProcedure("admin");
+
+/**
+ * Mutation blocker for viewers: use this at the start of any mutation handler
+ * to prevent viewers from making any changes.
+ */
+export function blockViewerMutations(userRole?: string) {
+  if (userRole === "viewer") {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Viewers cannot modify data" });
+  }
+}

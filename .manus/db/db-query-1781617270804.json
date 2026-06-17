@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `vaccination_records` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`animalId` int NOT NULL,\n\t`vaccineId` int NOT NULL,\n\t`vaccinationDate` date NOT NULL,\n\t`nextDueDate` date,\n\t`batchNumber` varchar(50),\n\t`notes` text,\n\t`veterinarian` varchar(100),\n\t`isCompleted` boolean NOT NULL DEFAULT false,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\t`createdBy` int,\n\t`deletedAt` timestamp,\n\t`deletedBy` int,\n\tCONSTRAINT `vaccination_records_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `vaccination_records_animalId_fk` FOREIGN KEY (`animalId`) REFERENCES `animals`(`id`) ON DELETE CASCADE,\n\tCONSTRAINT `vaccination_records_vaccineId_fk` FOREIGN KEY (`vaccineId`) REFERENCES `vaccines`(`id`) ON DELETE CASCADE\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute CREATE TABLE `vaccination_records` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`animalId` int NOT NULL,\n\t`vaccineId` int NOT NULL,\n\t`vaccinationDate` date NOT NULL,\n\t`nextDueDate` date,\n\t`batchNumber` varchar(50),\n\t`notes` text,\n\t`veterinarian` varchar(100),\n\t`isCompleted` boolean NOT NULL DEFAULT false,\n\t`createdAt` timestamp NOT NULL DEFAULT (now()),\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\t`createdBy` int,\n\t`deletedAt` timestamp,\n\t`deletedBy` int,\n\tCONSTRAINT `vaccination_records_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `vaccination_records_animalId_fk` FOREIGN KEY (`animalId`) REFERENCES `animals`(`id`) ON DELETE CASCADE,\n\tCONSTRAINT `vaccination_records_vaccineId_fk` FOREIGN KEY (`vaccineId`) REFERENCES `vaccines`(`id`) ON DELETE CASCADE\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1833
+}

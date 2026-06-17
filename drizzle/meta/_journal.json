@@ -15,6 +15,20 @@
       "when": 1778319583715,
       "tag": "0001_lush_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1781617120962,
+      "tag": "0002_useful_mordo",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1781620152583,
+      "tag": "0003_plain_nocturne",
+      "breakpoints": true
     }
   ]
 }

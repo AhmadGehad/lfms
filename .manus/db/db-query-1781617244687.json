@@ -1,0 +1,79 @@
+{
+  "query": "SHOW TABLES;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SHOW TABLES;",
+  "rows": [
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "__drizzle_migrations"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "animal_categories"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "animal_status_history"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "animal_statuses"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "animals"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "audit_log"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "birth_types"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "expense_categories"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "expense_sub_categories"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "expenses"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "feed_item_price_history"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "feed_items"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "feed_stock_ledger"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "groups"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "lambing_log"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "notifications"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "owners"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "ration_plans"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "sales"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "species"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "system_settings"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "users"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n": "weight_log"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_boyWMBM5odtbpptCLrtK7n\n__drizzle_migrations\nanimal_categories\nanimal_status_history\nanimal_statuses\nanimals\naudit_log\nbirth_types\nexpense_categories\nexpense_sub_categories\nexpenses\nfeed_item_price_history\nfeed_items\nfeed_stock_ledger\ngroups\nlambing_log\nnotifications\nowners\nration_plans\nsales\nspecies\nsystem_settings\nusers\nweight_log\n",
+  "stderr": "",
+  "execution_time_ms": 1767
+}

@@ -60,7 +60,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 <div class="container">
 
 <h1>lfms — Complete Call Flow &amp; Architecture Documentation</h1>
-<p class="subtitle">Generated from graphify knowledge graph: 1831 nodes, 3985 edges, 133 communities. Commit: 74cd084</p>
+<p class="subtitle">Generated from graphify knowledge graph: 1847 nodes, 4029 edges, 128 communities. Commit: 14cc598</p>
 
 <div class="nav">
     <a href="#overview">Architecture Overview</a>
@@ -75,9 +75,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
     <a href="#tests-fixtures">Tests &amp; Fixtures</a>
     <a href="#community-0">Community 0</a>
     <a href="#community-3">Community 3</a>
-    <a href="#community-2">Community 2</a>
+    <a href="#community-4">Community 4</a>
+    <a href="#community-5">Community 5</a>
     <a href="#community-6">Community 6</a>
-    <a href="#community-9">Community 9</a>
     <a href="#other">Other</a>
 </div>
 
@@ -90,46 +90,46 @@ hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
 flowchart LR
     EXTRACT_PIPELINE_5F350230("Extraction Pipeline<br/><small>66 nodes</small>")
     class EXTRACT_PIPELINE_5F350230 module;
-    BUILD_GRAPH_321CBB04("Graph Build<br/><small>217 nodes</small>")
+    BUILD_GRAPH_321CBB04("Graph Build<br/><small>216 nodes</small>")
     class BUILD_GRAPH_321CBB04 module;
     ANALYSIS_CLUSTERING_C79796DA("Analysis &amp; Clustering<br/><small>52 nodes</small>")
     class ANALYSIS_CLUSTERING_C79796DA module;
-    OUTPUTS_DOCS_ED82387C("Outputs &amp; Docs<br/><small>103 nodes</small>")
+    OUTPUTS_DOCS_ED82387C("Outputs &amp; Docs<br/><small>87 nodes</small>")
     class OUTPUTS_DOCS_ED82387C module;
-    CLI_SKILLS_9964CBB8("CLI &amp; Skill Installers<br/><small>227 nodes</small>")
+    CLI_SKILLS_9964CBB8("CLI &amp; Skill Installers<br/><small>271 nodes</small>")
     class CLI_SKILLS_9964CBB8 module;
     INGEST_CACHE_UPDATE_FF457338("Ingestion &amp; Updates<br/><small>22 nodes</small>")
     class INGEST_CACHE_UPDATE_FF457338 module;
-    SERVE_API_35EC8E86("Serving API<br/><small>66 nodes</small>")
+    SERVE_API_35EC8E86("Serving API<br/><small>68 nodes</small>")
     class SERVE_API_35EC8E86 module;
     SECURITY_GLOBAL_5B9C6A04("Security &amp; Global Graph<br/><small>16 nodes</small>")
     class SECURITY_GLOBAL_5B9C6A04 module;
     TESTS_FIXTURES_B84B1DCC("Tests &amp; Fixtures<br/><small>71 nodes</small>")
     class TESTS_FIXTURES_B84B1DCC module;
-    COMMUNITY_0_B056AD3D("Community 0<br/><small>167 nodes</small>")
+    COMMUNITY_0_B056AD3D("Community 0<br/><small>186 nodes</small>")
     class COMMUNITY_0_B056AD3D module;
     COMMUNITY_3_D8DFCEA7("Community 3<br/><small>82 nodes</small>")
     class COMMUNITY_3_D8DFCEA7 module;
-    COMMUNITY_2_8C8DF7B9("Community 2<br/><small>60 nodes</small>")
-    class COMMUNITY_2_8C8DF7B9 module;
-    COMMUNITY_6_7D637A07("Community 6<br/><small>54 nodes</small>")
+    COMMUNITY_4_AC2DC2A9("Community 4<br/><small>61 nodes</small>")
+    class COMMUNITY_4_AC2DC2A9 module;
+    COMMUNITY_5_2966028D("Community 5<br/><small>56 nodes</small>")
+    class COMMUNITY_5_2966028D module;
+    COMMUNITY_6_7D637A07("Community 6<br/><small>55 nodes</small>")
     class COMMUNITY_6_7D637A07 module;
-    COMMUNITY_9_1D55D1EE("Community 9<br/><small>44 nodes</small>")
-    class COMMUNITY_9_1D55D1EE module;
-    OTHER_D0941E68("Other<br/><small>584 nodes</small>")
+    OTHER_D0941E68("Other<br/><small>538 nodes</small>")
     class OTHER_D0941E68 module;
-    OTHER_D0941E68 -->|calls x146| CLI_SKILLS_9964CBB8
-    OTHER_D0941E68 -->|imports x72| COMMUNITY_2_8C8DF7B9
-    COMMUNITY_0_B056AD3D -->|calls x68| CLI_SKILLS_9964CBB8
-    COMMUNITY_3_D8DFCEA7 -->|imports x57| COMMUNITY_6_7D637A07
-    COMMUNITY_0_B056AD3D -->|imports x50| OTHER_D0941E68
-    COMMUNITY_0_B056AD3D -->|imports x48| COMMUNITY_2_8C8DF7B9
-    COMMUNITY_3_D8DFCEA7 -->|calls x41| OUTPUTS_DOCS_ED82387C
-    COMMUNITY_2_8C8DF7B9 -->|calls x39| CLI_SKILLS_9964CBB8
-    BUILD_GRAPH_321CBB04 -->|imports x26| COMMUNITY_3_D8DFCEA7
-    OTHER_D0941E68 -->|imports x21| COMMUNITY_0_B056AD3D
-    OUTPUTS_DOCS_ED82387C -->|imports x20| COMMUNITY_6_7D637A07
-    COMMUNITY_3_D8DFCEA7 -->|contains x18| TESTS_FIXTURES_B84B1DCC
+    OTHER_D0941E68 -->|calls x90| COMMUNITY_4_AC2DC2A9
+    COMMUNITY_0_B056AD3D -->|imports x62| CLI_SKILLS_9964CBB8
+    COMMUNITY_0_B056AD3D -->|calls x58| COMMUNITY_4_AC2DC2A9
+    COMMUNITY_3_D8DFCEA7 -->|imports x55| COMMUNITY_6_7D637A07
+    CLI_SKILLS_9964CBB8 -->|calls x52| COMMUNITY_4_AC2DC2A9
+    OTHER_D0941E68 -->|imports x46| CLI_SKILLS_9964CBB8
+    COMMUNITY_5_2966028D -->|calls x37| COMMUNITY_4_AC2DC2A9
+    COMMUNITY_3_D8DFCEA7 -->|calls x31| OUTPUTS_DOCS_ED82387C
+    COMMUNITY_3_D8DFCEA7 -->|calls x27| OTHER_D0941E68
+    BUILD_GRAPH_321CBB04 -->|imports x25| COMMUNITY_3_D8DFCEA7
+    COMMUNITY_0_B056AD3D -->|imports x24| OTHER_D0941E68
+    COMMUNITY_5_2966028D -->|imports x22| CLI_SKILLS_9964CBB8
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -146,24 +146,24 @@ flowchart LR
     <h4>Architecture Layers</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>Layer</th><th>Nodes</th><th>Communities</th></tr>
-      <tr><td>Extraction Pipeline</td><td>66</td><td><code>26, 28, 63, 65</code></td></tr><tr><td>Graph Build</td><td>217</td><td><code>1, 7, 18, 20, 24, 38, 46, 115, 117, 120</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>52</td><td><code>56, 59, 83, 87, 95, 111</code></td></tr><tr><td>Outputs &amp; Docs</td><td>103</td><td><code>8, 19, 68, 69</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>227</td><td><code>4, 15, 16, 10, 64, 66, 73, 75, 76, 82, 91, 99, 102, 103, 104, 105, 107, 110, 123, 124, 125, 129, 130, 131, 132</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>22</td><td><code>106, 108, 109, 112, 116, 118</code></td></tr><tr><td>Serving API</td><td>66</td><td><code>11, 13, 114</code></td></tr><tr><td>Security &amp; Global Graph</td><td>16</td><td><code>70, 74</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>71</td><td><code>17, 35, 34, 47, 48</code></td></tr><tr><td>Community 0</td><td>167</td><td><code>0</code></td></tr><tr><td>Community 3</td><td>82</td><td><code>3</code></td></tr><tr><td>Community 2</td><td>60</td><td><code>2</code></td></tr><tr><td>Community 6</td><td>54</td><td><code>6</code></td></tr><tr><td>Community 9</td><td>44</td><td><code>9</code></td></tr><tr><td>Other</td><td>584</td><td><code>14, 5, 12, 21, 33, 42, 22, 23, 43, 25, 55, 27, 29, 60, 61, 30, 31, 32, 36, 37, 62, 39, 41, 67, 81, 40, 44, 45, 49, 50, 51, 52, 53, 54, 100, 101, 84, 86, 88, 89, 90, 92, 93, 94, 96, 97, 98, 57, 58, 113, 85, 119, 121, 71, 72, 122, 126, 127, 128, 77, 78, 79, 80</code></td></tr>
+      <tr><td>Extraction Pipeline</td><td>66</td><td><code>26, 28, 63, 65</code></td></tr><tr><td>Graph Build</td><td>216</td><td><code>1, 7, 18, 20, 24, 38, 46, 115, 117, 120</code></td></tr><tr><td>Analysis &amp; Clustering</td><td>52</td><td><code>56, 59, 83, 87, 95, 111</code></td></tr><tr><td>Outputs &amp; Docs</td><td>87</td><td><code>8, 19, 68, 69</code></td></tr><tr><td>CLI &amp; Skill Installers</td><td>271</td><td><code>2, 10, 15, 16, 64, 66, 73, 75, 76, 82, 91, 99, 102, 103, 104, 105, 107, 110, 123, 124, 125, 129, 130, 131, 132</code></td></tr><tr><td>Ingestion &amp; Updates</td><td>22</td><td><code>106, 108, 109, 112, 116, 118</code></td></tr><tr><td>Serving API</td><td>68</td><td><code>11, 13, 114</code></td></tr><tr><td>Security &amp; Global Graph</td><td>16</td><td><code>70, 74</code></td></tr><tr><td>Tests &amp; Fixtures</td><td>71</td><td><code>17, 35, 34, 47, 48</code></td></tr><tr><td>Community 0</td><td>186</td><td><code>0</code></td></tr><tr><td>Community 3</td><td>82</td><td><code>3</code></td></tr><tr><td>Community 4</td><td>61</td><td><code>4</code></td></tr><tr><td>Community 5</td><td>56</td><td><code>5</code></td></tr><tr><td>Community 6</td><td>55</td><td><code>6</code></td></tr><tr><td>Other</td><td>538</td><td><code>9, 55, 14, 21, 22, 23, 43, 27, 29, 60, 61, 30, 31, 32, 33, 36, 37, 62, 39, 41, 40, 44, 45, 49, 50, 101, 12, 51, 52, 53, 54, 100, 84, 86, 88, 89, 90, 92, 93, 94, 96, 97, 98, 57, 58, 113, 119, 121, 71, 72, 122, 126, 127, 128, 77, 78, 79, 80</code></td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Core Flow</h4>
-    <div class="arrow-chain">Extraction Pipeline -&gt; Graph Build -&gt; Community 3 -&gt; Community 6 -&gt; Outputs &amp; Docs -&gt; Other -&gt; CLI &amp; Skill Installers</div>
+    <div class="arrow-chain">Extraction Pipeline -&gt; Graph Build -&gt; Community 3 -&gt; Community 6 -&gt; Other -&gt; Community 4 -&gt; CLI &amp; Skill Installers</div>
   </div>
 </div>
 <div class="grid">
   <div class="card">
     <h4>Graph Report Highlights</h4>
     <ul>
-      <li>1831 nodes · 3985 edges · 133 communities (113 shown, 20 thin omitted)</li>
-      <li>Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 70 edges (avg confidence: 0.8)</li>
+      <li>1847 nodes · 4029 edges · 128 communities (108 shown, 20 thin omitted)</li>
+      <li>Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 72 edges (avg confidence: 0.8)</li>
       <li>Token cost: 0 input · 0 output</li>
       <li>1. `cn()` - 276 edges</li>
-      <li>2. `getDb()` - 119 edges</li>
-      <li>3. `t` - 69 edges</li>
+      <li>2. `getDb()` - 120 edges</li>
+      <li>3. `t` - 71 edges</li>
     </ul>
   </div>
 </div>
@@ -517,12 +517,12 @@ flowchart LR
 
 <!-- ====== 3. Graph Build ====== -->
 <h2 id="build-graph">3. Graph Build</h2>
-<p>Graph Build groups implementation around packagejson, drizzle, schemats, react, mostly in package.json, drizzle/schema.ts, tsconfig.json. This section covers 217 nodes and 255 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Graph Build groups implementation around packagejson, drizzle, schemats, react, mostly in package.json, drizzle/schema.ts, tsconfig.json. This section covers 216 nodes and 255 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Graph Build (217 nodes, 255 edges)
+    %% Section: Graph Build (216 nodes, 255 edges)
     subgraph build_graph_server_excelDataContract_ts_d65f1475["server/excelDataContract.ts"]
         server_exceldatacontract_dateonly_e0626909("dateOnly()<br/><small>server/excelDataContract.ts</small>")
         server_exceldatacontract_exportvalue_24d9d30a("exportValue()<br/><small>server/excelDataContract.ts</small>")
@@ -568,7 +568,7 @@ flowchart LR
     drizzle_schema_animals_ead96b0e -->|imports| server_exceldatacontract_8be1f8a8
     drizzle_schema_auditlog_0abcee45 -->|imports| routers_softdelete_6c9b6b84
     drizzle_schema_auditlog_0abcee45 -->|imports| server_exceldatacontract_8be1f8a8
-    %% Omitted for readability: 199 nodes, 0 edges
+    %% Omitted for readability: 198 nodes, 0 edges
     class server_exceldatacontract_dateonly_e0626909 function;
     class server_exceldatacontract_exportvalue_24d9d30a function;
     class server_exceldatacontract_parsevalue_1c1f72e5 function;
@@ -856,7 +856,7 @@ flowchart LR
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
       <tr><td><code>package.json</code></td><td>116 nodes</td></tr>
-<tr><td><code>drizzle/schema.ts</code></td><td>42 nodes</td></tr>
+<tr><td><code>drizzle/schema.ts</code></td><td>41 nodes</td></tr>
 <tr><td><code>tsconfig.json</code></td><td>20 nodes</td></tr>
 <tr><td><code>components.json</code></td><td>16 nodes</td></tr>
 <tr><td><code>server/excelDataContract.ts</code></td><td>11 nodes</td></tr>
@@ -867,7 +867,7 @@ flowchart LR
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x207, imports x37, calls x8, imports x3. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x206, imports x38, calls x8, imports x3. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -1221,15 +1221,15 @@ flowchart LR
 
 <!-- ====== 5. Outputs & Docs ====== -->
 <h2 id="outputs-docs">5. Outputs &amp; Docs</h2>
-<p>Outputs &amp; Docs groups implementation around server, code, wikimd, docs, mostly in docs/CODE_WIKI.md, server/db.ts, server/routers/import.ts. This section covers 103 nodes and 128 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Outputs &amp; Docs groups implementation around code, wikimd, docs, server, mostly in docs/CODE_WIKI.md, server/db.ts, graphify/references/exports.md. This section covers 87 nodes and 102 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Outputs &amp; Docs (103 nodes, 128 edges)
+    %% Section: Outputs &amp; Docs (87 nodes, 102 edges)
     subgraph outputs_docs_server_db_ts_fe25eb42["server/db.ts"]
-        server_db_getallfeeditems_e4df345a("getAllFeedItems()<br/><small>server/db.ts</small>")
         server_db_getactiveheadcountbycategory_2df38183("getActiveHeadCountByCategory()<br/><small>server/db.ts</small>")
+        server_db_getallfeeditems_e4df345a("getAllFeedItems()<br/><small>server/db.ts</small>")
         server_db_getallcategories_f2fab208("getAllCategories()<br/><small>server/db.ts</small>")
         server_db_getallexpensecategories_3e039783("getAllExpenseCategories()<br/><small>server/db.ts</small>")
         server_db_getallgroups_10ddf106("getAllGroups()<br/><small>server/db.ts</small>")
@@ -1246,10 +1246,9 @@ flowchart LR
     subgraph outputs_docs_server_routers_export_ts_690655fb["server/routers/export.ts"]
         routers_export_buildworkbook_04b9154a("buildWorkbook()<br/><small>server/routers/export.ts</small>")
         routers_export_headerrow_c0946fdf("headerRow()<br/><small>server/routers/export.ts</small>")
+        routers_export_titlerow_97d08a17("titleRow()<br/><small>server/routers/export.ts</small>")
     end
-    server_canonicaltransfer_readallcanonicaltables_25e439d7("readAllCanonicalTables()<br/><small>server/canonicalTransfer.ts</small>")
     server_exceldatacontract_addcanonicalsheets_fe0f6e2a("addCanonicalSheets()<br/><small>server/excelDataContract.ts</small>")
-    server_canonicaltransfer_readallcanonicaltables_25e439d7 -->|calls| routers_export_buildworkbook_04b9154a
     server_db_getallspecies_6f59059d -->|calls| routers_export_buildworkbook_04b9154a
     server_db_getallcategories_f2fab208 -->|calls| routers_export_buildworkbook_04b9154a
     server_db_getallstatuses_edbb8433 -->|calls| routers_export_buildworkbook_04b9154a
@@ -1268,9 +1267,10 @@ flowchart LR
     server_db_getfeedstockstatus_2aa0f81b -->|calls| routers_export_buildworkbook_04b9154a
     server_exceldatacontract_addcanonicalsheets_fe0f6e2a -->|calls| routers_export_buildworkbook_04b9154a
     routers_export_headerrow_c0946fdf -->|calls| routers_export_buildworkbook_04b9154a
-    %% Omitted for readability: 85 nodes, 0 edges
-    class server_db_getallfeeditems_e4df345a function;
+    routers_export_titlerow_97d08a17 -->|calls| routers_export_buildworkbook_04b9154a
+    %% Omitted for readability: 69 nodes, 0 edges
     class server_db_getactiveheadcountbycategory_2df38183 function;
+    class server_db_getallfeeditems_e4df345a function;
     class server_db_getallcategories_f2fab208 function;
     class server_db_getallexpensecategories_3e039783 function;
     class server_db_getallgroups_10ddf106 function;
@@ -1285,7 +1285,7 @@ flowchart LR
     class server_db_getexpenses_66e2ab54 function;
     class routers_export_buildworkbook_04b9154a function;
     class routers_export_headerrow_c0946fdf function;
-    class server_canonicaltransfer_readallcanonicaltables_25e439d7 function;
+    class routers_export_titlerow_97d08a17 function;
     class server_exceldatacontract_addcanonicalsheets_fe0f6e2a function;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
@@ -1556,88 +1556,87 @@ flowchart LR
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
       <tr><td><code>docs/CODE_WIKI.md</code></td><td>49 nodes</td></tr>
-<tr><td><code>server/db.ts</code></td><td>17 nodes</td></tr>
-<tr><td><code>server/routers/import.ts</code></td><td>12 nodes</td></tr>
+<tr><td><code>server/db.ts</code></td><td>14 nodes</td></tr>
 <tr><td><code>graphify/references/exports.md</code></td><td>9 nodes</td></tr>
 <tr><td><code>graphify/references/exports.md</code></td><td>9 nodes</td></tr>
 <tr><td><code>server/routers/export.ts</code></td><td>5 nodes</td></tr>
-<tr><td><code>server/canonicalTransfer.ts</code></td><td>1 nodes</td></tr>
 <tr><td><code>server/excelDataContract.ts</code></td><td>1 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x79, imports x26, calls x23. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x68, calls x19, imports x15. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
 <!-- ====== 6. CLI & Skill Installers ====== -->
 <h2 id="cli-skills">6. CLI &amp; Skill Installers</h2>
-<p>CLI &amp; Skill Installers groups implementation around skillmd, skills, caveman, client, mostly in skills/graphify/SKILL.md, skills/graphify/SKILL.md, components/ui/field.tsx. This section covers 227 nodes and 252 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>CLI &amp; Skill Installers groups implementation around skillmd, skills, client, components, mostly in skills/graphify/SKILL.md, skills/graphify/SKILL.md, skills/caveman-compress/SKILL.md. This section covers 271 nodes and 317 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: CLI &amp; Skill Installers (227 nodes, 252 edges)
-    subgraph cli_skills_components_ui_command_tsx_200d5c52["components/ui/command.tsx"]
-        ui_command_ee42ff19("command.tsx")
-        ui_command_command_5fabb6a3("Command()<br/><small>components/ui/command.tsx</small>")
-        ui_command_commanddialog_13f4f0c2("CommandDialog()<br/><small>components/ui/command.tsx</small>")
-        ui_command_commandinput_1ad8db3e("CommandInput()<br/><small>components/ui/command.tsx</small>")
-        ui_command_commandlist_cdef6fc9("CommandList()<br/><small>components/ui/command.tsx</small>")
-    end
+    %% Section: CLI &amp; Skill Installers (271 nodes, 317 edges)
     subgraph cli_skills_core_hooks_useAuth_ts_296be3f9["_core/hooks/useAuth.ts"]
         hooks_useauth_useauth_353a3673("useAuth()<br/><small>_core/hooks/useAuth.ts</small>")
         hooks_useauth_bfe270f6("useAuth.ts")
     end
-    subgraph cli_skills_client_src_const_ts_2fd8aaf2["client/src/const.ts"]
-        src_const_getloginurl_d653da50("getLoginUrl()<br/><small>client/src/const.ts</small>")
-        src_const_6fb73f10("const.ts")
+    subgraph cli_skills_client_src_main_tsx_9aceebcd["client/src/main.tsx"]
+        src_main_redirecttologinifunauthorized_cae3dbe6("redirectToLoginIfUnauthorized()<br/><small>client/src/main.tsx</small>")
+        src_main_3231ff52("main.tsx")
     end
-    subgraph cli_skills_components_ui_calendar_tsx_8a69b7a2["components/ui/calendar.tsx"]
-        ui_calendar_calendar_de7f5063("Calendar()<br/><small>components/ui/calendar.tsx</small>")
-        ui_calendar_calendardaybutton_0aa2438c("CalendarDayButton()<br/><small>components/ui/calendar.tsx</small>")
+    subgraph cli_skills_src_components_ActionButton_tsx_d9be35c1["src/components/ActionButton.tsx"]
+        components_actionbutton_actionbutton_87f5c5b4("ActionButton()<br/><small>src/components/ActionButton.tsx</small>")
+        components_actionbutton_acb5a159("ActionButton.tsx")
     end
     src_app_app_f316b20d("App()<br/><small>client/src/App.tsx</small>")
-    ui_alert_dialog_alertdialogoverlay_abfb4af3("AlertDialogOverlay()<br/><small>components/ui/alert-dialog.tsx</small>")
-    ui_card_cardaction_a1a717ff("CardAction()<br/><small>components/ui/card.tsx</small>")
+    src_const_getloginurl_d653da50("getLoginUrl()<br/><small>client/src/const.ts</small>")
+    ui_command_ee42ff19("command.tsx")
+    components_actionbuttongroup_actionbuttongroup_22832bc8("ActionButtonGroup()<br/><small>src/components/ActionButtonGroup.tsx</small>")
+    components_dashboardlayout_dashboardlayoutconten_36a4241c("DashboardLayoutContent()<br/><small>src/components/DashboardLayout.tsx</small>")
+    contexts_themecontext_usetheme_70255d57("useTheme()<br/><small>src/contexts/ThemeContext.tsx</small>")
+    hooks_useisviewer_useisviewer_6ec25660("useIsViewer()<br/><small>src/hooks/useIsViewer.ts</small>")
     hooks_usepermissions_usepermissions_554edae1("usePermissions()<br/><small>src/hooks/usePermissions.tsx</small>")
-    lib_utils_cn_b8743bb6("cn()<br/><small>src/lib/utils.ts</small>")
+    pages_componentshowcase_componentsshowcase_3f41c0ed("ComponentsShowcase()<br/><small>src/pages/ComponentShowcase.tsx</small>")
+    pages_dashboard_exportbutton_b57b7876("ExportButton()<br/><small>src/pages/Dashboard.tsx</small>")
     pages_home_home_e7bc00a9("Home()<br/><small>src/pages/Home.tsx</small>")
     pages_recyclebin_recyclebin_2a2d7b64("RecycleBin()<br/><small>src/pages/RecycleBin.tsx</small>")
+    hooks_useauth_useauth_353a3673 -->|calls| components_actionbutton_actionbutton_87f5c5b4
+    hooks_useauth_useauth_353a3673 -->|calls| components_actionbuttongroup_actionbuttongroup_22832bc8
+    hooks_useauth_useauth_353a3673 -->|calls| components_dashboardlayout_dashboardlayoutconten_36a4241c
     hooks_useauth_useauth_353a3673 -->|calls| src_const_getloginurl_d653da50
+    hooks_useauth_useauth_353a3673 -->|calls| hooks_useisviewer_useisviewer_6ec25660
     hooks_useauth_useauth_353a3673 -->|calls| hooks_usepermissions_usepermissions_554edae1
     hooks_useauth_useauth_353a3673 -->|calls| pages_home_home_e7bc00a9
     hooks_useauth_useauth_353a3673 -->|calls| pages_recyclebin_recyclebin_2a2d7b64
-    ui_alert_dialog_alertdialogoverlay_abfb4af3 -->|calls| lib_utils_cn_b8743bb6
-    ui_calendar_calendar_de7f5063 -->|calls| lib_utils_cn_b8743bb6
-    ui_calendar_calendardaybutton_0aa2438c -->|calls| lib_utils_cn_b8743bb6
-    ui_card_cardaction_a1a717ff -->|calls| lib_utils_cn_b8743bb6
-    ui_command_command_5fabb6a3 -->|calls| lib_utils_cn_b8743bb6
-    ui_command_commanddialog_13f4f0c2 -->|calls| lib_utils_cn_b8743bb6
-    ui_command_commandinput_1ad8db3e -->|calls| lib_utils_cn_b8743bb6
-    ui_command_commandlist_cdef6fc9 -->|calls| lib_utils_cn_b8743bb6
-    hooks_useauth_bfe270f6 -->|imports| src_const_6fb73f10
+    components_dashboardlayout_dashboardlayoutconten_36a4241c -->|calls| contexts_themecontext_usetheme_70255d57
+    components_dashboardlayout_dashboardlayoutconten_36a4241c -->|calls| hooks_usepermissions_usepermissions_554edae1
+    src_const_getloginurl_d653da50 -->|calls| src_main_redirecttologinifunauthorized_cae3dbe6
+    contexts_themecontext_usetheme_70255d57 -->|calls| pages_componentshowcase_componentsshowcase_3f41c0ed
+    hooks_usepermissions_usepermissions_554edae1 -->|calls| pages_dashboard_exportbutton_b57b7876
+    src_app_app_f316b20d -->|imports| src_main_3231ff52
+    hooks_useauth_bfe270f6 -->|imports| components_actionbutton_acb5a159
     hooks_useauth_bfe270f6 -->|imports| src_const_getloginurl_d653da50
-    ui_command_ee42ff19 -->|imports| lib_utils_cn_b8743bb6
-    %% Omitted for readability: 209 nodes, 0 edges
-    class ui_command_ee42ff19 entry;
-    class ui_command_command_5fabb6a3 entry;
-    class ui_command_commanddialog_13f4f0c2 entry;
-    class ui_command_commandinput_1ad8db3e entry;
-    class ui_command_commandlist_cdef6fc9 entry;
+    hooks_useauth_useauth_353a3673 -->|imports| components_actionbutton_acb5a159
+    src_const_getloginurl_d653da50 -->|imports| src_main_3231ff52
+    %% Omitted for readability: 253 nodes, 0 edges
     class hooks_useauth_useauth_353a3673 ui;
     class hooks_useauth_bfe270f6 ui;
-    class src_const_getloginurl_d653da50 function;
-    class src_const_6fb73f10 module;
-    class ui_calendar_calendar_de7f5063 ui;
-    class ui_calendar_calendardaybutton_0aa2438c ui;
+    class src_main_redirecttologinifunauthorized_cae3dbe6 ui;
+    class src_main_3231ff52 ui;
+    class components_actionbutton_actionbutton_87f5c5b4 ui;
+    class components_actionbutton_acb5a159 ui;
     class src_app_app_f316b20d ui;
-    class ui_alert_dialog_alertdialogoverlay_abfb4af3 ui;
-    class ui_card_cardaction_a1a717ff ui;
+    class src_const_getloginurl_d653da50 function;
+    class ui_command_ee42ff19 entry;
+    class components_actionbuttongroup_actionbuttongroup_22832bc8 ui;
+    class components_dashboardlayout_dashboardlayoutconten_36a4241c ui;
+    class contexts_themecontext_usetheme_70255d57 ui;
+    class hooks_useisviewer_useisviewer_6ec25660 ui;
     class hooks_usepermissions_usepermissions_554edae1 ui;
-    class lib_utils_cn_b8743bb6 function;
+    class pages_componentshowcase_componentsshowcase_3f41c0ed ui;
+    class pages_dashboard_exportbutton_b57b7876 ui;
     class pages_home_home_e7bc00a9 ui;
     class pages_recyclebin_recyclebin_2a2d7b64 ui;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
@@ -1663,243 +1662,243 @@ flowchart LR
 </tr>
 <tr>
   <td>1</td>
-  <td><code>AlertDialogOverlay()</code><br><small style="color:var(--muted)">components/ui/alert-dialog.tsx</small></td>
+  <td><code>accordion.tsx</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>AlertDialogOverlay() node in components/ui/alert-dialog.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Module file in components/ui/accordion.tsx.</td>
 </tr>
 <tr>
   <td>2</td>
-  <td><code>calendar.tsx</code><br><small style="color:var(--muted)">components/ui/calendar.tsx</small></td>
+  <td><code>Accordion()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>Module file in components/ui/calendar.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Accordion() node in components/ui/accordion.tsx.</td>
 </tr>
 <tr>
   <td>3</td>
-  <td><code>Calendar()</code><br><small style="color:var(--muted)">components/ui/calendar.tsx</small></td>
+  <td><code>AccordionItem()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>Calendar() node in components/ui/calendar.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>AccordionItem() node in components/ui/accordion.tsx.</td>
 </tr>
 <tr>
   <td>4</td>
-  <td><code>CalendarDayButton()</code><br><small style="color:var(--muted)">components/ui/calendar.tsx</small></td>
+  <td><code>AccordionTrigger()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CalendarDayButton() node in components/ui/calendar.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>AccordionTrigger() node in components/ui/accordion.tsx.</td>
 </tr>
 <tr>
   <td>5</td>
-  <td><code>CardAction()</code><br><small style="color:var(--muted)">components/ui/card.tsx</small></td>
+  <td><code>AccordionContent()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CardAction() node in components/ui/card.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>AccordionContent() node in components/ui/accordion.tsx.</td>
 </tr>
 <tr>
   <td>6</td>
-  <td><code>command.tsx</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>aspect-ratio.tsx</code><br><small style="color:var(--muted)">components/ui/aspect-ratio.tsx</small></td>
+  <td><span class="tag tag-func">Test</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small><br><code>DialogDescription()</code><br><small style="color:var(--muted)">components/ui/dialog.tsx</small></td>
-  <td>Module file in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Module file in components/ui/aspect-ratio.tsx.</td>
 </tr>
 <tr>
   <td>7</td>
-  <td><code>Command()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>AspectRatio()</code><br><small style="color:var(--muted)">components/ui/aspect-ratio.tsx</small></td>
+  <td><span class="tag tag-func">Test</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>Command() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>AspectRatio() node in components/ui/aspect-ratio.tsx.</td>
 </tr>
 <tr>
   <td>8</td>
-  <td><code>CommandDialog()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>breadcrumb.tsx</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CommandDialog() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Module file in components/ui/breadcrumb.tsx.</td>
 </tr>
 <tr>
   <td>9</td>
-  <td><code>CommandInput()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>Breadcrumb()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CommandInput() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Breadcrumb() node in components/ui/breadcrumb.tsx.</td>
 </tr>
 <tr>
   <td>10</td>
-  <td><code>CommandList()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>BreadcrumbList()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CommandList() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>BreadcrumbList() node in components/ui/breadcrumb.tsx.</td>
 </tr>
 <tr>
   <td>11</td>
-  <td><code>CommandEmpty()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>BreadcrumbItem()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>CommandEmpty() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>BreadcrumbItem() node in components/ui/breadcrumb.tsx.</td>
 </tr>
 <tr>
   <td>12</td>
-  <td><code>CommandGroup()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>BreadcrumbLink()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CommandGroup() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>BreadcrumbLink() node in components/ui/breadcrumb.tsx.</td>
 </tr>
 <tr>
   <td>13</td>
-  <td><code>CommandSeparator()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>BreadcrumbPage()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CommandSeparator() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
 </tr>
 <tr>
   <td>14</td>
-  <td><code>CommandItem()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>BreadcrumbSeparator()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CommandItem() node in components/ui/command.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>BreadcrumbSeparator() node in components/ui/breadcrumb.tsx.</td>
 </tr>
 <tr>
   <td>15</td>
-  <td><code>CommandShortcut()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><span class="tag tag-cmd">Entry</span></td>
+  <td><code>BreadcrumbEllipsis()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>CommandShortcut() node in components/ui/command.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>BreadcrumbEllipsis() node in components/ui/breadcrumb.tsx.</td>
 </tr>
 <tr>
   <td>16</td>
-  <td><code>DialogOverlay()</code><br><small style="color:var(--muted)">components/ui/dialog.tsx</small></td>
+  <td><code>CardDescription()</code><br><small style="color:var(--muted)">components/ui/card.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>DialogOverlay() node in components/ui/dialog.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CardDescription() node in components/ui/card.tsx.</td>
 </tr>
 <tr>
   <td>17</td>
-  <td><code>DialogDescription()</code><br><small style="color:var(--muted)">components/ui/dialog.tsx</small></td>
+  <td><code>CardFooter()</code><br><small style="color:var(--muted)">components/ui/card.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
-  <td><code>command.tsx</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>DialogDescription() node in components/ui/dialog.tsx.</td>
+  <td>External entry / no inbound edge</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CardFooter() node in components/ui/card.tsx.</td>
 </tr>
 <tr>
   <td>18</td>
-  <td><code>empty.tsx</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
+  <td><code>collapsible.tsx</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>Module file in components/ui/empty.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Module file in components/ui/collapsible.tsx.</td>
 </tr>
 <tr>
   <td>19</td>
-  <td><code>Empty()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
+  <td><code>Collapsible()</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>Empty() node in components/ui/empty.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Collapsible() node in components/ui/collapsible.tsx.</td>
 </tr>
 <tr>
   <td>20</td>
-  <td><code>EmptyHeader()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
+  <td><code>CollapsibleTrigger()</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>EmptyHeader() node in components/ui/empty.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CollapsibleTrigger() node in components/ui/collapsible.tsx.</td>
 </tr>
 <tr>
   <td>21</td>
-  <td><code>emptyMediaVariants</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
+  <td><code>CollapsibleContent()</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>EmptyMedia()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
-  <td>emptyMediaVariants node in components/ui/empty.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CollapsibleContent() node in components/ui/collapsible.tsx.</td>
 </tr>
 <tr>
   <td>22</td>
-  <td><code>EmptyMedia()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
-  <td><code>emptyMediaVariants</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>EmptyMedia() node in components/ui/empty.tsx.</td>
+  <td><code>command.tsx</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small><br><code>DialogDescription()</code><br><small style="color:var(--muted)">components/ui/dialog.tsx</small></td>
+  <td>Module file in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>23</td>
-  <td><code>EmptyTitle()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>Command()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>EmptyTitle() node in components/ui/empty.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>Command() node in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>24</td>
-  <td><code>EmptyDescription()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>CommandDialog()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>EmptyDescription() node in components/ui/empty.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>CommandDialog() node in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>25</td>
-  <td><code>EmptyContent()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>CommandInput()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>EmptyContent() node in components/ui/empty.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CommandInput() node in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>26</td>
-  <td><code>field.tsx</code><br><small style="color:var(--muted)">components/ui/field.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>CommandList()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>Module file in components/ui/field.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CommandList() node in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>27</td>
-  <td><code>FieldSet()</code><br><small style="color:var(--muted)">components/ui/field.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>CommandEmpty()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>FieldSet() node in components/ui/field.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CommandEmpty() node in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>28</td>
-  <td><code>FieldLegend()</code><br><small style="color:var(--muted)">components/ui/field.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>CommandGroup()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>FieldLegend() node in components/ui/field.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CommandGroup() node in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>29</td>
-  <td><code>FieldGroup()</code><br><small style="color:var(--muted)">components/ui/field.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>CommandSeparator()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
-  <td>FieldGroup() node in components/ui/field.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>CommandSeparator() node in components/ui/command.tsx.</td>
 </tr>
 <tr>
   <td>30</td>
-  <td><code>fieldVariants</code><br><small style="color:var(--muted)">components/ui/field.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>CommandItem()</code><br><small style="color:var(--muted)">components/ui/command.tsx</small></td>
+  <td><span class="tag tag-cmd">Entry</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>Field()</code><br><small style="color:var(--muted)">components/ui/field.tsx</small></td>
-  <td>fieldVariants node in components/ui/field.tsx.</td>
+  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
+  <td>CommandItem() node in components/ui/command.tsx.</td>
 </tr>
 </table>
 
@@ -1912,15 +1911,15 @@ flowchart LR
 <tr><td><code>skills/graphify/SKILL.md</code></td><td>24 nodes</td></tr>
 <tr><td><code>skills/caveman-compress/SKILL.md</code></td><td>12 nodes</td></tr>
 <tr><td><code>skills/caveman-compress/SKILL.md</code></td><td>12 nodes</td></tr>
-<tr><td><code>components/ui/field.tsx</code></td><td>12 nodes</td></tr>
+<tr><td><code>components/ui/drawer.tsx</code></td><td>11 nodes</td></tr>
 <tr><td><code>components/ui/command.tsx</code></td><td>10 nodes</td></tr>
-<tr><td><code>components/ui/navigation-menu.tsx</code></td><td>10 nodes</td></tr>
+<tr><td><code>components/ui/pagination.tsx</code></td><td>9 nodes</td></tr>
 <tr><td><code>skills/caveman-help/SKILL.md</code></td><td>8 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x180, calls x54, imports x13, imports x5. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x215, imports x63, imports x23, calls x13. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -2209,12 +2208,12 @@ flowchart LR
 
 <!-- ====== 8. Serving API ====== -->
 <h2 id="serve-api">8. Serving API</h2>
-<p>Serving API groups implementation around todomd, test, phase, api, mostly in todo.md, scripts/test-api-flow.mjs, test_pnl_api.mjs. This section covers 66 nodes and 160 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Serving API groups implementation around todomd, phase, test, api, mostly in todo.md, scripts/test-api-flow.mjs, test_pnl_api.mjs. This section covers 68 nodes and 162 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Serving API (66 nodes, 160 edges)
+    %% Section: Serving API (68 nodes, 162 edges)
     scripts_test_api_flow_log_7201746e("log()<br/><small>scripts/test-api-flow.mjs</small>")
     scripts_test_api_flow_fail_13e6c8f4("fail()<br/><small>scripts/test-api-flow.mjs</small>")
     scripts_test_api_flow_pass_ebe88700("pass()<br/><small>scripts/test-api-flow.mjs</small>")
@@ -2257,7 +2256,7 @@ flowchart LR
     scripts_test_api_flow_pass_ebe88700 -->|calls| scripts_test_api_flow_testconfigfeeditems_232e7bd7
     scripts_test_api_flow_pass_ebe88700 -->|calls| scripts_test_api_flow_testconfiggroups_c3c13d44
     scripts_test_api_flow_pass_ebe88700 -->|calls| scripts_test_api_flow_testconfigspecies_9ee62cbe
-    %% Omitted for readability: 48 nodes, 44 edges
+    %% Omitted for readability: 50 nodes, 44 edges
     class scripts_test_api_flow_log_7201746e test;
     class scripts_test_api_flow_fail_13e6c8f4 test;
     class scripts_test_api_flow_pass_ebe88700 test;
@@ -2544,14 +2543,14 @@ flowchart LR
     <h4>Key Files</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>todo.md</code></td><td>35 nodes</td></tr>
+      <tr><td><code>todo.md</code></td><td>37 nodes</td></tr>
 <tr><td><code>scripts/test-api-flow.mjs</code></td><td>27 nodes</td></tr>
 <tr><td><code>test_pnl_api.mjs</code></td><td>4 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: calls x97, contains x63. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x97, contains x65. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -2779,12 +2778,12 @@ flowchart LR
 
 <!-- ====== 10. Tests & Fixtures ====== -->
 <h2 id="tests-fixtures">10. Tests &amp; Fixtures</h2>
-<p>Tests &amp; Fixtures groups implementation around server, scenario, testmjs, regressionmjs, mostly in scripts/scenario-test.mjs, tests/regression.mjs, server/db.ts. This section covers 71 nodes and 109 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Tests &amp; Fixtures groups implementation around server, scenario, testmjs, regressionmjs, mostly in scripts/scenario-test.mjs, tests/regression.mjs, server/canonicalTransfer.ts. This section covers 71 nodes and 110 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Tests &amp; Fixtures (71 nodes, 109 edges)
+    %% Section: Tests &amp; Fixtures (71 nodes, 110 edges)
     subgraph tests_fixtures_scripts_scenario_test_mjs_94b46b85["scripts/scenario-test.mjs"]
         scripts_scenario_test_pass_cbb82db1("pass()<br/><small>scripts/scenario-test.mjs</small>")
         scripts_scenario_test_main_4d8b970c("main()<br/><small>scripts/scenario-test.mjs</small>")
@@ -2878,7 +2877,7 @@ flowchart LR
   <td><code>canonicalTransfer.test.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.test.ts</small></td>
   <td><span class="tag tag-func">Test</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>applyCanonicalData()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br><code>CANONICAL_TABLES</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small><br><code>canonicalDataToObject()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br>+2 more</td>
+  <td><code>applyCanonicalData()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br><code>CANONICAL_TABLES</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small><br><code>canonicalDataToObject()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br>+3 more</td>
   <td>Module file in server/canonicalTransfer.test.ts.</td>
 </tr>
 <tr>
@@ -2955,6 +2954,14 @@ flowchart LR
 </tr>
 <tr>
   <td>12</td>
+  <td><code>readAllCanonicalTables()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>canonicalTransfer.test.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.test.ts</small></td>
+  <td><code>backup.ts</code><br><small style="color:var(--muted)">server/routers/backup.ts</small></td>
+  <td>readAllCanonicalTables() node in server/canonicalTransfer.ts.</td>
+</tr>
+<tr>
+  <td>13</td>
   <td><code>canonicalDataToObject()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>canonicalTransfer.test.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.test.ts</small></td>
@@ -2962,7 +2969,7 @@ flowchart LR
   <td>canonicalDataToObject() node in server/canonicalTransfer.ts.</td>
 </tr>
 <tr>
-  <td>13</td>
+  <td>14</td>
   <td><code>applyCanonicalData()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>canonicalTransfer.test.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.test.ts</small><br><code>rowsMatch()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small></td>
@@ -2970,7 +2977,7 @@ flowchart LR
   <td>applyCanonicalData() node in server/canonicalTransfer.ts.</td>
 </tr>
 <tr>
-  <td>14</td>
+  <td>15</td>
   <td><code>DbOrTx</code><br><small style="color:var(--muted)">server/db.ts</small></td>
   <td><span class="tag tag-class">Class</span></td>
   <td><code>canonicalTransfer.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small></td>
@@ -2978,7 +2985,7 @@ flowchart LR
   <td>DbOrTx node in server/db.ts.</td>
 </tr>
 <tr>
-  <td>15</td>
+  <td>16</td>
   <td><code>excelDataContract.test.ts</code><br><small style="color:var(--muted)">server/excelDataContract.test.ts</small></td>
   <td><span class="tag tag-func">Test</span></td>
   <td>External entry / no inbound edge</td>
@@ -2986,7 +2993,7 @@ flowchart LR
   <td>Module file in server/excelDataContract.test.ts.</td>
 </tr>
 <tr>
-  <td>16</td>
+  <td>17</td>
   <td><code>serialize()</code><br><small style="color:var(--muted)">server/excelDataContract.test.ts</small></td>
   <td><span class="tag tag-func">Test</span></td>
   <td>External entry / no inbound edge</td>
@@ -2994,7 +3001,7 @@ flowchart LR
   <td>serialize() node in server/excelDataContract.test.ts.</td>
 </tr>
 <tr>
-  <td>17</td>
+  <td>18</td>
   <td><code>CANONICAL_TABLES</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small></td>
   <td><span class="tag tag-class">Class</span></td>
   <td><code>canonicalTransfer.test.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.test.ts</small><br><code>canonicalTransfer.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br><code>excelDataContract.test.ts</code><br><small style="color:var(--muted)">server/excelDataContract.test.ts</small></td>
@@ -3002,7 +3009,7 @@ flowchart LR
   <td>CANONICAL_TABLES node in server/excelDataContract.ts.</td>
 </tr>
 <tr>
-  <td>18</td>
+  <td>19</td>
   <td><code>CanonicalWorkbookData</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small></td>
   <td><span class="tag tag-class">Class</span></td>
   <td><code>canonicalTransfer.test.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.test.ts</small><br><code>canonicalTransfer.ts</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br><code>excelDataContract.test.ts</code><br><small style="color:var(--muted)">server/excelDataContract.test.ts</small></td>
@@ -3010,7 +3017,7 @@ flowchart LR
   <td>CanonicalWorkbookData node in server/excelDataContract.ts.</td>
 </tr>
 <tr>
-  <td>19</td>
+  <td>20</td>
   <td><code>validateCanonicalDataObject()</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>excelDataContract.test.ts</code><br><small style="color:var(--muted)">server/excelDataContract.test.ts</small></td>
@@ -3018,15 +3025,15 @@ flowchart LR
   <td>validateCanonicalDataObject() node in server/excelDataContract.ts.</td>
 </tr>
 <tr>
-  <td>20</td>
+  <td>21</td>
   <td><code>backup.ts</code><br><small style="color:var(--muted)">server/routers/backup.ts</small></td>
   <td><span class="tag tag-class">Module</span></td>
-  <td><code>applyCanonicalData()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br><code>CANONICAL_TABLES</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small><br><code>canonicalDataToObject()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br>+4 more</td>
+  <td><code>applyCanonicalData()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br><code>CANONICAL_TABLES</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small><br><code>canonicalDataToObject()</code><br><small style="color:var(--muted)">server/canonicalTransfer.ts</small><br>+5 more</td>
   <td>No direct outbound edge</td>
   <td>Module file in server/routers/backup.ts.</td>
 </tr>
 <tr>
-  <td>21</td>
+  <td>22</td>
   <td><code>importModeSchema</code><br><small style="color:var(--muted)">server/routers/backup.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -3034,7 +3041,7 @@ flowchart LR
   <td>importModeSchema node in server/routers/backup.ts.</td>
 </tr>
 <tr>
-  <td>22</td>
+  <td>23</td>
   <td><code>CompleteSnapshot</code><br><small style="color:var(--muted)">server/routers/backup.ts</small></td>
   <td><span class="tag tag-class">Class</span></td>
   <td>External entry / no inbound edge</td>
@@ -3042,7 +3049,7 @@ flowchart LR
   <td>CompleteSnapshot node in server/routers/backup.ts.</td>
 </tr>
 <tr>
-  <td>23</td>
+  <td>24</td>
   <td><code>parseSnapshot()</code><br><small style="color:var(--muted)">server/routers/backup.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>validateCanonicalDataObject()</code><br><small style="color:var(--muted)">server/excelDataContract.ts</small></td>
@@ -3050,7 +3057,7 @@ flowchart LR
   <td>parseSnapshot() node in server/routers/backup.ts.</td>
 </tr>
 <tr>
-  <td>24</td>
+  <td>25</td>
   <td><code>backupRouter</code><br><small style="color:var(--muted)">server/routers/backup.ts</small></td>
   <td><span class="tag tag-endpoint">API</span></td>
   <td>External entry / no inbound edge</td>
@@ -3058,7 +3065,7 @@ flowchart LR
   <td>backupRouter node in server/routers/backup.ts.</td>
 </tr>
 <tr>
-  <td>25</td>
+  <td>26</td>
   <td><code>money.ts</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
   <td><span class="tag tag-class">Module</span></td>
   <td>External entry / no inbound edge</td>
@@ -3066,7 +3073,7 @@ flowchart LR
   <td>Module file in server/_core/money.ts.</td>
 </tr>
 <tr>
-  <td>26</td>
+  <td>27</td>
   <td><code>toMinor()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -3074,7 +3081,7 @@ flowchart LR
   <td>toMinor() node in server/_core/money.ts.</td>
 </tr>
 <tr>
-  <td>27</td>
+  <td>28</td>
   <td><code>toMajor()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -3082,7 +3089,7 @@ flowchart LR
   <td>toMajor() node in server/_core/money.ts.</td>
 </tr>
 <tr>
-  <td>28</td>
+  <td>29</td>
   <td><code>sumMinor()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>toMinor()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
@@ -3090,20 +3097,12 @@ flowchart LR
   <td>sumMinor() node in server/_core/money.ts.</td>
 </tr>
 <tr>
-  <td>29</td>
+  <td>30</td>
   <td><code>mulMoney()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>toMinor()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
   <td><code>money.test.ts</code><br><small style="color:var(--muted)">server/money.test.ts</small></td>
   <td>mulMoney() node in server/_core/money.ts.</td>
-</tr>
-<tr>
-  <td>30</td>
-  <td><code>feedLineMinor()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>toMinor()</code><br><small style="color:var(--muted)">server/_core/money.ts</small></td>
-  <td><code>money.test.ts</code><br><small style="color:var(--muted)">server/money.test.ts</small></td>
-  <td>feedLineMinor() node in server/_core/money.ts.</td>
 </tr>
 </table>
 
@@ -3114,9 +3113,9 @@ flowchart LR
       <tr><th>File</th><th>Coverage</th></tr>
       <tr><td><code>scripts/scenario-test.mjs</code></td><td>9 nodes</td></tr>
 <tr><td><code>tests/regression.mjs</code></td><td>9 nodes</td></tr>
+<tr><td><code>server/canonicalTransfer.ts</code></td><td>8 nodes</td></tr>
 <tr><td><code>server/db.ts</code></td><td>8 nodes</td></tr>
 <tr><td><code>server/_core/money.ts</code></td><td>7 nodes</td></tr>
-<tr><td><code>server/canonicalTransfer.ts</code></td><td>7 nodes</td></tr>
 <tr><td><code>server/canonicalTransfer.test.ts</code></td><td>5 nodes</td></tr>
 <tr><td><code>server/routers/backup.ts</code></td><td>5 nodes</td></tr>
 <tr><td><code>server/auth.logout.test.ts</code></td><td>4 nodes</td></tr>
@@ -3124,19 +3123,19 @@ flowchart LR
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x43, calls x32, imports x27, imports x7. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x44, calls x32, imports x29, imports x5. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
 <!-- ====== 11. Community 0 ====== -->
 <h2 id="community-0">11. Community 0</h2>
-<p>Community 0 groups implementation around client, pages, components, dialogtsx, mostly in src/pages/Configuration.tsx, src/pages/AnimalProfile.tsx, components/ui/alert-dialog.tsx. This section covers 167 nodes and 841 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<p>Community 0 groups implementation around client, pages, components, dialogtsx, mostly in src/pages/FarmMap.tsx, src/pages/Configuration.tsx, src/pages/AnimalProfile.tsx. This section covers 186 nodes and 889 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Community 0 (167 nodes, 841 edges)
+    %% Section: Community 0 (186 nodes, 889 edges)
     subgraph community_0_components_ui_card_tsx_b1dd5da4["components/ui/card.tsx"]
         ui_card_67c22e52("card.tsx")
         ui_card_card_7890a788("Card()<br/><small>components/ui/card.tsx</small>")
@@ -3175,7 +3174,7 @@ flowchart LR
     ui_dialog_usedialogcomposition_c03e1d9d -->|calls| ui_input_input_54fb3925
     hooks_usecurrency_usecurrency_009b35e0 -->|calls| pages_animalprofile_downloadpdfbutton_b01f4759
     hooks_usecurrency_usecurrency_009b35e0 -->|calls| pages_dashboard_pdfreportbutton_90cfeb3a
-    %% Omitted for readability: 149 nodes, 0 edges
+    %% Omitted for readability: 168 nodes, 0 edges
     class ui_card_67c22e52 ui;
     class ui_card_card_7890a788 ui;
     class ui_card_cardcontent_ed1cd563 ui;
@@ -3220,7 +3219,7 @@ flowchart LR
   <td><code>App.tsx</code><br><small style="color:var(--muted)">client/src/App.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+15 more</td>
+  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+16 more</td>
   <td>Module file in client/src/App.tsx.</td>
 </tr>
 <tr>
@@ -3348,7 +3347,7 @@ flowchart LR
   <td><code>badge.tsx</code><br><small style="color:var(--muted)">components/ui/badge.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+11 more</td>
+  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+12 more</td>
   <td>Module file in components/ui/badge.tsx.</td>
 </tr>
 <tr>
@@ -3364,7 +3363,7 @@ flowchart LR
   <td><code>Badge()</code><br><small style="color:var(--muted)">components/ui/badge.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td><code>badgeVariants</code><br><small style="color:var(--muted)">components/ui/badge.tsx</small></td>
-  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+11 more</td>
+  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+12 more</td>
   <td>Badge() node in components/ui/badge.tsx.</td>
 </tr>
 <tr>
@@ -3372,7 +3371,7 @@ flowchart LR
   <td><code>button.tsx</code><br><small style="color:var(--muted)">components/ui/button.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td><code>alert-dialog.tsx</code><br><small style="color:var(--muted)">components/ui/alert-dialog.tsx</small><br><code>ManusDialog.tsx</code><br><small style="color:var(--muted)">src/components/ManusDialog.tsx</small></td>
-  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+13 more</td>
+  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+14 more</td>
   <td>Module file in components/ui/button.tsx.</td>
 </tr>
 <tr>
@@ -3388,7 +3387,7 @@ flowchart LR
   <td><code>Button()</code><br><small style="color:var(--muted)">components/ui/button.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td><code>buttonVariants</code><br><small style="color:var(--muted)">components/ui/button.tsx</small><br><code>ManusDialog.tsx</code><br><small style="color:var(--muted)">src/components/ManusDialog.tsx</small></td>
-  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+13 more</td>
+  <td><code>AnimalProfile.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalProfile.tsx</small><br><code>Animals.tsx</code><br><small style="color:var(--muted)">src/pages/Animals.tsx</small><br><code>AnimalVaccinations.tsx</code><br><small style="color:var(--muted)">src/pages/AnimalVaccinations.tsx</small><br>+14 more</td>
   <td>Button() node in components/ui/button.tsx.</td>
 </tr>
 <tr>
@@ -3462,19 +3461,19 @@ flowchart LR
     <h4>Key Files</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>src/pages/Configuration.tsx</code></td><td>13 nodes</td></tr>
+      <tr><td><code>src/pages/FarmMap.tsx</code></td><td>17 nodes</td></tr>
+<tr><td><code>src/pages/Configuration.tsx</code></td><td>13 nodes</td></tr>
 <tr><td><code>src/pages/AnimalProfile.tsx</code></td><td>12 nodes</td></tr>
 <tr><td><code>components/ui/alert-dialog.tsx</code></td><td>11 nodes</td></tr>
 <tr><td><code>components/ui/dialog.tsx</code></td><td>11 nodes</td></tr>
 <tr><td><code>src/pages/Dashboard.tsx</code></td><td>9 nodes</td></tr>
 <tr><td><code>src/pages/Feed.tsx</code></td><td>9 nodes</td></tr>
-<tr><td><code>components/ui/select.tsx</code></td><td>7 nodes</td></tr>
-<tr><td><code>components/ui/table.tsx</code></td><td>7 nodes</td></tr>
+<tr><td><code>src/pages/Animals.tsx</code></td><td>8 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: imports x459, imports x179, contains x131, calls x8. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: imports x473, imports x186, contains x149, calls x14. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -3819,76 +3818,72 @@ flowchart LR
 </div>
 <hr>
 
-<!-- ====== 13. Community 2 ====== -->
-<h2 id="community-2">13. Community 2</h2>
-<p>Community 2 groups implementation around client, components, drawertsx, paginationtsx, mostly in components/ui/drawer.tsx, components/ui/pagination.tsx, components/ui/breadcrumb.tsx. This section covers 60 nodes and 99 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<!-- ====== 13. Community 4 ====== -->
+<h2 id="community-4">13. Community 4</h2>
+<p>Community 4 groups implementation around client, components, menutsx, context, mostly in components/ui/context-menu.tsx, components/ui/field.tsx, components/ui/navigation-menu.tsx. This section covers 61 nodes and 100 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Community 2 (60 nodes, 99 edges)
-    subgraph community_2_components_ui_breadcrumb_tsx_cc74b7f8["components/ui/breadcrumb.tsx"]
-        ui_breadcrumb_b20106a5("breadcrumb.tsx")
-        ui_breadcrumb_breadcrumb_150a91ff("Breadcrumb()<br/><small>components/ui/breadcrumb.tsx</small>")
-        ui_breadcrumb_breadcrumblist_2edc630b("BreadcrumbList()<br/><small>components/ui/breadcrumb.tsx</small>")
-        ui_breadcrumb_breadcrumbitem_84df5c63("BreadcrumbItem()<br/><small>components/ui/breadcrumb.tsx</small>")
-        ui_breadcrumb_breadcrumblink_493caa90("BreadcrumbLink()<br/><small>components/ui/breadcrumb.tsx</small>")
-        ui_breadcrumb_breadcrumbpage_f54e2971("BreadcrumbPage()<br/><small>components/ui/breadcrumb.tsx</small>")
+    %% Section: Community 4 (61 nodes, 100 edges)
+    subgraph community_4_components_ui_context_menu_tsx_a69de3a9["components/ui/context-menu.tsx"]
+        ui_context_menu_310e4648("context-menu.tsx")
+        ui_context_menu_contextmenusubtrigger_aaee78cc("ContextMenuSubTrigger()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenusubcontent_6cb5b1f2("ContextMenuSubContent()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenucontent_cd915090("ContextMenuContent()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenuitem_62e0d7b5("ContextMenuItem()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenucheckboxitem_9e4d376a("ContextMenuCheckboxItem()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenuradioitem_27cc8fcc("ContextMenuRadioItem()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenulabel_e1b99919("ContextMenuLabel()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenuseparator_106e435f("ContextMenuSeparator()<br/><small>components/ui/context-menu.tsx</small>")
+        ui_context_menu_contextmenushortcut_aa541580("ContextMenuShortcut()<br/><small>components/ui/context-menu.tsx</small>")
     end
-    subgraph community_2_components_ui_accordion_tsx_53d50387["components/ui/accordion.tsx"]
-        ui_accordion_b8a61b9f("accordion.tsx")
-        ui_accordion_accordion_74963f90("Accordion()<br/><small>components/ui/accordion.tsx</small>")
-        ui_accordion_accordioncontent_cb4e186a("AccordionContent()<br/><small>components/ui/accordion.tsx</small>")
-        ui_accordion_accordionitem_08ecac67("AccordionItem()<br/><small>components/ui/accordion.tsx</small>")
-        ui_accordion_accordiontrigger_97d90f7e("AccordionTrigger()<br/><small>components/ui/accordion.tsx</small>")
+    subgraph community_4_components_ui_calendar_tsx_7433f0d0["components/ui/calendar.tsx"]
+        ui_calendar_a45bd2f8("calendar.tsx")
+        ui_calendar_calendar_de7f5063("Calendar()<br/><small>components/ui/calendar.tsx</small>")
+        ui_calendar_calendardaybutton_0aa2438c("CalendarDayButton()<br/><small>components/ui/calendar.tsx</small>")
     end
-    subgraph community_2_components_ui_avatar_tsx_99232d7a["components/ui/avatar.tsx"]
-        ui_avatar_bc469163("avatar.tsx")
-        ui_avatar_avatar_f396152e("Avatar()<br/><small>components/ui/avatar.tsx</small>")
-        ui_avatar_avatarimage_541ddf4a("AvatarImage()<br/><small>components/ui/avatar.tsx</small>")
-        ui_avatar_avatarfallback_97790133("AvatarFallback()<br/><small>components/ui/avatar.tsx</small>")
-    end
-    subgraph community_2_components_ui_aspect_ratio_tsx_d14a3194["components/ui/aspect-ratio.tsx"]
-        ui_aspect_ratio_18570e97("aspect-ratio.tsx")
-        ui_aspect_ratio_aspectratio_fea9d66f("AspectRatio()<br/><small>components/ui/aspect-ratio.tsx</small>")
-    end
-    pages_componentshowcase_2f8ddd5e("ComponentShowcase.tsx")
-    ui_accordion_b8a61b9f -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_accordion_accordion_74963f90 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_accordion_accordionitem_08ecac67 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_accordion_accordiontrigger_97d90f7e -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_accordion_accordioncontent_cb4e186a -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_aspect_ratio_18570e97 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_aspect_ratio_aspectratio_fea9d66f -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_avatar_bc469163 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_avatar_avatar_f396152e -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_avatar_avatarimage_541ddf4a -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_avatar_avatarfallback_97790133 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_breadcrumb_b20106a5 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_breadcrumb_breadcrumb_150a91ff -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_breadcrumb_breadcrumblist_2edc630b -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_breadcrumb_breadcrumbitem_84df5c63 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_breadcrumb_breadcrumblink_493caa90 -->|imports| pages_componentshowcase_2f8ddd5e
-    ui_breadcrumb_breadcrumbpage_f54e2971 -->|imports| pages_componentshowcase_2f8ddd5e
-    %% Omitted for readability: 42 nodes, 0 edges
-    class ui_breadcrumb_b20106a5 ui;
-    class ui_breadcrumb_breadcrumb_150a91ff ui;
-    class ui_breadcrumb_breadcrumblist_2edc630b ui;
-    class ui_breadcrumb_breadcrumbitem_84df5c63 ui;
-    class ui_breadcrumb_breadcrumblink_493caa90 ui;
-    class ui_breadcrumb_breadcrumbpage_f54e2971 ui;
-    class ui_accordion_b8a61b9f ui;
-    class ui_accordion_accordion_74963f90 ui;
-    class ui_accordion_accordioncontent_cb4e186a ui;
-    class ui_accordion_accordionitem_08ecac67 ui;
-    class ui_accordion_accordiontrigger_97d90f7e ui;
-    class ui_avatar_bc469163 ui;
-    class ui_avatar_avatar_f396152e ui;
-    class ui_avatar_avatarimage_541ddf4a ui;
-    class ui_avatar_avatarfallback_97790133 ui;
-    class ui_aspect_ratio_18570e97 test;
-    class ui_aspect_ratio_aspectratio_fea9d66f test;
-    class pages_componentshowcase_2f8ddd5e ui;
+    ui_alert_dialog_alertdialogoverlay_abfb4af3("AlertDialogOverlay()<br/><small>components/ui/alert-dialog.tsx</small>")
+    ui_card_cardaction_a1a717ff("CardAction()<br/><small>components/ui/card.tsx</small>")
+    ui_dialog_dialogoverlay_175e18e0("DialogOverlay()<br/><small>components/ui/dialog.tsx</small>")
+    ui_empty_empty_6241a200("Empty()<br/><small>components/ui/empty.tsx</small>")
+    lib_utils_cn_b8743bb6("cn()<br/><small>src/lib/utils.ts</small>")
+    ui_alert_dialog_alertdialogoverlay_abfb4af3 -->|calls| lib_utils_cn_b8743bb6
+    ui_calendar_calendar_de7f5063 -->|calls| lib_utils_cn_b8743bb6
+    ui_calendar_calendardaybutton_0aa2438c -->|calls| lib_utils_cn_b8743bb6
+    ui_card_cardaction_a1a717ff -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenusubtrigger_aaee78cc -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenusubcontent_6cb5b1f2 -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenucontent_cd915090 -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenuitem_62e0d7b5 -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenucheckboxitem_9e4d376a -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenuradioitem_27cc8fcc -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenulabel_e1b99919 -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenuseparator_106e435f -->|calls| lib_utils_cn_b8743bb6
+    ui_context_menu_contextmenushortcut_aa541580 -->|calls| lib_utils_cn_b8743bb6
+    ui_dialog_dialogoverlay_175e18e0 -->|calls| lib_utils_cn_b8743bb6
+    ui_empty_empty_6241a200 -->|calls| lib_utils_cn_b8743bb6
+    ui_calendar_a45bd2f8 -->|imports| lib_utils_cn_b8743bb6
+    ui_context_menu_310e4648 -->|imports| lib_utils_cn_b8743bb6
+    %% Omitted for readability: 43 nodes, 0 edges
+    class ui_context_menu_310e4648 ui;
+    class ui_context_menu_contextmenusubtrigger_aaee78cc ui;
+    class ui_context_menu_contextmenusubcontent_6cb5b1f2 ui;
+    class ui_context_menu_contextmenucontent_cd915090 ui;
+    class ui_context_menu_contextmenuitem_62e0d7b5 ui;
+    class ui_context_menu_contextmenucheckboxitem_9e4d376a ui;
+    class ui_context_menu_contextmenuradioitem_27cc8fcc ui;
+    class ui_context_menu_contextmenulabel_e1b99919 ui;
+    class ui_context_menu_contextmenuseparator_106e435f ui;
+    class ui_context_menu_contextmenushortcut_aa541580 ui;
+    class ui_calendar_a45bd2f8 ui;
+    class ui_calendar_calendar_de7f5063 ui;
+    class ui_calendar_calendardaybutton_0aa2438c ui;
+    class ui_alert_dialog_alertdialogoverlay_abfb4af3 ui;
+    class ui_card_cardaction_a1a717ff ui;
+    class ui_dialog_dialogoverlay_175e18e0 ui;
+    class ui_empty_empty_6241a200 ui;
+    class lib_utils_cn_b8743bb6 function;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -3912,243 +3907,243 @@ flowchart LR
 </tr>
 <tr>
   <td>1</td>
-  <td><code>accordion.tsx</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
+  <td><code>AlertDialogOverlay()</code><br><small style="color:var(--muted)">components/ui/alert-dialog.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Module file in components/ui/accordion.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>AlertDialogOverlay() node in components/ui/alert-dialog.tsx.</td>
 </tr>
 <tr>
   <td>2</td>
-  <td><code>Accordion()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
+  <td><code>calendar.tsx</code><br><small style="color:var(--muted)">components/ui/calendar.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Accordion() node in components/ui/accordion.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>Module file in components/ui/calendar.tsx.</td>
 </tr>
 <tr>
   <td>3</td>
-  <td><code>AccordionItem()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
+  <td><code>Calendar()</code><br><small style="color:var(--muted)">components/ui/calendar.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>AccordionItem() node in components/ui/accordion.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>Calendar() node in components/ui/calendar.tsx.</td>
 </tr>
 <tr>
   <td>4</td>
-  <td><code>AccordionTrigger()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
+  <td><code>CalendarDayButton()</code><br><small style="color:var(--muted)">components/ui/calendar.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>AccordionTrigger() node in components/ui/accordion.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>CalendarDayButton() node in components/ui/calendar.tsx.</td>
 </tr>
 <tr>
   <td>5</td>
-  <td><code>AccordionContent()</code><br><small style="color:var(--muted)">components/ui/accordion.tsx</small></td>
+  <td><code>CardAction()</code><br><small style="color:var(--muted)">components/ui/card.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>AccordionContent() node in components/ui/accordion.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>CardAction() node in components/ui/card.tsx.</td>
 </tr>
 <tr>
   <td>6</td>
-  <td><code>aspect-ratio.tsx</code><br><small style="color:var(--muted)">components/ui/aspect-ratio.tsx</small></td>
-  <td><span class="tag tag-func">Test</span></td>
+  <td><code>context-menu.tsx</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Module file in components/ui/aspect-ratio.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>Module file in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>7</td>
-  <td><code>AspectRatio()</code><br><small style="color:var(--muted)">components/ui/aspect-ratio.tsx</small></td>
-  <td><span class="tag tag-func">Test</span></td>
+  <td><code>ContextMenu()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>AspectRatio() node in components/ui/aspect-ratio.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>ContextMenu() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>8</td>
-  <td><code>avatar.tsx</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><code>ContextMenuTrigger()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Module file in components/ui/avatar.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>ContextMenuTrigger() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>9</td>
-  <td><code>Avatar()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><code>ContextMenuGroup()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Avatar() node in components/ui/avatar.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>ContextMenuGroup() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>10</td>
-  <td><code>AvatarImage()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><code>ContextMenuPortal()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>AvatarImage() node in components/ui/avatar.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>ContextMenuPortal() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>11</td>
-  <td><code>AvatarFallback()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><code>ContextMenuSub()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>AvatarFallback() node in components/ui/avatar.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>ContextMenuSub() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>12</td>
-  <td><code>breadcrumb.tsx</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuRadioGroup()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Module file in components/ui/breadcrumb.tsx.</td>
+  <td>No direct outbound edge</td>
+  <td>ContextMenuRadioGroup() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>13</td>
-  <td><code>Breadcrumb()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuSubTrigger()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Breadcrumb() node in components/ui/breadcrumb.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuSubTrigger() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>14</td>
-  <td><code>BreadcrumbList()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuSubContent()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>BreadcrumbList() node in components/ui/breadcrumb.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuSubContent() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>15</td>
-  <td><code>BreadcrumbItem()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuContent()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>BreadcrumbItem() node in components/ui/breadcrumb.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuContent() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>16</td>
-  <td><code>BreadcrumbLink()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuItem()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>BreadcrumbLink() node in components/ui/breadcrumb.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuItem() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>17</td>
-  <td><code>BreadcrumbPage()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuCheckboxItem()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Organizes documentation pages, navigation, or content lookup.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuCheckboxItem() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>18</td>
-  <td><code>BreadcrumbSeparator()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuRadioItem()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>BreadcrumbSeparator() node in components/ui/breadcrumb.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuRadioItem() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>19</td>
-  <td><code>BreadcrumbEllipsis()</code><br><small style="color:var(--muted)">components/ui/breadcrumb.tsx</small></td>
+  <td><code>ContextMenuLabel()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>BreadcrumbEllipsis() node in components/ui/breadcrumb.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuLabel() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>20</td>
-  <td><code>CardDescription()</code><br><small style="color:var(--muted)">components/ui/card.tsx</small></td>
+  <td><code>ContextMenuSeparator()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>CardDescription() node in components/ui/card.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuSeparator() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>21</td>
-  <td><code>CardFooter()</code><br><small style="color:var(--muted)">components/ui/card.tsx</small></td>
+  <td><code>ContextMenuShortcut()</code><br><small style="color:var(--muted)">components/ui/context-menu.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>CardFooter() node in components/ui/card.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>ContextMenuShortcut() node in components/ui/context-menu.tsx.</td>
 </tr>
 <tr>
   <td>22</td>
-  <td><code>collapsible.tsx</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
+  <td><code>DialogOverlay()</code><br><small style="color:var(--muted)">components/ui/dialog.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Module file in components/ui/collapsible.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>DialogOverlay() node in components/ui/dialog.tsx.</td>
 </tr>
 <tr>
   <td>23</td>
-  <td><code>Collapsible()</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
+  <td><code>empty.tsx</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Collapsible() node in components/ui/collapsible.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>Module file in components/ui/empty.tsx.</td>
 </tr>
 <tr>
   <td>24</td>
-  <td><code>CollapsibleTrigger()</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
+  <td><code>Empty()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>CollapsibleTrigger() node in components/ui/collapsible.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>Empty() node in components/ui/empty.tsx.</td>
 </tr>
 <tr>
   <td>25</td>
-  <td><code>CollapsibleContent()</code><br><small style="color:var(--muted)">components/ui/collapsible.tsx</small></td>
+  <td><code>EmptyHeader()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>CollapsibleContent() node in components/ui/collapsible.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>EmptyHeader() node in components/ui/empty.tsx.</td>
 </tr>
 <tr>
   <td>26</td>
-  <td><code>drawer.tsx</code><br><small style="color:var(--muted)">components/ui/drawer.tsx</small></td>
+  <td><code>emptyMediaVariants</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Module file in components/ui/drawer.tsx.</td>
+  <td><code>EmptyMedia()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
+  <td>emptyMediaVariants node in components/ui/empty.tsx.</td>
 </tr>
 <tr>
   <td>27</td>
-  <td><code>Drawer()</code><br><small style="color:var(--muted)">components/ui/drawer.tsx</small></td>
+  <td><code>EmptyMedia()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>Drawer() node in components/ui/drawer.tsx.</td>
+  <td><code>emptyMediaVariants</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>EmptyMedia() node in components/ui/empty.tsx.</td>
 </tr>
 <tr>
   <td>28</td>
-  <td><code>DrawerTrigger()</code><br><small style="color:var(--muted)">components/ui/drawer.tsx</small></td>
+  <td><code>EmptyTitle()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>DrawerTrigger() node in components/ui/drawer.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>EmptyTitle() node in components/ui/empty.tsx.</td>
 </tr>
 <tr>
   <td>29</td>
-  <td><code>DrawerPortal()</code><br><small style="color:var(--muted)">components/ui/drawer.tsx</small></td>
+  <td><code>EmptyDescription()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>DrawerPortal() node in components/ui/drawer.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>EmptyDescription() node in components/ui/empty.tsx.</td>
 </tr>
 <tr>
   <td>30</td>
-  <td><code>DrawerClose()</code><br><small style="color:var(--muted)">components/ui/drawer.tsx</small></td>
+  <td><code>EmptyContent()</code><br><small style="color:var(--muted)">components/ui/empty.tsx</small></td>
   <td><span class="tag tag-hook">UI</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>ComponentShowcase.tsx</code><br><small style="color:var(--muted)">src/pages/ComponentShowcase.tsx</small></td>
-  <td>DrawerClose() node in components/ui/drawer.tsx.</td>
+  <td><code>cn()</code><br><small style="color:var(--muted)">src/lib/utils.ts</small></td>
+  <td>EmptyContent() node in components/ui/empty.tsx.</td>
 </tr>
 </table>
 
@@ -4157,46 +4152,404 @@ flowchart LR
     <h4>Key Files</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>components/ui/drawer.tsx</code></td><td>11 nodes</td></tr>
-<tr><td><code>components/ui/pagination.tsx</code></td><td>9 nodes</td></tr>
-<tr><td><code>components/ui/breadcrumb.tsx</code></td><td>8 nodes</td></tr>
-<tr><td><code>components/ui/accordion.tsx</code></td><td>5 nodes</td></tr>
-<tr><td><code>components/ui/popover.tsx</code></td><td>5 nodes</td></tr>
-<tr><td><code>components/ui/avatar.tsx</code></td><td>4 nodes</td></tr>
-<tr><td><code>components/ui/collapsible.tsx</code></td><td>4 nodes</td></tr>
-<tr><td><code>components/ui/hover-card.tsx</code></td><td>4 nodes</td></tr>
+      <tr><td><code>components/ui/context-menu.tsx</code></td><td>16 nodes</td></tr>
+<tr><td><code>components/ui/field.tsx</code></td><td>12 nodes</td></tr>
+<tr><td><code>components/ui/navigation-menu.tsx</code></td><td>10 nodes</td></tr>
+<tr><td><code>components/ui/empty.tsx</code></td><td>8 nodes</td></tr>
+<tr><td><code>components/ui/select.tsx</code></td><td>4 nodes</td></tr>
+<tr><td><code>components/ui/calendar.tsx</code></td><td>3 nodes</td></tr>
+<tr><td><code>components/ui/kbd.tsx</code></td><td>3 nodes</td></tr>
+<tr><td><code>components/ui/alert-dialog.tsx</code></td><td>1 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x46, imports x43, imports x10. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: calls x48, contains x46, imports x6. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
-<!-- ====== 14. Community 6 ====== -->
-<h2 id="community-6">14. Community 6</h2>
-<p>Community 6 groups implementation around server, routers, trpcts, validatorsts, mostly in server/db.ts, server/_core/trpc.ts, server/_core/validators.ts. This section covers 54 nodes and 124 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<!-- ====== 14. Community 5 ====== -->
+<h2 id="community-5">14. Community 5</h2>
+<p>Community 5 groups implementation around client, components, sidebartsx, sheettsx, mostly in components/ui/sidebar.tsx, components/ui/sheet.tsx, components/ui/tooltip.tsx. This section covers 56 nodes and 91 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Community 6 (54 nodes, 124 edges)
+    %% Section: Community 5 (56 nodes, 91 edges)
+    subgraph community_5_components_ui_sidebar_tsx_379bcb4f["components/ui/sidebar.tsx"]
+        ui_sidebar_usesidebar_c25bf679("useSidebar()<br/><small>components/ui/sidebar.tsx</small>")
+        ui_sidebar_sidebar_8ae41338("Sidebar()<br/><small>components/ui/sidebar.tsx</small>")
+        ui_sidebar_sidebarmenubutton_6e311fd0("SidebarMenuButton()<br/><small>components/ui/sidebar.tsx</small>")
+        ui_sidebar_sidebarrail_9d1fba18("SidebarRail()<br/><small>components/ui/sidebar.tsx</small>")
+        ui_sidebar_sidebartrigger_649ed0b9("SidebarTrigger()<br/><small>components/ui/sidebar.tsx</small>")
+        ui_sidebar_sidebarprovider_3a89fef0("SidebarProvider()<br/><small>components/ui/sidebar.tsx</small>")
+        ui_sidebar_sidebarmenubuttonvariants_dc5d5edf("sidebarMenuButtonVariants<br/><small>components/ui/sidebar.tsx</small>")
+    end
+    subgraph community_5_components_ui_sheet_tsx_7c739f89["components/ui/sheet.tsx"]
+        ui_sheet_bb143d16("sheet.tsx")
+        ui_sheet_sheet_2013895e("Sheet()<br/><small>components/ui/sheet.tsx</small>")
+        ui_sheet_sheetcontent_136f5088("SheetContent()<br/><small>components/ui/sheet.tsx</small>")
+    end
+    subgraph community_5_src_components_DashboardLayout_tsx_f1a9566a["src/components/DashboardLayout.tsx"]
+        components_dashboardlayout_04af071d("DashboardLayout.tsx")
+        components_dashboardlayout_dashboardlayout_44b7286a("DashboardLayout()<br/><small>src/components/DashboardLayout.tsx</small>")
+    end
+    subgraph community_5_src_components_DashboardLayoutSkelet_8e6041e2["src/components/DashboardLayoutSkeleton.tsx"]
+        components_dashboardlayoutskeleton_8adb563b("DashboardLayoutSkeleton.tsx")
+        components_dashboardlayoutskeleton_dashboardlayo_a03c892a("DashboardLayoutSkeleton()<br/><small>src/components/DashboardLayoutSkeleton.tsx</small>")
+    end
+    subgraph community_5_src_components_LanguageSwitcher_tsx_8a05d34b["src/components/LanguageSwitcher.tsx"]
+        components_languageswitcher_3545c04c("LanguageSwitcher.tsx")
+        components_languageswitcher_languageswitcher_b7c85523("LanguageSwitcher()<br/><small>src/components/LanguageSwitcher.tsx</small>")
+    end
+    subgraph community_5_src_hooks_useMobile_tsx_17df6517["src/hooks/useMobile.tsx"]
+        hooks_usemobile_useismobile_28b864b9("useIsMobile()<br/><small>src/hooks/useMobile.tsx</small>")
+        hooks_usemobile_44424a3f("useMobile.tsx")
+    end
+    components_dashboardlayout_dashboardlayout_44b7286a -->|calls| hooks_usemobile_useismobile_28b864b9
+    ui_sidebar_usesidebar_c25bf679 -->|calls| ui_sidebar_sidebar_8ae41338
+    ui_sidebar_usesidebar_c25bf679 -->|calls| ui_sidebar_sidebarmenubutton_6e311fd0
+    ui_sidebar_usesidebar_c25bf679 -->|calls| ui_sidebar_sidebarrail_9d1fba18
+    ui_sidebar_usesidebar_c25bf679 -->|calls| ui_sidebar_sidebartrigger_649ed0b9
+    ui_sidebar_sidebarprovider_3a89fef0 -->|calls| hooks_usemobile_useismobile_28b864b9
+    ui_sidebar_sidebarmenubuttonvariants_dc5d5edf -->|calls| ui_sidebar_sidebarmenubutton_6e311fd0
+    components_dashboardlayout_04af071d -->|imports| components_dashboardlayoutskeleton_8adb563b
+    components_dashboardlayout_04af071d -->|imports| components_dashboardlayoutskeleton_dashboardlayo_a03c892a
+    components_dashboardlayout_04af071d -->|imports| components_languageswitcher_3545c04c
+    components_dashboardlayout_04af071d -->|imports| components_languageswitcher_languageswitcher_b7c85523
+    components_dashboardlayout_04af071d -->|imports| hooks_usemobile_44424a3f
+    components_dashboardlayout_04af071d -->|imports| hooks_usemobile_useismobile_28b864b9
+    components_dashboardlayout_04af071d -->|imports| ui_sidebar_sidebar_8ae41338
+    components_dashboardlayout_04af071d -->|imports| ui_sidebar_sidebarmenubutton_6e311fd0
+    components_dashboardlayout_04af071d -->|imports| ui_sidebar_sidebarprovider_3a89fef0
+    components_dashboardlayout_04af071d -->|imports| ui_sidebar_sidebartrigger_649ed0b9
+    components_dashboardlayout_04af071d -->|imports| ui_sidebar_usesidebar_c25bf679
+    %% Omitted for readability: 38 nodes, 0 edges
+    class ui_sidebar_usesidebar_c25bf679 ui;
+    class ui_sidebar_sidebar_8ae41338 ui;
+    class ui_sidebar_sidebarmenubutton_6e311fd0 ui;
+    class ui_sidebar_sidebarrail_9d1fba18 ui;
+    class ui_sidebar_sidebartrigger_649ed0b9 ui;
+    class ui_sidebar_sidebarprovider_3a89fef0 ui;
+    class ui_sidebar_sidebarmenubuttonvariants_dc5d5edf ui;
+    class ui_sheet_bb143d16 ui;
+    class ui_sheet_sheet_2013895e ui;
+    class ui_sheet_sheetcontent_136f5088 ui;
+    class components_dashboardlayout_04af071d ui;
+    class components_dashboardlayout_dashboardlayout_44b7286a ui;
+    class components_dashboardlayoutskeleton_8adb563b ui;
+    class components_dashboardlayoutskeleton_dashboardlayo_a03c892a ui;
+    class components_languageswitcher_3545c04c ui;
+    class components_languageswitcher_languageswitcher_b7c85523 ui;
+    class hooks_usemobile_useismobile_28b864b9 ui;
+    class hooks_usemobile_44424a3f ui;
+    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
+    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
+    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
+    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
+    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
+    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
+    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
+    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
+    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
+</div>
+
+<h3>Call Details</h3>
+<table class="call-table">
+<tr>
+  <th style="width:5%">#</th>
+  <th style="width:28%">Node</th>
+  <th style="width:10%">Type</th>
+  <th style="width:17%">Caller</th>
+  <th style="width:20%">Callees</th>
+  <th style="width:20%">Description</th>
+</tr>
+<tr>
+  <td>1</td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>Avatar()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small><br><code>avatar.tsx</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small><br><code>AvatarFallback()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small><br>+20 more</td>
+  <td>Module file in src/components/DashboardLayout.tsx.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><code>DashboardLayout()</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>useIsMobile()</code><br><small style="color:var(--muted)">src/hooks/useMobile.tsx</small></td>
+  <td>DashboardLayout() node in src/components/DashboardLayout.tsx.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><code>DashboardLayoutSkeleton.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayoutSkeleton.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Module file in src/components/DashboardLayoutSkeleton.tsx.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><code>DashboardLayoutSkeleton()</code><br><small style="color:var(--muted)">src/components/DashboardLayoutSkeleton.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>DashboardLayoutSkeleton() node in src/components/DashboardLayoutSkeleton.tsx.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><code>LanguageSwitcher.tsx</code><br><small style="color:var(--muted)">src/components/LanguageSwitcher.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Module file in src/components/LanguageSwitcher.tsx.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><code>LanguageSwitcher()</code><br><small style="color:var(--muted)">src/components/LanguageSwitcher.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>LanguageSwitcher() node in src/components/LanguageSwitcher.tsx.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><code>avatar.tsx</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Module file in components/ui/avatar.tsx.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>Avatar()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Avatar() node in components/ui/avatar.tsx.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><code>AvatarImage()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>AvatarImage() node in components/ui/avatar.tsx.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><code>AvatarFallback()</code><br><small style="color:var(--muted)">components/ui/avatar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>AvatarFallback() node in components/ui/avatar.tsx.</td>
+</tr>
+<tr>
+  <td>11</td>
+  <td><code>sheet.tsx</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>Module file in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>12</td>
+  <td><code>Sheet()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>Sheet() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>13</td>
+  <td><code>SheetTrigger()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>SheetTrigger() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>14</td>
+  <td><code>SheetClose()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>SheetClose() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>15</td>
+  <td><code>SheetPortal()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>SheetPortal() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>16</td>
+  <td><code>SheetOverlay()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>SheetOverlay() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>17</td>
+  <td><code>SheetContent()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>SheetContent() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>18</td>
+  <td><code>SheetHeader()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>SheetHeader() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>19</td>
+  <td><code>SheetFooter()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>SheetFooter() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>20</td>
+  <td><code>SheetTitle()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>SheetTitle() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>21</td>
+  <td><code>SheetDescription()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>SheetDescription() node in components/ui/sheet.tsx.</td>
+</tr>
+<tr>
+  <td>22</td>
+  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small><br><code>Sheet()</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small><br><code>sheet.tsx</code><br><small style="color:var(--muted)">components/ui/sheet.tsx</small><br>+4 more</td>
+  <td><code>Tooltip()</code><br><small style="color:var(--muted)">components/ui/tooltip.tsx</small><br><code>tooltip.tsx</code><br><small style="color:var(--muted)">components/ui/tooltip.tsx</small><br><code>TooltipContent()</code><br><small style="color:var(--muted)">components/ui/tooltip.tsx</small><br>+4 more</td>
+  <td>Module file in components/ui/sidebar.tsx.</td>
+</tr>
+<tr>
+  <td>23</td>
+  <td><code>SidebarContextProps</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>24</td>
+  <td><code>SidebarContext</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>25</td>
+  <td><code>useSidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td><code>Sidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small><br><code>SidebarMenuButton()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small><br><code>SidebarRail()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small><br>+1 more</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>26</td>
+  <td><code>SidebarProvider()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td><code>useIsMobile()</code><br><small style="color:var(--muted)">src/hooks/useMobile.tsx</small></td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>27</td>
+  <td><code>Sidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small><br><code>useSidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>28</td>
+  <td><code>SidebarTrigger()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small><br><code>useSidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>29</td>
+  <td><code>SidebarRail()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>useSidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+<tr>
+  <td>30</td>
+  <td><code>SidebarInset()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
+  <td><span class="tag tag-hook">UI</span></td>
+  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
+  <td>No direct outbound edge</td>
+  <td>Organizes documentation pages, navigation, or content lookup.</td>
+</tr>
+</table>
+
+<div class="grid">
+  <div class="card">
+    <h4>Key Files</h4>
+    <table style="width:100%;font-size:0.85rem;">
+      <tr><th>File</th><th>Coverage</th></tr>
+      <tr><td><code>components/ui/sidebar.tsx</code></td><td>28 nodes</td></tr>
+<tr><td><code>components/ui/sheet.tsx</code></td><td>11 nodes</td></tr>
+<tr><td><code>components/ui/tooltip.tsx</code></td><td>5 nodes</td></tr>
+<tr><td><code>components/ui/avatar.tsx</code></td><td>4 nodes</td></tr>
+<tr><td><code>src/components/DashboardLayout.tsx</code></td><td>2 nodes</td></tr>
+<tr><td><code>src/components/DashboardLayoutSkeleton.tsx</code></td><td>2 nodes</td></tr>
+<tr><td><code>src/components/LanguageSwitcher.tsx</code></td><td>2 nodes</td></tr>
+<tr><td><code>src/hooks/useMobile.tsx</code></td><td>2 nodes</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h4>Design Notes</h4>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x48, imports x28, imports x8, calls x7. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+  </div>
+</div>
+<hr>
+
+<!-- ====== 15. Community 6 ====== -->
+<h2 id="community-6">15. Community 6</h2>
+<p>Community 6 groups implementation around server, routers, trpcts, validatorsts, mostly in server/_core/trpc.ts, server/_core/validators.ts, server/db.ts. This section covers 55 nodes and 127 internal edges; the diagram shows only representative relationships to stay readable.</p>
+
+<div class="mermaid">
+%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
+flowchart LR
+    %% Section: Community 6 (55 nodes, 127 edges)
     subgraph community_6_server_core_trpc_ts_bf5d832a["server/_core/trpc.ts"]
         core_trpc_protectedprocedure_e5da5588("protectedProcedure<br/><small>server/_core/trpc.ts</small>")
         core_trpc_staffprocedure_65ce4fe1("staffProcedure<br/><small>server/_core/trpc.ts</small>")
         core_trpc_37cd4c0e("trpc.ts")
         core_trpc_adminprocedure_37fdce87("adminProcedure<br/><small>server/_core/trpc.ts</small>")
+        core_trpc_publicprocedure_f3798386("publicProcedure<br/><small>server/_core/trpc.ts</small>")
     end
     subgraph community_6_server_core_audit_ts_353db92d["server/_core/audit.ts"]
         core_audit_35453dea("audit.ts")
         core_audit_getclientip_0055f3dd("getClientIp()<br/><small>server/_core/audit.ts</small>")
     end
-    subgraph community_6_server_core_systemRouter_ts_1ad26261["server/_core/systemRouter.ts"]
-        core_systemrouter_2d99c780("systemRouter.ts")
-        core_systemrouter_systemrouter_09d455ce("systemRouter<br/><small>server/_core/systemRouter.ts</small>")
-    end
     core_context_trpccontext_2eb92eeb("TrpcContext<br/><small>server/_core/context.ts</small>")
+    core_systemrouter_2d99c780("systemRouter.ts")
     server_db_createauditentry_9d226eaa("createAuditEntry()<br/><small>server/db.ts</small>")
     server_routers_7d7f5ac4("routers.ts")
     routers_animals_1fc55c12("animals.ts")
@@ -4224,22 +4577,22 @@ flowchart LR
     core_context_trpccontext_2eb92eeb -->|imports| core_trpc_37cd4c0e
     core_systemrouter_2d99c780 -->|imports| core_trpc_37cd4c0e
     core_systemrouter_2d99c780 -->|imports| core_trpc_adminprocedure_37fdce87
+    core_systemrouter_2d99c780 -->|imports| core_trpc_publicprocedure_f3798386
     core_systemrouter_2d99c780 -->|imports| server_routers_7d7f5ac4
-    core_systemrouter_systemrouter_09d455ce -->|imports| server_routers_7d7f5ac4
     core_trpc_37cd4c0e -->|imports| routers_animals_1fc55c12
     core_trpc_37cd4c0e -->|imports| routers_breeding_6cca19d7
     core_trpc_37cd4c0e -->|imports| routers_dashboard_49d9aefb
     core_trpc_37cd4c0e -->|imports| routers_expenses_a116b8e3
-    %% Omitted for readability: 36 nodes, 27 edges
+    %% Omitted for readability: 37 nodes, 28 edges
     class core_trpc_protectedprocedure_e5da5588 function;
     class core_trpc_staffprocedure_65ce4fe1 function;
     class core_trpc_37cd4c0e module;
     class core_trpc_adminprocedure_37fdce87 function;
+    class core_trpc_publicprocedure_f3798386 function;
     class core_audit_35453dea module;
     class core_audit_getclientip_0055f3dd entry;
-    class core_systemrouter_2d99c780 api;
-    class core_systemrouter_systemrouter_09d455ce api;
     class core_context_trpccontext_2eb92eeb klass;
+    class core_systemrouter_2d99c780 api;
     class server_db_createauditentry_9d226eaa function;
     class server_routers_7d7f5ac4 api;
     class routers_animals_1fc55c12 module;
@@ -4299,7 +4652,7 @@ flowchart LR
   <td><code>systemRouter.ts</code><br><small style="color:var(--muted)">server/_core/systemRouter.ts</small></td>
   <td><span class="tag tag-endpoint">API</span></td>
   <td>External entry / no inbound edge</td>
-  <td><code>adminProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small><br><code>routers.ts</code><br><small style="color:var(--muted)">server/routers.ts</small><br><code>trpc.ts</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
+  <td><code>adminProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small><br><code>publicProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small><br><code>routers.ts</code><br><small style="color:var(--muted)">server/routers.ts</small><br>+1 more</td>
   <td>Module file in server/_core/systemRouter.ts.</td>
 </tr>
 <tr>
@@ -4320,6 +4673,22 @@ flowchart LR
 </tr>
 <tr>
   <td>7</td>
+  <td><code>blockViewerMutationMiddleware</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>blockViewerMutationMiddleware node in server/_core/trpc.ts.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><code>publicProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td><code>systemRouter.ts</code><br><small style="color:var(--muted)">server/_core/systemRouter.ts</small></td>
+  <td><code>routers.ts</code><br><small style="color:var(--muted)">server/routers.ts</small></td>
+  <td>publicProcedure node in server/_core/trpc.ts.</td>
+</tr>
+<tr>
+  <td>9</td>
   <td><code>requireUser</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4327,7 +4696,7 @@ flowchart LR
   <td>requireUser node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>8</td>
+  <td>10</td>
   <td><code>protectedProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4335,7 +4704,7 @@ flowchart LR
   <td>protectedProcedure node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>9</td>
+  <td>11</td>
   <td><code>adminProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td><code>systemRouter.ts</code><br><small style="color:var(--muted)">server/_core/systemRouter.ts</small></td>
@@ -4343,7 +4712,7 @@ flowchart LR
   <td>adminProcedure node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>10</td>
+  <td>12</td>
   <td><code>AppRole</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-class">Class</span></td>
   <td>External entry / no inbound edge</td>
@@ -4351,7 +4720,7 @@ flowchart LR
   <td>AppRole node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>11</td>
+  <td>13</td>
   <td><code>ROLE_RANK</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-class">Class</span></td>
   <td>External entry / no inbound edge</td>
@@ -4359,7 +4728,7 @@ flowchart LR
   <td>ROLE_RANK node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>12</td>
+  <td>14</td>
   <td><code>makeRoleProcedure()</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4367,7 +4736,7 @@ flowchart LR
   <td>makeRoleProcedure() node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>13</td>
+  <td>15</td>
   <td><code>staffProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4375,7 +4744,7 @@ flowchart LR
   <td>staffProcedure node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>14</td>
+  <td>16</td>
   <td><code>supervisorProcedure</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4383,7 +4752,15 @@ flowchart LR
   <td>supervisorProcedure node in server/_core/trpc.ts.</td>
 </tr>
 <tr>
-  <td>15</td>
+  <td>17</td>
+  <td><code>blockViewerMutations()</code><br><small style="color:var(--muted)">server/_core/trpc.ts</small></td>
+  <td><span class="tag tag-func">Function</span></td>
+  <td>External entry / no inbound edge</td>
+  <td>No direct outbound edge</td>
+  <td>blockViewerMutations() node in server/_core/trpc.ts.</td>
+</tr>
+<tr>
+  <td>18</td>
   <td><code>validators.ts</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-class">Module</span></td>
   <td>External entry / no inbound edge</td>
@@ -4391,7 +4768,7 @@ flowchart LR
   <td>Module file in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>16</td>
+  <td>19</td>
   <td><code>moneyString</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4399,7 +4776,7 @@ flowchart LR
   <td>moneyString node in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>17</td>
+  <td>20</td>
   <td><code>optionalMoneyString</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4407,7 +4784,7 @@ flowchart LR
   <td>optionalMoneyString node in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>18</td>
+  <td>21</td>
   <td><code>weightString</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4415,7 +4792,7 @@ flowchart LR
   <td>weightString node in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>19</td>
+  <td>22</td>
   <td><code>optionalWeightString</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4423,7 +4800,7 @@ flowchart LR
   <td>optionalWeightString node in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>20</td>
+  <td>23</td>
   <td><code>qtyString</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4431,7 +4808,7 @@ flowchart LR
   <td>qtyString node in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>21</td>
+  <td>24</td>
   <td><code>rationRateString</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4439,7 +4816,7 @@ flowchart LR
   <td>Verifies imports, entry points, or version behavior.</td>
 </tr>
 <tr>
-  <td>22</td>
+  <td>25</td>
   <td><code>pastOrTodayDate</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4447,7 +4824,7 @@ flowchart LR
   <td>pastOrTodayDate node in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>23</td>
+  <td>26</td>
   <td><code>isoDate</code><br><small style="color:var(--muted)">server/_core/validators.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4455,7 +4832,7 @@ flowchart LR
   <td>isoDate node in server/_core/validators.ts.</td>
 </tr>
 <tr>
-  <td>24</td>
+  <td>27</td>
   <td><code>incrementCategorySequence()</code><br><small style="color:var(--muted)">server/db.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4463,7 +4840,7 @@ flowchart LR
   <td>incrementCategorySequence() node in server/db.ts.</td>
 </tr>
 <tr>
-  <td>25</td>
+  <td>28</td>
   <td><code>createAnimal()</code><br><small style="color:var(--muted)">server/db.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4471,7 +4848,7 @@ flowchart LR
   <td>createAnimal() node in server/db.ts.</td>
 </tr>
 <tr>
-  <td>26</td>
+  <td>29</td>
   <td><code>recordStatusChange()</code><br><small style="color:var(--muted)">server/db.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
@@ -4479,36 +4856,12 @@ flowchart LR
   <td>recordStatusChange() node in server/db.ts.</td>
 </tr>
 <tr>
-  <td>27</td>
-  <td><code>createLambingRecord()</code><br><small style="color:var(--muted)">server/db.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>breeding.ts</code><br><small style="color:var(--muted)">server/routers/breeding.ts</small></td>
-  <td>createLambingRecord() node in server/db.ts.</td>
-</tr>
-<tr>
-  <td>28</td>
+  <td>30</td>
   <td><code>getRationPlans()</code><br><small style="color:var(--muted)">server/db.ts</small></td>
   <td><span class="tag tag-func">Function</span></td>
   <td>External entry / no inbound edge</td>
   <td><code>animals.ts</code><br><small style="color:var(--muted)">server/routers/animals.ts</small><br><code>feed.ts</code><br><small style="color:var(--muted)">server/routers/feed.ts</small></td>
   <td>getRationPlans() node in server/db.ts.</td>
-</tr>
-<tr>
-  <td>29</td>
-  <td><code>createRationPlan()</code><br><small style="color:var(--muted)">server/db.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>feed.ts</code><br><small style="color:var(--muted)">server/routers/feed.ts</small></td>
-  <td>createRationPlan() node in server/db.ts.</td>
-</tr>
-<tr>
-  <td>30</td>
-  <td><code>createFeedStockEntry()</code><br><small style="color:var(--muted)">server/db.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>feed.ts</code><br><small style="color:var(--muted)">server/routers/feed.ts</small></td>
-  <td>createFeedStockEntry() node in server/db.ts.</td>
 </tr>
 </table>
 
@@ -4517,9 +4870,9 @@ flowchart LR
     <h4>Key Files</h4>
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>server/db.ts</code></td><td>10 nodes</td></tr>
-<tr><td><code>server/_core/trpc.ts</code></td><td>9 nodes</td></tr>
+      <tr><td><code>server/_core/trpc.ts</code></td><td>12 nodes</td></tr>
 <tr><td><code>server/_core/validators.ts</code></td><td>9 nodes</td></tr>
+<tr><td><code>server/db.ts</code></td><td>8 nodes</td></tr>
 <tr><td><code>server/routers/dashboard.ts</code></td><td>6 nodes</td></tr>
 <tr><td><code>server/_core/audit.ts</code></td><td>2 nodes</td></tr>
 <tr><td><code>server/_core/systemRouter.ts</code></td><td>2 nodes</td></tr>
@@ -4529,73 +4882,77 @@ flowchart LR
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: imports x69, contains x28, imports x25, calls x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: imports x69, contains x31, imports x25, calls x2. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
 
-<!-- ====== 15. Community 9 ====== -->
-<h2 id="community-9">15. Community 9</h2>
-<p>Community 9 groups implementation around system, overviewmd, docs, calculation, mostly in docs/SYSTEM_OVERVIEW.md. This section covers 44 nodes and 43 internal edges; the diagram shows only representative relationships to stay readable.</p>
+<!-- ====== 16. Other ====== -->
+<h2 id="other">16. Other</h2>
+<p>Other groups implementation around server, client, components, readmemd, mostly in docs/SYSTEM_OVERVIEW.md, server/_core/llm.ts, server/_core/sdk.ts. This section covers 538 nodes and 648 internal edges; the diagram shows only representative relationships to stay readable.</p>
 
 <div class="mermaid">
 %%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
 flowchart LR
-    %% Section: Community 9 (44 nodes, 43 edges)
-    docs_system_overview_livestock_farm_management_s_00781810("Livestock Farm Management System — Syst...<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_7_feed_management_4c17752f("7. Feed Management<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_10_animal_p_l_calculation_f42bbb26("10. Animal P&amp;L Calculation<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_4_animal_registry_9bcc2a06("4. Animal Registry<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_11_income_statement_767c8463("11. Income Statement<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_6_fattening_tracker_4c5c9b18("6. Fattening Tracker<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_5_breeding_lambing_dfb7c40e("5. Breeding &amp; Lambing<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_8_expense_log_02dea991("8. Expense Log<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_1_purpose_7dca05c4("1. Purpose<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_10_1_cost_components_629b763e("10.1 Cost Components<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_10_2_revenue_and_net_p_l_ef9c00a3("10.2 Revenue and Net P&amp;L<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_10_3_active_vs_closed_anima_1e34303b("10.3 Active vs. Closed Animals<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_10_4_feed_price_lookup_c9f0ae06("10.4 Feed Price Lookup<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_11_1_revenue_9c85ab7c("11.1 Revenue<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_11_2_cost_breakdown_4431022e("11.2 Cost Breakdown<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_11_3_summary_3d9ff2ad("11.3 Summary<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_12_dashboard_kpis_674b52f2("12. Dashboard KPIs<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_13_notifications_2279a1c6("13. Notifications<br/><small>docs/SYSTEM_OVERVIEW.md</small>")
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_10_animal_p_l_calculation_f42bbb26
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_11_income_statement_767c8463
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_12_dashboard_kpis_674b52f2
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_13_notifications_2279a1c6
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_1_purpose_7dca05c4
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_4_animal_registry_9bcc2a06
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_5_breeding_lambing_dfb7c40e
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_6_fattening_tracker_4c5c9b18
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_7_feed_management_4c17752f
-    docs_system_overview_livestock_farm_management_s_00781810 -->|contains| docs_system_overview_8_expense_log_02dea991
-    docs_system_overview_10_animal_p_l_calculation_f42bbb26 -->|contains| docs_system_overview_10_1_cost_components_629b763e
-    docs_system_overview_10_animal_p_l_calculation_f42bbb26 -->|contains| docs_system_overview_10_2_revenue_and_net_p_l_ef9c00a3
-    docs_system_overview_10_animal_p_l_calculation_f42bbb26 -->|contains| docs_system_overview_10_3_active_vs_closed_anima_1e34303b
-    docs_system_overview_10_animal_p_l_calculation_f42bbb26 -->|contains| docs_system_overview_10_4_feed_price_lookup_c9f0ae06
-    docs_system_overview_11_income_statement_767c8463 -->|contains| docs_system_overview_11_1_revenue_9c85ab7c
-    docs_system_overview_11_income_statement_767c8463 -->|contains| docs_system_overview_11_2_cost_breakdown_4431022e
-    docs_system_overview_11_income_statement_767c8463 -->|contains| docs_system_overview_11_3_summary_3d9ff2ad
-    %% Omitted for readability: 26 nodes, 0 edges
-    class docs_system_overview_livestock_farm_management_s_00781810 concept;
-    class docs_system_overview_7_feed_management_4c17752f concept;
-    class docs_system_overview_10_animal_p_l_calculation_f42bbb26 concept;
-    class docs_system_overview_4_animal_registry_9bcc2a06 concept;
-    class docs_system_overview_11_income_statement_767c8463 concept;
-    class docs_system_overview_6_fattening_tracker_4c5c9b18 concept;
-    class docs_system_overview_5_breeding_lambing_dfb7c40e concept;
-    class docs_system_overview_8_expense_log_02dea991 concept;
-    class docs_system_overview_1_purpose_7dca05c4 concept;
-    class docs_system_overview_10_1_cost_components_629b763e concept;
-    class docs_system_overview_10_2_revenue_and_net_p_l_ef9c00a3 concept;
-    class docs_system_overview_10_3_active_vs_closed_anima_1e34303b concept;
-    class docs_system_overview_10_4_feed_price_lookup_c9f0ae06 concept;
-    class docs_system_overview_11_1_revenue_9c85ab7c concept;
-    class docs_system_overview_11_2_cost_breakdown_4431022e concept;
-    class docs_system_overview_11_3_summary_3d9ff2ad concept;
-    class docs_system_overview_12_dashboard_kpis_674b52f2 concept;
-    class docs_system_overview_13_notifications_2279a1c6 concept;
+    %% Section: Other (538 nodes, 648 edges)
+    subgraph other_public_manus_debug_collector_js_2e8f0e69["public/__manus__/debug-collector.js"]
+        manus_debug_collector_sanitizevalue_e06b4253("sanitizeValue()<br/><small>public/__manus__/debug-collector.js</small>")
+        manus_debug_collector_formatarg_ccb7ff9d("formatArg()<br/><small>public/__manus__/debug-collector.js</small>")
+        manus_debug_collector_loguievent_5c401951("logUiEvent()<br/><small>public/__manus__/debug-collector.js</small>")
+        manus_debug_collector_formatargs_817fa7fc("formatArgs()<br/><small>public/__manus__/debug-collector.js</small>")
+        manus_debug_collector_prunebuffer_05016fc8("pruneBuffer()<br/><small>public/__manus__/debug-collector.js</small>")
+        manus_debug_collector_reportlogs_021c9b97("reportLogs()<br/><small>public/__manus__/debug-collector.js</small>")
+        manus_debug_collector_shouldignoretarget_1b9f735a("shouldIgnoreTarget()<br/><small>public/__manus__/debug-collector.js</small>")
+        manus_debug_collector_installuieventlisteners_77b566f6("installUiEventListeners()<br/><small>public/__manus__/debug-collector.js</small>")
+    end
+    subgraph other_caveman_compress_scripts_cli_py_c2adecbe["caveman-compress/scripts/cli.py"]
+        devin_skills_caveman_compress_scripts_cli_py_scr_9ae53669("print_usage()<br/><small>caveman-compress/scripts/cli.py</small>")
+        devin_skills_caveman_compress_scripts_cli_py_scr_e4f976df("main()<br/><small>caveman-compress/scripts/cli.py</small>")
+        kilocode_skills_caveman_compress_scripts_cli_py_46ece71d("print_usage()<br/><small>caveman-compress/scripts/cli.py</small>")
+        kilocode_skills_caveman_compress_scripts_cli_py_93b37199("main()<br/><small>caveman-compress/scripts/cli.py</small>")
+    end
+    subgraph other_server_core_env_ts_693718c0["server/_core/env.ts"]
+        core_env_8d2f855e("env.ts")
+        core_env_env_af73944b("ENV<br/><small>server/_core/env.ts</small>")
+    end
+    subgraph other_server_core_index_ts_9fe6a22f["server/_core/index.ts"]
+        core_index_5df0c0e1("index.ts")
+        core_index_startserver_67f792dc("startServer()<br/><small>server/_core/index.ts</small>")
+    end
+    subgraph other_server_core_sdk_ts_da2b45d6["server/_core/sdk.ts"]
+        core_sdk_sdkserver_1d0d3116("SDKServer<br/><small>server/_core/sdk.ts</small>")
+        core_sdk_57dcd947("sdk.ts")
+    end
+    devin_skills_caveman_compress_scripts_cli_py_scr_9ae53669 -->|calls| devin_skills_caveman_compress_scripts_cli_py_scr_e4f976df
+    kilocode_skills_caveman_compress_scripts_cli_py_46ece71d -->|calls| kilocode_skills_caveman_compress_scripts_cli_py_93b37199
+    manus_debug_collector_sanitizevalue_e06b4253 -->|calls| manus_debug_collector_formatarg_ccb7ff9d
+    manus_debug_collector_sanitizevalue_e06b4253 -->|calls| manus_debug_collector_loguievent_5c401951
+    manus_debug_collector_formatarg_ccb7ff9d -->|calls| manus_debug_collector_formatargs_817fa7fc
+    manus_debug_collector_prunebuffer_05016fc8 -->|calls| manus_debug_collector_loguievent_5c401951
+    manus_debug_collector_prunebuffer_05016fc8 -->|calls| manus_debug_collector_reportlogs_021c9b97
+    manus_debug_collector_shouldignoretarget_1b9f735a -->|calls| manus_debug_collector_installuieventlisteners_77b566f6
+    manus_debug_collector_loguievent_5c401951 -->|calls| manus_debug_collector_installuieventlisteners_77b566f6
+    core_env_8d2f855e -->|imports| core_sdk_57dcd947
+    core_env_env_af73944b -->|imports| core_sdk_57dcd947
+    %% Omitted for readability: 520 nodes, 0 edges
+    class manus_debug_collector_sanitizevalue_e06b4253 function;
+    class manus_debug_collector_formatarg_ccb7ff9d function;
+    class manus_debug_collector_loguievent_5c401951 function;
+    class manus_debug_collector_formatargs_817fa7fc function;
+    class manus_debug_collector_prunebuffer_05016fc8 function;
+    class manus_debug_collector_reportlogs_021c9b97 function;
+    class manus_debug_collector_shouldignoretarget_1b9f735a function;
+    class manus_debug_collector_installuieventlisteners_77b566f6 function;
+    class devin_skills_caveman_compress_scripts_cli_py_scr_9ae53669 function;
+    class devin_skills_caveman_compress_scripts_cli_py_scr_e4f976df function;
+    class kilocode_skills_caveman_compress_scripts_cli_py_46ece71d function;
+    class kilocode_skills_caveman_compress_scripts_cli_py_93b37199 function;
+    class core_env_8d2f855e module;
+    class core_env_env_af73944b klass;
+    class core_index_5df0c0e1 module;
+    class core_index_startserver_67f792dc function;
+    class core_sdk_sdkserver_1d0d3116 klass;
+    class core_sdk_57dcd947 module;
     classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
     classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
     classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
@@ -4865,360 +5222,18 @@ flowchart LR
     <table style="width:100%;font-size:0.85rem;">
       <tr><th>File</th><th>Coverage</th></tr>
       <tr><td><code>docs/SYSTEM_OVERVIEW.md</code></td><td>44 nodes</td></tr>
-    </table>
-  </div>
-  <div class="card">
-    <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x43. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
-  </div>
-</div>
-<hr>
-
-<!-- ====== 16. Other ====== -->
-<h2 id="other">16. Other</h2>
-<p>Other groups implementation around client, components, server, readmemd, mostly in components/ui/sidebar.tsx, server/_core/llm.ts, server/_core/sdk.ts. This section covers 584 nodes and 746 internal edges; the diagram shows only representative relationships to stay readable.</p>
-
-<div class="mermaid">
-%%{init: {"theme": "dark", "themeVariables": {"fontSize": "15.0px", "fontFamily": "Segoe UI, system-ui, sans-serif", "primaryColor": "#1e293b", "primaryTextColor": "#e2e8f0", "primaryBorderColor": "#38bdf8", "secondaryColor": "#0f172a", "tertiaryColor": "#334155", "lineColor": "#64748b", "textColor": "#e2e8f0"}, "flowchart": {"htmlLabels": true, "curve": "basis", "nodeSpacing": 48, "rankSpacing": 64, "padding": 14, "diagramPadding": 10, "useMaxWidth": true}}}%%
-flowchart LR
-    %% Section: Other (584 nodes, 746 edges)
-    subgraph other_public_manus_debug_collector_js_2e8f0e69["public/__manus__/debug-collector.js"]
-        manus_debug_collector_sanitizevalue_e06b4253("sanitizeValue()<br/><small>public/__manus__/debug-collector.js</small>")
-        manus_debug_collector_formatarg_ccb7ff9d("formatArg()<br/><small>public/__manus__/debug-collector.js</small>")
-        manus_debug_collector_loguievent_5c401951("logUiEvent()<br/><small>public/__manus__/debug-collector.js</small>")
-        manus_debug_collector_formatargs_817fa7fc("formatArgs()<br/><small>public/__manus__/debug-collector.js</small>")
-        manus_debug_collector_prunebuffer_05016fc8("pruneBuffer()<br/><small>public/__manus__/debug-collector.js</small>")
-        manus_debug_collector_reportlogs_021c9b97("reportLogs()<br/><small>public/__manus__/debug-collector.js</small>")
-        manus_debug_collector_shouldignoretarget_1b9f735a("shouldIgnoreTarget()<br/><small>public/__manus__/debug-collector.js</small>")
-        manus_debug_collector_installuieventlisteners_77b566f6("installUiEventListeners()<br/><small>public/__manus__/debug-collector.js</small>")
-    end
-    subgraph other_caveman_compress_scripts_cli_py_c2adecbe["caveman-compress/scripts/cli.py"]
-        devin_skills_caveman_compress_scripts_cli_py_scr_9ae53669("print_usage()<br/><small>caveman-compress/scripts/cli.py</small>")
-        devin_skills_caveman_compress_scripts_cli_py_scr_e4f976df("main()<br/><small>caveman-compress/scripts/cli.py</small>")
-        kilocode_skills_caveman_compress_scripts_cli_py_46ece71d("print_usage()<br/><small>caveman-compress/scripts/cli.py</small>")
-        kilocode_skills_caveman_compress_scripts_cli_py_93b37199("main()<br/><small>caveman-compress/scripts/cli.py</small>")
-    end
-    subgraph other_server_core_env_ts_693718c0["server/_core/env.ts"]
-        core_env_8d2f855e("env.ts")
-        core_env_env_af73944b("ENV<br/><small>server/_core/env.ts</small>")
-    end
-    subgraph other_server_core_sdk_ts_da2b45d6["server/_core/sdk.ts"]
-        core_sdk_sdkserver_1d0d3116("SDKServer<br/><small>server/_core/sdk.ts</small>")
-        core_sdk_57dcd947("sdk.ts")
-    end
-    core_index_5df0c0e1("index.ts")
-    components_dashboardlayout_04af071d("DashboardLayout.tsx")
-    devin_skills_caveman_compress_scripts_cli_py_scr_9ae53669 -->|calls| devin_skills_caveman_compress_scripts_cli_py_scr_e4f976df
-    kilocode_skills_caveman_compress_scripts_cli_py_46ece71d -->|calls| kilocode_skills_caveman_compress_scripts_cli_py_93b37199
-    manus_debug_collector_sanitizevalue_e06b4253 -->|calls| manus_debug_collector_formatarg_ccb7ff9d
-    manus_debug_collector_sanitizevalue_e06b4253 -->|calls| manus_debug_collector_loguievent_5c401951
-    manus_debug_collector_formatarg_ccb7ff9d -->|calls| manus_debug_collector_formatargs_817fa7fc
-    manus_debug_collector_prunebuffer_05016fc8 -->|calls| manus_debug_collector_loguievent_5c401951
-    manus_debug_collector_prunebuffer_05016fc8 -->|calls| manus_debug_collector_reportlogs_021c9b97
-    manus_debug_collector_shouldignoretarget_1b9f735a -->|calls| manus_debug_collector_installuieventlisteners_77b566f6
-    manus_debug_collector_loguievent_5c401951 -->|calls| manus_debug_collector_installuieventlisteners_77b566f6
-    core_env_8d2f855e -->|imports| core_sdk_57dcd947
-    core_env_env_af73944b -->|imports| core_sdk_57dcd947
-    %% Omitted for readability: 566 nodes, 0 edges
-    class manus_debug_collector_sanitizevalue_e06b4253 function;
-    class manus_debug_collector_formatarg_ccb7ff9d function;
-    class manus_debug_collector_loguievent_5c401951 function;
-    class manus_debug_collector_formatargs_817fa7fc function;
-    class manus_debug_collector_prunebuffer_05016fc8 function;
-    class manus_debug_collector_reportlogs_021c9b97 function;
-    class manus_debug_collector_shouldignoretarget_1b9f735a function;
-    class manus_debug_collector_installuieventlisteners_77b566f6 function;
-    class devin_skills_caveman_compress_scripts_cli_py_scr_9ae53669 function;
-    class devin_skills_caveman_compress_scripts_cli_py_scr_e4f976df function;
-    class kilocode_skills_caveman_compress_scripts_cli_py_46ece71d function;
-    class kilocode_skills_caveman_compress_scripts_cli_py_93b37199 function;
-    class core_env_8d2f855e module;
-    class core_env_env_af73944b klass;
-    class core_sdk_sdkserver_1d0d3116 klass;
-    class core_sdk_57dcd947 module;
-    class core_index_5df0c0e1 module;
-    class components_dashboardlayout_04af071d ui;
-    classDef entry fill:#422006,stroke:#fbbf24,color:#fde68a,stroke-width:1px;
-    classDef api fill:#450a0a,stroke:#f87171,color:#fee2e2,stroke-width:1px;
-    classDef async fill:#2e1065,stroke:#a78bfa,color:#ede9fe,stroke-width:1px;
-    classDef klass fill:#064e3b,stroke:#34d399,color:#d1fae5,stroke-width:1px;
-    classDef ui fill:#831843,stroke:#f472b6,color:#fce7f3,stroke-width:1px;
-    classDef module fill:#172554,stroke:#60a5fa,color:#dbeafe,stroke-width:1px;
-    classDef test fill:#3f3f46,stroke:#a1a1aa,color:#f4f4f5,stroke-width:1px;
-    classDef concept fill:#292524,stroke:#a8a29e,color:#fafaf9,stroke-dasharray:4 3;
-    classDef function fill:#0f172a,stroke:#38bdf8,color:#e0f2fe,stroke-width:1px;
-</div>
-
-<h3>Call Details</h3>
-<table class="call-table">
-<tr>
-  <th style="width:5%">#</th>
-  <th style="width:28%">Node</th>
-  <th style="width:10%">Type</th>
-  <th style="width:17%">Caller</th>
-  <th style="width:20%">Callees</th>
-  <th style="width:20%">Description</th>
-</tr>
-<tr>
-  <td>1</td>
-  <td><code>llm.ts</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Module</span></td>
-  <td><code>ENV</code><br><small style="color:var(--muted)">server/_core/env.ts</small><br><code>env.ts</code><br><small style="color:var(--muted)">server/_core/env.ts</small></td>
-  <td>No direct outbound edge</td>
-  <td>Module file in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>2</td>
-  <td><code>Role</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>Role node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>3</td>
-  <td><code>TextContent</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>TextContent node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>4</td>
-  <td><code>ImageContent</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>ImageContent node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>5</td>
-  <td><code>FileContent</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>FileContent node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>6</td>
-  <td><code>MessageContent</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>MessageContent node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>7</td>
-  <td><code>Message</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>Message node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>8</td>
-  <td><code>Tool</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>Tool node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>9</td>
-  <td><code>ToolChoicePrimitive</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>ToolChoicePrimitive node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>10</td>
-  <td><code>ToolChoiceByName</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>ToolChoiceByName node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>11</td>
-  <td><code>ToolChoiceExplicit</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>ToolChoiceExplicit node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>12</td>
-  <td><code>ToolChoice</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>ToolChoice node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>13</td>
-  <td><code>InvokeParams</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>InvokeParams node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>14</td>
-  <td><code>ToolCall</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>ToolCall node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>15</td>
-  <td><code>InvokeResult</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>InvokeResult node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>16</td>
-  <td><code>JsonSchema</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>JsonSchema node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>17</td>
-  <td><code>OutputSchema</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>OutputSchema node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>18</td>
-  <td><code>ResponseFormat</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-class">Class</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>ResponseFormat node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>19</td>
-  <td><code>ensureArray()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>normalizeMessage()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td>ensureArray() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>20</td>
-  <td><code>normalizeContentPart()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>normalizeContentPart() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>21</td>
-  <td><code>normalizeMessage()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>ensureArray()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td>No direct outbound edge</td>
-  <td>normalizeMessage() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>22</td>
-  <td><code>normalizeToolChoice()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>invokeLLM()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td>normalizeToolChoice() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>23</td>
-  <td><code>resolveApiUrl()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>invokeLLM()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td>resolveApiUrl() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>24</td>
-  <td><code>assertApiKey()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-endpoint">API</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>invokeLLM()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td>assertApiKey() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>25</td>
-  <td><code>normalizeResponseFormat()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td>External entry / no inbound edge</td>
-  <td><code>invokeLLM()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td>normalizeResponseFormat() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>26</td>
-  <td><code>invokeLLM()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small></td>
-  <td><span class="tag tag-func">Function</span></td>
-  <td><code>assertApiKey()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small><br><code>normalizeResponseFormat()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small><br><code>normalizeToolChoice()</code><br><small style="color:var(--muted)">server/_core/llm.ts</small><br>+1 more</td>
-  <td>No direct outbound edge</td>
-  <td>invokeLLM() node in server/_core/llm.ts.</td>
-</tr>
-<tr>
-  <td>27</td>
-  <td><code>sidebar.tsx</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
-  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small><br><code>Separator()</code><br><small style="color:var(--muted)">components/ui/separator.tsx</small><br><code>separator.tsx</code><br><small style="color:var(--muted)">components/ui/separator.tsx</small><br>+6 more</td>
-  <td><code>Tooltip()</code><br><small style="color:var(--muted)">components/ui/tooltip.tsx</small><br><code>tooltip.tsx</code><br><small style="color:var(--muted)">components/ui/tooltip.tsx</small><br><code>TooltipContent()</code><br><small style="color:var(--muted)">components/ui/tooltip.tsx</small><br>+5 more</td>
-  <td>Module file in components/ui/sidebar.tsx.</td>
-</tr>
-<tr>
-  <td>28</td>
-  <td><code>SidebarContextProps</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>Organizes documentation pages, navigation, or content lookup.</td>
-</tr>
-<tr>
-  <td>29</td>
-  <td><code>SidebarContext</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
-  <td>External entry / no inbound edge</td>
-  <td>No direct outbound edge</td>
-  <td>Organizes documentation pages, navigation, or content lookup.</td>
-</tr>
-<tr>
-  <td>30</td>
-  <td><code>useSidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small></td>
-  <td><span class="tag tag-hook">UI</span></td>
-  <td><code>DashboardLayout.tsx</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small><br><code>DashboardLayoutContent()</code><br><small style="color:var(--muted)">src/components/DashboardLayout.tsx</small></td>
-  <td><code>Sidebar()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small><br><code>SidebarMenuButton()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small><br><code>SidebarRail()</code><br><small style="color:var(--muted)">components/ui/sidebar.tsx</small><br>+1 more</td>
-  <td>Organizes documentation pages, navigation, or content lookup.</td>
-</tr>
-</table>
-
-<div class="grid">
-  <div class="card">
-    <h4>Key Files</h4>
-    <table style="width:100%;font-size:0.85rem;">
-      <tr><th>File</th><th>Coverage</th></tr>
-      <tr><td><code>components/ui/sidebar.tsx</code></td><td>28 nodes</td></tr>
 <tr><td><code>server/_core/llm.ts</code></td><td>26 nodes</td></tr>
 <tr><td><code>server/_core/sdk.ts</code></td><td>24 nodes</td></tr>
 <tr><td><code>components/ui/menubar.tsx</code></td><td>17 nodes</td></tr>
-<tr><td><code>src/pages/FarmMap.tsx</code></td><td>17 nodes</td></tr>
 <tr><td><code>server/_core/map.ts</code></td><td>17 nodes</td></tr>
-<tr><td><code>components/ui/context-menu.tsx</code></td><td>16 nodes</td></tr>
 <tr><td><code>components/ui/dropdown-menu.tsx</code></td><td>16 nodes</td></tr>
+<tr><td><code>public/__manus__/debug-collector.js</code></td><td>15 nodes</td></tr>
+<tr><td><code>skills/caveman-compress/README.md</code></td><td>14 nodes</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Design Notes</h4>
-    <p>This section comes from graphify community clustering. Relationship summary: contains x468, calls x107, imports x71, imports x67. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
+    <p>This section comes from graphify community clustering. Relationship summary: contains x429, calls x94, imports x50, imports x43. The diagram prioritizes high-confidence calls or usage relationships; the table keeps the broader node inventory.</p>
   </div>
 </div>
 <hr>
@@ -5229,18 +5244,18 @@ flowchart LR
   <div class="card">
     <h4>Graph</h4>
     <table style="width:100%;font-size:0.85rem;">
-      <tr><td>Nodes</td><td>1831</td></tr>
-      <tr><td>Edges</td><td>3985</td></tr>
+      <tr><td>Nodes</td><td>1847</td></tr>
+      <tr><td>Edges</td><td>4029</td></tr>
       <tr><td>Hyperedges</td><td>0</td></tr>
-      <tr><td>Communities</td><td>133</td></tr>
+      <tr><td>Communities</td><td>128</td></tr>
       <tr><td>Documented Sections</td><td>15</td></tr>
     </table>
   </div>
   <div class="card">
     <h4>Edge Confidence</h4>
     <table style="width:100%;font-size:0.85rem;">
-      <tr><td>EXTRACTED</td><td>3915</td></tr>
-      <tr><td>INFERRED</td><td>70</td></tr>
+      <tr><td>EXTRACTED</td><td>3957</td></tr>
+      <tr><td>INFERRED</td><td>72</td></tr>
       <tr><td>AMBIGUOUS</td><td>0</td></tr>
     </table>
   </div>
@@ -5248,7 +5263,7 @@ flowchart LR
 
 <div style="text-align:center; padding:40px 0; color: var(--muted); font-size:0.9rem;">
   <p>lfms — Architecture Documentation</p>
-  <p>Generated: 2026-06-17 01:15 UTC · graphify callflow-html</p>
+  <p>Generated: 2026-06-17 01:22 UTC · graphify callflow-html</p>
 </div>
 
 </div><!-- .container -->

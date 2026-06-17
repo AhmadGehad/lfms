@@ -246,6 +246,92 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 }
 
+function BulkVaccinationDialogContent({
+  selectedAnimals,
+  onClose,
+  onSuccess,
+}: {
+  selectedAnimals: any[];
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const { t } = useTranslation();
+  const [vaccineId, setVaccineId] = useState("");
+  const [vaccinationDate, setVaccinationDate] = useState(new Date().toISOString().split("T")[0]);
+  const [batchNumber, setBatchNumber] = useState("");
+  const [veterinarian, setVeterinarian] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const { data: vaccines } = trpc.config.getVaccines.useQuery();
+  const utils = trpc.useUtils();
+
+  const bulkApplyMutation = trpc.vaccination.bulkApplyToAnimals.useMutation({
+    onSuccess: () => {
+      toast.success(t("vaccine.bulkVaccinationApplied"));
+      utils.vaccination.getVaccinationRecords.invalidate();
+      onClose();
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleSubmit = () => {
+    if (!vaccineId) return toast.error(t("vaccine.vaccineRequired"));
+    if (!vaccinationDate) return toast.error(t("vaccine.dateRequired"));
+    if (selectedAnimals.length === 0) return toast.error(t("vaccine.animalRequired"));
+
+    bulkApplyMutation.mutate({
+      animalIds: selectedAnimals.map((a) => a.animal.id),
+      vaccineId: parseInt(vaccineId),
+      vaccinationDate,
+      batchNumber: batchNumber || undefined,
+      notes: notes || undefined,
+      veterinarian: veterinarian || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{t("vaccine.bulkApply")} ({selectedAnimals.length})</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.selectVaccine")} *</Label>
+            <Select value={vaccineId} onValueChange={setVaccineId}>
+              <SelectTrigger><SelectValue placeholder={t("vaccine.selectVaccine")} /></SelectTrigger>
+              <SelectContent>
+                {(vaccines ?? []).map((v: any) => (
+                  <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.vaccinationDate")} *</Label>
+            <Input type="date" value={vaccinationDate} onChange={(e) => setVaccinationDate(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.batchNumber")}</Label>
+            <Input placeholder="e.g. BATCH-2024-001" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.veterinarian")}</Label>
+            <Input placeholder={t("common.none")} value={veterinarian} onChange={(e) => setVeterinarian(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("common.notes")}</Label>
+            <Input placeholder={t("common.optionalNotes")} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button onClick={handleSubmit} disabled={bulkApplyMutation.isPending}>{t("common.apply")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function BulkEditDialog({
   open,
   onOpenChange,
@@ -867,6 +953,7 @@ export default function Animals() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSellOpen, setBulkSellOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkVaccinationOpen, setBulkVaccinationOpen] = useState(false);
   const utils = trpc.useUtils();
   const deleteAnimalMutation = trpc.recycleBin.deleteAnimal.useMutation({
     onSuccess: () => {
@@ -1094,6 +1181,10 @@ export default function Animals() {
                   <Pencil className="h-4 w-4" />
                   {t("animals.bulkEdit")} ({selectedIds.size})
                 </Button>
+                <Button onClick={() => setBulkVaccinationOpen(true)} variant="outline" className="gap-2">
+                  <Syringe className="h-4 w-4" />
+                  {t("vaccine.bulkApply")} ({selectedIds.size})
+                </Button>
                 <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2">
                   <DollarSign className="h-4 w-4" />
                   {t("animals.bulkSell")} ({selectedIds.size})
@@ -1283,6 +1374,9 @@ export default function Animals() {
         selectedAnimals={selectedAnimals}
         onSuccess={() => { setSelectedIds(new Set()); refetch(); }}
       />
+
+      {bulkVaccinationOpen && <BulkVaccinationDialogContent selectedAnimals={selectedAnimals} onClose={() => setBulkVaccinationOpen(false)} onSuccess={() => { setSelectedIds(new Set()); refetch(); }} />}
+
       <EditAnimalDialog
         animalId={editAnimalId}
         open={editOpen}

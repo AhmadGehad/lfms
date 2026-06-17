@@ -19,7 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, CalendarDays, Pencil, Syringe, Trash2, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CalendarDays, Pencil, Syringe, Trash2, CheckCircle2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -39,6 +39,220 @@ function VaccinationStatusBadge({ record }: { record: any }) {
   return <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">{t("vaccine.upcoming")}</Badge>;
 }
 
+function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [bulkType, setBulkType] = useState<"animals" | "category" | "categories">("animals");
+  const [form, setForm] = useState({
+    animalIds: [] as string[],
+    categoryId: "",
+    categoryIds: [] as string[],
+    vaccineId: "",
+    vaccinationDate: new Date().toISOString().split("T")[0],
+    batchNumber: "",
+    notes: "",
+    veterinarian: "",
+  });
+
+  const { data: animals } = trpc.animals.list.useQuery();
+  const { data: categories } = trpc.config.getCategories.useQuery();
+  const { data: vaccines } = trpc.config.getVaccines.useQuery();
+  const utils = trpc.useUtils();
+
+  const bulkApplyToAnimalsMutation = trpc.vaccination.bulkApplyToAnimals.useMutation({
+    onSuccess: () => {
+      toast.success(t("vaccine.bulkVaccinationApplied"));
+      utils.vaccination.getVaccinationRecords.invalidate();
+      setOpen(false);
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const bulkApplyToCategoryMutation = trpc.vaccination.bulkApplyToCategory.useMutation({
+    onSuccess: () => {
+      toast.success(t("vaccine.bulkVaccinationApplied"));
+      utils.vaccination.getVaccinationRecords.invalidate();
+      setOpen(false);
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const bulkApplyToCategoriesMutation = trpc.vaccination.bulkApplyToCategories.useMutation({
+    onSuccess: () => {
+      toast.success(t("vaccine.bulkVaccinationApplied"));
+      utils.vaccination.getVaccinationRecords.invalidate();
+      setOpen(false);
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleSubmit = () => {
+    if (!form.vaccineId) return toast.error(t("vaccine.vaccineRequired"));
+    if (!form.vaccinationDate) return toast.error(t("vaccine.dateRequired"));
+
+    if (bulkType === "animals") {
+      if (form.animalIds.length === 0) return toast.error(t("vaccine.animalRequired"));
+      bulkApplyToAnimalsMutation.mutate({
+        animalIds: form.animalIds.map(Number),
+        vaccineId: parseInt(form.vaccineId),
+        vaccinationDate: form.vaccinationDate,
+        batchNumber: form.batchNumber || undefined,
+        notes: form.notes || undefined,
+        veterinarian: form.veterinarian || undefined,
+      });
+    } else if (bulkType === "category") {
+      if (!form.categoryId) return toast.error(t("vaccine.categoryRequired"));
+      bulkApplyToCategoryMutation.mutate({
+        categoryId: parseInt(form.categoryId),
+        vaccineId: parseInt(form.vaccineId),
+        vaccinationDate: form.vaccinationDate,
+        batchNumber: form.batchNumber || undefined,
+        notes: form.notes || undefined,
+        veterinarian: form.veterinarian || undefined,
+      });
+    } else {
+      if (form.categoryIds.length === 0) return toast.error(t("vaccine.categoryRequired"));
+      bulkApplyToCategoriesMutation.mutate({
+        categoryIds: form.categoryIds.map(Number),
+        vaccineId: parseInt(form.vaccineId),
+        vaccinationDate: form.vaccinationDate,
+        batchNumber: form.batchNumber || undefined,
+        notes: form.notes || undefined,
+        veterinarian: form.veterinarian || undefined,
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="gap-2" variant="outline"><Users className="h-4 w-4" />{t("vaccine.bulkApply")}</Button>
+      </DialogTrigger>
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{t("vaccine.bulkApply")}</DialogTitle></DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.applyTo")} *</Label>
+            <Select value={bulkType} onValueChange={(v) => setBulkType(v as any)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="animals">{t("vaccine.multipleAnimals")}</SelectItem>
+                <SelectItem value="category">{t("vaccine.singleCategory")}</SelectItem>
+                <SelectItem value="categories">{t("vaccine.multipleCategories")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {bulkType === "animals" && (
+            <div className="space-y-1.5">
+              <Label>{t("vaccine.selectAnimals")} *</Label>
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                {(animals ?? []).map((a: any) => (
+                  <div key={a.animal.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`animal-${a.animal.id}`}
+                      checked={form.animalIds.includes(String(a.animal.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm((f) => ({ ...f, animalIds: [...f.animalIds, String(a.animal.id)] }));
+                        } else {
+                          setForm((f) => ({ ...f, animalIds: f.animalIds.filter((id) => id !== String(a.animal.id)) }));
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <label htmlFor={`animal-${a.animal.id}`} className="text-sm cursor-pointer">{a.animal.animalId}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {bulkType === "category" && (
+            <div className="space-y-1.5">
+              <Label>{t("vaccine.selectCategory")} *</Label>
+              <Select value={form.categoryId} onValueChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}>
+                <SelectTrigger><SelectValue placeholder={t("vaccine.selectCategory")} /></SelectTrigger>
+                <SelectContent>
+                  {(categories ?? []).map((c: any) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {bulkType === "categories" && (
+            <div className="space-y-1.5">
+              <Label>{t("vaccine.selectCategories")} *</Label>
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+                {(categories ?? []).map((c: any) => (
+                  <div key={c.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`category-${c.id}`}
+                      checked={form.categoryIds.includes(String(c.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm((f) => ({ ...f, categoryIds: [...f.categoryIds, String(c.id)] }));
+                        } else {
+                          setForm((f) => ({ ...f, categoryIds: f.categoryIds.filter((id) => id !== String(c.id)) }));
+                        }
+                      }}
+                      className="h-4 w-4"
+                    />
+                    <label htmlFor={`category-${c.id}`} className="text-sm cursor-pointer">{c.name}</label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.selectVaccine")} *</Label>
+            <Select value={form.vaccineId} onValueChange={(v) => setForm((f) => ({ ...f, vaccineId: v }))}>
+              <SelectTrigger><SelectValue placeholder={t("vaccine.selectVaccine")} /></SelectTrigger>
+              <SelectContent>
+                {(vaccines ?? []).map((v: any) => (
+                  <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.vaccinationDate")} *</Label>
+            <Input type="date" value={form.vaccinationDate} onChange={(e) => setForm((f) => ({ ...f, vaccinationDate: e.target.value }))} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.batchNumber")}</Label>
+            <Input placeholder="e.g. BATCH-2024-001" value={form.batchNumber} onChange={(e) => setForm((f) => ({ ...f, batchNumber: e.target.value }))} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("vaccine.veterinarian")}</Label>
+            <Input placeholder={t("common.none")} value={form.veterinarian} onChange={(e) => setForm((f) => ({ ...f, veterinarian: e.target.value }))} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>{t("common.notes")}</Label>
+            <Input placeholder={t("common.optionalNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+          <Button onClick={handleSubmit} disabled={bulkApplyToAnimalsMutation.isPending || bulkApplyToCategoryMutation.isPending || bulkApplyToCategoriesMutation.isPending}>{t("common.apply")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -52,7 +266,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
     isCompleted: record?.isCompleted || false,
   });
 
-  const { data: animals } = trpc.animals.getAll.useQuery();
+  const { data: animals } = trpc.animals.list.useQuery();
   const { data: vaccines } = trpc.config.getVaccines.useQuery();
   const utils = trpc.useUtils();
 
@@ -107,7 +321,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
       <DialogTrigger asChild>
         <Button className="gap-2"><Syringe className="h-4 w-4" />{record ? t("vaccine.editVaccination") : t("vaccine.addVaccination")}</Button>
       </DialogTrigger>
-      <DialogContent className="w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{record ? t("vaccine.editVaccination") : t("vaccine.addVaccination")}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
@@ -116,7 +330,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
               <SelectTrigger><SelectValue placeholder={t("vaccine.selectAnimal")} /></SelectTrigger>
               <SelectContent>
                 {(animals ?? []).map((a: any) => (
-                  <SelectItem key={a.id} value={String(a.id)}>{a.animalId}</SelectItem>
+                  <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -193,8 +407,8 @@ export default function AnimalVaccinations() {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center justify-between gap-2 mb-4">
-            <p className="text-sm text-muted-foreground">{t("vaccine.noVaccinations")}</p>
+          <div className="flex items-center justify-end gap-2 mb-4">
+            <BulkVaccinationDialog onSuccess={() => {}} />
             <VaccinationRecordFormDialog onSuccess={() => {}} />
           </div>
 

@@ -4,8 +4,12 @@ import { getClientIp } from "../_core/audit";
 import {
   getVaccinationRecords, addVaccinationRecord, updateVaccinationRecord, deleteVaccinationRecord,
   getUpcomingVaccinations, getVaccinationCompliance, getVaccinationStatus,
-  createAuditEntry,
+  createAuditEntry, getAnimalById, getDb,
 } from "../db";
+import { createNotification } from "../db";
+import { notifyOwner } from "../_core/notification";
+import { animals } from "../../drizzle/schema";
+import { eq, isNull, inArray, and } from "drizzle-orm";
 
 export const vaccinationRouter = router({
   // ─── VACCINATION RECORDS ───────────────────────────────────────────────────────
@@ -24,7 +28,27 @@ export const vaccinationRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await addVaccinationRecord(input);
+      const animal = await getAnimalById(input.animalId);
       await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
+
+      // Create notification for vaccination record added
+      const animalId = animal?.animal?.animalId || `Animal #${input.animalId}`;
+      await createNotification({
+        userId: ctx.user.id,
+        alertType: "vaccination_recorded",
+        title: "Vaccination Record Added",
+        message: `Vaccination record added for ${animalId}`,
+        relatedEntityType: "vaccinationRecord",
+        relatedEntityId: String((result as any).insertId),
+        priority: "medium",
+      });
+
+      // Notify owner
+      await notifyOwner({
+        title: "Vaccination Record Added",
+        content: `A vaccination record has been added for ${animalId}. Batch: ${input.batchNumber || 'N/A'}, Date: ${input.vaccinationDate}`,
+      });
+
       return result;
     }),
 
@@ -51,10 +75,123 @@ export const vaccinationRouter = router({
       return { id: input.id };
     }),
 
+  // ─── BULK OPERATIONS ───────────────────────────────────────────────────────────
+  bulkApplyToAnimals: staffProcedure
+    .input(z.object({
+      animalIds: z.array(z.number()).min(1),
+      vaccineId: z.number(),
+      vaccinationDate: z.string(),
+      batchNumber: z.string().optional(),
+      notes: z.string().optional(),
+      veterinarian: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const results = [];
+      for (const animalId of input.animalIds) {
+        const result = await addVaccinationRecord({
+          animalId,
+          vaccineId: input.vaccineId,
+          vaccinationDate: input.vaccinationDate,
+          batchNumber: input.batchNumber,
+          notes: input.notes,
+          veterinarian: input.veterinarian,
+        });
+        results.push(result);
+        await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
+      }
+
+      await notifyOwner({
+        title: "Bulk Vaccination Applied",
+        content: `Vaccination applied to ${input.animalIds.length} animal(s). Date: ${input.vaccinationDate}`,
+      });
+
+      return { count: results.length };
+    }),
+
+  bulkApplyToCategory: staffProcedure
+    .input(z.object({
+      categoryId: z.number(),
+      vaccineId: z.number(),
+      vaccinationDate: z.string(),
+      batchNumber: z.string().optional(),
+      notes: z.string().optional(),
+      veterinarian: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+
+      // Get all active animals in this category
+      const categoryAnimals = await db.select({ id: animals.id }).from(animals).where(
+        and(eq(animals.categoryId, input.categoryId), isNull(animals.deletedAt), eq(animals.isActive, true))
+      );
+
+      const results = [];
+      for (const animal of categoryAnimals) {
+        const result = await addVaccinationRecord({
+          animalId: animal.id,
+          vaccineId: input.vaccineId,
+          vaccinationDate: input.vaccinationDate,
+          batchNumber: input.batchNumber,
+          notes: input.notes,
+          veterinarian: input.veterinarian,
+        });
+        results.push(result);
+        await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
+      }
+
+      await notifyOwner({
+        title: "Bulk Vaccination Applied to Category",
+        content: `Vaccination applied to ${results.length} animal(s) in category. Date: ${input.vaccinationDate}`,
+      });
+
+      return { count: results.length };
+    }),
+
+  bulkApplyToCategories: staffProcedure
+    .input(z.object({
+      categoryIds: z.array(z.number()).min(1),
+      vaccineId: z.number(),
+      vaccinationDate: z.string(),
+      batchNumber: z.string().optional(),
+      notes: z.string().optional(),
+      veterinarian: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+
+      // Get all active animals in these categories
+      const categoryAnimals = await db.select({ id: animals.id }).from(animals).where(
+        and(inArray(animals.categoryId, input.categoryIds), isNull(animals.deletedAt), eq(animals.isActive, true))
+      );
+
+      const results = [];
+      for (const animal of categoryAnimals) {
+        const result = await addVaccinationRecord({
+          animalId: animal.id,
+          vaccineId: input.vaccineId,
+          vaccinationDate: input.vaccinationDate,
+          batchNumber: input.batchNumber,
+          notes: input.notes,
+          veterinarian: input.veterinarian,
+        });
+        results.push(result);
+        await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
+      }
+
+      await notifyOwner({
+        title: "Bulk Vaccination Applied to Categories",
+        content: `Vaccination applied to ${results.length} animal(s) across ${input.categoryIds.length} categories. Date: ${input.vaccinationDate}`,
+      });
+
+      return { count: results.length };
+    }),
+
   // ─── DASHBOARD & REPORTS ───────────────────────────────────────────────────────
   getUpcomingVaccinations: protectedProcedure
     .input(z.object({ days: z.number().optional() }).optional())
-    .query(({ input }) => getUpcomingVaccinations(input?.days ?? 30)),
+    .query(({ input }) => getUpcomingVaccinations(input?.days)),
 
   getVaccinationCompliance: protectedProcedure.query(() => getVaccinationCompliance()),
 });

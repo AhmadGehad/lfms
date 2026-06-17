@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 // Must mirror ROLE_RANK in server/_core/trpc.ts
 const ROLE_RANK: Record<string, number> = {
+  viewer: -1,
   user: 0,
   staff: 1,
   supervisor: 2,
@@ -22,13 +23,13 @@ export function usePermissions() {
     const rank = ROLE_RANK[(user?.role as string) ?? "user"] ?? 0;
     return {
       role: (user?.role as string) ?? "user",
-      /** read-only users (rank 0) can view but not write */
+      /** read-only users can view but not write */
       canRecord: rank >= 1, // staff+: record animals, weights, sales, expenses, feed
       canEditConfig: rank >= 2, // supervisor+: categories, ration plans, settings
       canManageUsers: rank >= 3, // admin/owner: user roles
       canDelete: rank >= 2, // supervisor+: soft-delete records
       canPurgeOrRestore: rank >= 3, // admin/owner: permanent delete, restore, backup/restore
-      isReadOnly: rank === 0,
+      isReadOnly: rank <= 0,
     };
   }, [user?.role]);
 }

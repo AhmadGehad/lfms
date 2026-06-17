@@ -29,7 +29,7 @@ export async function checkVaccinationsAndNotify(): Promise<void> {
       let alertType: string;
       let title: string;
       let message: string;
-      let priority: string;
+      let priority: "low" | "medium" | "high" | "critical";
 
       if (diffDays < 0) {
         // Overdue
@@ -70,7 +70,7 @@ export async function checkVaccinationsAndNotify(): Promise<void> {
         message,
         relatedEntityType: "vaccination_record",
         relatedEntityId: String(record.id),
-        priority,
+        priority: priority as "low" | "medium" | "high" | "critical",
       });
 
       console.log(`[VaccineCheck] Notification created for ${record.animalIdStr} - ${record.vaccineName} (${alertType})`);
