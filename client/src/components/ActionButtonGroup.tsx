@@ -14,7 +14,7 @@ interface ActionButtonGroupProps {
  * Wrapper for action button groups that hides/disables actions for viewers.
  * Use this to wrap groups of Add, Edit, Delete buttons.
  */
-export function ActionButtonGroup({ 
+export function ActionButtonGroup({
   children,
   showDisabledForViewers = false
 }: ActionButtonGroupProps) {
@@ -26,7 +26,7 @@ export function ActionButtonGroup({
   }
 
   return (
-    <div 
+    <div
       className={isViewer && showDisabledForViewers ? "opacity-50 pointer-events-none" : ""}
       title={isViewer ? "Viewers cannot perform actions" : undefined}
     >

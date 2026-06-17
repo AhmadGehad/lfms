@@ -74,8 +74,8 @@ export default function UserManagement() {
                         {new Date(u.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Select 
-                          value={u.role} 
+                        <Select
+                          value={u.role}
                           onValueChange={(role) => updateRole.mutate({ userId: u.id, role: role as any })}
                           disabled={updateRole.isPending}
                         >

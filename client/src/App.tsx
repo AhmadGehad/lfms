@@ -13,6 +13,7 @@ import AnimalProfile from "./pages/AnimalProfile";
 import Breeding from "./pages/Breeding";
 import Fattening from "./pages/Fattening";
 import Feed from "./pages/Feed";
+import FarmMap from "./pages/FarmMap";
 import Expenses from "./pages/Expenses";
 import PnL from "./pages/PnL";
 import IncomeStatement from "./pages/IncomeStatement";
@@ -34,6 +35,7 @@ function Router() {
         <Route path="/animals/:id" component={AnimalProfile} />
         <Route path="/breeding" component={Breeding} />
         <Route path="/fattening" component={Fattening} />
+        <Route path="/farm-map" component={FarmMap} />
         <Route path="/feed" component={Feed} />
         <Route path="/expenses" component={Expenses} />
         <Route path="/pnl" component={PnL} />

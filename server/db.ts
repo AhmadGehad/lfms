@@ -279,7 +279,16 @@ export async function getAllGroups(speciesId?: number) {
   return db.select().from(groups).where(isNull(groups.deletedAt)).orderBy(groups.groupCode);
 }
 
-export async function createGroup(data: { groupCode: string; name: string; speciesId?: number; categoryId?: number; description?: string; latitude?: string | null; longitude?: string | null }) {
+export async function createGroup(data: {
+  groupCode: string;
+  name: string;
+  speciesId?: number;
+  categoryId?: number;
+  description?: string;
+  latitude?: string | null;
+  longitude?: string | null;
+  mapShape?: unknown;
+}) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(groups).values(data);
@@ -2321,7 +2330,7 @@ export async function getVaccinationRecords(animalId?: number) {
   if (animalId) {
     conditions.push(eq(vaccinationRecords.animalId, animalId));
   }
-  
+
   return await db
     .select({
       id: vaccinationRecords.id,
@@ -2347,11 +2356,11 @@ export async function getVaccinationRecords(animalId?: number) {
 export async function addVaccinationRecord(data: { animalId: number; vaccineId: number; vaccinationDate: string; batchNumber?: string; notes?: string; veterinarian?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  
+
   // Get vaccine config to calculate next due date
   const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, data.vaccineId)).limit(1);
   if (!vaccine.length) throw new Error("Vaccine not found");
-  
+
   const nextDueDateStr = calculateNextDueDate(
     {
       validityPeriod: vaccine[0].validityPeriod,
@@ -2361,7 +2370,7 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
     },
     data.vaccinationDate
   );
-  
+
   const [result] = await db.insert(vaccinationRecords).values({
     animalId: data.animalId,
     vaccineId: data.vaccineId,
@@ -2377,7 +2386,7 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
 export async function updateVaccinationRecord(id: number, data: { vaccinationDate?: string; batchNumber?: string; notes?: string; veterinarian?: string; isCompleted?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  
+
   const updateData: any = { ...data };
   if (data.vaccinationDate) {
     const record = await db.select({ vaccineId: vaccinationRecords.vaccineId }).from(vaccinationRecords).where(eq(vaccinationRecords.id, id)).limit(1);
@@ -2397,7 +2406,7 @@ export async function updateVaccinationRecord(id: number, data: { vaccinationDat
       }
     }
   }
-  
+
   await db.update(vaccinationRecords).set(updateData).where(eq(vaccinationRecords.id, id));
 }
 
@@ -2417,14 +2426,14 @@ export function calculateNextDueDate(vaccine: { validityPeriod: number; validity
 export function getVaccinationStatus(record: { nextDueDate: Date | string | null; isCompleted: boolean }): "completed" | "overdue" | "due" | "upcoming" {
   if (record.isCompleted) return "completed";
   if (!record.nextDueDate) return "upcoming";
-  
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const dueDate = new Date(record.nextDueDate instanceof Date ? record.nextDueDate.toISOString() : record.nextDueDate);
   dueDate.setHours(0, 0, 0, 0);
-  
+
   const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
-  
+
   if (diffDays < 0) return "overdue";
   if (diffDays <= 7) return "due";
   return "upcoming";
@@ -2434,10 +2443,10 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
   const days = typeof input === 'number' ? input : (input?.days ?? 30);
   const db = await getDb();
   if (!db) return [];
-  
+
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + days);
-  
+
   return await db
     .select({
       id: vaccinationRecords.id,
@@ -2463,14 +2472,14 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
 export async function getVaccinationCompliance() {
   const db = await getDb();
   if (!db) return [];
-  
+
   const today = new Date().toISOString().split("T")[0];
-  
+
   const total = await db
     .select({ count: sql<number>`count(*)` })
     .from(vaccinationRecords)
     .where(isNull(vaccinationRecords.deletedAt));
-  
+
   const overdue = await db
     .select({ count: sql<number>`count(*)` })
     .from(vaccinationRecords)
@@ -2481,7 +2490,7 @@ export async function getVaccinationCompliance() {
         sql`${vaccinationRecords.nextDueDate} < ${today}`
       )
     );
-  
+
   const completed = await db
     .select({ count: sql<number>`count(*)` })
     .from(vaccinationRecords)
@@ -2491,7 +2500,7 @@ export async function getVaccinationCompliance() {
         eq(vaccinationRecords.isCompleted, true)
       )
     );
-  
+
   return {
     total: total[0]?.count ?? 0,
     overdue: overdue[0]?.count ?? 0,
@@ -2503,7 +2512,7 @@ export async function getVaccinationCompliance() {
 export async function getNextVaccinationDate(animalId: number): Promise<{ nextDueDate: string | null; vaccineName: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
-  
+
   const result = await db
     .select({
       nextDueDate: vaccinationRecords.nextDueDate,
@@ -2521,7 +2530,7 @@ export async function getNextVaccinationDate(animalId: number): Promise<{ nextDu
     )
     .orderBy(vaccinationRecords.nextDueDate)
     .limit(1);
-  
+
   if (result.length === 0) return null;
   const nextDueDate = result[0].nextDueDate;
   return {

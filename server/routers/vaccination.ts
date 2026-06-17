@@ -30,7 +30,7 @@ export const vaccinationRouter = router({
       const result = await addVaccinationRecord(input);
       const animal = await getAnimalById(input.animalId);
       await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
-      
+
       // Create notification for vaccination record added
       const animalId = animal?.animal?.animalId || `Animal #${input.animalId}`;
       await createNotification({
@@ -42,13 +42,13 @@ export const vaccinationRouter = router({
         relatedEntityId: String((result as any).insertId),
         priority: "medium",
       });
-      
+
       // Notify owner
       await notifyOwner({
         title: "Vaccination Record Added",
         content: `A vaccination record has been added for ${animalId}. Batch: ${input.batchNumber || 'N/A'}, Date: ${input.vaccinationDate}`,
       });
-      
+
       return result;
     }),
 
@@ -99,12 +99,12 @@ export const vaccinationRouter = router({
         results.push(result);
         await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       }
-      
+
       await notifyOwner({
         title: "Bulk Vaccination Applied",
         content: `Vaccination applied to ${input.animalIds.length} animal(s). Date: ${input.vaccinationDate}`,
       });
-      
+
       return { count: results.length };
     }),
 
@@ -120,12 +120,12 @@ export const vaccinationRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("DB not available");
-      
+
       // Get all active animals in this category
       const categoryAnimals = await db.select({ id: animals.id }).from(animals).where(
         and(eq(animals.categoryId, input.categoryId), isNull(animals.deletedAt), eq(animals.isActive, true))
       );
-      
+
       const results = [];
       for (const animal of categoryAnimals) {
         const result = await addVaccinationRecord({
@@ -139,12 +139,12 @@ export const vaccinationRouter = router({
         results.push(result);
         await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       }
-      
+
       await notifyOwner({
         title: "Bulk Vaccination Applied to Category",
         content: `Vaccination applied to ${results.length} animal(s) in category. Date: ${input.vaccinationDate}`,
       });
-      
+
       return { count: results.length };
     }),
 
@@ -160,12 +160,12 @@ export const vaccinationRouter = router({
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("DB not available");
-      
+
       // Get all active animals in these categories
       const categoryAnimals = await db.select({ id: animals.id }).from(animals).where(
         and(inArray(animals.categoryId, input.categoryIds), isNull(animals.deletedAt), eq(animals.isActive, true))
       );
-      
+
       const results = [];
       for (const animal of categoryAnimals) {
         const result = await addVaccinationRecord({
@@ -179,12 +179,12 @@ export const vaccinationRouter = router({
         results.push(result);
         await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
       }
-      
+
       await notifyOwner({
         title: "Bulk Vaccination Applied to Categories",
         content: `Vaccination applied to ${results.length} animal(s) across ${input.categoryIds.length} categories. Date: ${input.vaccinationDate}`,
       });
-      
+
       return { count: results.length };
     }),
 

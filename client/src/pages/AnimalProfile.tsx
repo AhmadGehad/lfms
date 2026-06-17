@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FarmMapPreview } from "@/components/FarmMapPreview";
+import { readMapShape } from "@/lib/farmMap";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, DollarSign, FileDown, GitBranch, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2, Syringe } from "lucide-react";
+import { ArrowLeft, DollarSign, FileDown, GitBranch, MapPinned, Maximize2, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2, Syringe } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateAnimalPnLPdf } from "@/lib/pdfReports";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -185,6 +187,69 @@ function PnLCard({ animalId }: { animalId: number }) {
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function AnimalLocationPreview({ animal }: { animal: any }) {
+  const { t } = useTranslation();
+  const { data: mapImage } = trpc.config.getFarmMapImage.useQuery();
+  const { data: groups } = trpc.config.getGroups.useQuery();
+  const group = (groups ?? []).find((item: any) => item.id === animal.animal.groupId);
+  const shape = readMapShape(group?.mapShape);
+
+  if (!mapImage?.url || !group || !shape) return null;
+
+  const groupLabel = group.groupCode ? `${group.groupCode} - ${group.name}` : group.name ?? animal.groupName;
+
+  return (
+    <div className="border-t pt-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <MapPinned className="h-3.5 w-3.5" />
+          {t("animalProfile.mapLocation")}
+        </span>
+      </div>
+      <Dialog>
+        <DialogTrigger asChild>
+          <button
+            type="button"
+            className="group block w-full rounded-md text-left outline-none ring-offset-background transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            aria-label={t("animalProfile.openMapLocation")}
+          >
+            <div className="relative">
+              <FarmMapPreview
+                imageUrl={mapImage.url}
+                imageAlt={t("farmMap.imageAlt")}
+                groups={groups ?? []}
+                selectedGroupId={animal.animal.groupId}
+                selectedLabel={groupLabel}
+                className="max-h-40 shadow-xs"
+              />
+              <span className="absolute right-2 top-2 rounded bg-background/90 p-1 shadow">
+                <Maximize2 className="h-3.5 w-3.5" />
+              </span>
+            </div>
+          </button>
+        </DialogTrigger>
+        <DialogContent className="max-w-5xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPinned className="h-4 w-4 text-primary" />
+              {t("animalProfile.mapLocation")}
+            </DialogTitle>
+          </DialogHeader>
+          <FarmMapPreview
+            imageUrl={mapImage.url}
+            imageAlt={t("farmMap.imageAlt")}
+            groups={groups ?? []}
+            selectedGroupId={animal.animal.groupId}
+            selectedLabel={groupLabel}
+            showLabels
+            className="max-h-[70vh] shadow-sm"
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 
@@ -749,6 +814,7 @@ export default function AnimalProfile() {
                 <span className="text-sm font-medium text-right max-w-32 truncate">{value ?? "—"}</span>
               </div>
             ))}
+            <AnimalLocationPreview animal={animal} />
             {animal.nextVaccineDate && (
               <div className="flex justify-between items-start border-t pt-2">
                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">

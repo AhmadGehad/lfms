@@ -1,6 +1,8 @@
 import { protectedProcedure, staffProcedure, supervisorProcedure, privilegedProcedure, router } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
+import { storageGetSignedUrl, storagePut } from "../storage";
 import {
   getAllSpecies, createSpecies, updateSpecies,
   getAllCategories, createCategory, updateCategory,
@@ -12,11 +14,36 @@ import {
   getFeedItemPriceHistory, addFeedItemPrice, getAllFeedItemPrices, updateFeedItemPrice, deleteFeedItemPrice,
   getAllExpenseCategories, createExpenseCategory, updateExpenseCategory,
   getAllExpenseSubCategories, createExpenseSubCategory, updateExpenseSubCategory,
-  getAllSettings, upsertSetting,
+  getAllSettings, getSetting, upsertSetting,
   getAllUsers, updateUserRole,
   createAuditEntry,
   getVaccines, addVaccine, updateVaccine, deleteVaccine,
 } from "../db";
+
+const FARM_MAP_IMAGE_KEY_SETTING = "farmMapImageKey";
+const MAX_FARM_MAP_BYTES = 8 * 1024 * 1024;
+const MAX_FARM_MAP_DATA_URL_LENGTH = Math.ceil((MAX_FARM_MAP_BYTES * 4) / 3) + 128;
+
+const mapPointSchema = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+});
+
+const mapShapeSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("rect"),
+    x: z.number().min(0).max(1),
+    y: z.number().min(0).max(1),
+    width: z.number().min(0).max(1),
+    height: z.number().min(0).max(1),
+  })
+    .refine((shape) => shape.width > 0 && shape.height > 0, "Rectangle needs area")
+    .refine((shape) => shape.x + shape.width <= 1 && shape.y + shape.height <= 1, "Rectangle must fit inside map"),
+  z.object({
+    type: z.literal("polygon"),
+    points: z.array(mapPointSchema).min(3).max(80),
+  }),
+]);
 
 export const configRouter = router({
   // ─── SPECIES ────────────────────────────────────────────────────────────────
@@ -107,6 +134,7 @@ export const configRouter = router({
       description: z.string().optional(),
       latitude: z.string().optional(),
       longitude: z.string().optional(),
+      mapShape: mapShapeSchema.nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await createGroup(input);
@@ -124,6 +152,7 @@ export const configRouter = router({
       description: z.string().optional(),
       latitude: z.string().nullable().optional(),
       longitude: z.string().nullable().optional(),
+      mapShape: mapShapeSchema.nullable().optional(),
       isActive: z.boolean().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
@@ -298,6 +327,61 @@ export const configRouter = router({
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
   getSettings: protectedProcedure.query(() => getAllSettings()),
+
+  getFarmMapImage: protectedProcedure.query(async () => {
+    const key = await getSetting(FARM_MAP_IMAGE_KEY_SETTING);
+    if (!key) return { key: null, url: null };
+    try {
+      const url = await storageGetSignedUrl(key);
+      return { key, url };
+    } catch {
+      return { key, url: null };
+    }
+  }),
+
+  setFarmMapImage: supervisorProcedure
+    .input(z.object({
+      dataUrl: z
+        .string()
+        .max(MAX_FARM_MAP_DATA_URL_LENGTH, "Image too large (max 8MB)")
+        .refine((s) => /^data:image\/(jpeg|jpg|png|webp);base64,/.test(s), "Must be a JPEG, PNG, or WebP data URL"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const match = input.dataUrl.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+      if (!match) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid image data" });
+
+      const contentType = match[1];
+      const buffer = Buffer.from(match[2], "base64");
+      if (buffer.length > MAX_FARM_MAP_BYTES) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Image too large (max 8MB)" });
+      }
+
+      const ext = contentType.split("/")[1].replace("jpeg", "jpg");
+      const { key } = await storagePut(`farm-map/farm-map.${ext}`, buffer, contentType);
+      await upsertSetting(FARM_MAP_IMAGE_KEY_SETTING, key, ctx.user?.id);
+      await createAuditEntry({
+        userId: ctx.user.id,
+        entityType: "setting",
+        entityId: FARM_MAP_IMAGE_KEY_SETTING,
+        action: "update",
+        newValues: { key },
+        ipAddress: getClientIp(ctx),
+      });
+      return { success: true, key };
+    }),
+
+  removeFarmMapImage: supervisorProcedure.mutation(async ({ ctx }) => {
+    await upsertSetting(FARM_MAP_IMAGE_KEY_SETTING, "", ctx.user?.id);
+    await createAuditEntry({
+      userId: ctx.user.id,
+      entityType: "setting",
+      entityId: FARM_MAP_IMAGE_KEY_SETTING,
+      action: "update",
+      newValues: { key: null },
+      ipAddress: getClientIp(ctx),
+    });
+    return { success: true };
+  }),
 
   upsertSetting: supervisorProcedure
     .input(z.object({ key: z.string(), value: z.string() }))

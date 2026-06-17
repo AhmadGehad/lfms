@@ -14,18 +14,18 @@ interface ActionButtonProps extends ButtonProps {
  * Button component that is disabled for viewer-role users.
  * Viewers see a disabled button with a tooltip instead.
  */
-export function ActionButton({ 
-  children, 
-  ...props 
+export function ActionButton({
+  children,
+  ...props
 }: ActionButtonProps) {
   const { user } = useAuth();
   const isViewer = user?.role === "viewer";
 
   if (isViewer) {
     return (
-      <Button 
-        {...props} 
-        disabled 
+      <Button
+        {...props}
+        disabled
         title="Viewers cannot perform actions"
         variant="outline"
       >
