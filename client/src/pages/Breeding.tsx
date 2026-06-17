@@ -24,6 +24,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
@@ -191,6 +192,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
 
 export default function Breeding() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: lambingLog, isLoading, refetch } = trpc.breeding.listLambing.useQuery();
   const utils = trpc.useUtils();
 
@@ -246,7 +248,7 @@ export default function Breeding() {
             {(lambingLog ?? []).length} birth records · {(lambingLog ?? []).filter((l: any) => !l.isPromoted).length} pending promotion
           </p>
         </div>
-        <RecordBirthDialog onSuccess={refetch} />
+        {canMutate && <RecordBirthDialog onSuccess={refetch} />}
       </div>
 
       <Card>

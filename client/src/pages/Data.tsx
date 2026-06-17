@@ -7,6 +7,7 @@ import { AlertTriangle, Database, Download, FileUp, HardDriveDownload, History, 
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 type ImportMode = "append" | "replace";
 
@@ -35,6 +36,7 @@ export default function Data() {
 // ── Import Excel ─────────────────────────────────────────────────────────────
 function ImportCard() {
   const { t } = useTranslation();
+  const { canPurgeOrRestore } = usePermissions();
   const fileRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<any[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -88,10 +90,10 @@ function ImportCard() {
             e.target.value = "";
           }}
         />
-        <Button onClick={() => fileRef.current?.click()} disabled={apply.isPending} className="gap-2">
+        {canPurgeOrRestore && <Button onClick={() => fileRef.current?.click()} disabled={apply.isPending} className="gap-2">
           <FileUp className="h-4 w-4" />
           {apply.isPending ? t("data.importing") : t("data.chooseExcel")}
-        </Button>
+        </Button>}
 
         {stats && (
           <div className="mt-3 space-y-1 text-sm">
@@ -172,6 +174,7 @@ function BackupCard() {
 // ── Restore ──────────────────────────────────────────────────────────────────
 function RestoreCard() {
   const { t } = useTranslation();
+  const { canPurgeOrRestore } = usePermissions();
   const fileRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<any | null>(null);
   const [mode, setMode] = useState<ImportMode>("append");
@@ -225,10 +228,10 @@ function RestoreCard() {
             e.target.value = "";
           }}
         />
-        <Button onClick={() => fileRef.current?.click()} disabled={restore.isPending} className="gap-2" variant="outline">
+        {canPurgeOrRestore && <Button onClick={() => fileRef.current?.click()} disabled={restore.isPending} className="gap-2" variant="outline">
           <FileUp className="h-4 w-4" />
           {restore.isPending ? t("data.restoring") : t("data.chooseBackup")}
-        </Button>
+        </Button>}
 
         {stats && (
           <div className="mt-3 space-y-1 text-sm">

@@ -27,6 +27,7 @@ import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 function StatusBadge({ status }: { status: string }) {
   const lower = status?.toLowerCase() ?? "";
@@ -914,6 +915,7 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
 
 export default function Animals() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const [, setLocation] = useLocation();
   const searchStr = useSearch();
   const editIdFromUrl = React.useMemo(() => {
@@ -1106,7 +1108,7 @@ export default function Animals() {
             {filtered.length} animals · All lifecycle stages
           </p>
         </div>
-        <AddAnimalDialog onSuccess={refetch} />
+        {canMutate && <AddAnimalDialog onSuccess={refetch} />}
       </div>
 
       {/* Filters */}
@@ -1175,7 +1177,7 @@ export default function Animals() {
                 <SelectItem value="born">{t("animals.bornOnFarm")}</SelectItem>
               </SelectContent>
             </Select>
-            {selectedIds.size > 0 && (
+            {canMutate && selectedIds.size > 0 && (
               <div className="flex gap-2 ms-auto">
                 <Button onClick={() => setBulkEditOpen(true)} variant="outline" className="gap-2">
                   <Pencil className="h-4 w-4" />
@@ -1301,6 +1303,7 @@ export default function Animals() {
                           <TableCell>{days}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              {canMutate && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1309,6 +1312,7 @@ export default function Animals() {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1316,6 +1320,7 @@ export default function Animals() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
+                              {canMutate && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
@@ -1348,6 +1353,7 @@ export default function Animals() {
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>

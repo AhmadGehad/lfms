@@ -24,6 +24,7 @@ import { useState } from "react";
 import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
@@ -346,6 +347,7 @@ function RecordPaymentDialog({ saleId, animalCode, outstanding, onSuccess }: { s
 
 export default function Sales() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const [filterOwner, setFilterOwner] = useState<string>("all");
   const [filterBuyer, setFilterBuyer] = useState<string>("");
   const [outstandingOnly, setOutstandingOnly] = useState<boolean>(false);
@@ -388,7 +390,7 @@ export default function Sales() {
             {pendingCount > 0 && <span className="ml-2 text-amber-600 font-medium">· {t("sales.pendingPriceEntry", { count: pendingCount })}</span>}
           </p>
         </div>
-        <RecordSaleDialog onSuccess={refetch} />
+        {canMutate && <RecordSaleDialog onSuccess={refetch} />}
       </div>
 
       {outstandingCount > 0 && (
@@ -525,11 +527,11 @@ export default function Sales() {
                         <TableCell className="text-muted-foreground">{buyerName ?? "—"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {outstanding > 0 && !isPending && (
+                            {canMutate && outstanding > 0 && !isPending && (
                               <RecordPaymentDialog saleId={saleId} animalCode={animalCode} outstanding={outstanding} onSuccess={refetch} />
                             )}
-                            <EditSaleDialog sale={saleForEdit} onSuccess={refetch} />
-                            <AlertDialog>
+                            {canMutate && <EditSaleDialog sale={saleForEdit} onSuccess={refetch} />}
+                            {canMutate && <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0">
                                   <Trash2 className="h-4 w-4" />
@@ -552,7 +554,7 @@ export default function Sales() {
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
-                            </AlertDialog>
+                            </AlertDialog>}
                           </div>
                         </TableCell>
                       </TableRow>

@@ -20,6 +20,7 @@ import * as React from "react";
 import { useLocation, useParams } from "wouter";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   CartesianGrid,
   Line,
@@ -32,6 +33,7 @@ import {
 
 function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boolean }) {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const utils = trpc.useUtils();
   const { data: photo } = trpc.animals.getPhotoUrl.useQuery({ id: animalId });
   const [uploading, setUploading] = useState(false);
@@ -79,11 +81,11 @@ function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boole
         )}
       </div>
       <div className="flex items-center gap-1">
-        <label className="text-xs text-primary cursor-pointer hover:underline">
+        {canMutate && <label className="text-xs text-primary cursor-pointer hover:underline">
           {hasPhoto ? t("animalProfile.changePhoto") : t("animalProfile.addPhoto")}
           <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFile} disabled={uploading} />
-        </label>
-        {hasPhoto && (
+        </label>}
+        {canMutate && hasPhoto && (
           <button className="text-xs text-red-500 hover:underline" onClick={() => removePhoto.mutate({ id: animalId })}>
             · {t("common.remove")}
           </button>
@@ -255,6 +257,7 @@ function AnimalLocationPreview({ animal }: { animal: any }) {
 
 function WeightChart({ animalId }: { animalId: number }) {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: weights } = trpc.animals.getWeightLog.useQuery({ animalId });
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -311,7 +314,7 @@ function WeightChart({ animalId }: { animalId: number }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">{t("animals.weightHistory")}</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
+        {canMutate && <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="gap-2">
               <Plus className="h-3 w-3" />
@@ -336,7 +339,7 @@ function WeightChart({ animalId }: { animalId: number }) {
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       {chartData.length > 0 ? (
@@ -385,7 +388,7 @@ function WeightChart({ animalId }: { animalId: number }) {
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">{w.notes ?? "—"}</TableCell>
                 <TableCell className="text-right">
-                  <AlertDialog>
+                  {canMutate && <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50">
                         <Trash2 className="h-3.5 w-3.5" />
@@ -405,7 +408,7 @@ function WeightChart({ animalId }: { animalId: number }) {
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
-                  </AlertDialog>
+                  </AlertDialog>}
                 </TableCell>
               </TableRow>
             )})}
@@ -702,6 +705,7 @@ function VaccinationHistoryTab({ animalId }: { animalId: number }) {
 
 export default function AnimalProfile() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const params = useParams<{ id: string }>();
   const animalId = Number(params.id);
   const [, setLocation] = useLocation();
@@ -753,20 +757,20 @@ export default function AnimalProfile() {
         </div>
         {/* Quick Actions */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
+          {canMutate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
             <DollarSign className="h-3.5 w-3.5" />
             {t("expenses.addExpense")}
-          </Button>
-          {animal.animal.isActive && (
+          </Button>}
+          {canMutate && animal.animal.isActive && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/sales?animalId=${animal.animal.id}`)}>
               <ShoppingCart className="h-3.5 w-3.5" />
               {t("sales.recordSale")}
             </Button>
           )}
-          <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/animals?edit=${animal.animal.id}`)}>
+          {canMutate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/animals?edit=${animal.animal.id}`)}>
             <Pencil className="h-3.5 w-3.5" />
             {t("common.edit")}
-          </Button>
+          </Button>}
           <DownloadPdfButton animal={animal} animalId={animalId} />
         </div>
       </div>

@@ -24,6 +24,7 @@ import { AlertTriangle, CalendarDays, Pencil, Wheat, Trash2 } from "lucide-react
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Checkbox } from "@/components/ui/checkbox";
 
 function StockStatusBadge({ status }: { status: string }) {
@@ -584,6 +585,7 @@ function PriceFormDialog({ trigger, price, onSuccess }: { trigger: ReactNode; pr
 
 function PriceHistoryTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: prices, isLoading } = trpc.config.getAllFeedItemPrices.useQuery();
   const utils = trpc.useUtils();
   const deletePrice = trpc.config.deleteFeedItemPrice.useMutation({
@@ -596,10 +598,10 @@ function PriceHistoryTab() {
     <>
       <div className="flex items-center justify-between gap-2 mb-3">
         <p className="text-sm text-muted-foreground">{t("feed.priceHistoryHint")}</p>
-        <PriceFormDialog
+        {canMutate && <PriceFormDialog
           trigger={<Button size="sm" className="gap-2"><span className="text-lg leading-none">+</span> {t("feed.addPrice")}</Button>}
           onSuccess={() => {}}
-        />
+        />}
       </div>
       <Card>
         <CardContent className="p-0">
@@ -632,12 +634,12 @@ function PriceHistoryTab() {
                       <TableCell className="text-muted-foreground text-xs">{fmtDate(p.createdAt)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <PriceFormDialog
+                          {canMutate && <PriceFormDialog
                             price={p}
                             trigger={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></Button>}
                             onSuccess={() => {}}
-                          />
-                          <AlertDialog>
+                          />}
+                          {canMutate && <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
                             </AlertDialogTrigger>
@@ -658,7 +660,7 @@ function PriceHistoryTab() {
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
-                          </AlertDialog>
+                          </AlertDialog>}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -675,6 +677,7 @@ function PriceHistoryTab() {
 
 export default function Feed() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
   const { data: shrinkage } = trpc.feed.getShrinkage.useQuery();
   const { data: stockLedger, isLoading: ledgerLoading } = trpc.feed.getStockLedger.useQuery();
@@ -747,7 +750,7 @@ export default function Feed() {
             {t("feed.feedItemsTracked", { count: (stockStatus ?? []).length })}
           </p>
         </div>
-        <AddStockDialog onSuccess={() => {}} />
+        {canMutate && <AddStockDialog onSuccess={() => {}} />}
       </div>
 
       {/* Low Stock Alert Banner */}
@@ -895,11 +898,11 @@ export default function Feed() {
                           <TableCell className="text-muted-foreground">{entry.supplierName ?? "—"}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <EditStockDialog
+                              {canMutate && <EditStockDialog
                                 entry={entry}
                                 onSuccess={() => {}}
-                              />
-                              <AlertDialog>
+                              />}
+                              {canMutate && <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                     <Trash2 className="h-4 w-4" />
@@ -922,7 +925,7 @@ export default function Feed() {
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
-                              </AlertDialog>
+                              </AlertDialog>}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -982,7 +985,7 @@ export default function Feed() {
                 </>
               )}
             </div>
-            <AddRationPlanDialog onSuccess={() => {}} />
+            {canMutate && <AddRationPlanDialog onSuccess={() => {}} />}
           </div>
           <Card>
             <CardContent className="p-0">
@@ -1045,11 +1048,11 @@ export default function Feed() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <EditRationPlanDialog
+                              {canMutate && <EditRationPlanDialog
                                 plan={plan}
                                 onSuccess={() => utils.feed.getRationPlans.invalidate()}
-                              />
-                              <AlertDialog>
+                              />}
+                              {canMutate && <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                     <Trash2 className="h-4 w-4" />
@@ -1072,7 +1075,7 @@ export default function Feed() {
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
-                              </AlertDialog>
+                              </AlertDialog>}
                             </div>
                           </TableCell>
                         </TableRow>

@@ -6,9 +6,11 @@ import { trpc } from "@/lib/trpc";
 import { Users } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function UserManagement() {
   const { t } = useTranslation();
+  const { canManageUsers } = usePermissions();
   const { data: users, isLoading } = trpc.userMgmt.listUsers.useQuery();
   const utils = trpc.useUtils();
 
@@ -74,8 +76,9 @@ export default function UserManagement() {
                         {new Date(u.createdAt).toLocaleDateString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Select
-                          value={u.role}
+                        {canManageUsers ? (
+                        <Select 
+                          value={u.role} 
                           onValueChange={(role) => updateRole.mutate({ userId: u.id, role: role as any })}
                           disabled={updateRole.isPending}
                         >
@@ -90,6 +93,9 @@ export default function UserManagement() {
                             ))}
                           </SelectContent>
                         </Select>
+                        ) : (
+                          <Badge variant="secondary" className="capitalize">{u.role}</Badge>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
@@ -183,6 +184,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
 
 export default function Expenses() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1);
     return d.toISOString().split("T")[0];
@@ -226,7 +228,7 @@ export default function Expenses() {
             {(expenses ?? []).length} entries · Total: EGP {totalAmount.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
           </p>
         </div>
-        <AddExpenseDialog onSuccess={refetch} />
+        {canMutate && <AddExpenseDialog onSuccess={refetch} />}
       </div>
 
       <Card>

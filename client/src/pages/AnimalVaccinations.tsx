@@ -23,6 +23,7 @@ import { AlertTriangle, CalendarDays, Pencil, Syringe, Trash2, CheckCircle2, Use
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 function VaccinationStatusBadge({ record }: { record: any }) {
   const { t } = useTranslation();
@@ -380,6 +381,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
 
 export default function AnimalVaccinations() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: records, isLoading } = trpc.vaccination.getVaccinationRecords.useQuery();
   const utils = trpc.useUtils();
 
@@ -408,8 +410,8 @@ export default function AnimalVaccinations() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-end gap-2 mb-4">
-            <BulkVaccinationDialog onSuccess={() => {}} />
-            <VaccinationRecordFormDialog onSuccess={() => {}} />
+            {canMutate && <BulkVaccinationDialog onSuccess={() => {}} />}
+            {canMutate && <VaccinationRecordFormDialog onSuccess={() => {}} />}
           </div>
 
           <div className="overflow-x-auto">
@@ -445,7 +447,7 @@ export default function AnimalVaccinations() {
                       <TableCell><VaccinationStatusBadge record={r} /></TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <VaccinationRecordFormDialog record={r} onSuccess={() => {}} />
+                          {canMutate && <VaccinationRecordFormDialog record={r} onSuccess={() => {}} />}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>

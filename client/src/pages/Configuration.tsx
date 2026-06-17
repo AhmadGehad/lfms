@@ -13,6 +13,7 @@ import { Settings, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // ── Reusable inline edit dialog ───────────────────────────────────────────────
@@ -38,6 +39,7 @@ function EditDialog({ title, open, onOpenChange, onSave, isPending, children }: 
 // ── Species Tab ──────────────────────────────────────────────────────────────
 function SpeciesTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: species } = trpc.config.getSpecies.useQuery();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -63,7 +65,7 @@ function SpeciesTab() {
         <h3 className="font-semibold">{t("config.species")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addSpecies")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addSpecies")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addSpecies")}</DialogTitle></DialogHeader>
@@ -95,7 +97,7 @@ function SpeciesTab() {
               <TableCell className="font-medium">{s.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{s.description ?? "—"}</TableCell>
               <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge></TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -107,6 +109,7 @@ function SpeciesTab() {
 // ── Categories Tab ───────────────────────────────────────────────────────────
 function CategoriesTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: species } = trpc.config.getSpecies.useQuery();
   const [open, setOpen] = useState(false);
@@ -153,7 +156,7 @@ function CategoriesTab() {
         <h3 className="font-semibold">{t("config.animalCategories")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addCategory")}</DialogTitle></DialogHeader>
@@ -238,7 +241,7 @@ function CategoriesTab() {
                   ? `≥${parseFloat(c.autoStageWeightKg).toFixed(0)} kg → ${(categories ?? []).find((x: any) => x.id === c.autoStageTargetCategoryId)?.name ?? `cat #${c.autoStageTargetCategoryId}`}`
                   : "—"}
               </TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -250,6 +253,7 @@ function CategoriesTab() {
 // ── Groups Tab ───────────────────────────────────────────────────────────────
 function GroupsTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: groups } = trpc.config.getGroups.useQuery();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -274,7 +278,7 @@ function GroupsTab() {
         <h3 className="font-semibold">{t("config.groups")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addGroup")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addGroup")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addGroupPen")}</DialogTitle></DialogHeader>
@@ -316,7 +320,7 @@ function GroupsTab() {
               <TableCell className="font-medium">{g.name}</TableCell>
               <TableCell className="font-mono text-sm">{g.groupCode ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{g.description ?? "—"}</TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(g)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(g)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -328,6 +332,7 @@ function GroupsTab() {
 // ── Statuses Tab ────────────────────────────────────────────────────────────
 function StatusesTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -349,7 +354,7 @@ function StatusesTab() {
         <h3 className="font-semibold">{t("config.statuses")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addStatus")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addStatus")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addAnimalStatus")}</DialogTitle></DialogHeader>
@@ -378,7 +383,7 @@ function StatusesTab() {
             <TableRow key={s.id}>
               <TableCell className="font-medium">{s.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{s.description ?? "—"}</TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -389,6 +394,7 @@ function StatusesTab() {
 // ── Birth Types Tab ──────────────────────────────────────────────────────────
 function OwnersTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: owners } = trpc.config.getOwners.useQuery({ activeOnly: false });
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -421,7 +427,7 @@ function OwnersTab() {
         <h3 className="font-semibold">{t("owners.owners")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("owners.addOwner")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("owners.addOwner")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>{t("owners.addOwner")}</DialogTitle></DialogHeader>
@@ -468,7 +474,7 @@ function OwnersTab() {
               <TableCell className="text-muted-foreground text-sm">{o.email ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">{o.notes ?? "—"}</TableCell>
               <TableCell>{o.isActive ? <Badge className="bg-green-100 text-green-800 border-green-200">{t("common.active")}</Badge> : <Badge variant="outline">{t("common.inactive")}</Badge>}</TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
           {(owners ?? []).length === 0 && (
@@ -482,6 +488,7 @@ function OwnersTab() {
 
 function BirthTypesTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: birthTypes } = trpc.config.getBirthTypes.useQuery();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -503,7 +510,7 @@ function BirthTypesTab() {
         <h3 className="font-semibold">{t("config.birthTypes")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addBirthType")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addBirthType")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addBirthType")}</DialogTitle></DialogHeader>
@@ -532,7 +539,7 @@ function BirthTypesTab() {
             <TableRow key={b.id}>
               <TableCell className="font-medium">{b.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{b.description ?? "—"}</TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(b)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(b)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -543,6 +550,7 @@ function BirthTypesTab() {
 // ── Feed Items Tab ───────────────────────────────────────────────────────────
 function FeedItemsTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: feedItems } = trpc.config.getFeedItems.useQuery();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -576,7 +584,7 @@ function FeedItemsTab() {
         <h3 className="font-semibold">{t("config.feedItems")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addFeedItem")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addFeedItem")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addFeedItem")}</DialogTitle></DialogHeader>
@@ -632,8 +640,8 @@ function FeedItemsTab() {
               <TableCell><Badge className={fi.isActive ? "bg-green-100 text-green-800 border-green-200 text-xs" : "bg-gray-100 text-gray-600 text-xs"}>{fi.isActive ? "Active" : "Inactive"}</Badge></TableCell>
               <TableCell>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setPriceItem(fi); setNewPrice(fi.currentPrice ?? ""); setPriceOpen(true); }}>{t("config.setPrice")}</Button>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(fi)}><Pencil className="h-3.5 w-3.5" /></Button>
+                  {canMutate && <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={() => { setPriceItem(fi); setNewPrice(fi.currentPrice ?? ""); setPriceOpen(true); }}>{t("config.setPrice")}</Button>}
+                  {canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(fi)}><Pencil className="h-3.5 w-3.5" /></Button>}
                 </div>
               </TableCell>
             </TableRow>
@@ -669,6 +677,7 @@ function FeedItemsTab() {
 // ── Expense Categories Tab ───────────────────────────────────────────────────
 function ExpenseCategoriesTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -694,7 +703,7 @@ function ExpenseCategoriesTab() {
         <h3 className="font-semibold">{t("config.expenseCategories")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-sm">
             <DialogHeader><DialogTitle>{t("config.addExpenseCategory")}</DialogTitle></DialogHeader>
@@ -726,7 +735,7 @@ function ExpenseCategoriesTab() {
               <TableCell className="font-medium">{c.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{c.description ?? "—"}</TableCell>
               <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge></TableCell>
-              <TableCell><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button></TableCell>
+              <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -785,6 +794,7 @@ export default function Configuration() {
 // ── Vaccines Tab ─────────────────────────────────────────────────────────────
 function VaccinesTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: vaccines, isLoading } = trpc.config.getVaccines.useQuery();
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -830,7 +840,7 @@ function VaccinesTab() {
         <h3 className="font-semibold">{t("vaccine.title")}</h3>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("vaccine.addVaccine")}</Button>
+            {canMutate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("vaccine.addVaccine")}</Button>)}
           </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>{t("vaccine.addVaccine")}</DialogTitle></DialogHeader>
@@ -904,8 +914,8 @@ function VaccinesTab() {
                 <TableCell><Badge className={v.isActive ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}>{v.isActive ? t("common.active") : t("common.inactive")}</Badge></TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(v)}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <AlertDialog>
+                    {canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(v)}><Pencil className="h-3.5 w-3.5" /></Button>}
+                    {canMutate && <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></Button>
                       </AlertDialogTrigger>
@@ -919,7 +929,7 @@ function VaccinesTab() {
                           <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteVaccine.mutate({ id: v.id })}>{t("common.delete")}</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
-                    </AlertDialog>
+                    </AlertDialog>}
                   </div>
                 </TableCell>
               </TableRow>
@@ -934,6 +944,7 @@ function VaccinesTab() {
 // ── Settings Tab ─────────────────────────────────────────────────────────────
 function SettingsTab() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const { data: settings } = trpc.config.getSettings.useQuery();
   const utils = trpc.useUtils();
   const [currency, setCurrency] = useState("");
@@ -976,9 +987,9 @@ function SettingsTab() {
             maxLength={5}
             className="font-mono"
           />
-          <Button onClick={() => handleSave("currency", currency)} disabled={upsert.isPending}>
+          {canMutate && <Button onClick={() => handleSave("currency", currency)} disabled={upsert.isPending}>
             {t("common.save")}
-          </Button>
+          </Button>}
         </div>
         <p className="text-xs text-muted-foreground">
           The 3-letter code used throughout the app (e.g. EGP, USD, EUR, SAR).
@@ -993,9 +1004,9 @@ function SettingsTab() {
             onChange={(e) => setFarmName(e.target.value)}
             placeholder="e.g. Azal Farms"
           />
-          <Button onClick={() => handleSave("farmName", farmName)} disabled={upsert.isPending}>
+          {canMutate && <Button onClick={() => handleSave("farmName", farmName)} disabled={upsert.isPending}>
             {t("common.save")}
-          </Button>
+          </Button>}
         </div>
         <p className="text-xs text-muted-foreground">
           {t("config.farmNameHint")}

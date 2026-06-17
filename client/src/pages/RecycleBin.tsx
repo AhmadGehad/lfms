@@ -375,6 +375,7 @@ export default function RecycleBin() {
                         </div>
                         <div className="flex items-center gap-2 ml-4 shrink-0">
                           {/* Restore */}
+                          {isAdmin && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -384,6 +385,7 @@ export default function RecycleBin() {
                             <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                             {t("recycleBin.restore")}
                           </Button>
+                          )}
 
                           {/* Permanent delete (admin only, and only for supported types) */}
                           {isAdmin && ["animal", "expense", "weightLog", "lambingLog", "rationPlan", "feedStock", "sale"].includes(item.entityType) && (

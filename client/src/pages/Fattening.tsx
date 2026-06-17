@@ -24,6 +24,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // ─── Record Weight Dialog ────────────────────────────────────────────────────
 function RecordWeightDialog({
@@ -193,6 +194,7 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function Fattening() {
   const { t } = useTranslation();
+  const { canMutate } = usePermissions();
   const [, setLocation] = useLocation();
 
   const { data: animals, isLoading } = trpc.animals.list.useQuery({ isActive: true });
@@ -227,7 +229,7 @@ export default function Fattening() {
             {fatteningAnimals.length} animals in fattening
           </p>
         </div>
-        <RecordWeightDialog animals={fatteningAnimals} onSuccess={() => {}} />
+        {canMutate && <RecordWeightDialog animals={fatteningAnimals} onSuccess={() => {}} />}
       </div>
 
       <Card>
@@ -312,6 +314,7 @@ export default function Fattening() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
+                            {canMutate && (<>
                             {/* Record weight for this animal */}
                             <RecordWeightDialog
                               animals={fatteningAnimals}
@@ -352,6 +355,7 @@ export default function Fattening() {
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
+                            </>)}
                           </div>
                         </TableCell>
                       </TableRow>
