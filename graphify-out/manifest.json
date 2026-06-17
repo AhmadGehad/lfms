@@ -890,8 +890,8 @@
     "semantic_hash": ""
   },
   "client/src/components/DashboardLayout.tsx": {
-    "mtime": 1781658441.1673036,
-    "ast_hash": "2a5a19c4a6ff401c377ddd146254f70d",
+    "mtime": 1781660856.3927343,
+    "ast_hash": "a2c92834753554dcee01f520b32356ec",
     "semantic_hash": ""
   },
   "client/src/components/DashboardLayoutSkeleton.tsx": {
@@ -1220,8 +1220,8 @@
     "semantic_hash": ""
   },
   "client/src/lib/i18n.ts": {
-    "mtime": 1781659192.9179955,
-    "ast_hash": "10d84e69f33f69154885e97fa6069dc3",
+    "mtime": 1781660923.1845999,
+    "ast_hash": "49f78a0b995e7f4a55e1ffdefa225313",
     "semantic_hash": ""
   },
   "client/src/lib/pdfReports.ts": {
@@ -1245,8 +1245,8 @@
     "semantic_hash": ""
   },
   "client/src/pages/AnimalProfile.tsx": {
-    "mtime": 1781615680.529539,
-    "ast_hash": "b81f460183e09580e4fe5ee20ba4a871",
+    "mtime": 1781661001.0238838,
+    "ast_hash": "c18d8eb53d6d490c6b02b4daf018b6c9",
     "semantic_hash": ""
   },
   "client/src/pages/Animals.tsx": {
@@ -1400,7 +1400,7 @@
     "semantic_hash": ""
   },
   "drizzle/meta/_journal.json": {
-    "mtime": 1781659192.9205973,
+    "mtime": 1781660260.4945037,
     "ast_hash": "dd70f7db0728e4d90e5eb2c1602d6e62",
     "semantic_hash": ""
   },
@@ -1575,7 +1575,7 @@
     "semantic_hash": ""
   },
   "server/db.ts": {
-    "mtime": 1781659311.021942,
+    "mtime": 1781660260.5023541,
     "ast_hash": "b720065b5d764056ffaec6351d827014",
     "semantic_hash": ""
   },
@@ -2075,8 +2075,8 @@
     "semantic_hash": ""
   },
   "client/src/pages/FarmMap.tsx": {
-    "mtime": 1781658817.5133262,
-    "ast_hash": "f2f07803417d6ee5a37b4998f9864682",
+    "mtime": 1781660847.4072967,
+    "ast_hash": "d8e88f9d732784ad50f46cddbf2afdef",
     "semantic_hash": ""
   },
   "debug_fat0003.mjs": {
@@ -2085,7 +2085,7 @@
     "semantic_hash": ""
   },
   "drizzle/0010_group_map_shape.sql": {
-    "mtime": 1781658266.403687,
+    "mtime": 1781660260.4940152,
     "ast_hash": "df12996e763a3b7068538cab794f44b4",
     "semantic_hash": ""
   },
@@ -2362,6 +2362,16 @@
   "drizzle/meta/0003_snapshot.json": {
     "mtime": 1781659192.9203074,
     "ast_hash": "b48598c8549fed5505dd19807704b268",
+    "semantic_hash": ""
+  },
+  "client/src/components/FarmMapPreview.tsx": {
+    "mtime": 1781660762.7165468,
+    "ast_hash": "525ff3b46a255523f3b84a408a1f8784",
+    "semantic_hash": ""
+  },
+  "client/src/lib/farmMap.ts": {
+    "mtime": 1781660762.4079936,
+    "ast_hash": "b4c98e6cad5229d18833583157b4cf80",
     "semantic_hash": ""
   }
 }

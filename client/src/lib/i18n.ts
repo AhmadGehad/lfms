@@ -61,7 +61,10 @@ const en = {
     imageUpdated: "Map image updated",
     imageRemoved: "Map image removed",
     invalidImage: "Use JPEG, PNG, or WebP",
-    imageTooLarge: "Image too large (max 8MB)"
+    imageTooLarge: "Image too large (max 8MB)",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    resetZoom: "Reset zoom"
   },
 
   // Common
@@ -758,6 +761,8 @@ const en = {
     photoTooLarge: "Image too large (max 3MB)",
     addPhoto: "Add photo",
     changePhoto: "Change photo",
+    mapLocation: "Map Location",
+    openMapLocation: "Open map location",
 
     weightDeleted: "Weight entry deleted",
     deleteWeightTitle: "Delete weight entry?",
@@ -905,7 +910,10 @@ const ar = {
     imageUpdated: "تم تحديث صورة الخريطة",
     imageRemoved: "تمت إزالة صورة الخريطة",
     invalidImage: "استخدم JPEG أو PNG أو WebP",
-    imageTooLarge: "الصورة كبيرة جدًا (الحد 8 ميجابايت)"
+    imageTooLarge: "الصورة كبيرة جدًا (الحد 8 ميجابايت)",
+    zoomIn: "تكبير",
+    zoomOut: "تصغير",
+    resetZoom: "إعادة ضبط التكبير"
   },
 
   common: {
@@ -1629,6 +1637,8 @@ const ar = {
     photoTooLarge: "الصورة كبيرة جدًا (الحد 3 ميجابايت)",
     addPhoto: "إضافة صورة",
     changePhoto: "تغيير الصورة",
+    mapLocation: "موقع الخريطة",
+    openMapLocation: "فتح موقع الخريطة",
 
     weightDeleted: "تم حذف قياس الوزن",
     deleteWeightTitle: "حذف قياس الوزن؟",

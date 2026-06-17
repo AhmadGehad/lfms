@@ -1450,7 +1450,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_aichatbox",
-      "community": 55,
+      "community": 33,
       "norm_label": "aichatbox.tsx"
     },
     {
@@ -1460,7 +1460,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "components_aichatbox_message",
-      "community": 55,
+      "community": 33,
       "norm_label": "message"
     },
     {
@@ -1470,7 +1470,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "components_aichatbox_aichatboxprops",
-      "community": 55,
+      "community": 33,
       "norm_label": "aichatboxprops"
     },
     {
@@ -1480,7 +1480,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "components_aichatbox_aichatbox",
-      "community": 55,
+      "community": 33,
       "norm_label": "aichatbox()"
     },
     {
@@ -1580,7 +1580,7 @@
       "source_location": "L136",
       "_origin": "ast",
       "id": "components_dashboardlayout_dashboardlayoutcontent",
-      "community": 10,
+      "community": 5,
       "norm_label": "dashboardlayoutcontent()"
     },
     {
@@ -1672,6 +1672,46 @@
       "id": "components_errorboundary_errorboundary_render",
       "community": 51,
       "norm_label": ".render()"
+    },
+    {
+      "label": "FarmMapPreview.tsx",
+      "file_type": "code",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "components_farmmappreview",
+      "community": 25,
+      "norm_label": "farmmappreview.tsx"
+    },
+    {
+      "label": "FarmMapGroup",
+      "file_type": "code",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L11",
+      "_origin": "ast",
+      "id": "components_farmmappreview_farmmapgroup",
+      "community": 25,
+      "norm_label": "farmmapgroup"
+    },
+    {
+      "label": "ZoneShape()",
+      "file_type": "code",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L18",
+      "_origin": "ast",
+      "id": "components_farmmappreview_zoneshape",
+      "community": 25,
+      "norm_label": "zoneshape()"
+    },
+    {
+      "label": "FarmMapPreview()",
+      "file_type": "code",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L81",
+      "_origin": "ast",
+      "id": "components_farmmappreview_farmmappreview",
+      "community": 25,
+      "norm_label": "farmmappreview()"
     },
     {
       "label": "LanguageSwitcher.tsx",
@@ -1950,7 +1990,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_alert",
-      "community": 58,
+      "community": 2,
       "norm_label": "alert.tsx"
     },
     {
@@ -1960,7 +2000,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_alert_alertvariants",
-      "community": 58,
+      "community": 2,
       "norm_label": "alertvariants"
     },
     {
@@ -1970,7 +2010,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "ui_alert_alert",
-      "community": 58,
+      "community": 2,
       "norm_label": "alert()"
     },
     {
@@ -1980,7 +2020,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "ui_alert_alerttitle",
-      "community": 58,
+      "community": 2,
       "norm_label": "alerttitle()"
     },
     {
@@ -1990,7 +2030,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "ui_alert_alertdescription",
-      "community": 58,
+      "community": 2,
       "norm_label": "alertdescription()"
     },
     {
@@ -2170,7 +2210,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_button_group",
-      "community": 21,
+      "community": 12,
       "norm_label": "button-group.tsx"
     },
     {
@@ -2180,7 +2220,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "ui_button_group_buttongroupvariants",
-      "community": 21,
+      "community": 12,
       "norm_label": "buttongroupvariants"
     },
     {
@@ -2190,7 +2230,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "ui_button_group_buttongroup",
-      "community": 21,
+      "community": 12,
       "norm_label": "buttongroup()"
     },
     {
@@ -2200,7 +2240,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "ui_button_group_buttongrouptext",
-      "community": 21,
+      "community": 12,
       "norm_label": "buttongrouptext()"
     },
     {
@@ -2210,7 +2250,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "ui_button_group_buttongroupseparator",
-      "community": 21,
+      "community": 12,
       "norm_label": "buttongroupseparator()"
     },
     {
@@ -2610,7 +2650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_checkbox",
-      "community": 0,
+      "community": 12,
       "norm_label": "checkbox.tsx"
     },
     {
@@ -2620,7 +2660,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "ui_checkbox_checkbox",
-      "community": 0,
+      "community": 12,
       "norm_label": "checkbox()"
     },
     {
@@ -2770,7 +2810,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_context_menu",
-      "community": 4,
+      "community": 42,
       "norm_label": "context-menu.tsx"
     },
     {
@@ -2780,7 +2820,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenu",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenu()"
     },
     {
@@ -2790,7 +2830,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenutrigger",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenutrigger()"
     },
     {
@@ -2800,7 +2840,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenugroup",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenugroup()"
     },
     {
@@ -2810,7 +2850,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuportal",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenuportal()"
     },
     {
@@ -2820,7 +2860,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenusub",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenusub()"
     },
     {
@@ -2830,7 +2870,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuradiogroup",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenuradiogroup()"
     },
     {
@@ -2840,7 +2880,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenusubtrigger",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenusubtrigger()"
     },
     {
@@ -2850,7 +2890,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenusubcontent",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenusubcontent()"
     },
     {
@@ -2860,7 +2900,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenucontent",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenucontent()"
     },
     {
@@ -2870,7 +2910,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuitem",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenuitem()"
     },
     {
@@ -2880,7 +2920,7 @@
       "source_location": "L135",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenucheckboxitem",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenucheckboxitem()"
     },
     {
@@ -2890,7 +2930,7 @@
       "source_location": "L161",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuradioitem",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenuradioitem()"
     },
     {
@@ -2900,7 +2940,7 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenulabel",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenulabel()"
     },
     {
@@ -2910,7 +2950,7 @@
       "source_location": "L205",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuseparator",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenuseparator()"
     },
     {
@@ -2920,7 +2960,7 @@
       "source_location": "L218",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenushortcut",
-      "community": 4,
+      "community": 42,
       "norm_label": "contextmenushortcut()"
     },
     {
@@ -4030,7 +4070,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_menubar",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubar.tsx"
     },
     {
@@ -4040,7 +4080,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "ui_menubar_menubar",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubar()"
     },
     {
@@ -4050,7 +4090,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "ui_menubar_menubarmenu",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarmenu()"
     },
     {
@@ -4060,7 +4100,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "ui_menubar_menubargroup",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubargroup()"
     },
     {
@@ -4070,7 +4110,7 @@
       "source_location": "L35",
       "_origin": "ast",
       "id": "ui_menubar_menubarportal",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarportal()"
     },
     {
@@ -4080,7 +4120,7 @@
       "source_location": "L41",
       "_origin": "ast",
       "id": "ui_menubar_menubarradiogroup",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarradiogroup()"
     },
     {
@@ -4090,7 +4130,7 @@
       "source_location": "L49",
       "_origin": "ast",
       "id": "ui_menubar_menubartrigger",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubartrigger()"
     },
     {
@@ -4100,7 +4140,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "ui_menubar_menubarcontent",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarcontent()"
     },
     {
@@ -4110,7 +4150,7 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "ui_menubar_menubaritem",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubaritem()"
     },
     {
@@ -4120,7 +4160,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "ui_menubar_menubarcheckboxitem",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarcheckboxitem()"
     },
     {
@@ -4130,7 +4170,7 @@
       "source_location": "L138",
       "_origin": "ast",
       "id": "ui_menubar_menubarradioitem",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarradioitem()"
     },
     {
@@ -4140,7 +4180,7 @@
       "source_location": "L162",
       "_origin": "ast",
       "id": "ui_menubar_menubarlabel",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarlabel()"
     },
     {
@@ -4150,7 +4190,7 @@
       "source_location": "L182",
       "_origin": "ast",
       "id": "ui_menubar_menubarseparator",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarseparator()"
     },
     {
@@ -4160,7 +4200,7 @@
       "source_location": "L195",
       "_origin": "ast",
       "id": "ui_menubar_menubarshortcut",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarshortcut()"
     },
     {
@@ -4170,7 +4210,7 @@
       "source_location": "L211",
       "_origin": "ast",
       "id": "ui_menubar_menubarsub",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarsub()"
     },
     {
@@ -4180,7 +4220,7 @@
       "source_location": "L217",
       "_origin": "ast",
       "id": "ui_menubar_menubarsubtrigger",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarsubtrigger()"
     },
     {
@@ -4190,7 +4230,7 @@
       "source_location": "L241",
       "_origin": "ast",
       "id": "ui_menubar_menubarsubcontent",
-      "community": 43,
+      "community": 4,
       "norm_label": "menubarsubcontent()"
     },
     {
@@ -4300,7 +4340,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_pagination",
-      "community": 2,
+      "community": 4,
       "norm_label": "pagination.tsx"
     },
     {
@@ -4310,7 +4350,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "ui_pagination_pagination",
-      "community": 2,
+      "community": 4,
       "norm_label": "pagination()"
     },
     {
@@ -4320,7 +4360,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "ui_pagination_paginationcontent",
-      "community": 2,
+      "community": 4,
       "norm_label": "paginationcontent()"
     },
     {
@@ -4330,7 +4370,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "ui_pagination_paginationitem",
-      "community": 2,
+      "community": 4,
       "norm_label": "paginationitem()"
     },
     {
@@ -4340,7 +4380,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "ui_pagination_paginationlinkprops",
-      "community": 2,
+      "community": 4,
       "norm_label": "paginationlinkprops"
     },
     {
@@ -4350,7 +4390,7 @@
       "source_location": "L45",
       "_origin": "ast",
       "id": "ui_pagination_paginationlink",
-      "community": 2,
+      "community": 4,
       "norm_label": "paginationlink()"
     },
     {
@@ -4360,7 +4400,7 @@
       "source_location": "L68",
       "_origin": "ast",
       "id": "ui_pagination_paginationprevious",
-      "community": 2,
+      "community": 4,
       "norm_label": "paginationprevious()"
     },
     {
@@ -4370,7 +4410,7 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "ui_pagination_paginationnext",
-      "community": 2,
+      "community": 4,
       "norm_label": "paginationnext()"
     },
     {
@@ -4380,7 +4420,7 @@
       "source_location": "L102",
       "_origin": "ast",
       "id": "ui_pagination_paginationellipsis",
-      "community": 2,
+      "community": 4,
       "norm_label": "paginationellipsis()"
     },
     {
@@ -4440,7 +4480,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_progress",
-      "community": 55,
+      "community": 12,
       "norm_label": "progress.tsx"
     },
     {
@@ -4450,7 +4490,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_progress_progress",
-      "community": 55,
+      "community": 12,
       "norm_label": "progress()"
     },
     {
@@ -4530,7 +4570,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_scroll_area",
-      "community": 55,
+      "community": 33,
       "norm_label": "scroll-area.tsx"
     },
     {
@@ -4540,7 +4580,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_scroll_area_scrollarea",
-      "community": 55,
+      "community": 33,
       "norm_label": "scrollarea()"
     },
     {
@@ -4550,7 +4590,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "ui_scroll_area_scrollbar",
-      "community": 55,
+      "community": 33,
       "norm_label": "scrollbar()"
     },
     {
@@ -4670,7 +4710,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_separator",
-      "community": 21,
+      "community": 12,
       "norm_label": "separator.tsx"
     },
     {
@@ -4680,7 +4720,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_separator_separator",
-      "community": 21,
+      "community": 12,
       "norm_label": "separator()"
     },
     {
@@ -5100,7 +5140,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_slider",
-      "community": 55,
+      "community": 12,
       "norm_label": "slider.tsx"
     },
     {
@@ -5110,7 +5150,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_slider_slider",
-      "community": 55,
+      "community": 12,
       "norm_label": "slider()"
     },
     {
@@ -5120,7 +5160,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_sonner",
-      "community": 10,
+      "community": 0,
       "norm_label": "sonner.tsx"
     },
     {
@@ -5130,7 +5170,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_sonner_toaster",
-      "community": 10,
+      "community": 0,
       "norm_label": "toaster()"
     },
     {
@@ -5140,7 +5180,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_spinner",
-      "community": 55,
+      "community": 4,
       "norm_label": "spinner.tsx"
     },
     {
@@ -5150,7 +5190,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "ui_spinner_spinner",
-      "community": 55,
+      "community": 4,
       "norm_label": "spinner()"
     },
     {
@@ -5160,7 +5200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_switch",
-      "community": 55,
+      "community": 12,
       "norm_label": "switch.tsx"
     },
     {
@@ -5170,7 +5210,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_switch_switch",
-      "community": 55,
+      "community": 12,
       "norm_label": "switch()"
     },
     {
@@ -5480,7 +5520,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "contexts_themecontext",
-      "community": 10,
+      "community": 43,
       "norm_label": "themecontext.tsx"
     },
     {
@@ -5490,7 +5530,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "contexts_themecontext_theme",
-      "community": 10,
+      "community": 43,
       "norm_label": "theme"
     },
     {
@@ -5500,7 +5540,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "contexts_themecontext_themecontexttype",
-      "community": 10,
+      "community": 43,
       "norm_label": "themecontexttype"
     },
     {
@@ -5510,7 +5550,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "contexts_themecontext_themecontext",
-      "community": 10,
+      "community": 43,
       "norm_label": "themecontext"
     },
     {
@@ -5520,7 +5560,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "contexts_themecontext_themeproviderprops",
-      "community": 10,
+      "community": 43,
       "norm_label": "themeproviderprops"
     },
     {
@@ -5530,7 +5570,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "contexts_themecontext_themeprovider",
-      "community": 10,
+      "community": 43,
       "norm_label": "themeprovider()"
     },
     {
@@ -5540,7 +5580,7 @@
       "source_location": "L58",
       "_origin": "ast",
       "id": "contexts_themecontext_usetheme",
-      "community": 10,
+      "community": 5,
       "norm_label": "usetheme()"
     },
     {
@@ -5714,6 +5754,126 @@
       "norm_label": "usepersistfn()"
     },
     {
+      "label": "farmMap.ts",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "lib_farmmap",
+      "community": 25,
+      "norm_label": "farmmap.ts"
+    },
+    {
+      "label": "MapPoint",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L1",
+      "_origin": "ast",
+      "id": "lib_farmmap_mappoint",
+      "community": 25,
+      "norm_label": "mappoint"
+    },
+    {
+      "label": "RectShape",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L2",
+      "_origin": "ast",
+      "id": "lib_farmmap_rectshape",
+      "community": 25,
+      "norm_label": "rectshape"
+    },
+    {
+      "label": "PolygonShape",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L3",
+      "_origin": "ast",
+      "id": "lib_farmmap_polygonshape",
+      "community": 25,
+      "norm_label": "polygonshape"
+    },
+    {
+      "label": "MapShape",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L4",
+      "_origin": "ast",
+      "id": "lib_farmmap_mapshape",
+      "community": 25,
+      "norm_label": "mapshape"
+    },
+    {
+      "label": "ZONE_COLORS",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L8",
+      "_origin": "ast",
+      "id": "lib_farmmap_zone_colors",
+      "community": 25,
+      "norm_label": "zone_colors"
+    },
+    {
+      "label": "clampUnit()",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L17",
+      "_origin": "ast",
+      "id": "lib_farmmap_clampunit",
+      "community": 25,
+      "norm_label": "clampunit()"
+    },
+    {
+      "label": "readMapShape()",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L21",
+      "_origin": "ast",
+      "id": "lib_farmmap_readmapshape",
+      "community": 25,
+      "norm_label": "readmapshape()"
+    },
+    {
+      "label": "isValidShape()",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L48",
+      "_origin": "ast",
+      "id": "lib_farmmap_isvalidshape",
+      "community": 0,
+      "norm_label": "isvalidshape()"
+    },
+    {
+      "label": "shapeCenter()",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L54",
+      "_origin": "ast",
+      "id": "lib_farmmap_shapecenter",
+      "community": 25,
+      "norm_label": "shapecenter()"
+    },
+    {
+      "label": "zoneColor()",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L62",
+      "_origin": "ast",
+      "id": "lib_farmmap_zonecolor",
+      "community": 25,
+      "norm_label": "zonecolor()"
+    },
+    {
+      "label": "safeJson()",
+      "file_type": "code",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L66",
+      "_origin": "ast",
+      "id": "lib_farmmap_safejson",
+      "community": 25,
+      "norm_label": "safejson()"
+    },
+    {
       "label": "i18n.ts",
       "file_type": "code",
       "source_file": "client/src/lib/i18n.ts",
@@ -5737,7 +5897,7 @@
       "label": "ar",
       "file_type": "code",
       "source_file": "client/src/lib/i18n.ts",
-      "source_location": "L851",
+      "source_location": "L856",
       "_origin": "ast",
       "id": "lib_i18n_ar",
       "community": 10,
@@ -5747,7 +5907,7 @@
       "label": "TranslationKeys",
       "file_type": "code",
       "source_file": "client/src/lib/i18n.ts",
-      "source_location": "L1698",
+      "source_location": "L1708",
       "_origin": "ast",
       "id": "lib_i18n_translationkeys",
       "community": 10,
@@ -5810,7 +5970,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "lib_utils",
-      "community": 55,
+      "community": 12,
       "norm_label": "utils.ts"
     },
     {
@@ -5887,7 +6047,7 @@
       "label": "AnimalPhoto()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L31",
+      "source_location": "L33",
       "_origin": "ast",
       "id": "pages_animalprofile_animalphoto",
       "community": 0,
@@ -5897,17 +6057,27 @@
       "label": "PnLCard()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L94",
+      "source_location": "L96",
       "_origin": "ast",
       "id": "pages_animalprofile_pnlcard",
       "community": 0,
       "norm_label": "pnlcard()"
     },
     {
+      "label": "AnimalLocationPreview()",
+      "file_type": "code",
+      "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L193",
+      "_origin": "ast",
+      "id": "pages_animalprofile_animallocationpreview",
+      "community": 25,
+      "norm_label": "animallocationpreview()"
+    },
+    {
       "label": "WeightChart()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L191",
+      "source_location": "L256",
       "_origin": "ast",
       "id": "pages_animalprofile_weightchart",
       "community": 0,
@@ -5917,7 +6087,7 @@
       "label": "LineageTree()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L354",
+      "source_location": "L419",
       "_origin": "ast",
       "id": "pages_animalprofile_lineagetree",
       "community": 0,
@@ -5927,7 +6097,7 @@
       "label": "FeedHistoryTab()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L429",
+      "source_location": "L494",
       "_origin": "ast",
       "id": "pages_animalprofile_feedhistorytab",
       "community": 0,
@@ -5937,7 +6107,7 @@
       "label": "ExpenseHistoryTab()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L469",
+      "source_location": "L534",
       "_origin": "ast",
       "id": "pages_animalprofile_expensehistorytab",
       "community": 0,
@@ -5947,7 +6117,7 @@
       "label": "AnimalSalesTab()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L507",
+      "source_location": "L572",
       "_origin": "ast",
       "id": "pages_animalprofile_animalsalestab",
       "community": 0,
@@ -5957,7 +6127,7 @@
       "label": "StatusHistory()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L547",
+      "source_location": "L612",
       "_origin": "ast",
       "id": "pages_animalprofile_statushistory",
       "community": 0,
@@ -5967,7 +6137,7 @@
       "label": "VaccinationHistoryTab()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L580",
+      "source_location": "L645",
       "_origin": "ast",
       "id": "pages_animalprofile_vaccinationhistorytab",
       "community": 0,
@@ -5977,7 +6147,7 @@
       "label": "AnimalProfile()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L638",
+      "source_location": "L703",
       "_origin": "ast",
       "id": "pages_animalprofile_animalprofile",
       "community": 0,
@@ -5987,7 +6157,7 @@
       "label": "DownloadPdfButton()",
       "file_type": "code",
       "source_file": "client/src/pages/AnimalProfile.tsx",
-      "source_location": "L830",
+      "source_location": "L896",
       "_origin": "ast",
       "id": "pages_animalprofile_downloadpdfbutton",
       "community": 0,
@@ -6200,7 +6370,7 @@
       "source_location": "L176",
       "_origin": "ast",
       "id": "pages_componentshowcase_componentsshowcase",
-      "community": 10,
+      "community": 5,
       "norm_label": "componentsshowcase()"
     },
     {
@@ -6544,160 +6714,50 @@
       "norm_label": "farmmap.tsx"
     },
     {
-      "label": "MapPoint",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L23",
-      "_origin": "ast",
-      "id": "pages_farmmap_mappoint",
-      "community": 0,
-      "norm_label": "mappoint"
-    },
-    {
-      "label": "RectShape",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L24",
-      "_origin": "ast",
-      "id": "pages_farmmap_rectshape",
-      "community": 0,
-      "norm_label": "rectshape"
-    },
-    {
-      "label": "PolygonShape",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L25",
-      "_origin": "ast",
-      "id": "pages_farmmap_polygonshape",
-      "community": 0,
-      "norm_label": "polygonshape"
-    },
-    {
-      "label": "MapShape",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L26",
-      "_origin": "ast",
-      "id": "pages_farmmap_mapshape",
-      "community": 0,
-      "norm_label": "mapshape"
-    },
-    {
       "label": "DrawMode",
       "file_type": "code",
       "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L27",
+      "source_location": "L36",
       "_origin": "ast",
       "id": "pages_farmmap_drawmode",
       "community": 0,
       "norm_label": "drawmode"
     },
     {
-      "label": "ZONE_COLORS",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L31",
-      "_origin": "ast",
-      "id": "pages_farmmap_zone_colors",
-      "community": 0,
-      "norm_label": "zone_colors"
-    },
-    {
-      "label": "clamp()",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L40",
-      "_origin": "ast",
-      "id": "pages_farmmap_clamp",
-      "community": 0,
-      "norm_label": "clamp()"
-    },
-    {
-      "label": "readMapShape()",
+      "label": "pointFromEvent()",
       "file_type": "code",
       "source_file": "client/src/pages/FarmMap.tsx",
       "source_location": "L44",
       "_origin": "ast",
-      "id": "pages_farmmap_readmapshape",
-      "community": 0,
-      "norm_label": "readmapshape()"
-    },
-    {
-      "label": "safeJson()",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L71",
-      "_origin": "ast",
-      "id": "pages_farmmap_safejson",
-      "community": 0,
-      "norm_label": "safejson()"
-    },
-    {
-      "label": "isValidShape()",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L79",
-      "_origin": "ast",
-      "id": "pages_farmmap_isvalidshape",
-      "community": 0,
-      "norm_label": "isvalidshape()"
-    },
-    {
-      "label": "shapeCenter()",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L85",
-      "_origin": "ast",
-      "id": "pages_farmmap_shapecenter",
-      "community": 0,
-      "norm_label": "shapecenter()"
-    },
-    {
-      "label": "pointFromEvent()",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L93",
-      "_origin": "ast",
       "id": "pages_farmmap_pointfromevent",
-      "community": 0,
+      "community": 25,
       "norm_label": "pointfromevent()"
     },
     {
       "label": "fileToDataUrl()",
       "file_type": "code",
       "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L103",
+      "source_location": "L54",
       "_origin": "ast",
       "id": "pages_farmmap_filetodataurl",
       "community": 0,
       "norm_label": "filetodataurl()"
     },
     {
-      "label": "zoneColor()",
-      "file_type": "code",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L112",
-      "_origin": "ast",
-      "id": "pages_farmmap_zonecolor",
-      "community": 0,
-      "norm_label": "zonecolor()"
-    },
-    {
       "label": "ZoneShape()",
       "file_type": "code",
       "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L116",
+      "source_location": "L63",
       "_origin": "ast",
       "id": "pages_farmmap_zoneshape",
-      "community": 0,
+      "community": 25,
       "norm_label": "zoneshape()"
     },
     {
       "label": "FarmMap()",
       "file_type": "code",
       "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L172",
+      "source_location": "L119",
       "_origin": "ast",
       "id": "pages_farmmap_farmmap",
       "community": 0,
@@ -13330,7 +13390,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "shared_const",
-      "community": 10,
+      "community": 34,
       "norm_label": "const.ts"
     },
     {
@@ -21116,9 +21176,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton",
-      "target": "hooks_useauth",
-      "confidence_score": 1.0
+      "target": "hooks_useauth"
     },
     {
       "relation": "imports_from",
@@ -21127,9 +21187,9 @@
       "source_file": "client/src/components/ActionButtonGroup.tsx",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbuttongroup",
-      "target": "hooks_useauth",
-      "confidence_score": 1.0
+      "target": "hooks_useauth"
     },
     {
       "relation": "imports_from",
@@ -21213,9 +21273,9 @@
       "source_file": "client/src/hooks/useIsViewer.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "hooks_useisviewer",
-      "target": "hooks_useauth",
-      "confidence_score": 1.0
+      "target": "hooks_useauth"
     },
     {
       "relation": "imports_from",
@@ -21257,9 +21317,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton",
-      "target": "hooks_useauth_useauth",
-      "confidence_score": 1.0
+      "target": "hooks_useauth_useauth"
     },
     {
       "relation": "calls",
@@ -21279,9 +21339,9 @@
       "source_file": "client/src/components/ActionButtonGroup.tsx",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbuttongroup",
-      "target": "hooks_useauth_useauth",
-      "confidence_score": 1.0
+      "target": "hooks_useauth_useauth"
     },
     {
       "relation": "calls",
@@ -21345,9 +21405,9 @@
       "source_file": "client/src/hooks/useIsViewer.ts",
       "source_location": "L1",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "hooks_useisviewer",
-      "target": "hooks_useauth_useauth",
-      "confidence_score": 1.0
+      "target": "hooks_useauth_useauth"
     },
     {
       "relation": "calls",
@@ -21594,9 +21654,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton",
-      "target": "components_actionbutton_actionbutton",
-      "confidence_score": 1.0
+      "target": "components_actionbutton_actionbutton"
     },
     {
       "relation": "contains",
@@ -21604,9 +21664,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton",
-      "target": "components_actionbutton_actionbuttonprops",
-      "confidence_score": 1.0
+      "target": "components_actionbutton_actionbuttonprops"
     },
     {
       "relation": "contains",
@@ -21614,9 +21674,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L7",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton",
-      "target": "components_actionbutton_buttonprops",
-      "confidence_score": 1.0
+      "target": "components_actionbutton_buttonprops"
     },
     {
       "relation": "imports_from",
@@ -21625,9 +21685,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton",
-      "target": "ui_button",
-      "confidence_score": 1.0
+      "target": "ui_button"
     },
     {
       "relation": "imports",
@@ -21636,9 +21696,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L2",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton",
-      "target": "ui_button_button",
-      "confidence_score": 1.0
+      "target": "ui_button_button"
     },
     {
       "relation": "inherits",
@@ -21647,9 +21707,9 @@
       "source_file": "client/src/components/ActionButton.tsx",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbutton_actionbuttonprops",
-      "target": "components_actionbutton_buttonprops",
-      "confidence_score": 1.0
+      "target": "components_actionbutton_buttonprops"
     },
     {
       "relation": "contains",
@@ -21657,9 +21717,9 @@
       "source_file": "client/src/components/ActionButtonGroup.tsx",
       "source_location": "L17",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbuttongroup",
-      "target": "components_actionbuttongroup_actionbuttongroup",
-      "confidence_score": 1.0
+      "target": "components_actionbuttongroup_actionbuttongroup"
     },
     {
       "relation": "contains",
@@ -21667,9 +21727,9 @@
       "source_file": "client/src/components/ActionButtonGroup.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "components_actionbuttongroup",
-      "target": "components_actionbuttongroup_actionbuttongroupprops",
-      "confidence_score": 1.0
+      "target": "components_actionbuttongroup_actionbuttongroupprops"
     },
     {
       "relation": "contains",
@@ -22343,6 +22403,168 @@
       "weight": 1.0,
       "source": "components_errorboundary_errorboundary_render",
       "target": "lib_utils_cn"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "components_farmmappreview_farmmapgroup",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L81",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "components_farmmappreview_farmmappreview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L18",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "components_farmmappreview_zoneshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "lib_farmmap",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "lib_farmmap_mapshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "lib_farmmap_readmapshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "lib_farmmap_shapecenter",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "lib_farmmap_zonecolor",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "lib_utils",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "components_farmmappreview",
+      "target": "lib_utils_cn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "pages_animalprofile",
+      "target": "components_farmmappreview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L30",
+      "weight": 1.0,
+      "source": "components_farmmappreview_zoneshape",
+      "target": "lib_farmmap_shapecenter"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L29",
+      "weight": 1.0,
+      "source": "components_farmmappreview_zoneshape",
+      "target": "lib_farmmap_zonecolor"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "client/src/components/FarmMapPreview.tsx",
+      "source_location": "L111",
+      "weight": 1.0,
+      "source": "components_farmmappreview_farmmappreview",
+      "target": "lib_utils_cn"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L11",
+      "weight": 1.0,
+      "source": "pages_animalprofile",
+      "target": "components_farmmappreview_farmmappreview",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -33830,9 +34052,9 @@
       "source_file": "client/src/pages/UserManagement.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_usermanagement",
-      "target": "ui_select",
-      "confidence_score": 1.0
+      "target": "ui_select"
     },
     {
       "relation": "imports_from",
@@ -34150,9 +34372,9 @@
       "source_file": "client/src/pages/UserManagement.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_usermanagement",
-      "target": "ui_select_select",
-      "confidence_score": 1.0
+      "target": "ui_select_select"
     },
     {
       "relation": "imports",
@@ -34348,9 +34570,9 @@
       "source_file": "client/src/pages/UserManagement.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_usermanagement",
-      "target": "ui_select_selectvalue",
-      "confidence_score": 1.0
+      "target": "ui_select_selectvalue"
     },
     {
       "relation": "imports",
@@ -34546,9 +34768,9 @@
       "source_file": "client/src/pages/UserManagement.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_usermanagement",
-      "target": "ui_select_selecttrigger",
-      "confidence_score": 1.0
+      "target": "ui_select_selecttrigger"
     },
     {
       "relation": "calls",
@@ -34755,9 +34977,9 @@
       "source_file": "client/src/pages/UserManagement.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_usermanagement",
-      "target": "ui_select_selectcontent",
-      "confidence_score": 1.0
+      "target": "ui_select_selectcontent"
     },
     {
       "relation": "calls",
@@ -34975,9 +35197,9 @@
       "source_file": "client/src/pages/UserManagement.tsx",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_usermanagement",
-      "target": "ui_select_selectitem",
-      "confidence_score": 1.0
+      "target": "ui_select_selectitem"
     },
     {
       "relation": "calls",
@@ -39121,9 +39343,9 @@
       "source_file": "client/src/hooks/useIsViewer.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "hooks_useisviewer",
-      "target": "hooks_useisviewer_useisviewer",
-      "confidence_score": 1.0
+      "target": "hooks_useisviewer_useisviewer"
     },
     {
       "relation": "contains",
@@ -39240,6 +39462,303 @@
       "confidence_score": 1.0,
       "source": "hooks_usepersistfn",
       "target": "hooks_usepersistfn_usepersistfn"
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L17",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_clampunit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L48",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_isvalidshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L1",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_mappoint",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_mapshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_polygonshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_readmapshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_rectshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L66",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_safejson",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L54",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_shapecenter",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L8",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_zone_colors",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L62",
+      "weight": 1.0,
+      "source": "lib_farmmap",
+      "target": "lib_farmmap_zonecolor",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "pages_animalprofile",
+      "target": "lib_farmmap",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports_from",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap_mappoint",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap_mapshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L28",
+      "weight": 1.0,
+      "source": "lib_farmmap_readmapshape",
+      "target": "lib_farmmap_clampunit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap_clampunit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L49",
+      "weight": 1.0,
+      "source": "pages_farmmap_pointfromevent",
+      "target": "lib_farmmap_clampunit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/lib/farmMap.ts",
+      "source_location": "L22",
+      "weight": 1.0,
+      "source": "lib_farmmap_readmapshape",
+      "target": "lib_farmmap_safejson",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L12",
+      "weight": 1.0,
+      "source": "pages_animalprofile",
+      "target": "lib_farmmap_readmapshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L198",
+      "weight": 1.0,
+      "source": "pages_animalprofile_animallocationpreview",
+      "target": "lib_farmmap_readmapshape"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap_readmapshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap_isvalidshape",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L185",
+      "weight": 1.0,
+      "source": "pages_farmmap_farmmap",
+      "target": "lib_farmmap_isvalidshape"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap_shapecenter",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L75",
+      "weight": 1.0,
+      "source": "pages_farmmap_zoneshape",
+      "target": "lib_farmmap_shapecenter"
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L7",
+      "weight": 1.0,
+      "source": "pages_farmmap",
+      "target": "lib_farmmap_zonecolor",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "client/src/pages/FarmMap.tsx",
+      "source_location": "L74",
+      "weight": 1.0,
+      "source": "pages_farmmap_zoneshape",
+      "target": "lib_farmmap_zonecolor"
     },
     {
       "relation": "contains",
@@ -39839,6 +40358,16 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L193",
+      "weight": 1.0,
+      "source": "pages_animalprofile",
+      "target": "pages_animalprofile_animallocationpreview",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "client/src/pages/AnimalProfile.tsx",
       "source_location": "L30",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -39973,6 +40502,17 @@
       "confidence": "INFERRED",
       "confidence_score": 0.8,
       "source_file": "client/src/pages/AnimalProfile.tsx",
+      "source_location": "L209",
+      "weight": 1.0,
+      "source": "pages_animalprofile_animallocationpreview",
+      "target": "core_trpc_t"
+    },
+    {
+      "relation": "calls",
+      "context": "call",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "client/src/pages/AnimalProfile.tsx",
       "source_location": "L202",
       "weight": 1.0,
       "source": "pages_animalprofile_weightchart",
@@ -40082,9 +40622,9 @@
       "source_file": "client/src/pages/AnimalVaccinations.tsx",
       "source_location": "L42",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_animalvaccinations",
-      "target": "pages_animalvaccinations_bulkvaccinationdialog",
-      "confidence_score": 1.0
+      "target": "pages_animalvaccinations_bulkvaccinationdialog"
     },
     {
       "relation": "contains",
@@ -40196,9 +40736,9 @@
       "source_file": "client/src/pages/Animals.tsx",
       "source_location": "L249",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "pages_animals",
-      "target": "pages_animals_bulkvaccinationdialogcontent",
-      "confidence_score": 1.0
+      "target": "pages_animals_bulkvaccinationdialogcontent"
     },
     {
       "relation": "contains",
@@ -40894,16 +41434,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L40",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_clamp"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
       "source_location": "L27",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -40934,36 +41464,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L79",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_isvalidshape"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L23",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_mappoint"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L26",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_mapshape"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
       "source_location": "L93",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -40974,147 +41474,11 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L25",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_polygonshape"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L44",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_readmapshape"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L24",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_rectshape"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L71",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_safejson"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L85",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_shapecenter"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L31",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_zone_colors"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L112",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap",
-      "target": "pages_farmmap_zonecolor"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
       "source_location": "L116",
       "weight": 1.0,
       "confidence_score": 1.0,
       "source": "pages_farmmap",
       "target": "pages_farmmap_zoneshape"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L98",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap_pointfromevent",
-      "target": "pages_farmmap_clamp"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L51",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap_readmapshape",
-      "target": "pages_farmmap_clamp"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L45",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap_readmapshape",
-      "target": "pages_farmmap_safejson"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L235",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap_farmmap",
-      "target": "pages_farmmap_isvalidshape"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L128",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap_zoneshape",
-      "target": "pages_farmmap_shapecenter"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "client/src/pages/FarmMap.tsx",
-      "source_location": "L127",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "pages_farmmap_zoneshape",
-      "target": "pages_farmmap_zonecolor"
     },
     {
       "relation": "calls",
@@ -42280,9 +42644,9 @@
       "source_file": "server/routers/vaccination.ts",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routers_vaccination",
-      "target": "drizzle_schema",
-      "confidence_score": 1.0
+      "target": "drizzle_schema"
     },
     {
       "relation": "imports_from",
@@ -42665,9 +43029,9 @@
       "source_file": "server/excelDataContract.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "server_exceldatacontract",
-      "target": "drizzle_schema_vaccines",
-      "confidence_score": 1.0
+      "target": "drizzle_schema_vaccines"
     },
     {
       "relation": "imports",
@@ -42687,9 +43051,9 @@
       "source_file": "server/excelDataContract.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "server_exceldatacontract",
-      "target": "drizzle_schema_vaccinationrecords",
-      "confidence_score": 1.0
+      "target": "drizzle_schema_vaccinationrecords"
     },
     {
       "relation": "imports",
@@ -42786,9 +43150,9 @@
       "source_file": "server/routers/vaccination.ts",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routers_vaccination",
-      "target": "drizzle_schema_animals",
-      "confidence_score": 1.0
+      "target": "drizzle_schema_animals"
     },
     {
       "relation": "imports",
@@ -47981,9 +48345,9 @@
       "source_file": "server/routers/vaccination.ts",
       "source_location": "L10",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routers_vaccination",
-      "target": "core_notification",
-      "confidence_score": 1.0
+      "target": "core_notification"
     },
     {
       "relation": "calls",
@@ -48047,9 +48411,9 @@
       "source_file": "server/routers/vaccination.ts",
       "source_location": "L10",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routers_vaccination",
-      "target": "core_notification_notifyowner",
-      "confidence_score": 1.0
+      "target": "core_notification_notifyowner"
     },
     {
       "relation": "contains",
@@ -48724,9 +49088,9 @@
       "source_file": "server/_core/systemRouter.ts",
       "source_location": "L3",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "core_systemrouter",
-      "target": "core_trpc_publicprocedure",
-      "confidence_score": 1.0
+      "target": "core_trpc_publicprocedure"
     },
     {
       "relation": "imports_from",
@@ -48776,9 +49140,9 @@
       "source_file": "server/_core/trpc.ts",
       "source_location": "L11",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "core_trpc",
-      "target": "core_trpc_blockviewermutationmiddleware",
-      "confidence_score": 1.0
+      "target": "core_trpc_blockviewermutationmiddleware"
     },
     {
       "relation": "contains",
@@ -48786,9 +49150,9 @@
       "source_file": "server/_core/trpc.ts",
       "source_location": "L97",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "core_trpc",
-      "target": "core_trpc_blockviewermutations",
-      "confidence_score": 1.0
+      "target": "core_trpc_blockviewermutations"
     },
     {
       "relation": "contains",
@@ -48826,9 +49190,9 @@
       "source_file": "server/_core/trpc.ts",
       "source_location": "L20",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "core_trpc",
-      "target": "core_trpc_publicprocedure",
-      "confidence_score": 1.0
+      "target": "core_trpc_publicprocedure"
     },
     {
       "relation": "contains",
@@ -49030,9 +49394,9 @@
       "source_file": "server/routers.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "server_routers",
-      "target": "core_trpc_publicprocedure",
-      "confidence_score": 1.0
+      "target": "core_trpc_publicprocedure"
     },
     {
       "relation": "imports",
@@ -51689,9 +52053,9 @@
       "source_file": "server/routers/vaccination.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routers_vaccination",
-      "target": "server_db_getdb",
-      "confidence_score": 1.0
+      "target": "server_db_getdb"
     },
     {
       "relation": "calls",
@@ -53768,9 +54132,9 @@
       "source_file": "server/routers/vaccination.ts",
       "source_location": "L4",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routers_vaccination",
-      "target": "server_db_getanimalbyid",
-      "confidence_score": 1.0
+      "target": "server_db_getanimalbyid"
     },
     {
       "relation": "calls",
@@ -54483,9 +54847,9 @@
       "source_file": "server/routers/vaccination.ts",
       "source_location": "L9",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "routers_vaccination",
-      "target": "server_db_createnotification",
-      "confidence_score": 1.0
+      "target": "server_db_createnotification"
     },
     {
       "relation": "imports",
@@ -61107,9 +61471,9 @@
       "source_file": "todo.md",
       "source_location": "L358",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "todo_lfms_project_todo",
-      "target": "todo_phase_36_read_only_viewer_role",
-      "confidence_score": 1.0
+      "target": "todo_phase_36_read_only_viewer_role"
     },
     {
       "relation": "contains",
@@ -61117,9 +61481,9 @@
       "source_file": "todo.md",
       "source_location": "L370",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "todo_lfms_project_todo",
-      "target": "todo_phase_37_user_role_management_ui",
-      "confidence_score": 1.0
+      "target": "todo_phase_37_user_role_management_ui"
     },
     {
       "relation": "contains",
@@ -61193,5 +61557,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "14cc598dca074e205077394b7a152fab7f5f0119"
+  "built_at_commit": "da2f7b864f9b621d206f8966bb904531550ab90b"
 }

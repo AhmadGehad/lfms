@@ -4,9 +4,20 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { usePermissions } from "@/hooks/usePermissions";
+import {
+  FARM_MAP_DEFAULT_ASPECT,
+  clampUnit,
+  isValidShape,
+  type MapPoint,
+  type MapShape,
+  readMapShape,
+  shapeCenter,
+  zoneColor,
+} from "@/lib/farmMap";
 import { trpc } from "@/lib/trpc";
 import {
   ImageIcon,
+  Maximize2,
   MapPinned,
   MousePointer2,
   Pentagon,
@@ -15,88 +26,28 @@ import {
   Trash2,
   Undo2,
   Upload,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { type MouseEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
-type MapPoint = { x: number; y: number };
-type RectShape = { type: "rect"; x: number; y: number; width: number; height: number };
-type PolygonShape = { type: "polygon"; points: MapPoint[] };
-type MapShape = RectShape | PolygonShape;
 type DrawMode = "select" | "rect" | "polygon";
 
 const FARM_MAP_MAX_BYTES = 8 * 1024 * 1024;
-
-const ZONE_COLORS = [
-  { stroke: "#2563eb", fill: "rgba(37, 99, 235, 0.22)" },
-  { stroke: "#16a34a", fill: "rgba(22, 163, 74, 0.22)" },
-  { stroke: "#dc2626", fill: "rgba(220, 38, 38, 0.20)" },
-  { stroke: "#9333ea", fill: "rgba(147, 51, 234, 0.20)" },
-  { stroke: "#ca8a04", fill: "rgba(202, 138, 4, 0.24)" },
-  { stroke: "#0891b2", fill: "rgba(8, 145, 178, 0.22)" },
-];
-
-function clamp(value: number) {
-  return Math.min(1, Math.max(0, value));
-}
-
-function readMapShape(value: unknown): MapShape | null {
-  const raw = typeof value === "string" ? safeJson(value) : value;
-  if (!raw || typeof raw !== "object") return null;
-  const shape = raw as any;
-  if (shape.type === "rect") {
-    const { x, y, width, height } = shape;
-    if ([x, y, width, height].every((n) => typeof n === "number")) {
-      const safeX = clamp(x);
-      const safeY = clamp(y);
-      return {
-        type: "rect",
-        x: safeX,
-        y: safeY,
-        width: clamp(Math.min(width, 1 - safeX)),
-        height: clamp(Math.min(height, 1 - safeY)),
-      };
-    }
-  }
-  if (shape.type === "polygon" && Array.isArray(shape.points)) {
-    const points = shape.points
-      .filter((p: any) => typeof p?.x === "number" && typeof p?.y === "number")
-      .map((p: MapPoint) => ({ x: clamp(p.x), y: clamp(p.y) }));
-    if (points.length >= 3) return { type: "polygon", points };
-  }
-  return null;
-}
-
-function safeJson(value: string) {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-function isValidShape(shape: MapShape | null) {
-  if (!shape) return false;
-  if (shape.type === "rect") return shape.width > 0.005 && shape.height > 0.005;
-  return shape.points.length >= 3;
-}
-
-function shapeCenter(shape: MapShape): MapPoint {
-  if (shape.type === "rect") {
-    return { x: shape.x + shape.width / 2, y: shape.y + shape.height / 2 };
-  }
-  const sum = shape.points.reduce((acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }), { x: 0, y: 0 });
-  return { x: sum.x / shape.points.length, y: sum.y / shape.points.length };
-}
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.25;
+const FRAME_PADDING = 32;
 
 function pointFromEvent(event: { clientX: number; clientY: number }, element: SVGSVGElement | null): MapPoint | null {
   if (!element) return null;
   const rect = element.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) return null;
   return {
-    x: clamp((event.clientX - rect.left) / rect.width),
-    y: clamp((event.clientY - rect.top) / rect.height),
+    x: clampUnit((event.clientX - rect.left) / rect.width),
+    y: clampUnit((event.clientY - rect.top) / rect.height),
   };
 }
 
@@ -107,10 +58,6 @@ function fileToDataUrl(file: File) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
-}
-
-function zoneColor(groupId: number) {
-  return ZONE_COLORS[groupId % ZONE_COLORS.length];
 }
 
 function ZoneShape({
@@ -198,12 +145,15 @@ export default function FarmMap() {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const dragStartRef = useRef<MapPoint | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("");
   const [mode, setMode] = useState<DrawMode>("select");
   const [draftShape, setDraftShape] = useState<MapShape | null>(null);
-  const [imageAspect, setImageAspect] = useState(16 / 9);
+  const [imageAspect, setImageAspect] = useState(FARM_MAP_DEFAULT_ASPECT);
+  const [zoom, setZoom] = useState(1);
+  const [frameSize, setFrameSize] = useState({ width: 960, height: 540 });
   const [uploading, setUploading] = useState(false);
 
   const groupList = groups ?? [];
@@ -233,6 +183,44 @@ export default function FarmMap() {
 
   const canEdit = permissions.canEditConfig;
   const canSave = Boolean(canEdit && selectedGroup && (draftShape === null || isValidShape(draftShape)));
+  const imageUrl = mapImage?.url ?? null;
+
+  useEffect(() => {
+    const element = frameRef.current;
+    if (!element) return;
+    const updateSize = () => {
+      setFrameSize({ width: element.clientWidth, height: element.clientHeight });
+    };
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    setZoom(1);
+  }, [imageUrl]);
+
+  const stageSize = useMemo(() => {
+    const availableWidth = Math.max(1, frameSize.width - FRAME_PADDING);
+    const availableHeight = Math.max(1, frameSize.height - FRAME_PADDING);
+    const frameAspect = availableWidth / availableHeight;
+    const baseWidth = frameAspect > imageAspect ? availableHeight * imageAspect : availableWidth;
+    const baseHeight = frameAspect > imageAspect ? availableHeight : availableWidth / imageAspect;
+    return {
+      width: Math.max(1, baseWidth * zoom),
+      height: Math.max(1, baseHeight * zoom),
+    };
+  }, [frameSize, imageAspect, zoom]);
+
+  const scrollerSize = useMemo(() => ({
+    width: Math.max(frameSize.width, stageSize.width + FRAME_PADDING),
+    height: Math.max(frameSize.height, stageSize.height + FRAME_PADDING),
+  }), [frameSize, stageSize]);
+
+  function updateZoom(nextZoom: number) {
+    setZoom(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom)));
+  }
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
@@ -311,8 +299,6 @@ export default function FarmMap() {
     updateGroup.mutate({ id: selectedGroup.id, mapShape: draftShape });
   }
 
-  const imageUrl = mapImage?.url ?? null;
-
   return (
     <div className="flex h-full min-h-[calc(100vh-5rem)] flex-col gap-4 p-4 md:p-6">
       <div className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-center md:justify-between">
@@ -389,6 +375,41 @@ export default function FarmMap() {
                   <Pentagon className="h-4 w-4" />
                 </ToggleGroupItem>
               </ToggleGroup>
+              <div className="flex items-center rounded-md border bg-background">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => updateZoom(zoom - ZOOM_STEP)}
+                  disabled={!imageUrl || zoom <= MIN_ZOOM}
+                  title={t("farmMap.zoomOut")}
+                  className="h-9 w-9 rounded-r-none"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <span className="min-w-14 px-2 text-center text-sm font-medium tabular-nums">
+                  {Math.round(zoom * 100)}%
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => updateZoom(zoom + ZOOM_STEP)}
+                  disabled={!imageUrl || zoom >= MAX_ZOOM}
+                  title={t("farmMap.zoomIn")}
+                  className="h-9 w-9 rounded-none"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => updateZoom(1)}
+                  disabled={!imageUrl || zoom === 1}
+                  title={t("farmMap.resetZoom")}
+                  className="h-9 w-9 rounded-l-none"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </Button>
+              </div>
               <Button
                 variant="outline"
                 size="icon"
@@ -414,56 +435,66 @@ export default function FarmMap() {
             </div>
           </div>
 
-          <div className="flex min-h-[420px] items-center justify-center rounded-md bg-muted/50">
+          <div ref={frameRef} className="h-[360px] overflow-auto rounded-md bg-muted/50 md:h-[540px]">
             {imageLoading ? (
-              <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
+              <div className="flex h-full items-center justify-center">
+                <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
+              </div>
             ) : imageUrl ? (
-              <div className="relative w-full overflow-hidden rounded-md bg-background" style={{ aspectRatio: imageAspect }}>
-                <img
-                  src={imageUrl}
-                  alt={t("farmMap.imageAlt")}
-                  className="absolute inset-0 h-full w-full object-contain"
-                  onLoad={(event) => {
-                    const image = event.currentTarget;
-                    if (image.naturalWidth && image.naturalHeight) {
-                      setImageAspect(image.naturalWidth / image.naturalHeight);
-                    }
-                  }}
-                />
-                <svg
-                  ref={svgRef}
-                  viewBox="0 0 100 100"
-                  preserveAspectRatio="none"
-                  className="absolute inset-0 h-full w-full touch-none"
-                  onPointerDown={handlePointerDown}
-                  onPointerMove={handlePointerMove}
-                  onPointerUp={handlePointerUp}
-                  onPointerCancel={handlePointerUp}
-                  onClick={handleCanvasClick}
+              <div
+                className="flex items-center justify-center p-4"
+                style={{ minWidth: scrollerSize.width, minHeight: scrollerSize.height }}
+              >
+                <div
+                  className="relative shrink-0 overflow-hidden rounded-md bg-background shadow-sm"
+                  style={{ width: stageSize.width, height: stageSize.height }}
                 >
-                  {renderedGroups.map(({ group, shape }) => (
-                    <ZoneShape
-                      key={group.id}
-                      group={group}
-                      shape={shape}
-                      selected={String(group.id) === selectedGroupId}
-                      onSelect={() => setSelectedGroupId(String(group.id))}
-                    />
-                  ))}
-                  {draftShape?.type === "polygon" && draftShape.points.length > 0 && (
-                    <polyline
-                      points={draftShape.points.map((point) => `${point.x * 100},${point.y * 100}`).join(" ")}
-                      fill="none"
-                      stroke="#111827"
-                      strokeWidth={0.5}
-                      strokeDasharray="1.4 1.1"
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  )}
-                </svg>
+                  <img
+                    src={imageUrl}
+                    alt={t("farmMap.imageAlt")}
+                    className="absolute inset-0 h-full w-full object-fill"
+                    onLoad={(event) => {
+                      const image = event.currentTarget;
+                      if (image.naturalWidth && image.naturalHeight) {
+                        setImageAspect(image.naturalWidth / image.naturalHeight);
+                      }
+                    }}
+                  />
+                  <svg
+                    ref={svgRef}
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                    className="absolute inset-0 h-full w-full touch-none"
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerUp}
+                    onClick={handleCanvasClick}
+                  >
+                    {renderedGroups.map(({ group, shape }) => (
+                      <ZoneShape
+                        key={group.id}
+                        group={group}
+                        shape={shape}
+                        selected={String(group.id) === selectedGroupId}
+                        onSelect={() => setSelectedGroupId(String(group.id))}
+                      />
+                    ))}
+                    {draftShape?.type === "polygon" && draftShape.points.length > 0 && (
+                      <polyline
+                        points={draftShape.points.map((point) => `${point.x * 100},${point.y * 100}`).join(" ")}
+                        fill="none"
+                        stroke="#111827"
+                        strokeWidth={0.5}
+                        strokeDasharray="1.4 1.1"
+                        vectorEffect="non-scaling-stroke"
+                      />
+                    )}
+                  </svg>
+                </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-3 text-muted-foreground">
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
                 <ImageIcon className="h-12 w-12" />
                 <Button
                   variant="outline"

@@ -173,7 +173,6 @@ function DashboardLayoutContent({
       label: t("nav.groups.livestock"),
       items: [
         { icon: Leaf, label: t("nav.animals"), path: "/animals" },
-        { icon: MapPinned, label: t("nav.farmMap"), path: "/farm-map" },
         { icon: Egg, label: t("nav.breeding"), path: "/breeding" },
         { icon: Scale, label: t("nav.fattening"), path: "/fattening" },
       ],
@@ -201,6 +200,7 @@ function DashboardLayoutContent({
         { icon: BookOpen, label: t("nav.auditLog"), path: "/audit" },
         { icon: Users, label: t("nav.users"), path: "/users", minPerm: "canManageUsers" as const },
         { icon: Cog, label: t("nav.configuration"), path: "/config", minPerm: "canEditConfig" as const },
+        { icon: MapPinned, label: t("nav.farmMap"), path: "/farm-map", minPerm: "canEditConfig" as const },
         { icon: Database, label: t("nav.dataManagement"), path: "/data", minPerm: "canPurgeOrRestore" as const },
         { icon: Trash2, label: t("nav.recycleBin") ?? "Recycle Bin", path: "/recycle-bin", minPerm: "canDelete" as const },
       ],

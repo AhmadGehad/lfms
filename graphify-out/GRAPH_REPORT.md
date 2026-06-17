@@ -1,16 +1,16 @@
 # Graph Report - lfms  (2026-06-17)
 
 ## Corpus Check
-- 472 files · ~273,054 words
+- 474 files · ~273,949 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1847 nodes · 4029 edges · 128 communities (108 shown, 20 thin omitted)
-- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 72 edges (avg confidence: 0.8)
+- 1853 nodes · 4057 edges · 129 communities (109 shown, 20 thin omitted)
+- Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 73 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `14cc598d`
+- Built from commit: `da2f7b86`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -40,6 +40,7 @@
 - [[_COMMUNITY_Community 22|Community 22]]
 - [[_COMMUNITY_Community 23|Community 23]]
 - [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 25|Community 25]]
 - [[_COMMUNITY_Community 26|Community 26]]
 - [[_COMMUNITY_Community 27|Community 27]]
 - [[_COMMUNITY_Community 28|Community 28]]
@@ -56,6 +57,7 @@
 - [[_COMMUNITY_Community 39|Community 39]]
 - [[_COMMUNITY_Community 40|Community 40]]
 - [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
 - [[_COMMUNITY_Community 43|Community 43]]
 - [[_COMMUNITY_Community 44|Community 44]]
 - [[_COMMUNITY_Community 45|Community 45]]
@@ -71,7 +73,6 @@
 - [[_COMMUNITY_Community 55|Community 55]]
 - [[_COMMUNITY_Community 56|Community 56]]
 - [[_COMMUNITY_Community 57|Community 57]]
-- [[_COMMUNITY_Community 58|Community 58]]
 - [[_COMMUNITY_Community 59|Community 59]]
 - [[_COMMUNITY_Community 60|Community 60]]
 - [[_COMMUNITY_Community 61|Community 61]]
@@ -139,9 +140,9 @@
 - [[_COMMUNITY_Community 128|Community 128]]
 
 ## God Nodes (most connected - your core abstractions)
-1. `cn()` - 276 edges
+1. `cn()` - 278 edges
 2. `getDb()` - 120 edges
-3. `t` - 71 edges
+3. `t` - 72 edges
 4. `LFMS Project TODO` - 36 edges
 5. `Button()` - 32 edges
 6. `trpc` - 23 edges
@@ -159,25 +160,25 @@
   client/src/pages/AnimalProfile.tsx → server/_core/trpc.ts
 - `PnLCard()` --calls--> `t`  [INFERRED]
   client/src/pages/AnimalProfile.tsx → server/_core/trpc.ts
-- `WeightChart()` --calls--> `t`  [INFERRED]
+- `AnimalLocationPreview()` --calls--> `t`  [INFERRED]
   client/src/pages/AnimalProfile.tsx → server/_core/trpc.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (128 total, 20 thin omitted)
+## Communities (129 total, 20 thin omitted)
 
 ### Community 0 - "Community 0"
-Cohesion: 0.05
-Nodes (138): ManusDialogProps, t, useCurrency(), generateAnimalPnLPdf(), trpc, AnimalPhoto(), AnimalProfile(), AnimalSalesTab() (+130 more)
+Cohesion: 0.06
+Nodes (126): ManusDialogProps, t, useCurrency(), isValidShape(), generateAnimalPnLPdf(), trpc, AnimalPhoto(), AnimalProfile() (+118 more)
 
 ### Community 1 - "Community 1"
 Cohesion: 0.03
 Nodes (72): dependencies, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner, axios, class-variance-authority, clsx, cmdk, cookie (+64 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.04
-Nodes (59): Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), AspectRatio(), Breadcrumb(), BreadcrumbEllipsis(), BreadcrumbItem() (+51 more)
+Cohesion: 0.05
+Nodes (55): Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), Alert(), AlertDescription(), AlertTitle(), alertVariants (+47 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.06
@@ -185,11 +186,11 @@ Nodes (80): mapPointSchema, mapShapeSchema, addFeedItemPrice(), addVaccinationRe
 
 ### Community 4 - "Community 4"
 Cohesion: 0.05
-Nodes (51): cn(), AlertDialogOverlay(), Calendar(), CalendarDayButton(), CardAction(), ContextMenu(), ContextMenuCheckboxItem(), ContextMenuContent() (+43 more)
+Nodes (61): cn(), AlertDialogOverlay(), Calendar(), CalendarDayButton(), CardAction(), DialogOverlay(), Empty(), EmptyContent() (+53 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.06
-Nodes (46): DashboardLayout(), DashboardLayoutSkeleton(), LanguageSwitcher(), useIsMobile(), Avatar(), AvatarFallback(), AvatarImage(), Sheet() (+38 more)
+Nodes (49): DashboardLayout(), DashboardLayoutContent(), DashboardLayoutSkeleton(), LanguageSwitcher(), useTheme(), useIsMobile(), ComponentsShowcase(), Avatar() (+41 more)
 
 ### Community 6 - "Community 6"
 Cohesion: 0.09
@@ -208,16 +209,16 @@ Cohesion: 0.05
 Nodes (43): 10.1 Cost Components, 10.2 Revenue and Net P&L, 10.3 Active vs. Closed Animals, 10.4 Feed Price Lookup, 10. Animal P&L Calculation, 11.1 Revenue, 11.2 Cost Breakdown, 11.3 Summary (+35 more)
 
 ### Community 10 - "Community 10"
-Cohesion: 0.07
-Nodes (30): ActionButton(), ActionButtonProps, ButtonProps, ActionButtonGroup(), ActionButtonGroupProps, DashboardLayoutContent(), Theme, ThemeContext (+22 more)
+Cohesion: 0.10
+Nodes (21): ActionButton(), ActionButtonProps, ButtonProps, ActionButtonGroup(), ActionButtonGroupProps, useAuth(), UseAuthOptions, useIsViewer() (+13 more)
 
 ### Community 11 - "Community 11"
 Cohesion: 0.05
 Nodes (36): Bug Fixes (Phase 16), Bug Fixes (Phase 17), Bug Fixes (Phase 18), Feature: Configuration Edit/Update (Phase 19), Feature: Edit Sale Price (Phase 20), LFMS Project TODO, Phase 10: Excel Import & Export + Rename + i18n, Phase 12: Soft-Delete with Restore (+28 more)
 
 ### Community 12 - "Community 12"
-Cohesion: 0.43
-Nodes (5): ToggleGroup(), ToggleGroupContext, ToggleGroupItem(), Toggle(), toggleVariants
+Cohesion: 0.11
+Nodes (14): ButtonGroup(), ButtonGroupSeparator(), ButtonGroupText(), buttonGroupVariants, Checkbox(), Progress(), Separator(), Slider() (+6 more)
 
 ### Community 13 - "Community 13"
 Cohesion: 0.35
@@ -252,8 +253,8 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowImportingTsExtensions, baseUrl, esModuleInterop, incremental, jsx, lib, module (+11 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.13
-Nodes (17): ButtonGroup(), ButtonGroupSeparator(), ButtonGroupText(), buttonGroupVariants, Item(), ItemActions(), ItemContent(), ItemDescription() (+9 more)
+Cohesion: 0.18
+Nodes (12): Item(), ItemActions(), ItemContent(), ItemDescription(), ItemFooter(), ItemGroup(), ItemHeader(), ItemMedia() (+4 more)
 
 ### Community 22 - "Community 22"
 Cohesion: 0.12
@@ -266,6 +267,10 @@ Nodes (13): asDate(), asString(), importModeSchema, importRouter, ImportStats, r
 ### Community 24 - "Community 24"
 Cohesion: 0.12
 Nodes (15): aliases, components, hooks, lib, ui, utils, rsc, $schema (+7 more)
+
+### Community 25 - "Community 25"
+Cohesion: 0.17
+Nodes (16): FarmMapGroup, FarmMapPreview(), ZoneShape(), clampUnit(), MapPoint, MapShape, PolygonShape, readMapShape() (+8 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.20
@@ -296,8 +301,8 @@ Cohesion: 0.18
 Nodes (10): AuthenticatedUser, isNonEmptyString(), SessionPayload, AuthorizeRequest, AuthorizeResponse, CanAccessRequest, CanAccessResponse, ExchangeTokenRequest (+2 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.23
-Nodes (10): useComposition(), InputGroup(), InputGroupAddon(), inputGroupAddonVariants, InputGroupButton(), inputGroupButtonVariants, InputGroupInput(), InputGroupText() (+2 more)
+Cohesion: 0.14
+Nodes (15): AIChatBox(), AIChatBoxProps, Message, useComposition(), InputGroup(), InputGroupAddon(), inputGroupAddonVariants, InputGroupButton() (+7 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.20
@@ -331,9 +336,13 @@ Nodes (5): DataApiCallOptions, ENV, generateImage(), GenerateImageOptions, Gener
 Cohesion: 0.36
 Nodes (9): findAvailablePort(), isPortAvailable(), startServer(), registerOAuthRoutes(), registerStorageProxy(), serveStatic(), setupVite(), startLowStockScheduler() (+1 more)
 
-### Community 43 - "Community 43"
+### Community 42 - "Community 42"
 Cohesion: 0.12
-Nodes (12): Menubar(), MenubarCheckboxItem(), MenubarContent(), MenubarItem(), MenubarLabel(), MenubarMenu(), MenubarRadioItem(), MenubarSeparator() (+4 more)
+Nodes (11): ContextMenu(), ContextMenuCheckboxItem(), ContextMenuContent(), ContextMenuItem(), ContextMenuLabel(), ContextMenuRadioItem(), ContextMenuSeparator(), ContextMenuShortcut() (+3 more)
+
+### Community 43 - "Community 43"
+Cohesion: 0.33
+Nodes (5): Theme, ThemeContext, ThemeContextType, ThemeProvider(), ThemeProviderProps
 
 ### Community 44 - "Community 44"
 Cohesion: 0.33
@@ -376,16 +385,12 @@ Cohesion: 0.57
 Nodes (6): appendHashSuffix(), getForgeConfig(), normalizeKey(), storageGet(), storageGetSignedUrl(), storagePut()
 
 ### Community 55 - "Community 55"
-Cohesion: 0.07
-Nodes (20): AIChatBox(), AIChatBoxProps, Message, DropdownMenu(), DropdownMenuCheckboxItem(), DropdownMenuContent(), DropdownMenuItem(), DropdownMenuLabel() (+12 more)
+Cohesion: 0.12
+Nodes (11): DropdownMenu(), DropdownMenuCheckboxItem(), DropdownMenuContent(), DropdownMenuItem(), DropdownMenuLabel(), DropdownMenuRadioItem(), DropdownMenuSeparator(), DropdownMenuShortcut() (+3 more)
 
 ### Community 56 - "Community 56"
 Cohesion: 0.22
 Nodes (14): Path, backup_dir_for(), build_compress_prompt(), build_fix_prompt(), call_claude(), compress_file(), is_sensitive_path(), Strip outer ```markdown ... ``` fence when it wraps the entire output. (+6 more)
-
-### Community 58 - "Community 58"
-Cohesion: 0.50
-Nodes (4): Alert(), AlertDescription(), AlertTitle(), alertVariants
 
 ### Community 59 - "Community 59"
 Cohesion: 0.22
@@ -576,24 +581,24 @@ Cohesion: 0.50
 Nodes (3): acqMs, daysOnFarm, exitMs
 
 ## Knowledge Gaps
-- **648 isolated node(s):** `@kilocode/plugin`, `UseAuthOptions`, `AIChatBoxProps`, `ActionButtonGroupProps`, `Props` (+643 more)
+- **647 isolated node(s):** `@kilocode/plugin`, `UseAuthOptions`, `AIChatBoxProps`, `ActionButtonGroupProps`, `Props` (+642 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Community 4` to `Community 0`, `Community 33`, `Community 2`, `Community 5`, `Community 37`, `Community 39`, `Community 43`, `Community 12`, `Community 51`, `Community 21`, `Community 55`, `Community 58`, `Community 29`, `Community 62`?**
+- **Why does `cn()` connect `Community 4` to `Community 0`, `Community 33`, `Community 2`, `Community 5`, `Community 37`, `Community 39`, `Community 42`, `Community 12`, `Community 51`, `Community 21`, `Community 55`, `Community 25`, `Community 29`, `Community 62`?**
   _High betweenness centrality (0.086) - this node is a cross-community bridge._
-- **Why does `t` connect `Community 0` to `Community 10`, `Community 5`, `Community 6`?**
+- **Why does `t` connect `Community 0` to `Community 25`, `Community 10`, `Community 5`, `Community 6`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
 - **Why does `ENV` connect `Community 40` to `Community 32`, `Community 3`, `Community 45`, `Community 14`, `Community 53`, `Community 22`, `Community 54`, `Community 31`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
-- **Are the 70 inferred relationships involving `t` (e.g. with `DashboardLayout()` and `DashboardLayoutContent()`) actually correct?**
-  _`t` has 70 INFERRED edges - model-reasoned connections that need verification._
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Are the 71 inferred relationships involving `t` (e.g. with `DashboardLayout()` and `DashboardLayoutContent()`) actually correct?**
+  _`t` has 71 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `Caveman compress scripts.  This package provides tools to compress natural langu`, `Split YAML frontmatter from body. Returns (frontmatter, body).      Memory files`, `Resolve the out-of-tree backup directory for a given source file.      Backups m` to the rest of the system?**
-  _675 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _674 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
-  _Cohesion score 0.051671025864574255 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.057803468208092484 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.027777777777777776 - nodes in this community are weakly interconnected._
