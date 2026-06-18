@@ -112,3 +112,12 @@ temp/
 # Manus version file (auto-generated, not part of source)
 client/public/__manus__/version.json
 
+# Agent skills
+.agents/
+.claude/skills/
+.claude/agents/
+.devin/skills/
+.kilocode/
+.config/kilo/
+skills-lock.json
+

@@ -485,6 +485,8 @@ const en = {
     projectedCostToTarget: "Projected cost to target",
 
     herdExp: "Herd Exp.",
+    animalOperatingCost: "Animal Operating Cost",
+    farmOperatingCost: "Farm Operating Cost",
     capitalOnHoof: "Capital on Hoof",
     activePurchaseCost: "Purchase cost of active animals",
     runningCostTotal: "Running Cost Total (Active)",
@@ -1370,6 +1372,8 @@ const ar = {
     projectedCostToTarget: "التكلفة المتوقعة حتى الوزن الهدف",
 
     herdExp: "مصروف القطيع",
+    animalOperatingCost: "التكلفة التشغيلية للحيوان",
+    farmOperatingCost: "التكلفة التشغيلية للمزرعة",
     capitalOnHoof: "رأس المال في القطيع",
     activePurchaseCost: "تكلفة شراء الحيوانات النشطة",
     runningCostTotal: "إجمالي التكلفة الجارية (النشطة)",

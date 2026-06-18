@@ -228,6 +228,8 @@ export default function PnL() {
                     <TableHead className="text-right">{t("pnl.directExp")}</TableHead>
                     <TableHead className="text-right">{t("pnl.catExp")}</TableHead>
                     <TableHead className="text-right">{t("pnl.herdExp")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.animalOperatingCost")}</TableHead>
+                    <TableHead className="text-right">{t("pnl.farmOperatingCost")}</TableHead>
                     <TableHead className="text-right">{t("pnl.totalCost")}</TableHead>
                     <TableHead className="text-right">{t("pnl.revenue")}</TableHead>
                     <TableHead className="text-right">{t("pnl.netPnL")}</TableHead>
@@ -238,7 +240,7 @@ export default function PnL() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={17} className="text-center py-12 text-muted-foreground">
                         {t("pnl.noAnimals")}
                       </TableCell>
                     </TableRow>
@@ -289,6 +291,12 @@ export default function PnL() {
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-orange-600 text-xs">
                             {a.herdExpenseAllocation > 0 ? fmt(a.herdExpenseAllocation) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-red-600">
+                            {a.animalOperatingCost > 0 ? fmt(a.animalOperatingCost) : "—"}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums text-red-600">
+                            {a.farmOperatingCost > 0 ? fmt(a.farmOperatingCost) : "—"}
                           </TableCell>
                           <TableCell className="text-right tabular-nums font-medium text-red-600">
                             {fmt(a.totalCost)}
