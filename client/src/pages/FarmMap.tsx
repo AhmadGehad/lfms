@@ -73,6 +73,12 @@ function ZoneShape({
 }) {
   const color = zoneColor(group.id, group.color);
   const center = shapeCenter(shape);
+  const label = group.groupCode || group.name || "";
+  const visibleLabel = label.length > 18 ? `${label.slice(0, 17)}…` : label;
+  const labelWidth = Math.max(8, Math.min(32, visibleLabel.length * 1.15 + 4));
+  const labelHeight = 5;
+  const labelX = Math.min(100 - labelWidth / 2 - 0.6, Math.max(labelWidth / 2 + 0.6, center.x * 100));
+  const labelY = Math.min(97, Math.max(3, center.y * 100));
   const common = {
     fill: color.fill,
     stroke: color.stroke,
@@ -103,15 +109,30 @@ function ZoneShape({
           {...common}
         />
       )}
-      <text
-        x={center.x * 100}
-        y={center.y * 100}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="pointer-events-none select-none fill-white text-[3px] font-semibold drop-shadow"
-      >
-        {group.groupCode || group.name}
-      </text>
+      {visibleLabel && (
+        <g className="pointer-events-none select-none drop-shadow-sm">
+          <rect
+            x={labelX - labelWidth / 2}
+            y={labelY - labelHeight / 2}
+            width={labelWidth}
+            height={labelHeight}
+            rx={1.2}
+            fill="rgba(255, 255, 255, 0.94)"
+            stroke="rgba(15, 23, 42, 0.35)"
+            strokeWidth={0.35}
+            vectorEffect="non-scaling-stroke"
+          />
+          <text
+            x={labelX}
+            y={labelY}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="fill-slate-950 text-[3.2px] font-bold"
+          >
+            {visibleLabel}
+          </text>
+        </g>
+      )}
     </g>
   );
 }

@@ -694,11 +694,18 @@ function ExpenseCategoriesTab() {
   const { t } = useTranslation();
   const { canCreate, canUpdate } = usePermissions("configuration");
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
+  const { data: subCategories } = trpc.config.getExpenseSubCategories.useQuery();
   const [open, setOpen] = useState(false);
+  const [subOpen, setSubOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editSubOpen, setEditSubOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
+  const [editSubItem, setEditSubItem] = useState<any>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [subCategoryId, setSubCategoryId] = useState("");
+  const [subName, setSubName] = useState("");
+  const [subDescription, setSubDescription] = useState("");
   const utils = trpc.useUtils();
 
   const create = trpc.config.createExpenseCategory.useMutation({
@@ -709,30 +716,68 @@ function ExpenseCategoriesTab() {
     onSuccess: () => { toast.success(`${t("config.categories")} ${t("common.updated")}`); utils.config.getExpenseCategories.invalidate(); setEditOpen(false); setEditItem(null); },
     onError: (e: any) => toast.error(e.message),
   });
+  const createSub = trpc.config.createExpenseSubCategory.useMutation({
+    onSuccess: () => { toast.success(`${t("expenses.subCategory")} ${t("common.created")}`); utils.config.getExpenseSubCategories.invalidate(); setSubOpen(false); setSubCategoryId(""); setSubName(""); setSubDescription(""); },
+    onError: (e: any) => toast.error(e.message),
+  });
+  const updateSub = trpc.config.updateExpenseSubCategory.useMutation({
+    onSuccess: () => { toast.success(`${t("expenses.subCategory")} ${t("common.updated")}`); utils.config.getExpenseSubCategories.invalidate(); setEditSubOpen(false); setEditSubItem(null); },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   function openEdit(c: any) { setEditItem({ ...c }); setEditOpen(true); }
+  function openSubCreate(categoryId?: number) { setSubCategoryId(categoryId ? String(categoryId) : ""); setSubName(""); setSubDescription(""); setSubOpen(true); }
+  function openSubEdit(s: any) { setEditSubItem({ ...s, categoryId: String(s.categoryId) }); setEditSubOpen(true); }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap gap-2 justify-between items-center">
         <h3 className="font-semibold">{t("config.expenseCategories")}</h3>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            {canCreate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>)}
-          </DialogTrigger>
-          <DialogContent className="max-w-sm">
-            <DialogHeader><DialogTitle>{t("config.addExpenseCategory")}</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Veterinary" value={name} onChange={(e) => setName(e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name, description: description || undefined })} disabled={!name || create.isPending}>{t("common.save")}</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          {canCreate && <Button size="sm" variant="outline" className="gap-2" onClick={() => openSubCreate()}><Plus className="h-3 w-3" />{t("common.add")} {t("expenses.subCategory")}</Button>}
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              {canCreate && (<Button size="sm" className="gap-2"><Plus className="h-3 w-3" />{t("config.addCategory")}</Button>)}
+            </DialogTrigger>
+            <DialogContent className="max-w-sm">
+              <DialogHeader><DialogTitle>{t("config.addExpenseCategory")}</DialogTitle></DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Veterinary" value={name} onChange={(e) => setName(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+                <Button onClick={() => create.mutate({ name, description: description || undefined })} disabled={!name || create.isPending}>{t("common.save")}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      <Dialog open={subOpen} onOpenChange={setSubOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>{t("common.add")} {t("expenses.subCategory")}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>{t("expenses.expenseCategory")} *</Label>
+              <Select value={subCategoryId} onValueChange={setSubCategoryId}>
+                <SelectTrigger><SelectValue placeholder={t("expenses.expenseCategory")} /></SelectTrigger>
+                <SelectContent>
+                  {(categories ?? []).map((c: any) => (
+                    <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5"><Label>Name *</Label><Input placeholder={t("expenses.subCategory")} value={subName} onChange={(e) => setSubName(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={subDescription} onChange={(e) => setSubDescription(e.target.value)} /></div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSubOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={() => createSub.mutate({ categoryId: Number(subCategoryId), name: subName, description: subDescription || undefined })} disabled={!subCategoryId || !subName || createSub.isPending}>{t("common.save")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {editItem && (
         <EditDialog title={t("config.editExpenseCategory")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
@@ -742,17 +787,60 @@ function ExpenseCategoriesTab() {
         </EditDialog>
       )}
 
+      {editSubItem && (
+        <EditDialog title={`${t("common.edit")} ${t("expenses.subCategory")}`} open={editSubOpen} onOpenChange={setEditSubOpen} isPending={updateSub.isPending}
+          onSave={() => updateSub.mutate({ id: editSubItem.id, categoryId: Number(editSubItem.categoryId), name: editSubItem.name, description: editSubItem.description || undefined })}>
+          <div className="space-y-1.5">
+            <Label>{t("expenses.expenseCategory")} *</Label>
+            <Select value={editSubItem.categoryId} onValueChange={(v) => setEditSubItem((p: any) => ({ ...p, categoryId: v }))}>
+              <SelectTrigger><SelectValue placeholder={t("expenses.expenseCategory")} /></SelectTrigger>
+              <SelectContent>
+                {(categories ?? []).map((c: any) => (
+                  <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><Label>Name *</Label><Input value={editSubItem.name} onChange={(e) => setEditSubItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editSubItem.description ?? ""} onChange={(e) => setEditSubItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+        </EditDialog>
+      )}
+
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("expenses.subCategory")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-20"></TableHead></TableRow></TableHeader>
         <TableBody>
-          {(categories ?? []).map((c: any) => (
-            <TableRow key={c.id}>
-              <TableCell className="font-medium">{c.name}</TableCell>
-              <TableCell className="text-muted-foreground text-sm">{c.description ?? "—"}</TableCell>
-              <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge></TableCell>
-              <TableCell>{canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
-            </TableRow>
-          ))}
+          {(categories ?? []).flatMap((c: any) => {
+            const children = (subCategories ?? []).filter((s: any) => s.categoryId === c.id);
+            return [
+              <TableRow key={`category-${c.id}`}>
+                <TableCell className="font-medium">{c.name}</TableCell>
+                <TableCell className="text-muted-foreground text-sm">{c.description ?? "—"}</TableCell>
+                <TableCell className="text-sm text-muted-foreground">{children.length}</TableCell>
+                <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge></TableCell>
+                <TableCell>
+                  <div className="flex justify-end gap-1">
+                    {canCreate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openSubCreate(c.id)}><Plus className="h-3.5 w-3.5" /></Button>}
+                    {canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(c)}><Pencil className="h-3.5 w-3.5" /></Button>}
+                  </div>
+                </TableCell>
+              </TableRow>,
+              <TableRow key={`subcategories-${c.id}`}>
+                <TableCell colSpan={5} className="bg-muted/30 py-2">
+                  <div className="flex flex-wrap gap-2 pl-4">
+                    {children.length === 0 ? (
+                      <span className="text-xs text-muted-foreground">{t("common.none")}</span>
+                    ) : children.map((s: any) => (
+                      <div key={s.id} className="flex items-center gap-1 rounded-md border bg-background px-2 py-1 text-xs">
+                        <span className="font-medium">{s.name}</span>
+                        {s.description && <span className="text-muted-foreground">· {s.description}</span>}
+                        {canUpdate && <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => openSubEdit(s)}><Pencil className="h-3 w-3" /></Button>}
+                      </div>
+                    ))}
+                  </div>
+                </TableCell>
+              </TableRow>,
+            ];
+          })}
         </TableBody>
       </Table>
     </div>

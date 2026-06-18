@@ -1,9 +1,13 @@
+import { MAX_MAP_POLYGON_POINTS } from "@shared/const";
+
 export type MapPoint = { x: number; y: number };
 export type RectShape = { type: "rect"; x: number; y: number; width: number; height: number };
 export type PolygonShape = { type: "polygon"; points: MapPoint[] };
 export type MapShape = RectShape | PolygonShape;
 
 export const FARM_MAP_DEFAULT_ASPECT = 16 / 9;
+export { MAX_MAP_POLYGON_POINTS };
+const MAX_MAP_POLYGON_CANDIDATES = MAX_MAP_POLYGON_POINTS * 4;
 
 export const ZONE_COLORS = [
   { stroke: "#2563eb", fill: "rgba(37, 99, 235, 0.22)" },
@@ -37,9 +41,14 @@ export function readMapShape(value: unknown): MapShape | null {
     }
   }
   if (shape.type === "polygon" && Array.isArray(shape.points)) {
-    const points = shape.points
-      .filter((p: any) => typeof p?.x === "number" && typeof p?.y === "number")
-      .map((p: MapPoint) => ({ x: clampUnit(p.x), y: clampUnit(p.y) }));
+    const points: MapPoint[] = [];
+    const candidateCount = Math.min(shape.points.length, MAX_MAP_POLYGON_CANDIDATES);
+    for (let index = 0; index < candidateCount && points.length < MAX_MAP_POLYGON_POINTS; index += 1) {
+      const point = shape.points[index];
+      if (typeof point?.x === "number" && typeof point?.y === "number") {
+        points.push({ x: clampUnit(point.x), y: clampUnit(point.y) });
+      }
+    }
     if (points.length >= 3) return { type: "polygon", points };
   }
   return null;
@@ -57,6 +66,36 @@ export function shapeCenter(shape: MapShape): MapPoint {
   }
   const sum = shape.points.reduce((acc, point) => ({ x: acc.x + point.x, y: acc.y + point.y }), { x: 0, y: 0 });
   return { x: sum.x / shape.points.length, y: sum.y / shape.points.length };
+}
+
+export function shapeBounds(shape: MapShape) {
+  if (shape.type === "rect") {
+    return {
+      x: shape.x,
+      y: shape.y,
+      width: shape.width,
+      height: shape.height,
+    };
+  }
+
+  let minX = 1;
+  let minY = 1;
+  let maxX = 0;
+  let maxY = 0;
+
+  for (const point of shape.points) {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
 }
 
 export function zoneColor(groupId: number, customColor?: string | null) {

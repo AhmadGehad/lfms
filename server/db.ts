@@ -550,7 +550,7 @@ export async function createExpenseSubCategory(data: { categoryId: number; name:
   const [result] = await db.insert(expenseSubCategories).values(data);
   return result;
 }
-export async function updateExpenseSubCategory(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+export async function updateExpenseSubCategory(id: number, data: Partial<{ categoryId: number; name: string; description: string; isActive: boolean }>) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(expenseSubCategories).set(data).where(eq(expenseSubCategories.id, id));

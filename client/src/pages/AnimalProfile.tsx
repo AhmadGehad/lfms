@@ -224,7 +224,7 @@ function AnimalLocationPreview({ animal }: { animal: any }) {
     <div className="border-t pt-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MapPinned className="h-3.5 w-3.5" />
+          <MapPinned aria-hidden="true" className="h-3.5 w-3.5" />
           {t("animalProfile.mapLocation")}
         </span>
       </div>
@@ -242,18 +242,19 @@ function AnimalLocationPreview({ animal }: { animal: any }) {
                 groups={groups ?? []}
                 selectedGroupId={animal.animal.groupId}
                 selectedLabel={groupLabel}
-                className="max-h-40 shadow-xs"
+                focusSelected
+                className="shadow-xs"
               />
               <span className="absolute right-2 top-2 rounded bg-background/90 p-1 shadow">
-                <Maximize2 className="h-3.5 w-3.5" />
+                <Maximize2 aria-hidden="true" className="h-3.5 w-3.5" />
               </span>
             </div>
           </button>
         </DialogTrigger>
-        <DialogContent className="max-w-5xl overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto overscroll-contain">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <MapPinned className="h-4 w-4 text-primary" />
+              <MapPinned aria-hidden="true" className="h-4 w-4 text-primary" />
               {t("animalProfile.mapLocation")}
             </DialogTitle>
           </DialogHeader>
@@ -264,7 +265,9 @@ function AnimalLocationPreview({ animal }: { animal: any }) {
             selectedGroupId={animal.animal.groupId}
             selectedLabel={groupLabel}
             showLabels
-            className="max-h-[70vh] shadow-sm"
+            focusSelected
+            interactive
+            className="shadow-sm"
           />
         </DialogContent>
       </Dialog>

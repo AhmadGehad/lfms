@@ -4,6 +4,7 @@ import {
   router,
 } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { MAX_MAP_POLYGON_POINTS } from "@shared/const";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import { storageGetSignedUrl, storagePut } from "../storage";
@@ -66,7 +67,7 @@ const mapShapeSchema = z.discriminatedUnion("type", [
     .refine((shape) => shape.x + shape.width <= 1 && shape.y + shape.height <= 1, "Rectangle must fit inside map"),
   z.object({
     type: z.literal("polygon"),
-    points: z.array(mapPointSchema).min(3).max(80),
+    points: z.array(mapPointSchema).min(3).max(MAX_MAP_POLYGON_POINTS),
   }),
 ]);
 
@@ -395,7 +396,7 @@ export const configRouter = router({
     }),
 
   updateExpenseSubCategory: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .input(z.object({ id: z.number(), categoryId: z.number().optional(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateExpenseSubCategory(id, data);
       await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
