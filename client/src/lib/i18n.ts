@@ -288,6 +288,11 @@ const en = {
     promote: "Promote",
     promoteLambToRegistry: "Promote Lamb to Animal Registry",
     promoted: "Promoted",
+    promoting: "Promoting…",
+    promoteToRegistry: "Promote to Registry",
+    specificAnimalId: "Specific Animal ID (Optional)",
+    specificAnimalIdPlaceholder: "Example: 12345",
+    specificAnimalIdHint: "Enter digits to use this exact ID without a category prefix. Leave blank to generate the normal prefixed ID.",
     recordNewBirth: "Record New Birth",
     valueUsed: "Value (EGP)"
   },
@@ -1189,6 +1194,11 @@ const ar = {
     promote: "ترقية",
     promoteLambToRegistry: "ترقية الحمل إلى سجل الحيوانات",
     promoted: "تمت الترقية",
+    promoting: "جارٍ الترقية…",
+    promoteToRegistry: "ترقية إلى السجل",
+    specificAnimalId: "رقم حيوان محدد (اختياري)",
+    specificAnimalIdPlaceholder: "مثال: 12345",
+    specificAnimalIdHint: "أدخل أرقامًا لاستخدام هذا الرقم كما هو بدون بادئة الفئة. اتركه فارغًا لإنشاء الرقم المعتاد بالبادئة.",
     recordNewBirth: "تسجيل ولادة جديدة",
     valueUsed: "القيمة (جنيه)"
   },

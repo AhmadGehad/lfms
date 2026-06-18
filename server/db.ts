@@ -231,6 +231,14 @@ export async function getRawAnimalById(id: number, tx?: DbOrTx) {
   return rows[0] ?? null;
 }
 
+/** Fetch an animal by its exact registry ID, including soft-deleted rows. */
+export async function getRawAnimalByAnimalId(animalId: string, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return null;
+  const rows = await db.select().from(animals).where(eq(animals.animalId, animalId)).limit(1);
+  return rows[0] ?? null;
+}
+
 /** Fetch many animals + joins in ONE query (avoids N+1 in bulk ops). */
 export async function getAnimalsByIds(ids: number[]) {
   const db = await getDb();

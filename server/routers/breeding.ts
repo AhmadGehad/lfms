@@ -1,3 +1,4 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import { permissionProcedure, router } from "../_core/trpc";
@@ -12,6 +13,7 @@ import {
   getAllGroups,
   getLambingLog,
   getLambingRecordById,
+  getRawAnimalByAnimalId,
   getRawAnimalById,
   updateLambingRecord,
   incrementCategorySequence,
@@ -95,6 +97,12 @@ export const breedingRouter = router({
         groupId: z.number(),
         statusId: z.number(),
         acquisitionDate: pastOrTodayDate,
+        customAnimalId: z.string()
+          .trim()
+          .min(1)
+          .max(20)
+          .regex(/^\d+$/, "Specific animal ID must contain digits only")
+          .optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -105,58 +113,81 @@ export const breedingRouter = router({
       const db = await getDb();
       if (!db) throw new Error("DB unavailable");
 
-      // All-or-nothing: lamb re-check + sequence bump + animal insert +
+      // All-or-nothing: lamb re-check + optional sequence bump + animal insert +
       // status history + lamb update — all inside ONE transaction.
-      const out = await db.transaction(async (tx) => {
-        // F8: re-read the lamb INSIDE the transaction so a concurrent
-        // promotion of the same lamb cannot pass the isPromoted check twice.
-        const lamb = await getLambingRecordById(input.lambingLogId, tx);
-        if (!lamb) throw new Error("Lambing record not found");
-        if (lamb.isPromoted) throw new Error("Lamb already promoted");
+      let out;
+      try {
+        out = await db.transaction(async (tx) => {
+          // F8: re-read the lamb INSIDE the transaction so a concurrent
+          // promotion of the same lamb cannot pass the isPromoted check twice.
+          const lamb = await getLambingRecordById(input.lambingLogId, tx);
+          if (!lamb) throw new Error("Lambing record not found");
+          if (lamb.isPromoted) throw new Error("Lamb already promoted");
 
-        // F7: inherit the dam's owner so animals born on-farm stay attributed
-        // to the same owner as their mother (owner can be changed later).
-        let inheritedOwnerId: number | null = null;
-        if (lamb.damId) {
-          const dam = await getRawAnimalById(lamb.damId, tx);
-          inheritedOwnerId = dam?.ownerId ?? null;
+          // F7: inherit the dam's owner so animals born on-farm stay attributed
+          // to the same owner as their mother (owner can be changed later).
+          let inheritedOwnerId: number | null = null;
+          if (lamb.damId) {
+            const dam = await getRawAnimalById(lamb.damId, tx);
+            inheritedOwnerId = dam?.ownerId ?? null;
+          }
+
+          let animalId = input.customAnimalId;
+          if (animalId) {
+            const existing = await getRawAnimalByAnimalId(animalId, tx);
+            if (existing) {
+              throw new TRPCError({
+                code: "CONFLICT",
+                message: "Animal ID already exists or is in the Recycle Bin",
+              });
+            }
+          } else {
+            const seq = await incrementCategorySequence(input.categoryId, tx);
+            animalId = `${prefix}${String(seq).padStart(4, "0")}`;
+          }
+
+          const result = await createAnimal({
+            animalId,
+            speciesId: input.speciesId,
+            categoryId: input.categoryId,
+            groupId: input.groupId,
+            statusId: input.statusId,
+            ownerId: inheritedOwnerId,
+            sex: lamb.sex,
+            acquisitionType: "born",
+            acquisitionDate: input.acquisitionDate as any,
+            birthDate: lamb.birthDate,
+            damId: lamb.damId,
+            sireId: lamb.sireId,
+            weightAtAcquisition: lamb.birthWeightKg,
+            createdBy: ctx.user?.id,
+          }, tx);
+
+          const insertId = (result as any).insertId;
+          await recordStatusChange({
+            animalId: insertId,
+            newStatusId: input.statusId,
+            changedBy: ctx.user?.id,
+            notes: "Promoted from lambing log",
+          }, tx);
+
+          await updateLambingRecord(input.lambingLogId, {
+            isPromoted: true,
+            promotedHeadId: insertId,
+          }, tx);
+
+          return { animalId, insertId };
+        });
+      } catch (error) {
+        const databaseError = error as { code?: string; errno?: number };
+        if (databaseError.code === "ER_DUP_ENTRY" || databaseError.errno === 1062) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Animal ID already exists or is in the Recycle Bin",
+          });
         }
-
-        const seq = await incrementCategorySequence(input.categoryId, tx);
-        const animalId = `${prefix}${String(seq).padStart(4, "0")}`;
-
-        const result = await createAnimal({
-          animalId,
-          speciesId: input.speciesId,
-          categoryId: input.categoryId,
-          groupId: input.groupId,
-          statusId: input.statusId,
-          ownerId: inheritedOwnerId,
-          sex: lamb.sex,
-          acquisitionType: "born",
-          acquisitionDate: input.acquisitionDate as any,
-          birthDate: lamb.birthDate,
-          damId: lamb.damId,
-          sireId: lamb.sireId,
-          weightAtAcquisition: lamb.birthWeightKg,
-          createdBy: ctx.user?.id,
-        }, tx);
-
-        const insertId = (result as any).insertId;
-        await recordStatusChange({
-          animalId: insertId,
-          newStatusId: input.statusId,
-          changedBy: ctx.user?.id,
-          notes: "Promoted from lambing log",
-        }, tx);
-
-        await updateLambingRecord(input.lambingLogId, {
-          isPromoted: true,
-          promotedHeadId: insertId,
-        }, tx);
-
-        return { animalId, insertId };
-      });
+        throw error;
+      }
 
       return out;
     }),

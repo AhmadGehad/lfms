@@ -205,6 +205,8 @@ export default function Breeding() {
   const promoteLamb = trpc.breeding.promoteLamb.useMutation({
     onSuccess: (data) => {
       toast.success(t("breeding.lambPromotedAs", { id: data.animalId }));
+      setPromoteDialog({ open: false, lambId: null });
+      setPromoteForm((form) => ({ ...form, customAnimalId: "" }));
       utils.breeding.listLambing.invalidate();
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
@@ -220,7 +222,14 @@ export default function Breeding() {
   const { data: statuses } = trpc.config.getStatuses.useQuery();
 
   const [promoteDialog, setPromoteDialog] = useState<{ open: boolean; lambId: number | null }>({ open: false, lambId: null });
-  const [promoteForm, setPromoteForm] = useState({ categoryId: "", speciesId: "", groupId: "", statusId: "", acquisitionDate: new Date().toISOString().split("T")[0] });
+  const [promoteForm, setPromoteForm] = useState({
+    categoryId: "",
+    speciesId: "",
+    groupId: "",
+    statusId: "",
+    acquisitionDate: new Date().toISOString().split("T")[0],
+    customAnimalId: "",
+  });
 
   const handlePromote = () => {
     if (!promoteDialog.lambId || !promoteForm.categoryId || !promoteForm.speciesId || !promoteForm.groupId || !promoteForm.statusId) {
@@ -234,8 +243,8 @@ export default function Breeding() {
       groupId: Number(promoteForm.groupId),
       statusId: Number(promoteForm.statusId),
       acquisitionDate: promoteForm.acquisitionDate,
+      customAnimalId: promoteForm.customAnimalId || undefined,
     });
-    setPromoteDialog({ open: false, lambId: null });
   };
 
   return (
@@ -328,7 +337,14 @@ export default function Breeding() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           {canUpdate && !l.isPromoted && (
-                            <Button size="sm" variant="outline" onClick={() => setPromoteDialog({ open: true, lambId: l.id })}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setPromoteForm((form) => ({ ...form, customAnimalId: "" }));
+                                setPromoteDialog({ open: true, lambId: l.id });
+                              }}
+                            >
                               {t("breeding.promote")}
                             </Button>
                           )}
@@ -373,50 +389,77 @@ export default function Breeding() {
           <DialogHeader><DialogTitle>{t("breeding.promoteLambToRegistry")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Species *</Label>
+              <Label htmlFor="promotion-species">Species *</Label>
               <Select value={promoteForm.speciesId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, speciesId: v }))}>
-                <SelectTrigger><SelectValue placeholder={t("common.selectSpecies")} /></SelectTrigger>
+                <SelectTrigger id="promotion-species"><SelectValue placeholder={t("common.selectSpecies")} /></SelectTrigger>
                 <SelectContent>
                   {(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Category *</Label>
+              <Label htmlFor="promotion-category">Category *</Label>
               <Select value={promoteForm.categoryId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, categoryId: v }))}>
-                <SelectTrigger><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
+                <SelectTrigger id="promotion-category"><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                 <SelectContent>
                   {(categories ?? []).map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Group *</Label>
+              <Label htmlFor="promotion-custom-animal-id">{t("breeding.specificAnimalId")}</Label>
+              <Input
+                id="promotion-custom-animal-id"
+                name="customAnimalId"
+                value={promoteForm.customAnimalId}
+                onChange={(event) => {
+                  const digits = event.target.value.replace(/\D/g, "").slice(0, 20);
+                  setPromoteForm((form) => ({ ...form, customAnimalId: digits }));
+                }}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={20}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder={t("breeding.specificAnimalIdPlaceholder")}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("breeding.specificAnimalIdHint")}
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="promotion-group">Group *</Label>
               <Select value={promoteForm.groupId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, groupId: v }))}>
-                <SelectTrigger><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
+                <SelectTrigger id="promotion-group"><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
                 <SelectContent>
                   {(groups ?? []).map((g: any) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Initial Status *</Label>
+              <Label htmlFor="promotion-status">Initial Status *</Label>
               <Select value={promoteForm.statusId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, statusId: v }))}>
-                <SelectTrigger><SelectValue placeholder={t("common.selectStatus")} /></SelectTrigger>
+                <SelectTrigger id="promotion-status"><SelectValue placeholder={t("common.selectStatus")} /></SelectTrigger>
                 <SelectContent>
                   {(statuses ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Acquisition Date *</Label>
-              <Input type="date" value={promoteForm.acquisitionDate} onChange={(e) => setPromoteForm((f) => ({ ...f, acquisitionDate: e.target.value }))} />
+              <Label htmlFor="promotion-acquisition-date">Acquisition Date *</Label>
+              <Input
+                id="promotion-acquisition-date"
+                name="acquisitionDate"
+                type="date"
+                value={promoteForm.acquisitionDate}
+                onChange={(e) => setPromoteForm((f) => ({ ...f, acquisitionDate: e.target.value }))}
+              />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPromoteDialog({ open: false, lambId: null })}>{t("common.cancel")}</Button>
             <Button onClick={handlePromote} disabled={promoteLamb.isPending}>
-              {promoteLamb.isPending ? "Promoting..." : "Promote to Registry"}
+              {promoteLamb.isPending ? t("breeding.promoting") : t("breeding.promoteToRegistry")}
             </Button>
           </DialogFooter>
         </DialogContent>
