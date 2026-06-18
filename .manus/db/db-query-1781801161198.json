@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `role_permissions` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `role` enum('owner','supervisor','staff','admin','user','viewer') NOT NULL,\n  `page` varchar(64) NOT NULL,\n  `action` varchar(64) NOT NULL,\n  `allowed` boolean NOT NULL,\n  `updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n  `updatedBy` int,\n  CONSTRAINT `role_permissions_id` PRIMARY KEY(`id`),\n  CONSTRAINT `role_permissions_role_page_action_unique` UNIQUE(`role`,`page`,`action`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute CREATE TABLE IF NOT EXISTS `role_permissions` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `role` enum('owner','supervisor','staff','admin','user','viewer') NOT NULL,\n  `page` varchar(64) NOT NULL,\n  `action` varchar(64) NOT NULL,\n  `allowed` boolean NOT NULL,\n  `updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n  `updatedBy` int,\n  CONSTRAINT `role_permissions_id` PRIMARY KEY(`id`),\n  CONSTRAINT `role_permissions_role_page_action_unique` UNIQUE(`role`,`page`,`action`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1871
+}
