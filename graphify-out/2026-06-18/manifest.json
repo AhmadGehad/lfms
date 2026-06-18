@@ -1245,13 +1245,13 @@
     "semantic_hash": ""
   },
   "client/src/pages/AnimalProfile.tsx": {
-    "mtime": 1781804050.5006797,
-    "ast_hash": "23b51da1f347916e863acf1ef5a81b67",
+    "mtime": 1781805370.9372678,
+    "ast_hash": "3e64468dbbb570cea31135183e82afb2",
     "semantic_hash": ""
   },
   "client/src/pages/Animals.tsx": {
-    "mtime": 1781802157.7555358,
-    "ast_hash": "c2fa2d824572461b39799ef12997e09b",
+    "mtime": 1781805304.206663,
+    "ast_hash": "5e0d309d20b6b4b9a7d2a1a296257716",
     "semantic_hash": ""
   },
   "client/src/pages/AuditLog.tsx": {
@@ -1270,7 +1270,7 @@
     "semantic_hash": ""
   },
   "client/src/pages/Configuration.tsx": {
-    "mtime": 1781804091.623893,
+    "mtime": 1781804541.5112653,
     "ast_hash": "3ebbf53235e1d87b143a413f758a66d0",
     "semantic_hash": ""
   },
@@ -1485,8 +1485,8 @@
     "semantic_hash": ""
   },
   "server/_core/index.ts": {
-    "mtime": 1781801028.5631647,
-    "ast_hash": "867897b7f517c3a1753777884d2294f7",
+    "mtime": 1781804541.483669,
+    "ast_hash": "b5d92b92ea74bd79488bac0707cfcb01",
     "semantic_hash": ""
   },
   "server/_core/llm.ts": {
@@ -1575,7 +1575,7 @@
     "semantic_hash": ""
   },
   "server/db.ts": {
-    "mtime": 1781804030.8768446,
+    "mtime": 1781804541.5208352,
     "ast_hash": "4e0277e596eff1e91d0d45df62140b1a",
     "semantic_hash": ""
   },
@@ -1630,7 +1630,7 @@
     "semantic_hash": ""
   },
   "server/routers/config.ts": {
-    "mtime": 1781804049.9478312,
+    "mtime": 1781804541.5214944,
     "ast_hash": "0ca59f16658eeee8c3d06f7eca809953",
     "semantic_hash": ""
   },
@@ -1675,7 +1675,7 @@
     "semantic_hash": ""
   },
   "shared/const.ts": {
-    "mtime": 1781804049.7828372,
+    "mtime": 1781804541.521907,
     "ast_hash": "efccda7ef1c81492cbec0c5af3322b3e",
     "semantic_hash": ""
   },
@@ -2075,8 +2075,8 @@
     "semantic_hash": ""
   },
   "client/src/pages/FarmMap.tsx": {
-    "mtime": 1781801028.5543034,
-    "ast_hash": "dcff50ffc49952386bfe478c4ff75b33",
+    "mtime": 1781804541.5115063,
+    "ast_hash": "0ef7b7cb468818cdbd2f8a216997b75d",
     "semantic_hash": ""
   },
   "debug_fat0003.mjs": {
@@ -2365,13 +2365,13 @@
     "semantic_hash": ""
   },
   "client/src/components/FarmMapPreview.tsx": {
-    "mtime": 1781804050.3091414,
-    "ast_hash": "67cf8a067f855e7bf833e796da28b046",
+    "mtime": 1781804541.5104873,
+    "ast_hash": "59dc85ab622a6c04d0a16435271a191f",
     "semantic_hash": ""
   },
   "client/src/lib/farmMap.ts": {
-    "mtime": 1781804050.112414,
-    "ast_hash": "fbd9b52b30aceb8c9f20a2dc965afbf5",
+    "mtime": 1781804541.5106885,
+    "ast_hash": "fdfb9c40fdf8a0a8cece9a669e4fb335",
     "semantic_hash": ""
   },
   ".manus/db/db-query-1781623744304.json": {
@@ -2435,8 +2435,13 @@
     "semantic_hash": ""
   },
   "server/farmMap.test.ts": {
-    "mtime": 1781804059.7940228,
+    "mtime": 1781804541.521091,
     "ast_hash": "a068461e300481b1a02a3ef9c6bd57e9",
+    "semantic_hash": ""
+  },
+  "client/src/components/EditAnimalDialog.tsx": {
+    "mtime": 1781805370.7783077,
+    "ast_hash": "73875b4d5a9e1f2e18c34f698e09ec8f",
     "semantic_hash": ""
   }
 }

@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FarmMapPreview } from "@/components/FarmMapPreview";
+import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { readMapShape } from "@/lib/farmMap";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, DollarSign, FileDown, GitBranch, MapPinned, Maximize2, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2, Syringe } from "lucide-react";
@@ -251,7 +252,7 @@ function AnimalLocationPreview({ animal }: { animal: any }) {
             </div>
           </button>
         </DialogTrigger>
-        <DialogContent className="max-h-[90vh] max-w-6xl overflow-y-auto overscroll-contain">
+        <DialogContent className="max-h-[95vh] w-[95vw] max-w-[95vw] overflow-y-auto overscroll-contain sm:max-w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPinned aria-hidden="true" className="h-4 w-4 text-primary" />
@@ -748,6 +749,7 @@ export default function AnimalProfile() {
   const [, setLocation] = useLocation();
 
   const { data: animal, isLoading } = trpc.animals.getById.useQuery({ id: animalId });
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -804,8 +806,8 @@ export default function AnimalProfile() {
               {t("sales.recordSale")}
             </Button>
           )}
-          {permissions.canUpdate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/animals?edit=${animal.animal.id}`)}>
-            <Pencil className="h-3.5 w-3.5" />
+          {permissions.canUpdate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
+            <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
             {t("common.edit")}
           </Button>}
           <DownloadPdfButton animal={animal} animalId={animalId} />
@@ -855,11 +857,10 @@ export default function AnimalProfile() {
                 <span className="text-sm font-medium text-right max-w-32 truncate">{value ?? "—"}</span>
               </div>
             ))}
-            <AnimalLocationPreview animal={animal} />
             {animal.nextVaccineDate && (
               <div className="flex justify-between items-start border-t pt-2">
                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  <Syringe className="h-3.5 w-3.5" />
+                  <Syringe aria-hidden="true" className="h-3.5 w-3.5" />
                   {t("vaccine.nextVaccine")}
                 </span>
                 <span className="text-sm font-medium flex items-center gap-1.5">
@@ -879,6 +880,7 @@ export default function AnimalProfile() {
                 </span>
               </div>
             )}
+            <AnimalLocationPreview animal={animal} />
             {animal.animal.exitDate && (
               <div className="flex justify-between items-start border-t pt-2">
                 <span className="text-sm text-muted-foreground">{t("common.exitDate")}</span>
@@ -929,6 +931,11 @@ export default function AnimalProfile() {
           </Tabs>
         </CardContent>
       </Card>
+      <EditAnimalDialog
+        animalId={animal.animal.id}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </div>
   );
 }

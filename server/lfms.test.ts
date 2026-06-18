@@ -841,4 +841,24 @@ describe("validation", () => {
       } as any)
     ).rejects.toThrow();
   });
+
+  it("bounds editable animal text fields", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.animals.update({ id: 1, notes: "x".repeat(2001) }),
+    ).rejects.toThrow();
+    await expect(
+      caller.animals.update({ id: 1, exitReason: "x".repeat(1001) }),
+    ).rejects.toThrow();
+    await expect(
+      caller.animals.update({ id: 1, exitDate: "2099-01-01" }),
+    ).rejects.toThrow();
+  });
+
+  it("bounds animal lookup result requests", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(
+      caller.animals.lookup({ sex: "female", limit: 501 }),
+    ).rejects.toThrow();
+  });
 });

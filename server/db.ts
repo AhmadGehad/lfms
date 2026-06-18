@@ -581,7 +581,7 @@ export async function upsertSetting(key: string, value: string, updatedBy?: numb
 
 // ─── ANIMALS ──────────────────────────────────────────────────────────────────
 
-export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; ownerId?: number; acquisitionType?: string; isActive?: boolean; search?: string }) {
+export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; ownerId?: number; acquisitionType?: string; isActive?: boolean; sex?: "male" | "female"; search?: string; limit?: number }) {
   const db = await getDb();
   if (!db) return [];
   const conditions: ReturnType<typeof eq>[] = [];
@@ -593,6 +593,7 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
   if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
   if (filters?.acquisitionType) conditions.push(eq(animals.acquisitionType, filters.acquisitionType as "purchased" | "born"));
   if (filters?.isActive !== undefined) conditions.push(eq(animals.isActive, filters.isActive));
+  if (filters?.sex) conditions.push(eq(animals.sex, filters.sex));
 
   const query = db
     .select({
@@ -630,10 +631,11 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
     .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
     .leftJoin(owners, eq(animals.ownerId, owners.id));
 
-  if (conditions.length > 0) {
-    return query.where(and(...conditions)).orderBy(desc(animals.acquisitionDate));
-  }
-  return query.orderBy(desc(animals.acquisitionDate));
+  const orderedQuery = conditions.length > 0
+    ? query.where(and(...conditions)).orderBy(desc(animals.acquisitionDate))
+    : query.orderBy(desc(animals.acquisitionDate));
+
+  return filters?.limit ? orderedQuery.limit(filters.limit) : orderedQuery;
 }
 
 export async function getAnimalById(id: number) {

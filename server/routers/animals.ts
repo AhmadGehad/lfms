@@ -49,14 +49,19 @@ export const animalsRouter = router({
     .query(({ input }) => getAnimals(input ?? {})),
 
   lookup: anyPermissionProcedure([
+    ["animals", "view"],
     ["breeding", "view"],
     ["vaccinations", "view"],
     ["expenses", "view"],
     ["sales", "view"],
   ])
-    .input(z.object({ isActive: z.boolean().optional() }).optional())
+    .input(z.object({
+      isActive: z.boolean().optional(),
+      sex: z.enum(["male", "female"]).optional(),
+      limit: z.number().int().min(1).max(500).optional(),
+    }).optional())
     .query(async ({ input }) => {
-      const rows = await getAnimals(input ?? {});
+      const rows = await getAnimals({ ...input, limit: input?.limit ?? 500 });
       return rows.map(row => ({
         animal: {
           id: row.animal.id,
@@ -167,9 +172,9 @@ export const animalsRouter = router({
         acquisitionDate: pastOrTodayDate.optional(),
         birthDate: pastOrTodayDate.optional(),
         purchaseCost: optionalMoneyString,
-        notes: z.string().optional(),
-        exitDate: z.string().optional(),
-        exitReason: z.string().optional(),
+        notes: z.string().max(2000).optional(),
+        exitDate: pastOrTodayDate.optional(),
+        exitReason: z.string().max(1000).optional(),
         isActive: z.boolean().optional(),
         damId: z.number().int().positive().nullable().optional(),
         sireId: z.number().int().positive().nullable().optional(),

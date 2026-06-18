@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 
 function StatusBadge({ status }: { status: string }) {
   const lower = status?.toLowerCase() ?? "";
@@ -735,222 +736,9 @@ function BulkSellDialog({
   );
 }
 
-function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalId: number | null; open: boolean; onOpenChange: (v: boolean) => void; onSuccess: () => void }) {
-  const { t } = useTranslation();
-  const { data: animal } = trpc.animals.getById.useQuery({ id: animalId! }, { enabled: !!animalId });
-  const { data: groups } = trpc.config.getGroups.useQuery({});
-  const { data: statuses } = trpc.config.getStatuses.useQuery();
-  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
-  const { data: categories } = trpc.config.getCategories.useQuery();
-  const { data: allAnimals } = trpc.animals.lookup.useQuery({ isActive: true });
-  const females = (allAnimals ?? []).filter((a: any) => a.animal.sex === "female" && a.animal.id !== animalId);
-  const males = (allAnimals ?? []).filter((a: any) => a.animal.sex === "male" && a.animal.id !== animalId);
-  const utils = trpc.useUtils();
-  const { control, handleSubmit, reset } = useForm<any>();
-  React.useEffect(() => {
-    if (animal) {
-      reset({
-        categoryId: String(animal.animal.categoryId ?? ""),
-        groupId: String(animal.animal.groupId ?? ""),
-        statusId: String(animal.animal.statusId ?? ""),
-        ownerId: animal.animal.ownerId ? String(animal.animal.ownerId) : "none",
-        sex: animal.animal.sex ?? "",
-        acquisitionDate: animal.animal.acquisitionDate ? new Date(animal.animal.acquisitionDate).toISOString().split("T")[0] : "",
-        birthDate: animal.animal.birthDate ? new Date(animal.animal.birthDate).toISOString().split("T")[0] : "",
-        purchaseCost: animal.animal.purchaseCost != null ? String(animal.animal.purchaseCost) : "",
-        notes: animal.animal.notes ?? "",
-        exitDate: animal.animal.exitDate ? new Date(animal.animal.exitDate).toISOString().split("T")[0] : "",
-        exitReason: animal.animal.exitReason ?? "",
-        damId: animal.animal.damId ? String(animal.animal.damId) : "none",
-        sireId: animal.animal.sireId ? String(animal.animal.sireId) : "none",
-      });
-    }
-  }, [animal, reset]);
-  const updateAnimal = trpc.animals.update.useMutation({
-    onSuccess: () => {
-      toast.success(t("common.saved") || "Saved");
-      utils.animals.list.invalidate();
-      utils.animals.getById.invalidate({ id: animalId! });
-      onSuccess();
-      onOpenChange(false);
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const onSubmit = handleSubmit((data) => {
-    updateAnimal.mutate({
-      id: animalId!,
-      categoryId: data.categoryId ? Number(data.categoryId) : undefined,
-      groupId: data.groupId ? Number(data.groupId) : undefined,
-      statusId: data.statusId ? Number(data.statusId) : undefined,
-      ownerId: data.ownerId && data.ownerId !== "none" ? Number(data.ownerId) : null,
-      sex: data.sex || undefined,
-      acquisitionDate: data.acquisitionDate || undefined,
-      birthDate: data.birthDate || undefined,
-      purchaseCost: data.purchaseCost !== "" ? data.purchaseCost : undefined,
-      notes: data.notes || undefined,
-      exitDate: data.exitDate || undefined,
-      exitReason: data.exitReason || undefined,
-      damId: data.damId && data.damId !== "none" ? Number(data.damId) : null,
-      sireId: data.sireId && data.sireId !== "none" ? Number(data.sireId) : null,
-    });
-  });
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t("common.edit")} {animal?.animal.animalId}</DialogTitle>
-        </DialogHeader>
-        {!animal ? (
-          <div className="py-8"><Skeleton className="h-40 w-full" /></div>
-        ) : (
-          <form onSubmit={onSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>{t("common.category")}</Label>
-                <Controller name="categoryId" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder={t("common.category")} /></SelectTrigger>
-                    <SelectContent>
-                      {(categories ?? []).map((c: any) => (
-                        <SelectItem key={c.id} value={String(c.id)}>{c.name} ({c.idPrefix})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("common.group")}</Label>
-                <Controller name="groupId" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder={t("common.group")} /></SelectTrigger>
-                    <SelectContent>
-                      {(groups ?? []).map((g: any) => (
-                        <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("common.status")}</Label>
-                <Controller name="statusId" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder={t("common.status")} /></SelectTrigger>
-                    <SelectContent>
-                      {(statuses ?? []).map((s: any) => (
-                        <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>{t("owners.owner")}</Label>
-                <Controller name="ownerId" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder={t("owners.selectOwner")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t("owners.noOwner")}</SelectItem>
-                      {(ownersList ?? []).map((o: any) => (
-                        <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("common.sex")}</Label>
-                <Controller name="sex" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder={t("common.sex")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="male">{t("common.male")}</SelectItem>
-                      <SelectItem value="female">{t("common.female")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("animals.purchaseCost")}</Label>
-                <Controller name="purchaseCost" control={control} render={({ field }) => (
-                  <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("animals.birthDate")}</Label>
-                <Controller name="birthDate" control={control} render={({ field }) => (
-                  <Input type="date" {...field} />
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("animals.acquisitionDate")}</Label>
-                <Controller name="acquisitionDate" control={control} render={({ field }) => (
-                  <Input type="date" {...field} />
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("animals.exitDate")}</Label>
-                <Controller name="exitDate" control={control} render={({ field }) => (
-                  <Input type="date" {...field} />
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("animals.exitReason")}</Label>
-                <Controller name="exitReason" control={control} render={({ field }) => (
-                  <Input placeholder={t("animals.exitReason")} {...field} />
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("animalProfile.dam")}</Label>
-                <Controller name="damId" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder={t("breeding.selectDam")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t("common.unknown")}</SelectItem>
-                      {females.map((a: any) => (
-                        <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t("animalProfile.sire")}</Label>
-                <Controller name="sireId" control={control} render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue placeholder={t("breeding.selectSire")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t("common.unknown")}</SelectItem>
-                      {males.map((a: any) => (
-                        <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )} />
-              </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label>{t("common.notes")}</Label>
-                <Controller name="notes" control={control} render={({ field }) => (
-                  <Input placeholder={t("common.notes")} {...field} />
-                )} />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
-              <Button type="submit" disabled={updateAnimal.isPending}>
-                {updateAnimal.isPending ? "..." : t("common.save")}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 export default function Animals() {
   const { t } = useTranslation();
-  const { can, canCreate, canUpdate, canDelete } = usePermissions("animals");
+  const { can, canCreate, canUpdate, canDelete, loading: permissionsLoading } = usePermissions("animals");
   const canSelect = canUpdate || canDelete ||
     can("vaccinations", "create") || can("sales", "create");
   const [, setLocation] = useLocation();
@@ -963,11 +751,14 @@ export default function Animals() {
   const [editAnimalId, setEditAnimalId] = React.useState<number | null>(null);
   const [editOpen, setEditOpen] = React.useState(false);
   React.useEffect(() => {
-    if (editIdFromUrl) {
+    if (permissionsLoading) return;
+    if (editIdFromUrl && canUpdate) {
       setEditAnimalId(editIdFromUrl);
       setEditOpen(true);
+    } else if (editIdFromUrl && !canUpdate) {
+      setLocation("/animals");
     }
-  }, [editIdFromUrl]);
+  }, [canUpdate, editIdFromUrl, permissionsLoading, setLocation]);
   const handleEditClose = (v: boolean) => {
     setEditOpen(v);
     if (!v) setLocation("/animals");
@@ -1424,7 +1215,6 @@ export default function Animals() {
         animalId={editAnimalId}
         open={editOpen}
         onOpenChange={handleEditClose}
-        onSuccess={refetch}
       />
     </div>
   );

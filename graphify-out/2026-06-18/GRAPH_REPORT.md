@@ -1,16 +1,16 @@
 # Graph Report - lfms  (2026-06-18)
 
 ## Corpus Check
-- 423 files · ~248,473 words
+- 424 files · ~248,880 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1457 nodes · 3852 edges · 64 communities (57 shown, 7 thin omitted)
+- 1459 nodes · 3879 edges · 64 communities (56 shown, 8 thin omitted)
 - Extraction: 98% EXTRACTED · 2% INFERRED · 0% AMBIGUOUS · INFERRED: 78 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `eaec0bb5`
+- Built from commit: `3fe3192e`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -66,8 +66,8 @@
 - [[_COMMUNITY_Community 48|Community 48]]
 - [[_COMMUNITY_Community 49|Community 49]]
 - [[_COMMUNITY_Community 50|Community 50]]
+- [[_COMMUNITY_Community 51|Community 51]]
 - [[_COMMUNITY_Community 52|Community 52]]
-- [[_COMMUNITY_Community 53|Community 53]]
 - [[_COMMUNITY_Community 56|Community 56]]
 - [[_COMMUNITY_Community 57|Community 57]]
 - [[_COMMUNITY_Community 60|Community 60]]
@@ -84,8 +84,8 @@
 3. `t` - 77 edges
 4. `usePermissions()` - 57 edges
 5. `LFMS Project TODO` - 36 edges
-6. `Button()` - 34 edges
-7. `trpc` - 24 edges
+6. `Button()` - 35 edges
+7. `trpc` - 25 edges
 8. `log()` - 23 edges
 9. `buildWorkbook()` - 23 edges
 10. `Card()` - 22 edges
@@ -93,59 +93,59 @@
 ## Surprising Connections (you probably didn't know these)
 - `DashboardLayout()` --calls--> `t`  [INFERRED]
   client/src/components/DashboardLayout.tsx → server/_core/trpc.ts
-- `FarmMapPreview()` --calls--> `t`  [INFERRED]
-  client/src/components/FarmMapPreview.tsx → server/_core/trpc.ts
-- `AnimalLocationPreview()` --calls--> `t`  [INFERRED]
-  client/src/pages/AnimalProfile.tsx → server/_core/trpc.ts
+- `DashboardLayoutContent()` --calls--> `t`  [INFERRED]
+  client/src/components/DashboardLayout.tsx → server/_core/trpc.ts
 - `LineageTree()` --calls--> `t`  [INFERRED]
   client/src/pages/AnimalProfile.tsx → server/_core/trpc.ts
 - `FeedHistoryTab()` --calls--> `t`  [INFERRED]
+  client/src/pages/AnimalProfile.tsx → server/_core/trpc.ts
+- `ExpenseHistoryTab()` --calls--> `t`  [INFERRED]
   client/src/pages/AnimalProfile.tsx → server/_core/trpc.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (64 total, 7 thin omitted)
+## Communities (64 total, 8 thin omitted)
 
 ### Community 0 - "Dashboard & UI Components"
-Cohesion: 0.06
-Nodes (134): DashboardLayoutContent(), ManusDialogProps, t, useCurrency(), usePermissions(), generateAnimalPnLPdf(), trpc, AccessDenied() (+126 more)
+Cohesion: 0.05
+Nodes (151): EditAnimalDialog(), EditAnimalDialogProps, FarmMapGroup, FarmMapPreview(), ZoneShape(), ManusDialogProps, t, useCurrency() (+143 more)
 
 ### Community 1 - "Package Dependencies"
 Cohesion: 0.03
 Nodes (72): dependencies, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner, axios, class-variance-authority, clsx, cmdk, cookie (+64 more)
 
 ### Community 2 - "Server DB Operations"
-Cohesion: 0.07
-Nodes (72): mapPointSchema, mapShapeSchema, OWNER_VIEW_PERMISSIONS, REFERENCE_VIEW_PERMISSIONS, addFeedItemPrice(), addVaccinationRecord(), addVaccine(), calculateBoosterDueDate() (+64 more)
+Cohesion: 0.06
+Nodes (81): mapPointSchema, mapShapeSchema, OWNER_VIEW_PERMISSIONS, REFERENCE_VIEW_PERMISSIONS, addFeedItemPrice(), addVaccinationRecord(), addVaccine(), calculateBoosterDueDate() (+73 more)
 
 ### Community 3 - "Layout & Navigation"
-Cohesion: 0.06
-Nodes (43): DashboardLayout(), DashboardLayoutSkeleton(), LanguageSwitcher(), useIsMobile(), Sheet(), SheetContent(), SheetDescription(), SheetFooter() (+35 more)
+Cohesion: 0.05
+Nodes (50): DashboardLayout(), DashboardLayoutContent(), DashboardLayoutSkeleton(), LanguageSwitcher(), useTheme(), useIsMobile(), ComponentsShowcase(), Avatar() (+42 more)
 
 ### Community 4 - "Dev Dependencies & Build"
 Cohesion: 0.05
 Nodes (43): devDependencies, add, autoprefixer, @builder.io/vite-plugin-jsx-loc, drizzle-kit, esbuild, pnpm, postcss (+35 more)
 
 ### Community 5 - "Error Handling & SDK"
-Cohesion: 0.06
-Nodes (23): getSessionCookieOptions(), isSecureRequest(), LOCAL_HOSTS, ForbiddenError(), HttpError, AuthenticatedUser, buildCronUser(), isNonEmptyString() (+15 more)
+Cohesion: 0.13
+Nodes (13): AuthenticatedUser, isNonEmptyString(), OAuthService, SessionPayload, AuthorizeRequest, AuthorizeResponse, CanAccessRequest, CanAccessResponse (+5 more)
 
 ### Community 6 - "tRPC Core & Context"
-Cohesion: 0.08
-Nodes (30): systemRouter, adminProcedure, anyPermissionProcedure(), permissionProcedure(), privilegedProcedure, requireUser, ROLE_RANK, staffProcedure (+22 more)
+Cohesion: 0.12
+Nodes (11): ContextMenu(), ContextMenuCheckboxItem(), ContextMenuContent(), ContextMenuItem(), ContextMenuLabel(), ContextMenuRadioItem(), ContextMenuSeparator(), ContextMenuShortcut() (+3 more)
 
 ### Community 7 - "Drizzle Schema Models"
 Cohesion: 0.07
-Nodes (37): Animal, animalCategories, AnimalCategory, animals, AnimalStatus, animalStatuses, AnimalStatusHistory, AuditLog (+29 more)
+Nodes (51): Animal, animalCategories, AnimalCategory, animals, AnimalStatus, animalStatuses, AnimalStatusHistory, AuditLog (+43 more)
 
 ### Community 8 - "Server Context & Cookies"
-Cohesion: 0.10
-Nodes (29): createContext(), TrpcContext, rolePermissions, configurableRoleSchema, permissionEntrySchema, AuthenticatedUser, CookieCall, AuthenticatedUser (+21 more)
+Cohesion: 0.14
+Nodes (23): ownerProcedure, requireUser, ROLE_RANK, configurableRoleSchema, permissionEntrySchema, testRouter, clearInvalidRolePermission(), getRolePermissionOverrides() (+15 more)
 
 ### Community 9 - "Action Buttons & Auth"
 Cohesion: 0.12
-Nodes (17): ActionButton(), ActionButtonProps, ButtonProps, ActionButtonGroup(), ActionButtonGroupProps, useAuth(), UseAuthOptions, useIsViewer() (+9 more)
+Nodes (18): ActionButton(), ActionButtonProps, ButtonProps, ActionButtonGroup(), ActionButtonGroupProps, useAuth(), UseAuthOptions, useIsViewer() (+10 more)
 
 ### Community 10 - "API Test Scripts"
 Cohesion: 0.35
@@ -160,48 +160,48 @@ Cohesion: 0.21
 Nodes (8): MapView(), MapViewProps, Window, TimerResponse, UseCompositionOptions, UseCompositionReturn, noop, usePersistFn()
 
 ### Community 13 - "Audit & Validators"
-Cohesion: 0.12
-Nodes (27): getClientIp(), protectedProcedure, isoDate, moneyString, optionalMoneyString, optionalWeightString, pastOrTodayDate, qtyString (+19 more)
+Cohesion: 0.11
+Nodes (37): getClientIp(), anyPermissionProcedure(), permissionProcedure(), protectedProcedure, staffProcedure, isoDate, moneyString, optionalMoneyString (+29 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.09
-Nodes (20): ButtonGroup(), ButtonGroupSeparator(), ButtonGroupText(), buttonGroupVariants, Field(), FieldContent(), FieldDescription(), FieldError() (+12 more)
+Cohesion: 0.11
+Nodes (13): Alert(), AlertDescription(), AlertTitle(), alertVariants, ButtonGroup(), ButtonGroupSeparator(), ButtonGroupText(), buttonGroupVariants (+5 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.43
 Nodes (6): notifications, createNotification(), getUpcomingBoosterVaccinations(), getUpcomingVaccinations(), checkLowStockAndNotify(), checkVaccinationsAndNotify()
 
 ### Community 16 - "Community 16"
-Cohesion: 0.12
-Nodes (18): ownerProcedure, backupRouter, CompleteSnapshot, importModeSchema, parseSnapshot(), applyCanonicalData(), ApplyCanonicalDataOptions, canonicalDataToObject() (+10 more)
+Cohesion: 0.11
+Nodes (18): privilegedProcedure, users, backupRouter, CompleteSnapshot, importModeSchema, parseSnapshot(), applyCanonicalData(), ApplyCanonicalDataOptions (+10 more)
 
 ### Community 17 - "Community 17"
-Cohesion: 0.20
-Nodes (18): buildWorkbook(), headerRow(), titleRow(), getActiveHeadCountByCategory(), getAllCategories(), getAllExpenseCategories(), getAllFeedItems(), getAllGroups() (+10 more)
+Cohesion: 0.19
+Nodes (19): buildWorkbook(), headerRow(), titleRow(), readAllCanonicalTables(), getActiveHeadCountByCategory(), getAllCategories(), getAllExpenseCategories(), getAllFeedItems() (+11 more)
 
 ### Community 18 - "Community 18"
 Cohesion: 0.10
 Nodes (19): compilerOptions, allowImportingTsExtensions, baseUrl, esModuleInterop, incremental, jsx, lib, module (+11 more)
 
 ### Community 19 - "Community 19"
-Cohesion: 0.16
-Nodes (11): asDate(), asString(), importModeSchema, ImportStats, requireDate(), requireEnum(), requireYesNo(), SECURITY_TABLES (+3 more)
+Cohesion: 0.12
+Nodes (16): supervisorProcedure, asDate(), asString(), importModeSchema, ImportStats, requireDate(), requireEnum(), requireYesNo() (+8 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.14
 Nodes (15): AIChatBox(), AIChatBoxProps, Message, useComposition(), InputGroup(), InputGroupAddon(), inputGroupAddonVariants, InputGroupButton() (+7 more)
 
 ### Community 21 - "Community 21"
-Cohesion: 0.16
-Nodes (19): FarmMapGroup, FarmMapPreview(), ZoneShape(), clampUnit(), hexToRgba(), isValidShape(), MapPoint, MapShape (+11 more)
+Cohesion: 0.20
+Nodes (9): createContext(), TrpcContext, User, AuthenticatedUser, CookieCall, AuthenticatedUser, AppRouter, buildDeniedPermissionOverrides() (+1 more)
 
 ### Community 22 - "Community 22"
-Cohesion: 0.06
-Nodes (44): Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), AspectRatio(), Avatar(), AvatarFallback(), AvatarImage() (+36 more)
+Cohesion: 0.05
+Nodes (51): Accordion(), AccordionContent(), AccordionItem(), AccordionTrigger(), AspectRatio(), Breadcrumb(), BreadcrumbEllipsis(), BreadcrumbItem() (+43 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.23
-Nodes (13): FeedItemPriceHistory, owners, vaccinationRecords, CanonicalTableSpec, dateOnly(), exportValue(), isCanonicalWorkbook(), OMIT_VALUE (+5 more)
+Cohesion: 0.24
+Nodes (4): ForbiddenError(), buildCronUser(), SDKServer, GetUserInfoWithJwtResponse
 
 ### Community 24 - "Community 24"
 Cohesion: 0.12
@@ -221,7 +221,7 @@ Nodes (15): aliases, components, hooks, lib, ui, utils, rsc, $schema (+7 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.05
-Nodes (60): cn(), AlertDialogOverlay(), CardAction(), Command(), CommandDialog(), CommandEmpty(), CommandGroup(), CommandInput() (+52 more)
+Nodes (63): cn(), AlertDialogOverlay(), CardAction(), DialogOverlay(), Empty(), EmptyContent(), EmptyDescription(), EmptyHeader() (+55 more)
 
 ### Community 29 - "Community 29"
 Cohesion: 0.12
@@ -260,12 +260,12 @@ Cohesion: 0.05
 Nodes (36): Bug Fixes (Phase 16), Bug Fixes (Phase 17), Bug Fixes (Phase 18), Feature: Configuration Edit/Update (Phase 19), Feature: Edit Sale Price (Phase 20), LFMS Project TODO, Phase 10: Excel Import & Export + Rename + i18n, Phase 12: Soft-Delete with Restore (+28 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.12
-Nodes (12): Menubar(), MenubarCheckboxItem(), MenubarContent(), MenubarItem(), MenubarLabel(), MenubarMenu(), MenubarRadioItem(), MenubarSeparator() (+4 more)
+Cohesion: 0.28
+Nodes (4): getSessionCookieOptions(), isSecureRequest(), LOCAL_HOSTS, sdk
 
 ### Community 39 - "Community 39"
-Cohesion: 0.20
-Nodes (8): Theme, ThemeContext, ThemeContextType, ThemeProvider(), ThemeProviderProps, useTheme(), ComponentsShowcase(), Toaster()
+Cohesion: 0.33
+Nodes (5): Theme, ThemeContext, ThemeContextType, ThemeProvider(), ThemeProviderProps
 
 ### Community 40 - "Community 40"
 Cohesion: 0.27
@@ -304,16 +304,12 @@ Cohesion: 0.29
 Nodes (3): ErrorBoundary, Props, State
 
 ### Community 49 - "Community 49"
-Cohesion: 0.48
-Nodes (6): buildEndpointUrl(), isNonEmptyString(), NotificationPayload, notifyOwner(), trimValue(), validatePayload()
+Cohesion: 0.31
+Nodes (8): buildEndpointUrl(), isNonEmptyString(), NotificationPayload, notifyOwner(), trimValue(), validatePayload(), systemRouter, adminProcedure
 
 ### Community 50 - "Community 50"
 Cohesion: 0.57
 Nodes (6): appendHashSuffix(), getForgeConfig(), normalizeKey(), storageGet(), storageGetSignedUrl(), storagePut()
-
-### Community 53 - "Community 53"
-Cohesion: 0.50
-Nodes (4): Alert(), AlertDescription(), AlertTitle(), alertVariants
 
 ### Community 56 - "Community 56"
 Cohesion: 0.50
@@ -328,24 +324,24 @@ Cohesion: 0.50
 Nodes (3): Development Rules, Required Tools, Workflow
 
 ## Knowledge Gaps
-- **428 isolated node(s):** `UseAuthOptions`, `AIChatBoxProps`, `ActionButtonGroupProps`, `Props`, `State` (+423 more)
+- **429 isolated node(s):** `UseAuthOptions`, `AIChatBoxProps`, `ActionButtonGroupProps`, `EditAnimalDialogProps`, `Props` (+424 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `cn()` connect `Community 28` to `Dashboard & UI Components`, `Community 32`, `Community 35`, `Community 36`, `Layout & Navigation`, `Community 38`, `Map & Composition Hooks`, `Community 45`, `Community 14`, `Community 47`, `Community 48`, `Community 20`, `Community 21`, `Community 22`, `Community 53`, `Community 29`?**
-  _High betweenness centrality (0.141) - this node is a cross-community bridge._
-- **Why does `t` connect `Dashboard & UI Components` to `Layout & Navigation`, `Community 21`, `tRPC Core & Context`?**
-  _High betweenness centrality (0.055) - this node is a cross-community bridge._
-- **Why does `FarmMapPreview()` connect `Community 21` to `Dashboard & UI Components`, `Community 28`?**
-  _High betweenness centrality (0.030) - this node is a cross-community bridge._
+- **Why does `cn()` connect `Community 28` to `Dashboard & UI Components`, `Community 32`, `Layout & Navigation`, `Community 36`, `Community 35`, `tRPC Core & Context`, `Map & Composition Hooks`, `Community 45`, `Community 14`, `Community 47`, `Community 48`, `Community 20`, `Community 22`, `Community 29`?**
+  _High betweenness centrality (0.137) - this node is a cross-community bridge._
+- **Why does `t` connect `Dashboard & UI Components` to `Server Context & Cookies`, `Action Buttons & Auth`, `Layout & Navigation`?**
+  _High betweenness centrality (0.068) - this node is a cross-community bridge._
+- **Why does `FarmMapPreview()` connect `Dashboard & UI Components` to `Community 28`?**
+  _High betweenness centrality (0.026) - this node is a cross-community bridge._
 - **Are the 76 inferred relationships involving `t` (e.g. with `DashboardLayout()` and `DashboardLayoutContent()`) actually correct?**
   _`t` has 76 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `UseAuthOptions`, `AIChatBoxProps`, `ActionButtonGroupProps` to the rest of the system?**
-  _431 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _432 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Dashboard & UI Components` be split into smaller, more focused modules?**
-  _Cohesion score 0.057436445711570444 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0502269873466628 - nodes in this community are weakly interconnected._
 - **Should `Package Dependencies` be split into smaller, more focused modules?**
   _Cohesion score 0.027777777777777776 - nodes in this community are weakly interconnected._
