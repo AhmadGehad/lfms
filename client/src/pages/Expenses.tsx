@@ -43,7 +43,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   const { data: subCategories } = trpc.config.getExpenseSubCategories.useQuery(
     { categoryId: form.categoryId ? Number(form.categoryId) : undefined }
   );
-  const { data: animals } = trpc.animals.list.useQuery({ isActive: true });
+  const { data: animals } = trpc.animals.lookup.useQuery({ isActive: true });
   const { data: animalCategories } = trpc.config.getCategories.useQuery();
   const utils = trpc.useUtils();
 
@@ -201,7 +201,7 @@ function EditExpenseDialog({ expense, onSuccess }: { expense: any; onSuccess: ()
   const { data: subCategories } = trpc.config.getExpenseSubCategories.useQuery(
     { categoryId: form.categoryId ? Number(form.categoryId) : undefined }
   );
-  const { data: animals } = trpc.animals.list.useQuery({ isActive: true });
+  const { data: animals } = trpc.animals.lookup.useQuery({ isActive: true });
   const { data: animalCategories } = trpc.config.getCategories.useQuery();
   const utils = trpc.useUtils();
 
@@ -339,7 +339,7 @@ function EditExpenseDialog({ expense, onSuccess }: { expense: any; onSuccess: ()
 
 export default function Expenses() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canCreate, canUpdate, canDelete } = usePermissions("expenses");
   const [fromDate, setFromDate] = useState(() => {
     const d = new Date(); d.setMonth(d.getMonth() - 1);
     return d.toISOString().split("T")[0];
@@ -356,7 +356,7 @@ export default function Expenses() {
     vendor: filterVendor || undefined,
     targetType: filterTargetType !== "all" ? (filterTargetType as "general" | "category" | "head" | "herd") : undefined,
   });
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const utils = trpc.useUtils();
 
   const deleteExpense = trpc.recycleBin.deleteExpense.useMutation({
@@ -383,7 +383,7 @@ export default function Expenses() {
             {(expenses ?? []).length} entries · Total: EGP {totalAmount.toLocaleString("en-EG", { minimumFractionDigits: 2 })}
           </p>
         </div>
-        {canMutate && <AddExpenseDialog onSuccess={refetch} />}
+        {canCreate && <AddExpenseDialog onSuccess={refetch} />}
       </div>
 
       <Card>
@@ -473,8 +473,9 @@ export default function Expenses() {
                       <TableCell className="text-muted-foreground">{e.expense.vendorName ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm max-w-32 truncate">{e.expense.notes ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        {canMutate && <div className="flex items-center justify-end gap-1">
-                          <EditExpenseDialog expense={e} onSuccess={refetch} />
+                        {(canUpdate || canDelete) && <div className="flex items-center justify-end gap-1">
+                          {canUpdate && <EditExpenseDialog expense={e} onSuccess={refetch} />}
+                          {canDelete && (
                           <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
@@ -498,7 +499,8 @@ export default function Expenses() {
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
-                        </AlertDialog>
+                          </AlertDialog>
+                          )}
                         </div>}
                       </TableCell>
                     </TableRow>

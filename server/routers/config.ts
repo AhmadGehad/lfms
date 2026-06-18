@@ -1,4 +1,8 @@
-import { protectedProcedure, staffProcedure, supervisorProcedure, privilegedProcedure, router } from "../_core/trpc";
+import {
+  anyPermissionProcedure,
+  permissionProcedure,
+  router,
+} from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
@@ -15,7 +19,6 @@ import {
   getAllExpenseCategories, createExpenseCategory, updateExpenseCategory,
   getAllExpenseSubCategories, createExpenseSubCategory, updateExpenseSubCategory,
   getAllSettings, getSetting, upsertSetting,
-  getAllUsers, updateUserRole,
   createAuditEntry,
   getVaccines, addVaccine, updateVaccine, deleteVaccine,
 } from "../db";
@@ -23,6 +26,28 @@ import {
 const FARM_MAP_IMAGE_KEY_SETTING = "farmMapImageKey";
 const MAX_FARM_MAP_BYTES = 8 * 1024 * 1024;
 const MAX_FARM_MAP_DATA_URL_LENGTH = Math.ceil((MAX_FARM_MAP_BYTES * 4) / 3) + 128;
+const REFERENCE_VIEW_PERMISSIONS = [
+  ["dashboard", "view"],
+  ["animals", "view"],
+  ["breeding", "view"],
+  ["fattening", "view"],
+  ["feed", "view"],
+  ["vaccinations", "view"],
+  ["expenses", "view"],
+  ["pnl", "view"],
+  ["incomeStatement", "view"],
+  ["sales", "view"],
+  ["configuration", "view"],
+  ["farmMap", "view"],
+] as const;
+const OWNER_VIEW_PERMISSIONS = [
+  ["animals", "view"],
+  ["expenses", "view"],
+  ["pnl", "view"],
+  ["incomeStatement", "view"],
+  ["sales", "view"],
+  ["configuration", "view"],
+] as const;
 
 const mapPointSchema = z.object({
   x: z.number().min(0).max(1),
@@ -47,9 +72,9 @@ const mapShapeSchema = z.discriminatedUnion("type", [
 
 export const configRouter = router({
   // ─── SPECIES ────────────────────────────────────────────────────────────────
-  getSpecies: protectedProcedure.query(() => getAllSpecies()),
+  getSpecies: anyPermissionProcedure(REFERENCE_VIEW_PERMISSIONS).query(() => getAllSpecies()),
 
-  createSpecies: supervisorProcedure
+  createSpecies: permissionProcedure("configuration", "create")
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createSpecies(input);
@@ -57,7 +82,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateSpecies: supervisorProcedure
+  updateSpecies: permissionProcedure("configuration", "update")
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateSpecies(id, data);
@@ -66,11 +91,11 @@ export const configRouter = router({
     }),
 
   // ─── CATEGORIES ─────────────────────────────────────────────────────────────
-  getCategories: protectedProcedure
+  getCategories: anyPermissionProcedure(REFERENCE_VIEW_PERMISSIONS)
     .input(z.object({ speciesId: z.number().optional() }).optional())
     .query(({ input }) => getAllCategories(input?.speciesId)),
 
-  createCategory: supervisorProcedure
+  createCategory: permissionProcedure("configuration", "create")
     .input(z.object({
       name: z.string().min(1),
       speciesId: z.number(),
@@ -84,7 +109,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateCategory: supervisorProcedure
+  updateCategory: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -102,9 +127,9 @@ export const configRouter = router({
     }),
 
   // ─── STATUSES ───────────────────────────────────────────────────────────────
-  getStatuses: protectedProcedure.query(() => getAllStatuses()),
+  getStatuses: anyPermissionProcedure(REFERENCE_VIEW_PERMISSIONS).query(() => getAllStatuses()),
 
-  createStatus: supervisorProcedure
+  createStatus: permissionProcedure("configuration", "create")
     .input(z.object({ name: z.string().min(1), description: z.string().optional(), isExitStatus: z.boolean().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createStatus(input);
@@ -112,7 +137,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateStatus: supervisorProcedure
+  updateStatus: permissionProcedure("configuration", "update")
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isExitStatus: z.boolean().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateStatus(id, data);
@@ -121,11 +146,11 @@ export const configRouter = router({
     }),
 
   // ─── GROUPS ─────────────────────────────────────────────────────────────────
-  getGroups: protectedProcedure
+  getGroups: anyPermissionProcedure(REFERENCE_VIEW_PERMISSIONS)
     .input(z.object({ speciesId: z.number().optional() }).optional())
     .query(({ input }) => getAllGroups(input?.speciesId)),
 
-  createGroup: supervisorProcedure
+  createGroup: permissionProcedure("configuration", "create")
     .input(z.object({
       groupCode: z.string().min(1),
       name: z.string().min(1),
@@ -143,7 +168,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateGroup: supervisorProcedure
+  updateGroup: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -163,12 +188,40 @@ export const configRouter = router({
       return result;
     }),
 
+  updateGroupMap: permissionProcedure("farmMap", "update")
+    .input(z.object({
+      id: z.number(),
+      mapShape: mapShapeSchema.nullable(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const result = await updateGroup(input.id, { mapShape: input.mapShape });
+      await createAuditEntry({
+        userId: ctx.user.id,
+        entityType: "group",
+        entityId: String(input.id),
+        action: "update",
+        newValues: { mapShape: input.mapShape },
+        ipAddress: getClientIp(ctx),
+      });
+      return result;
+    }),
+
   // ─── OWNERS ─────────────────────────────────────────────────────────────────
-  getOwners: protectedProcedure
+  getOwners: permissionProcedure("configuration", "view")
     .input(z.object({ activeOnly: z.boolean().optional() }).optional())
     .query(({ input }) => getAllOwners(input?.activeOnly ?? true)),
 
-  createOwner: staffProcedure
+  getOwnerOptions: anyPermissionProcedure(OWNER_VIEW_PERMISSIONS)
+    .query(async () => {
+      const ownerRows = await getAllOwners(true);
+      return ownerRows.map(owner => ({
+        id: owner.id,
+        name: owner.name,
+        isActive: owner.isActive,
+      }));
+    }),
+
+  createOwner: permissionProcedure("configuration", "create")
     .input(z.object({
       name: z.string().min(1).max(100),
       phone: z.string().max(30).optional(),
@@ -181,7 +234,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateOwner: staffProcedure
+  updateOwner: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
       name: z.string().min(1).max(100).optional(),
@@ -197,7 +250,7 @@ export const configRouter = router({
       return { success: true };
     }),
 
-  deleteOwner: supervisorProcedure
+  deleteOwner: permissionProcedure("configuration", "delete")
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await deleteOwner(input.id, ctx.user?.id);
@@ -206,9 +259,12 @@ export const configRouter = router({
     }),
 
   // ─── BIRTH TYPES ────────────────────────────────────────────────────────────
-  getBirthTypes: protectedProcedure.query(() => getAllBirthTypes()),
+  getBirthTypes: anyPermissionProcedure([
+    ["breeding", "view"],
+    ["configuration", "view"],
+  ]).query(() => getAllBirthTypes()),
 
-  createBirthType: supervisorProcedure
+  createBirthType: permissionProcedure("configuration", "create")
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createBirthType(input);
@@ -216,7 +272,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateBirthType: supervisorProcedure
+  updateBirthType: permissionProcedure("configuration", "update")
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateBirthType(id, data);
@@ -225,9 +281,13 @@ export const configRouter = router({
     }),
 
   // ─── FEED ITEMS ─────────────────────────────────────────────────────────────
-  getFeedItems: protectedProcedure.query(() => getAllFeedItems()),
+  getFeedItems: anyPermissionProcedure([
+    ["dashboard", "view"],
+    ["feed", "view"],
+    ["configuration", "view"],
+  ]).query(() => getAllFeedItems()),
 
-  createFeedItem: supervisorProcedure
+  createFeedItem: permissionProcedure("configuration", "create")
     .input(z.object({
       name: z.string().min(1),
       unit: z.string().optional(),
@@ -240,7 +300,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateFeedItem: supervisorProcedure
+  updateFeedItem: permissionProcedure("configuration", "update")
     .input(z.object({ id: z.number(), name: z.string().optional(), unit: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateFeedItem(id, data);
@@ -248,11 +308,14 @@ export const configRouter = router({
       return result;
     }),
 
-  getFeedItemPriceHistory: protectedProcedure
+  getFeedItemPriceHistory: permissionProcedure("feed", "view")
     .input(z.object({ feedItemId: z.number() }))
     .query(({ input }) => getFeedItemPriceHistory(input.feedItemId)),
 
-  addFeedItemPrice: supervisorProcedure
+  addFeedItemPrice: anyPermissionProcedure([
+    ["configuration", "create"],
+    ["feed", "create"],
+  ])
     .input(z.object({
       feedItemId: z.number(),
       effectiveDate: z.string(),
@@ -265,9 +328,12 @@ export const configRouter = router({
       return result;
     }),
 
-  getAllFeedItemPrices: protectedProcedure.query(() => getAllFeedItemPrices()),
+  getAllFeedItemPrices: permissionProcedure("feed", "view").query(() => getAllFeedItemPrices()),
 
-  updateFeedItemPrice: supervisorProcedure
+  updateFeedItemPrice: anyPermissionProcedure([
+    ["configuration", "update"],
+    ["feed", "update"],
+  ])
     .input(z.object({
       id: z.number(),
       effectiveDate: z.string().optional(),
@@ -280,7 +346,10 @@ export const configRouter = router({
       return { id };
     }),
 
-  deleteFeedItemPrice: supervisorProcedure
+  deleteFeedItemPrice: anyPermissionProcedure([
+    ["configuration", "delete"],
+    ["feed", "delete"],
+  ])
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await deleteFeedItemPrice(input.id);
@@ -289,9 +358,12 @@ export const configRouter = router({
     }),
 
   // ─── EXPENSE CATEGORIES ─────────────────────────────────────────────────────
-  getExpenseCategories: protectedProcedure.query(() => getAllExpenseCategories()),
+  getExpenseCategories: anyPermissionProcedure([
+    ["expenses", "view"],
+    ["configuration", "view"],
+  ]).query(() => getAllExpenseCategories()),
 
-  createExpenseCategory: supervisorProcedure
+  createExpenseCategory: permissionProcedure("configuration", "create")
     .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createExpenseCategory(input);
@@ -299,7 +371,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateExpenseCategory: supervisorProcedure
+  updateExpenseCategory: permissionProcedure("configuration", "update")
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateExpenseCategory(id, data);
@@ -307,11 +379,14 @@ export const configRouter = router({
       return result;
     }),
 
-  getExpenseSubCategories: protectedProcedure
+  getExpenseSubCategories: anyPermissionProcedure([
+    ["expenses", "view"],
+    ["configuration", "view"],
+  ])
     .input(z.object({ categoryId: z.number().optional() }).optional())
     .query(({ input }) => getAllExpenseSubCategories(input?.categoryId)),
 
-  createExpenseSubCategory: supervisorProcedure
+  createExpenseSubCategory: permissionProcedure("configuration", "create")
     .input(z.object({ categoryId: z.number(), name: z.string().min(1), description: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createExpenseSubCategory(input);
@@ -319,7 +394,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateExpenseSubCategory: supervisorProcedure
+  updateExpenseSubCategory: permissionProcedure("configuration", "update")
     .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateExpenseSubCategory(id, data);
@@ -328,9 +403,24 @@ export const configRouter = router({
     }),
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
-  getSettings: protectedProcedure.query(() => getAllSettings()),
+  getSettings: permissionProcedure("configuration", "view")
+    .query(() => getAllSettings()),
 
-  getFarmMapImage: protectedProcedure.query(async () => {
+  getDisplaySettings: anyPermissionProcedure([
+    ["dashboard", "view"],
+    ["animals", "view"],
+  ]).query(async () => {
+    const settings = await getAllSettings();
+    return settings.filter(setting =>
+      setting.settingKey === "currency" ||
+      setting.settingKey === "farmName",
+    );
+  }),
+
+  getFarmMapImage: anyPermissionProcedure([
+    ["animals", "view"],
+    ["farmMap", "view"],
+  ]).query(async () => {
     const key = await getSetting(FARM_MAP_IMAGE_KEY_SETTING);
     if (!key) return { key: null, url: null };
     try {
@@ -341,7 +431,7 @@ export const configRouter = router({
     }
   }),
 
-  setFarmMapImage: supervisorProcedure
+  setFarmMapImage: permissionProcedure("farmMap", "update")
     .input(z.object({
       dataUrl: z
         .string()
@@ -372,7 +462,7 @@ export const configRouter = router({
       return { success: true, key };
     }),
 
-  removeFarmMapImage: supervisorProcedure.mutation(async ({ ctx }) => {
+  removeFarmMapImage: permissionProcedure("farmMap", "update").mutation(async ({ ctx }) => {
     await upsertSetting(FARM_MAP_IMAGE_KEY_SETTING, "", ctx.user?.id);
     await createAuditEntry({
       userId: ctx.user.id,
@@ -385,7 +475,7 @@ export const configRouter = router({
     return { success: true };
   }),
 
-  upsertSetting: supervisorProcedure
+  upsertSetting: permissionProcedure("configuration", "update")
     .input(z.object({ key: z.string(), value: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const result = await upsertSetting(input.key, input.value, ctx.user?.id);
@@ -393,22 +483,15 @@ export const configRouter = router({
       return result;
     }),
 
-  // ─── USER MANAGEMENT ────────────────────────────────────────────────────────
-  getUsers: protectedProcedure.query(() => getAllUsers()),
-
-  updateUserRole: privilegedProcedure
-    .input(z.object({ userId: z.number(), role: z.enum(["owner", "supervisor", "staff", "admin", "user", "viewer"]) }))
-    .mutation(async ({ input, ctx }) => {
-      const before = (await getAllUsers()).find((u: any) => u.id === input.userId);
-      const result = await updateUserRole(input.userId, input.role);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "user", entityId: String(input.userId), action: "update", oldValues: before ? { role: before.role } as any : undefined, newValues: { role: input.role }, ipAddress: getClientIp(ctx) });
-      return result;
-    }),
-
   // ─── VACCINES ────────────────────────────────────────────────────────────────
-  getVaccines: protectedProcedure.query(() => getVaccines()),
+  getVaccines: anyPermissionProcedure([
+    ["dashboard", "view"],
+    ["animals", "view"],
+    ["vaccinations", "view"],
+    ["configuration", "view"],
+  ]).query(() => getVaccines()),
 
-  createVaccine: supervisorProcedure
+  createVaccine: permissionProcedure("configuration", "create")
     .input(z.object({
       name: z.string().min(1),
       description: z.string().optional(),
@@ -423,7 +506,7 @@ export const configRouter = router({
       return result;
     }),
 
-  updateVaccine: supervisorProcedure
+  updateVaccine: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
@@ -440,7 +523,7 @@ export const configRouter = router({
       return { id };
     }),
 
-  deleteVaccine: supervisorProcedure
+  deleteVaccine: permissionProcedure("configuration", "delete")
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await deleteVaccine(input.id);

@@ -48,8 +48,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
   // Always check if this is the owner first
   if (user.openId === ENV.ownerOpenId) {
-    values.role = "admin";
-    updateSet.role = "admin";
+    values.role = "owner";
+    updateSet.role = "owner";
   } else if (user.role !== undefined) {
     values.role = user.role;
     updateSet.role = user.role;
@@ -78,8 +78,12 @@ export async function getAllUsers() {
   return db.select().from(users).orderBy(desc(users.createdAt));
 }
 
-export async function updateUserRole(userId: number, role: "owner" | "supervisor" | "staff" | "admin" | "user" | "viewer") {
-  const db = await getDb();
+export async function updateUserRole(
+  userId: number,
+  role: "owner" | "supervisor" | "staff" | "admin" | "user" | "viewer",
+  dbOrTx?: DbOrTx,
+) {
+  const db = dbOrTx ?? await getDb();
   if (!db) return;
   await db.update(users).set({ role }).where(eq(users.id, userId));
 }

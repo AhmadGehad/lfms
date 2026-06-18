@@ -1,39 +1,72 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { useMemo } from "react";
+import { trpc } from "@/lib/trpc";
+import {
+  permissionKey,
+  type PermissionAction,
+  type PermissionPage,
+} from "@shared/permissions";
+import { useCallback, useMemo } from "react";
 
-// Must mirror ROLE_RANK in server/_core/trpc.ts
-const ROLE_RANK: Record<string, number> = {
-  viewer: -1,
-  user: 0,
-  staff: 1,
-  supervisor: 2,
-  admin: 3,
-  owner: 3,
-};
-
-/**
- * Client-side permission helper. Mirrors the server role hierarchy so the UI
- * can hide/disable actions the user isn't allowed to perform. This is a UX
- * convenience only — the server enforces the real checks.
- */
-export function usePermissions() {
+export function usePermissions(page?: PermissionPage) {
   const { user } = useAuth();
+  const permissionsQuery = trpc.permissions.my.useQuery(undefined, {
+    enabled: Boolean(user),
+    retry: false,
+    refetchOnWindowFocus: false,
+    staleTime: 30_000,
+  });
 
-  return useMemo(() => {
-    const rank = ROLE_RANK[(user?.role as string) ?? "user"] ?? 0;
-    const isViewer = (user?.role as string) === "viewer";
+  const permissions = useMemo(() => {
+    const values = new Map<string, boolean>();
+    for (const pageEntry of permissionsQuery.data?.matrix ?? []) {
+      for (const actionEntry of pageEntry.actions) {
+        values.set(
+          permissionKey(pageEntry.page, actionEntry.action),
+          actionEntry.allowed,
+        );
+      }
+    }
+    return values;
+  }, [permissionsQuery.data]);
+
+  const can = useCallback((
+    targetPage: PermissionPage,
+    action: PermissionAction,
+  ) => permissions.get(permissionKey(targetPage, action)) ?? false, [permissions]);
+
+  const scoped = useMemo(() => {
+    const scopedCan = (action: PermissionAction) =>
+      page ? can(page, action) : false;
     return {
-      role: (user?.role as string) ?? "user",
-      /** viewers (rank -1) can do nothing but view */
-      canRecord: rank >= 1, // staff+: record animals, weights, sales, expenses, feed
-      canEditConfig: rank >= 2, // supervisor+: categories, ration plans, settings
-      canManageUsers: rank >= 3, // admin/owner: user roles
-      canDelete: rank >= 2, // supervisor+: soft-delete records
-      canPurgeOrRestore: rank >= 3, // admin/owner: permanent delete, restore, backup/restore
-      /** viewers cannot mutate ANYTHING — use to hide all add/edit/delete UI */
-      canMutate: rank >= 1,
-      isViewer,
-      isReadOnly: rank <= 0,
+      canView: scopedCan("view"),
+      canCreate: scopedCan("create"),
+      canUpdate: scopedCan("update"),
+      canDelete: scopedCan("delete"),
+      canExport: scopedCan("export"),
+      canReport: scopedCan("report"),
+      canImport: scopedCan("import"),
+      canRestore: scopedCan("restore"),
+      canPurge: scopedCan("purge"),
+      canMutate: page
+        ? ["create", "update", "delete", "import", "restore", "purge"]
+          .some(action => scopedCan(action as PermissionAction))
+        : false,
     };
-  }, [user?.role]);
+  }, [can, page]);
+
+  return {
+    role: (user?.role as string) ?? "viewer",
+    loading: Boolean(user) && permissionsQuery.isLoading,
+    can,
+    ...scoped,
+    // Backward-compatible aliases while page components migrate to scoped
+    // names. These values are still dynamic and server-provided.
+    canRecord: page ? can(page, "create") : false,
+    canEditConfig: can("configuration", "update"),
+    canManageUsers: can("users", "update"),
+    canPurgeOrRestore:
+      can("recycleBin", "purge") || can("recycleBin", "restore"),
+    isViewer: user?.role === "viewer",
+    isReadOnly: page ? !scoped.canMutate : false,
+  };
 }

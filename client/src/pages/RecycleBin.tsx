@@ -32,7 +32,7 @@ import {
   PackageOpen,
   Filter,
 } from "lucide-react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const ENTITY_TYPES = [
   { value: "all", label: "All Types" },
@@ -82,8 +82,7 @@ function formatDate(d: Date | null | undefined) {
 
 export default function RecycleBin() {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "owner";
+  const { canRestore, canPurge } = usePermissions("recycleBin");
   const [filterType, setFilterType] = useState<string>("all");
   const utils = trpc.useUtils();
 
@@ -271,7 +270,7 @@ export default function RecycleBin() {
                 </SelectContent>
               </Select>
             </div>
-            {isAdmin && items.length > 0 && (
+            {canPurge && items.length > 0 && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm">
@@ -375,7 +374,7 @@ export default function RecycleBin() {
                         </div>
                         <div className="flex items-center gap-2 ml-4 shrink-0">
                           {/* Restore */}
-                          {isAdmin && (
+                          {canRestore && (
                           <Button
                             variant="outline"
                             size="sm"
@@ -388,7 +387,7 @@ export default function RecycleBin() {
                           )}
 
                           {/* Permanent delete (admin only, and only for supported types) */}
-                          {isAdmin && ["animal", "expense", "weightLog", "lambingLog", "rationPlan", "feedStock", "sale"].includes(item.entityType) && (
+                          {canPurge && ["animal", "expense", "weightLog", "lambingLog", "rationPlan", "feedStock", "sale"].includes(item.entityType) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button

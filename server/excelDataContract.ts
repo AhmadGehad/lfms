@@ -18,6 +18,7 @@ import {
   notifications,
   owners,
   rationPlans,
+  rolePermissions,
   sales,
   species,
   systemSettings,
@@ -27,7 +28,7 @@ import {
   weightLog,
 } from "../drizzle/schema";
 
-export const EXCEL_DATA_FORMAT_VERSION = 2;
+export const EXCEL_DATA_FORMAT_VERSION = 3;
 export const EXCEL_MANIFEST_SHEET = "LFMS Manifest";
 
 export type CanonicalTableSpec = {
@@ -38,6 +39,11 @@ export type CanonicalTableSpec = {
 
 export const CANONICAL_TABLES: CanonicalTableSpec[] = [
   { key: "users", sheetName: "Data - Users", table: users },
+  {
+    key: "role_permissions",
+    sheetName: "Data - Role Permissions",
+    table: rolePermissions,
+  },
   { key: "species", sheetName: "Data - Species", table: species },
   {
     key: "animal_statuses",

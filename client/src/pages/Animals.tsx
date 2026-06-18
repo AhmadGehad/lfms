@@ -69,7 +69,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
     { speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined }
   );
   const { data: statuses } = trpc.config.getStatuses.useQuery();
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
 
   const utils = trpc.useUtils();
   const createAnimal = trpc.animals.create.useMutation({
@@ -347,7 +347,7 @@ function BulkEditDialog({
   const { t } = useTranslation();
   const { data: groups } = trpc.config.getGroups.useQuery();
   const { data: statuses } = trpc.config.getStatuses.useQuery();
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
 
   // "" / "__keep" means leave the field alone; "__clear" means set to null
   // (only valid for nullable fields: group, owner, notes).
@@ -740,7 +740,7 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
   const { data: animal } = trpc.animals.getById.useQuery({ id: animalId! }, { enabled: !!animalId });
   const { data: groups } = trpc.config.getGroups.useQuery({});
   const { data: statuses } = trpc.config.getStatuses.useQuery();
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
   const utils = trpc.useUtils();
   const { control, handleSubmit, reset } = useForm<any>();
@@ -915,7 +915,9 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
 
 export default function Animals() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { can, canCreate, canUpdate, canDelete } = usePermissions("animals");
+  const canSelect = canUpdate || canDelete ||
+    can("vaccinations", "create") || can("sales", "create");
   const [, setLocation] = useLocation();
   const searchStr = useSearch();
   const editIdFromUrl = React.useMemo(() => {
@@ -979,7 +981,7 @@ export default function Animals() {
 
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: statuses } = trpc.config.getStatuses.useQuery();
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
 
   const filtered = (animals ?? []).filter((a: any) => {
     // Client-side acquisitionType filter — belt-and-suspenders with server filter
@@ -1108,7 +1110,7 @@ export default function Animals() {
             {filtered.length} animals · All lifecycle stages
           </p>
         </div>
-        {canMutate && <AddAnimalDialog onSuccess={refetch} />}
+        {canCreate && <AddAnimalDialog onSuccess={refetch} />}
       </div>
 
       {/* Filters */}
@@ -1177,20 +1179,20 @@ export default function Animals() {
                 <SelectItem value="born">{t("animals.bornOnFarm")}</SelectItem>
               </SelectContent>
             </Select>
-            {canMutate && selectedIds.size > 0 && (
+            {canSelect && selectedIds.size > 0 && (
               <div className="flex gap-2 ms-auto">
-                <Button onClick={() => setBulkEditOpen(true)} variant="outline" className="gap-2">
+                {canUpdate && <Button onClick={() => setBulkEditOpen(true)} variant="outline" className="gap-2">
                   <Pencil className="h-4 w-4" />
                   {t("animals.bulkEdit")} ({selectedIds.size})
-                </Button>
-                <Button onClick={() => setBulkVaccinationOpen(true)} variant="outline" className="gap-2">
+                </Button>}
+                {can("vaccinations", "create") && <Button onClick={() => setBulkVaccinationOpen(true)} variant="outline" className="gap-2">
                   <Syringe className="h-4 w-4" />
                   {t("vaccine.bulkApply")} ({selectedIds.size})
-                </Button>
-                <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2">
+                </Button>}
+                {can("sales", "create") && <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2">
                   <DollarSign className="h-4 w-4" />
                   {t("animals.bulkSell")} ({selectedIds.size})
-                </Button>
+                </Button>}
               </div>
             )}
           </div>
@@ -1209,7 +1211,7 @@ export default function Animals() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {canMutate && <TableHead className="w-10">
+                    {canSelect && <TableHead className="w-10">
                       <Checkbox
                         checked={allSelected}
                         onCheckedChange={toggleAll}
@@ -1248,7 +1250,7 @@ export default function Animals() {
                       const isSelected = selectedIds.has(a.animal.id);
                       return (
                         <TableRow key={a.animal.id} className={`cursor-pointer hover:bg-muted/40 ${isSelected ? "bg-primary/5" : ""}`} onClick={() => setLocation(`/animals/${a.animal.id}`)}>
-                          {canMutate && <TableCell onClick={(e) => e.stopPropagation()}>
+                          {canSelect && <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox
                               checked={isSelected}
                               onCheckedChange={() => toggleOne(a.animal.id)}
@@ -1303,7 +1305,7 @@ export default function Animals() {
                           <TableCell>{days}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              {canMutate && (
+                              {canUpdate && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -1320,7 +1322,7 @@ export default function Animals() {
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              {canMutate && (
+                              {canDelete && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button

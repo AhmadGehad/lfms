@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { permissionProcedure, router } from "../_core/trpc";
 import { moneyString, optionalMoneyString, pastOrTodayDate } from "../_core/validators";
 import { createExpense, deleteExpense, getExpenseById, getExpenses, updateExpense, createAuditEntry } from "../db";
 
 export const expensesRouter = router({
-  list: protectedProcedure
+  list: permissionProcedure("expenses", "view")
     .input(
       z.object({
         fromDate: z.string().optional(),
@@ -19,7 +19,7 @@ export const expensesRouter = router({
     )
     .query(({ input }) => getExpenses(input ?? {})),
 
-  create: staffProcedure
+  create: permissionProcedure("expenses", "create")
     .input(
       z.object({
         expenseDate: pastOrTodayDate,
@@ -73,7 +73,7 @@ export const expensesRouter = router({
       return result;
     }),
 
-  update: staffProcedure
+  update: permissionProcedure("expenses", "update")
     .input(
       z.object({
         id: z.number().int().positive(),
@@ -118,7 +118,7 @@ export const expensesRouter = router({
       return result;
     }),
 
-  delete: staffProcedure
+  delete: permissionProcedure("expenses", "delete")
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const before = await getExpenseById(input.id);

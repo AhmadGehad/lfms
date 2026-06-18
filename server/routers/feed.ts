@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { anyPermissionProcedure, permissionProcedure, router } from "../_core/trpc";
 import { qtyString, rationRateString, optionalMoneyString, isoDate } from "../_core/validators";
 import {
   createAuditEntry,
@@ -17,11 +17,14 @@ import {
 
 export const feedRouter = router({
   // ─── RATION PLANS ───────────────────────────────────────────────────────────
-  getRationPlans: protectedProcedure
+  getRationPlans: anyPermissionProcedure([
+    ["feed", "view"],
+    ["animals", "view"],
+  ])
     .input(z.object({ categoryId: z.number().optional() }).optional())
     .query(({ input }) => getRationPlans(input?.categoryId)),
 
-  createRationPlan: staffProcedure
+  createRationPlan: permissionProcedure("feed", "create")
     .input(
       z.object({
         categoryId: z.number().int().positive(),
@@ -49,7 +52,7 @@ export const feedRouter = router({
       return result;
     }),
 
-  updateRationPlan: staffProcedure
+  updateRationPlan: permissionProcedure("feed", "update")
     .input(
       z.object({
         id: z.number(),
@@ -78,7 +81,7 @@ export const feedRouter = router({
       return result;
     }),
 
-  bulkUpdateRationPlanDates: staffProcedure
+  bulkUpdateRationPlanDates: permissionProcedure("feed", "update")
     .input(
       z.object({
         ids: z.array(z.number().int().positive()).min(1),
@@ -106,11 +109,11 @@ export const feedRouter = router({
     }),
 
   // ─── STOCK LEDGER ───────────────────────────────────────────────────────────
-  getStockLedger: protectedProcedure
+  getStockLedger: permissionProcedure("feed", "view")
     .input(z.object({ feedItemId: z.number().optional() }).optional())
     .query(({ input }) => getFeedStockLedger(input?.feedItemId)),
 
-  addStockEntry: staffProcedure
+  addStockEntry: permissionProcedure("feed", "create")
     .input(
       z.object({
         feedItemId: z.number().int().positive(),
@@ -167,7 +170,7 @@ export const feedRouter = router({
       return result;
     }),
 
-  updateStockEntry: staffProcedure
+  updateStockEntry: permissionProcedure("feed", "update")
     .input(
       z.object({
         id: z.number(),
@@ -195,7 +198,10 @@ export const feedRouter = router({
     }),
 
   // ─── STOCK STATUS (always unfiltered per requirements) ──────────────────────────────────────────────
-  getStockStatus: protectedProcedure.query(() => getFeedStockStatus()),
+  getStockStatus: anyPermissionProcedure([
+    ["feed", "view"],
+    ["dashboard", "view"],
+  ]).query(() => getFeedStockStatus()),
 
-  getShrinkage: protectedProcedure.query(() => getFeedShrinkage()),
+  getShrinkage: permissionProcedure("feed", "view").query(() => getFeedShrinkage()),
 });

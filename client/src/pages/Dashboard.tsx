@@ -514,9 +514,10 @@ export default function Dashboard() {
 function ExportButton() {
   const [loading, setLoading] = useState(false);
   const utils = trpc.useUtils();
-  const { canPurgeOrRestore } = usePermissions();
+  const { can } = usePermissions("dashboard");
+  const canExport = can("data", "export");
 
-  if (!canPurgeOrRestore) return null;
+  if (!canExport) return null;
 
   const handleExport = async () => {
     try {
@@ -554,8 +555,13 @@ function ExportButton() {
 // ── PDF Report Button — Farm Summary ────────────────────────────────────────
 function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: string }; kpis: any }) {
   const { t } = useTranslation();
-  const { data: pnlData } = trpc.animals.getAllPnL.useQuery({});
-  const { data: settings } = trpc.config.getSettings.useQuery();
+  const { canReport } = usePermissions("dashboard");
+  const { canView: canViewPnl } = usePermissions("pnl");
+  const { data: pnlData } = trpc.animals.getAllPnL.useQuery(
+    {},
+    { enabled: canReport && canViewPnl },
+  );
+  const { data: settings } = trpc.config.getDisplaySettings.useQuery();
   const { currency } = useCurrency();
   const [generating, setGenerating] = useState(false);
 
@@ -584,6 +590,8 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
       setGenerating(false);
     }
   };
+
+  if (!canReport || !canViewPnl) return null;
 
   return (
     <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background" onClick={handleClick} disabled={generating || !kpis}>

@@ -9,6 +9,7 @@ import {
   varchar,
   date,
   json,
+  uniqueIndex,
 } from "drizzle-orm/mysql-core";
 
 // ─── USERS ────────────────────────────────────────────────────────────────────
@@ -26,6 +27,24 @@ export const users = mysqlTable("users", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+// ─── ROLE PERMISSIONS ────────────────────────────────────────────────────────
+// Rows are explicit overrides. Missing rows fall back to the legacy role
+// hierarchy defined in shared/permissions.ts.
+export const rolePermissions = mysqlTable("role_permissions", {
+  id: int("id").autoincrement().primaryKey(),
+  role: mysqlEnum("role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]).notNull(),
+  page: varchar("page", { length: 64 }).notNull(),
+  action: varchar("action", { length: 64 }).notNull(),
+  allowed: boolean("allowed").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedBy: int("updatedBy"),
+}, table => ({
+  rolePageActionUnique: uniqueIndex("role_permissions_role_page_action_unique")
+    .on(table.role, table.page, table.action),
+}));
+
+export type RolePermission = typeof rolePermissions.$inferSelect;
 
 // ─── CONFIGURATION TABLES ─────────────────────────────────────────────────────
 

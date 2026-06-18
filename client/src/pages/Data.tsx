@@ -36,7 +36,7 @@ export default function Data() {
 // ── Import Excel ─────────────────────────────────────────────────────────────
 function ImportCard() {
   const { t } = useTranslation();
-  const { canPurgeOrRestore } = usePermissions();
+  const { canImport } = usePermissions("data");
   const fileRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<any[] | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -90,7 +90,7 @@ function ImportCard() {
             e.target.value = "";
           }}
         />
-        {canPurgeOrRestore && <Button onClick={() => fileRef.current?.click()} disabled={apply.isPending} className="gap-2">
+        {canImport && <Button onClick={() => fileRef.current?.click()} disabled={apply.isPending} className="gap-2">
           <FileUp className="h-4 w-4" />
           {apply.isPending ? t("data.importing") : t("data.chooseExcel")}
         </Button>}
@@ -127,6 +127,7 @@ function ImportCard() {
 // ── Backup ───────────────────────────────────────────────────────────────────
 function BackupCard() {
   const { t } = useTranslation();
+  const { canExport } = usePermissions("data");
   const [loading, setLoading] = useState(false);
   const utils = trpc.useUtils();
 
@@ -162,10 +163,10 @@ function BackupCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{t("data.backupDesc")}</p>
-        <Button onClick={handleDownload} disabled={loading} className="gap-2">
+        {canExport && <Button onClick={handleDownload} disabled={loading} className="gap-2">
           <Download className="h-4 w-4" />
           {loading ? t("data.generating") : t("data.downloadBackup")}
-        </Button>
+        </Button>}
       </CardContent>
     </Card>
   );
@@ -174,7 +175,7 @@ function BackupCard() {
 // ── Restore ──────────────────────────────────────────────────────────────────
 function RestoreCard() {
   const { t } = useTranslation();
-  const { canPurgeOrRestore } = usePermissions();
+  const { canRestore } = usePermissions("data");
   const fileRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState<any | null>(null);
   const [mode, setMode] = useState<ImportMode>("append");
@@ -228,7 +229,7 @@ function RestoreCard() {
             e.target.value = "";
           }}
         />
-        {canPurgeOrRestore && <Button onClick={() => fileRef.current?.click()} disabled={restore.isPending} className="gap-2" variant="outline">
+        {canRestore && <Button onClick={() => fileRef.current?.click()} disabled={restore.isPending} className="gap-2" variant="outline">
           <FileUp className="h-4 w-4" />
           {restore.isPending ? t("data.restoring") : t("data.chooseBackup")}
         </Button>}

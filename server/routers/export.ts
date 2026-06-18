@@ -1,5 +1,5 @@
 import ExcelJS from "exceljs";
-import { privilegedProcedure, router } from "../_core/trpc";
+import { permissionProcedure, router } from "../_core/trpc";
 import { getDb, getAllSpecies, getAllCategories, getAllStatuses, getAllGroups, getAllFeedItems, getAllExpenseCategories, getAnimals, getSales, getLambingLog, getFeedStockLedger, getFeedStockStatus, getExpenses, getAllAnimalsPnL, getIncomeStatement, getDashboardKPIs, getActiveHeadCountByCategory, getFeedPriceOnDate } from "../db";
 import { readAllCanonicalTables } from "../canonicalTransfer";
 import { addCanonicalSheets } from "../excelDataContract";
@@ -879,7 +879,7 @@ async function buildWorkbook(): Promise<Buffer> {
 
 export const exportRouter = router({
   /** Generate the full workbook and return as base64. */
-  full: privilegedProcedure.query(async () => {
+  full: permissionProcedure("data", "export").query(async () => {
     const buf = await buildWorkbook();
     return {
       filename: `lfms-export-${new Date().toISOString().split("T")[0]}.xlsx`,

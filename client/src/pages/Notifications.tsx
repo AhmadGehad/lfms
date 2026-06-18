@@ -6,9 +6,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function Notifications() {
   const { t } = useTranslation();
+  const { canUpdate } = usePermissions("notifications");
   const { data: notifications, isLoading } = trpc.notifications.list.useQuery();
   // Use the underlying QueryClient to invalidate ALL notifications.list queries
   // regardless of input (unreadOnly: true or undefined). This ensures the sidebar
@@ -54,7 +56,7 @@ export default function Notifications() {
             {unreadCount > 0 ? `${unreadCount} ${t("notifications.markRead")}` : t("common.all")}
           </p>
         </div>
-        {unreadCount > 0 && (
+        {canUpdate && unreadCount > 0 && (
           <Button variant="outline" className="gap-2" onClick={() => markAllRead.mutate()}>
             <CheckCheck className="h-4 w-4" />
             {t("notifications.markAllRead")}
@@ -76,8 +78,8 @@ export default function Notifications() {
           (notifications ?? []).map((n: any) => (
             <Card
               key={n.id}
-              className={`transition-colors cursor-pointer ${!n.isRead ? "border-primary/30 bg-primary/5" : ""}`}
-              onClick={() => !n.isRead && markRead.mutate({ id: n.id })}
+              className={`transition-colors ${canUpdate && !n.isRead ? "cursor-pointer" : ""} ${!n.isRead ? "border-primary/30 bg-primary/5" : ""}`}
+              onClick={() => canUpdate && !n.isRead && markRead.mutate({ id: n.id })}
             >
               <CardContent className="py-4 flex items-start gap-4">
                 <div className="flex-1">

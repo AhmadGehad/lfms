@@ -6,7 +6,7 @@ import { useMemo } from "react";
  * Reads from system_settings table; falls back to EGP if not set.
  */
 export function useCurrency() {
-  const { data: settings } = trpc.config.getSettings.useQuery(undefined, {
+  const { data: settings } = trpc.config.getDisplaySettings.useQuery(undefined, {
     staleTime: 5 * 60 * 1000, // 5 min — currency doesn't change often
   });
 

@@ -10,6 +10,10 @@ export type TransferStat = {
   skipped: number;
 };
 
+type ApplyCanonicalDataOptions = {
+  excludedTables?: ReadonlySet<string>;
+};
+
 function comparable(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
   if (value && typeof value === "object") return JSON.stringify(value);
@@ -36,16 +40,20 @@ export async function applyCanonicalData(
   tx: DbOrTx,
   rowsByTable: CanonicalWorkbookData,
   mode: ImportMode,
+  options: ApplyCanonicalDataOptions = {},
 ): Promise<TransferStat[]> {
   const stats: TransferStat[] = [];
+  const excludedTables = options.excludedTables ?? new Set<string>();
 
   if (mode === "replace") {
     for (const spec of [...CANONICAL_TABLES].reverse()) {
+      if (excludedTables.has(spec.key)) continue;
       await tx.delete(spec.table);
     }
   }
 
   for (const spec of CANONICAL_TABLES) {
+    if (excludedTables.has(spec.key)) continue;
     const importedRows = rowsByTable.get(spec.key) ?? [];
     const stat: TransferStat = { table: spec.key, applied: 0, skipped: 0 };
 

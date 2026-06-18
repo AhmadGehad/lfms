@@ -55,7 +55,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
     veterinarian: "",
   });
 
-  const { data: animals } = trpc.animals.list.useQuery();
+  const { data: animals } = trpc.animals.lookup.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: vaccines } = trpc.config.getVaccines.useQuery();
   const utils = trpc.useUtils();
@@ -267,7 +267,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
     isCompleted: record?.isCompleted || false,
   });
 
-  const { data: animals } = trpc.animals.list.useQuery();
+  const { data: animals } = trpc.animals.lookup.useQuery();
   const { data: vaccines } = trpc.config.getVaccines.useQuery();
   const utils = trpc.useUtils();
 
@@ -381,7 +381,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
 
 export default function AnimalVaccinations() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canCreate, canUpdate, canDelete } = usePermissions("vaccinations");
   const { data: records, isLoading } = trpc.vaccination.getVaccinationRecords.useQuery();
   const utils = trpc.useUtils();
 
@@ -410,8 +410,8 @@ export default function AnimalVaccinations() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-end gap-2 mb-4">
-            {canMutate && <BulkVaccinationDialog onSuccess={() => {}} />}
-            {canMutate && <VaccinationRecordFormDialog onSuccess={() => {}} />}
+            {canCreate && <BulkVaccinationDialog onSuccess={() => {}} />}
+            {canCreate && <VaccinationRecordFormDialog onSuccess={() => {}} />}
           </div>
 
           <div className="overflow-x-auto">
@@ -463,8 +463,8 @@ export default function AnimalVaccinations() {
                       <TableCell><VaccinationStatusBadge record={r} /></TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {canMutate && <VaccinationRecordFormDialog record={r} onSuccess={() => {}} />}
-                          {canMutate && <AlertDialog>
+                          {canUpdate && <VaccinationRecordFormDialog record={r} onSuccess={() => {}} />}
+                          {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                             </AlertDialogTrigger>

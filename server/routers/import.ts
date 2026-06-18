@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { privilegedProcedure, supervisorProcedure, router } from "../_core/trpc";
+import { permissionProcedure, router } from "../_core/trpc";
 import { createAnimal, createExpense, createFeedStockEntry, createLambingRecord, createRationPlan, createSale, createWeightEntry, getAllBirthTypes, getAllCategories, getAllExpenseCategories, getAllExpenseSubCategories, getAllFeedItems, getAllGroups, getAllSpecies, getAllStatuses, getAnimals, createAuditEntry, getDb, updateAnimal } from "../db";
 import { isCanonicalWorkbook, readCanonicalWorkbook } from "../excelDataContract";
 import { applyCanonicalData, type ImportMode } from "../canonicalTransfer";
@@ -67,6 +67,7 @@ type ImportStats = {
 };
 
 const importModeSchema = z.enum(["append", "replace"]).default("append");
+const SECURITY_TABLES = new Set(["users", "role_permissions", "audit_log"]);
 
 async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode: ImportMode) {
   const rowsByTable = readCanonicalWorkbook(workbook);
@@ -75,7 +76,9 @@ async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode
 
   let stats: ImportStats[] = [];
   await db.transaction(async tx => {
-    const transferStats = await applyCanonicalData(tx, rowsByTable, mode);
+    const transferStats = await applyCanonicalData(tx, rowsByTable, mode, {
+      excludedTables: SECURITY_TABLES,
+    });
     stats = transferStats.map(stat => ({
       sheet: stat.table,
       inserted: stat.applied,
@@ -88,9 +91,9 @@ async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode
         action: "import",
         ipAddress: getClientIp(ctx),
         entityType: "bulk",
-        entityId: `excel-v2-${mode}`,
+        entityId: `excel-v3-${mode}`,
         newValues: {
-          formatVersion: 2,
+          formatVersion: 3,
           mode,
           totalApplied: stats.reduce((sum, stat) => sum + stat.inserted, 0),
           sheets: stats.map(stat => ({
@@ -106,14 +109,14 @@ async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode
   return {
     stats,
     totalInserted: stats.reduce((sum, stat) => sum + stat.inserted, 0),
-    formatVersion: 2,
+    formatVersion: 3,
     mode
   };
 }
 
 export const importRouter = router({
   /** Preview an upload — count rows per sheet without inserting. */
-  preview: supervisorProcedure.input(z.object({ base64: z.string() })).mutation(async ({ input }) => {
+  preview: permissionProcedure("data", "import").input(z.object({ base64: z.string() })).mutation(async ({ input }) => {
     const buf = Buffer.from(input.base64, "base64");
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(buf as any);
@@ -129,7 +132,7 @@ export const importRouter = router({
   }),
 
   /** Apply an upload in append or full-snapshot replace mode. */
-  applyImport: privilegedProcedure.input(z.object({ base64: z.string(), mode: importModeSchema })).mutation(async ({ input, ctx }) => {
+  applyImport: permissionProcedure("data", "import").input(z.object({ base64: z.string(), mode: importModeSchema })).mutation(async ({ input, ctx }) => {
     const buf = Buffer.from(input.base64, "base64");
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(buf as any);

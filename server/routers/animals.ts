@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { anyPermissionProcedure, permissionProcedure, router } from "../_core/trpc";
 import { optionalMoneyString, optionalWeightString, weightString, pastOrTodayDate } from "../_core/validators";
 import { storagePut, storageGetSignedUrl } from "../storage";
 import {
@@ -34,7 +34,7 @@ import {
 
 export const animalsRouter = router({
   // ─── LIST ───────────────────────────────────────────────────────────────────
-  list: protectedProcedure
+  list: permissionProcedure("animals", "view")
     .input(
       z.object({
         speciesId: z.number().optional(),
@@ -48,8 +48,44 @@ export const animalsRouter = router({
     )
     .query(({ input }) => getAnimals(input ?? {})),
 
+  lookup: anyPermissionProcedure([
+    ["breeding", "view"],
+    ["vaccinations", "view"],
+    ["expenses", "view"],
+    ["sales", "view"],
+  ])
+    .input(z.object({ isActive: z.boolean().optional() }).optional())
+    .query(async ({ input }) => {
+      const rows = await getAnimals(input ?? {});
+      return rows.map(row => ({
+        animal: {
+          id: row.animal.id,
+          animalId: row.animal.animalId,
+          sex: row.animal.sex,
+        },
+      }));
+    }),
+
+  listFattening: permissionProcedure("fattening", "view")
+    .query(async () => {
+      const rows = await getAnimals({ isActive: true });
+      return rows.map(row => ({
+        animal: {
+          id: row.animal.id,
+          animalId: row.animal.animalId,
+          acquisitionDate: row.animal.acquisitionDate,
+          weightAtAcquisition: row.animal.weightAtAcquisition,
+        },
+        categoryName: row.categoryName,
+        groupName: row.groupName,
+        statusName: row.statusName,
+        latestWeightKg: row.latestWeightKg,
+        targetWeightKg: row.targetWeightKg,
+      }));
+    }),
+
   // ─── GET BY ID ──────────────────────────────────────────────────────────────
-  getById: protectedProcedure
+  getById: permissionProcedure("animals", "view")
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const animal = await getAnimalById(input.id);
@@ -58,7 +94,7 @@ export const animalsRouter = router({
     }),
 
   // ─── CREATE ─────────────────────────────────────────────────────────────────
-  create: staffProcedure
+  create: permissionProcedure("animals", "create")
     .input(
       z.object({
         categoryId: z.number().int().positive(),
@@ -119,7 +155,7 @@ export const animalsRouter = router({
     }),
 
   // ─── UPDATE ─────────────────────────────────────────────────────────────────
-  update: staffProcedure
+  update: permissionProcedure("animals", "update")
     .input(
       z.object({
         id: z.number(),
@@ -201,7 +237,7 @@ export const animalsRouter = router({
     }),
 
   // ─── EXIT ANIMAL ────────────────────────────────────────────────────────────
-  exit: staffProcedure
+  exit: permissionProcedure("sales", "create")
     .input(
       z.object({
         id: z.number().int().positive(),
@@ -303,7 +339,7 @@ export const animalsRouter = router({
   // Sell or exit several animals together in a single atomic transaction.
   // Shared: exit date, reason, status, optional buyer + sale notes.
   // Per animal: sale price + amount paid + weight at sale.
-  bulkExit: staffProcedure
+  bulkExit: permissionProcedure("sales", "create")
     .input(
       z.object({
         exitDate: pastOrTodayDate,
@@ -432,7 +468,7 @@ export const animalsRouter = router({
   // Apply the same changes to multiple animals at once. Every field is
   // optional — only fields the operator actually sets get written.
   // Works on both active and exited animals.
-  bulkUpdate: staffProcedure
+  bulkUpdate: permissionProcedure("animals", "update")
     .input(
       z.object({
         animalIds: z.array(z.number().int().positive()).min(1).max(500),
@@ -553,16 +589,19 @@ export const animalsRouter = router({
     }),
 
   // ─── STATUS HISTORY ─────────────────────────────────────────────────────────
-  getStatusHistory: protectedProcedure
+  getStatusHistory: permissionProcedure("animals", "view")
     .input(z.object({ animalId: z.number() }))
     .query(({ input }) => getAnimalStatusHistory(input.animalId)),
 
   // ─── WEIGHT LOG ─────────────────────────────────────────────────────────────
-  getWeightLog: protectedProcedure
+  getWeightLog: anyPermissionProcedure([
+    ["animals", "view"],
+    ["fattening", "view"],
+  ])
     .input(z.object({ animalId: z.number() }))
     .query(({ input }) => getWeightLog(input.animalId)),
 
-  addWeight: staffProcedure
+  addWeight: permissionProcedure("fattening", "create")
     .input(
       z.object({
         animalId: z.number().int().positive(),
@@ -617,7 +656,7 @@ export const animalsRouter = router({
     }),
 
   // ─── DELETE WEIGHT ENTRY ──────────────────────────────────────────────────
-  deleteWeight: staffProcedure
+  deleteWeight: permissionProcedure("fattening", "delete")
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
       const existing = await getWeightEntryById(input.id);
@@ -635,11 +674,11 @@ export const animalsRouter = router({
     }),
 
   // ─── P&L ────────────────────────────────────────────────────────────────────
-  getPnL: protectedProcedure
+  getPnL: permissionProcedure("pnl", "view")
     .input(z.object({ animalId: z.number() }))
     .query(({ input }) => getAnimalPnL(input.animalId)),
 
-  getAllPnL: protectedProcedure
+  getAllPnL: permissionProcedure("pnl", "view")
     .input(z.object({
       speciesId: z.number().optional(),
       categoryId: z.number().optional(),
@@ -647,7 +686,7 @@ export const animalsRouter = router({
     }).optional())
     .query(({ input }) => getAllAnimalsPnL(input ?? undefined)),
 
-  getGeneralExpensesTotal: protectedProcedure
+  getGeneralExpensesTotal: permissionProcedure("pnl", "view")
     .input(z.object({
       fromDate: z.string().optional(),
       toDate: z.string().optional(),
@@ -655,7 +694,7 @@ export const animalsRouter = router({
     .query(({ input }) => getGeneralExpensesTotal(input ?? {})),
 
   // ─── FEED HISTORY ─────────────────────────────────────────────────────────
-  getFeedHistory: protectedProcedure
+  getFeedHistory: permissionProcedure("animals", "view")
     .input(z.object({ animalId: z.number() }))
     .query(async ({ input }) => {
       const animal = await getAnimalById(input.animalId);
@@ -666,17 +705,17 @@ export const animalsRouter = router({
     }),
 
   // ─── EXPENSE HISTORY ─────────────────────────────────────────────────────
-  getExpenseHistory: protectedProcedure
+  getExpenseHistory: permissionProcedure("animals", "view")
     .input(z.object({ animalId: z.number() }))
     .query(({ input }) => getExpenses({ headId: input.animalId })),
 
   // ─── ANIMAL SALES ────────────────────────────────────────────────────────
-  getAnimalSales: protectedProcedure
+  getAnimalSales: permissionProcedure("animals", "view")
     .input(z.object({ animalId: z.number() }))
     .query(({ input }) => getSales({ animalId: input.animalId })),
 
   // ─── LINEAGE ────────────────────────────────────────────────────────────────
-  getLineage: protectedProcedure
+  getLineage: permissionProcedure("animals", "view")
     .input(z.object({ animalId: z.number() }))
     .query(async ({ input }) => {
       const animal = await getAnimalById(input.animalId);
@@ -701,7 +740,7 @@ export const animalsRouter = router({
   // ─── PHOTO ──────────────────────────────────────────────────────────────────
   // Upload an animal photo as a base64 data URL. Stored via the storage layer;
   // the returned key is saved on animals.photoUrl.
-  setPhoto: staffProcedure
+  setPhoto: permissionProcedure("animals", "update")
     .input(z.object({
       id: z.number().int().positive(),
       // data URL: "data:image/jpeg;base64,...."
@@ -736,7 +775,7 @@ export const animalsRouter = router({
       return { success: true, key };
     }),
 
-  removePhoto: staffProcedure
+  removePhoto: permissionProcedure("animals", "update")
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
       const existing = await getAnimalById(input.id);
@@ -754,7 +793,7 @@ export const animalsRouter = router({
     }),
 
   // Resolve a short-lived signed URL for an animal's stored photo key.
-  getPhotoUrl: protectedProcedure
+  getPhotoUrl: permissionProcedure("animals", "view")
     .input(z.object({ id: z.number().int().positive() }))
     .query(async ({ input }) => {
       const existing = await getAnimalById(input.id);

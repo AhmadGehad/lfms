@@ -1,4 +1,4 @@
-import { protectedProcedure, staffProcedure, supervisorProcedure, router } from "../_core/trpc";
+import { anyPermissionProcedure, permissionProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import {
@@ -13,11 +13,14 @@ import { eq, isNull, inArray, and } from "drizzle-orm";
 
 export const vaccinationRouter = router({
   // ─── VACCINATION RECORDS ───────────────────────────────────────────────────────
-  getVaccinationRecords: protectedProcedure
+  getVaccinationRecords: anyPermissionProcedure([
+    ["vaccinations", "view"],
+    ["animals", "view"],
+  ])
     .input(z.object({ animalId: z.number().optional() }).optional())
     .query(({ input }) => getVaccinationRecords(input?.animalId)),
 
-  addVaccinationRecord: staffProcedure
+  addVaccinationRecord: permissionProcedure("vaccinations", "create")
     .input(z.object({
       animalId: z.number(),
       vaccineId: z.number(),
@@ -52,7 +55,7 @@ export const vaccinationRouter = router({
       return result;
     }),
 
-  updateVaccinationRecord: staffProcedure
+  updateVaccinationRecord: permissionProcedure("vaccinations", "update")
     .input(z.object({
       id: z.number(),
       vaccinationDate: z.string().optional(),
@@ -67,7 +70,7 @@ export const vaccinationRouter = router({
       return { id };
     }),
 
-  deleteVaccinationRecord: supervisorProcedure
+  deleteVaccinationRecord: permissionProcedure("vaccinations", "delete")
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await deleteVaccinationRecord(input.id);
@@ -76,7 +79,7 @@ export const vaccinationRouter = router({
     }),
 
   // ─── BULK OPERATIONS ───────────────────────────────────────────────────────────
-  bulkApplyToAnimals: staffProcedure
+  bulkApplyToAnimals: permissionProcedure("vaccinations", "create")
     .input(z.object({
       animalIds: z.array(z.number()).min(1),
       vaccineId: z.number(),
@@ -108,7 +111,7 @@ export const vaccinationRouter = router({
       return { count: results.length };
     }),
 
-  bulkApplyToCategory: staffProcedure
+  bulkApplyToCategory: permissionProcedure("vaccinations", "create")
     .input(z.object({
       categoryId: z.number(),
       vaccineId: z.number(),
@@ -148,7 +151,7 @@ export const vaccinationRouter = router({
       return { count: results.length };
     }),
 
-  bulkApplyToCategories: staffProcedure
+  bulkApplyToCategories: permissionProcedure("vaccinations", "create")
     .input(z.object({
       categoryIds: z.array(z.number()).min(1),
       vaccineId: z.number(),
@@ -189,9 +192,12 @@ export const vaccinationRouter = router({
     }),
 
   // ─── DASHBOARD & REPORTS ───────────────────────────────────────────────────────
-  getUpcomingVaccinations: protectedProcedure
+  getUpcomingVaccinations: anyPermissionProcedure([
+    ["vaccinations", "view"],
+    ["dashboard", "view"],
+  ])
     .input(z.object({ days: z.number().optional() }).optional())
     .query(({ input }) => getUpcomingVaccinations(input?.days)),
 
-  getVaccinationCompliance: protectedProcedure.query(() => getVaccinationCompliance()),
+  getVaccinationCompliance: permissionProcedure("vaccinations", "view").query(() => getVaccinationCompliance()),
 });

@@ -33,7 +33,7 @@ import {
 
 function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boolean }) {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canUpdate } = usePermissions("animals");
   const utils = trpc.useUtils();
   const { data: photo } = trpc.animals.getPhotoUrl.useQuery({ id: animalId });
   const [uploading, setUploading] = useState(false);
@@ -81,11 +81,11 @@ function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boole
         )}
       </div>
       <div className="flex items-center gap-1">
-        {canMutate && <label className="text-xs text-primary cursor-pointer hover:underline">
+        {canUpdate && <label className="text-xs text-primary cursor-pointer hover:underline">
           {hasPhoto ? t("animalProfile.changePhoto") : t("animalProfile.addPhoto")}
           <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFile} disabled={uploading} />
         </label>}
-        {canMutate && hasPhoto && (
+        {canUpdate && hasPhoto && (
           <button className="text-xs text-red-500 hover:underline" onClick={() => removePhoto.mutate({ id: animalId })}>
             · {t("common.remove")}
           </button>
@@ -97,13 +97,18 @@ function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boole
 
 function PnLCard({ animalId }: { animalId: number }) {
   const { t } = useTranslation();
-  const { data: pnl, isLoading } = trpc.animals.getPnL.useQuery({ animalId });
+  const { canView } = usePermissions("pnl");
+  const { data: pnl, isLoading } = trpc.animals.getPnL.useQuery(
+    { animalId },
+    { enabled: canView },
+  );
   const { data: animal } = trpc.animals.getById.useQuery({ id: animalId });
   const { data: rationPlans } = trpc.feed.getRationPlans.useQuery(
     { categoryId: animal?.animal.categoryId },
     { enabled: !!animal?.animal.categoryId }
   );
 
+  if (!canView) return null;
   if (isLoading) return <Skeleton className="h-40 w-full" />;
 
   const fmt = (v: number) =>
@@ -258,7 +263,7 @@ function AnimalLocationPreview({ animal }: { animal: any }) {
 
 function WeightChart({ animalId }: { animalId: number }) {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canCreate, canDelete } = usePermissions("fattening");
   const { data: weights } = trpc.animals.getWeightLog.useQuery({ animalId });
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
@@ -315,7 +320,7 @@ function WeightChart({ animalId }: { animalId: number }) {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold">{t("animals.weightHistory")}</h3>
-        {canMutate && <Dialog open={open} onOpenChange={setOpen}>
+        {canCreate && <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button size="sm" variant="outline" className="gap-2">
               <Plus className="h-3 w-3" />
@@ -389,7 +394,7 @@ function WeightChart({ animalId }: { animalId: number }) {
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">{w.notes ?? "—"}</TableCell>
                 <TableCell className="text-right">
-                  {canMutate && <AlertDialog>
+                  {canDelete && <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50">
                         <Trash2 className="h-3.5 w-3.5" />
@@ -723,7 +728,7 @@ function VaccinationHistoryTab({ animalId }: { animalId: number }) {
 
 export default function AnimalProfile() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const permissions = usePermissions("animals");
   const params = useParams<{ id: string }>();
   const animalId = Number(params.id);
   const [, setLocation] = useLocation();
@@ -775,17 +780,17 @@ export default function AnimalProfile() {
         </div>
         {/* Quick Actions */}
         <div className="flex items-center gap-2 flex-wrap">
-          {canMutate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
+          {permissions.can("expenses", "create") && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
             <DollarSign className="h-3.5 w-3.5" />
             {t("expenses.addExpense")}
           </Button>}
-          {canMutate && animal.animal.isActive && (
+          {permissions.can("sales", "create") && animal.animal.isActive && (
             <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/sales?animalId=${animal.animal.id}`)}>
               <ShoppingCart className="h-3.5 w-3.5" />
               {t("sales.recordSale")}
             </Button>
           )}
-          {canMutate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/animals?edit=${animal.animal.id}`)}>
+          {permissions.canUpdate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/animals?edit=${animal.animal.id}`)}>
             <Pencil className="h-3.5 w-3.5" />
             {t("common.edit")}
           </Button>}
@@ -917,9 +922,14 @@ export default function AnimalProfile() {
 // ── Download PDF button (fetches pnl + weight log, generates PDF) ────────────
 function DownloadPdfButton({ animal, animalId }: { animal: any; animalId: number }) {
   const { t } = useTranslation();
-  const { data: pnl } = trpc.animals.getPnL.useQuery({ animalId });
+  const { canReport } = usePermissions("animals");
+  const { canView: canViewPnl } = usePermissions("pnl");
+  const { data: pnl } = trpc.animals.getPnL.useQuery(
+    { animalId },
+    { enabled: canReport && canViewPnl },
+  );
   const { data: weights } = trpc.animals.getWeightLog.useQuery({ animalId });
-  const { data: settings } = trpc.config.getSettings.useQuery();
+  const { data: settings } = trpc.config.getDisplaySettings.useQuery();
   const { currency } = useCurrency();
 
   const farmName = (settings as any[] | undefined)?.find((s) => s.settingKey === "farmName")?.settingValue;
@@ -938,6 +948,8 @@ function DownloadPdfButton({ animal, animalId }: { animal: any; animalId: number
     });
     toast.success(t("animalProfile.pdfDownloaded"));
   };
+
+  if (!canReport || !canViewPnl) return null;
 
   return (
     <Button size="sm" variant="outline" className="gap-2" onClick={handleDownload} disabled={!pnl}>

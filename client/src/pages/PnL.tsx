@@ -27,7 +27,7 @@ export default function PnL() {
   });
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);

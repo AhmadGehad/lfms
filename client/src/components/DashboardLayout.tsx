@@ -58,6 +58,7 @@ import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import type { PermissionPage } from "@shared/permissions";
 
 const SIDEBAR_WIDTH_KEY = "lfms-sidebar-width";
 const DEFAULT_WIDTH = 260;
@@ -159,56 +160,59 @@ function DashboardLayoutContent({
   const perms = usePermissions();
 
   // Notification count
-  const { data: notifications } = trpc.notifications.list.useQuery({ unreadOnly: true });
+  const { data: notifications } = trpc.notifications.list.useQuery(
+    { unreadOnly: true },
+    { enabled: perms.can("notifications", "view") },
+  );
   const unreadCount = Array.isArray(notifications) ? notifications.length : 0;
 
   const navGroups = [
     {
       label: t("nav.groups.overview"),
       items: [
-        { icon: BarChart3, label: t("nav.dashboard"), path: "/" },
+        { icon: BarChart3, label: t("nav.dashboard"), path: "/", page: "dashboard" as PermissionPage },
       ],
     },
     {
       label: t("nav.groups.livestock"),
       items: [
-        { icon: Leaf, label: t("nav.animals"), path: "/animals" },
-        { icon: Egg, label: t("nav.breeding"), path: "/breeding" },
-        { icon: Scale, label: t("nav.fattening"), path: "/fattening" },
+        { icon: Leaf, label: t("nav.animals"), path: "/animals", page: "animals" as PermissionPage },
+        { icon: Egg, label: t("nav.breeding"), path: "/breeding", page: "breeding" as PermissionPage },
+        { icon: Scale, label: t("nav.fattening"), path: "/fattening", page: "fattening" as PermissionPage },
       ],
     },
     {
       label: t("nav.groups.operations"),
       items: [
-        { icon: Wheat, label: t("nav.feed"), path: "/feed" },
-        { icon: Syringe, label: t("vaccine.title"), path: "/vaccinations" },
-        { icon: DollarSign, label: t("nav.expenses"), path: "/expenses" },
+        { icon: Wheat, label: t("nav.feed"), path: "/feed", page: "feed" as PermissionPage },
+        { icon: Syringe, label: t("vaccine.title"), path: "/vaccinations", page: "vaccinations" as PermissionPage },
+        { icon: DollarSign, label: t("nav.expenses"), path: "/expenses", page: "expenses" as PermissionPage },
       ],
     },
     {
       label: t("nav.groups.finance"),
       items: [
-        { icon: Activity, label: t("nav.pnl"), path: "/pnl" },
-        { icon: FileText, label: t("nav.incomeStatement"), path: "/income-statement" },
-        { icon: ShoppingCart, label: t("nav.sales"), path: "/sales" },
+        { icon: Activity, label: t("nav.pnl"), path: "/pnl", page: "pnl" as PermissionPage },
+        { icon: FileText, label: t("nav.incomeStatement"), path: "/income-statement", page: "incomeStatement" as PermissionPage },
+        { icon: ShoppingCart, label: t("nav.sales"), path: "/sales", page: "sales" as PermissionPage },
       ],
     },
     {
       label: t("nav.groups.system"),
       items: [
-        { icon: Bell, label: t("nav.notifications"), path: "/notifications" },
-        { icon: BookOpen, label: t("nav.auditLog"), path: "/audit" },
-        { icon: Users, label: t("nav.users"), path: "/users", minPerm: "canManageUsers" as const },
-        { icon: Cog, label: t("nav.configuration"), path: "/config", minPerm: "canEditConfig" as const },
-        { icon: MapPinned, label: t("nav.farmMap"), path: "/farm-map", minPerm: "canEditConfig" as const },
-        { icon: Database, label: t("nav.dataManagement"), path: "/data", minPerm: "canPurgeOrRestore" as const },
-        { icon: Trash2, label: t("nav.recycleBin") ?? "Recycle Bin", path: "/recycle-bin", minPerm: "canDelete" as const },
+        { icon: Bell, label: t("nav.notifications"), path: "/notifications", page: "notifications" as PermissionPage },
+        { icon: BookOpen, label: t("nav.auditLog"), path: "/audit", page: "audit" as PermissionPage },
+        { icon: Users, label: t("nav.users"), path: "/users", page: "users" as PermissionPage },
+        { icon: Cog, label: t("nav.configuration"), path: "/config", page: "configuration" as PermissionPage },
+        { icon: MapPinned, label: t("nav.farmMap"), path: "/farm-map", page: "farmMap" as PermissionPage },
+        { icon: Database, label: t("nav.dataManagement"), path: "/data", page: "data" as PermissionPage },
+        { icon: Trash2, label: t("nav.recycleBin") ?? "Recycle Bin", path: "/recycle-bin", page: "recycleBin" as PermissionPage },
       ],
     },
   ]
     .map((group) => ({
       ...group,
-      items: group.items.filter((item: any) => !item.minPerm || perms[item.minPerm as keyof typeof perms]),
+      items: group.items.filter(item => perms.can(item.page, "view")),
     }))
     .filter((group) => group.items.length > 0);
 
@@ -436,19 +440,19 @@ function DashboardLayoutContent({
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
-                {perms.canManageUsers && (
+                {perms.can("users", "view") && (
                 <DropdownMenuItem onClick={() => setLocation("/users")} className="cursor-pointer">
                   <Users className="mr-2 h-4 w-4" />
                   {t("nav.users")}
                 </DropdownMenuItem>
                 )}
-                {perms.canEditConfig && (
+                {perms.can("configuration", "view") && (
                 <DropdownMenuItem onClick={() => setLocation("/config")} className="cursor-pointer">
                   <Cog className="mr-2 h-4 w-4" />
                   {t("nav.configuration")}
                 </DropdownMenuItem>
                 )}
-                {(perms.canManageUsers || perms.canEditConfig) && <DropdownMenuSeparator />}
+                {(perms.can("users", "view") || perms.can("configuration", "view")) && <DropdownMenuSeparator />}
                 <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   {t("auth.signOut")}

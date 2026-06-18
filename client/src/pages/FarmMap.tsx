@@ -118,7 +118,7 @@ function ZoneShape({
 
 export default function FarmMap() {
   const { t } = useTranslation();
-  const permissions = usePermissions();
+  const permissions = usePermissions("farmMap");
   const utils = trpc.useUtils();
   const { data: groups, isLoading: groupsLoading } = trpc.config.getGroups.useQuery();
   const { data: mapImage, isLoading: imageLoading } = trpc.config.getFarmMapImage.useQuery();
@@ -136,7 +136,7 @@ export default function FarmMap() {
     },
     onError: (error: any) => toast.error(error.message),
   });
-  const updateGroup = trpc.config.updateGroup.useMutation({
+  const updateGroup = trpc.config.updateGroupMap.useMutation({
     onSuccess: () => {
       toast.success(t("farmMap.zoneSaved"));
       utils.config.getGroups.invalidate();
@@ -181,7 +181,7 @@ export default function FarmMap() {
     })
     .filter(Boolean) as Array<{ group: any; shape: MapShape }>;
 
-  const canEdit = permissions.canEditConfig;
+  const canEdit = permissions.canUpdate;
   const canSave = Boolean(canEdit && selectedGroup && (draftShape === null || isValidShape(draftShape)));
   const imageUrl = mapImage?.url ?? null;
 

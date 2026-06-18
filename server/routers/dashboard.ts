@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { protectedProcedure, staffProcedure, privilegedProcedure, router } from "../_core/trpc";
+import { permissionProcedure, privilegedProcedure, router } from "../_core/trpc";
 import {
   createAuditEntry,
   getDashboardKPIs,
@@ -16,11 +16,17 @@ import {
   markNotificationRead,
   markAllNotificationsRead,
   getAuditLog,
+  getAllUsers,
+  getDb,
+  updateUserRole,
 } from "../db";
+import { TRPCError } from "@trpc/server";
+import { users } from "../../drizzle/schema";
+import { ENV } from "../_core/env";
 
 export const dashboardRouter = router({
   // ─── KPIs ───────────────────────────────────────────────────────────────────
-  getKPIs: protectedProcedure
+  getKPIs: permissionProcedure("dashboard", "view")
     .input(
       z.object({
         fromDate: z.string().optional(),
@@ -33,10 +39,10 @@ export const dashboardRouter = router({
     .query(({ input }) => getDashboardKPIs(input ?? {})),
 
   // ─── FEED STOCK STATUS (always unfiltered) ──────────────────────────────────
-  getFeedStockStatus: protectedProcedure.query(() => getFeedStockStatus()),
+  getFeedStockStatus: permissionProcedure("dashboard", "view").query(() => getFeedStockStatus()),
 
   // ─── INCOME STATEMENT ───────────────────────────────────────────────────────
-  getIncomeStatement: protectedProcedure
+  getIncomeStatement: permissionProcedure("incomeStatement", "view")
     .input(
       z.object({
         fromDate: z.string(),
@@ -49,7 +55,7 @@ export const dashboardRouter = router({
     .query(({ input }) => getIncomeStatement(input)),
 
   // ─── EXPENSE TREND (for charts) ─────────────────────────────────────────────
-  getExpenseTrend: protectedProcedure
+  getExpenseTrend: permissionProcedure("dashboard", "view")
     .input(
       z.object({
         fromDate: z.string(),
@@ -73,7 +79,7 @@ export const dashboardRouter = router({
     }),
 
   // ─── SALES TREND ────────────────────────────────────────────────────────────
-  getSalesTrend: protectedProcedure
+  getSalesTrend: permissionProcedure("dashboard", "view")
     .input(z.object({ fromDate: z.string(), toDate: z.string() }))
     .query(async ({ input }) => {
       const salesData = await getSales({ fromDate: input.fromDate, toDate: input.toDate });
@@ -90,7 +96,7 @@ export const dashboardRouter = router({
     }),
 
   // ─── HEAD COUNT HISTORY ─────────────────────────────────────────────────────
-  getHeadCountByCategory: protectedProcedure.query(async () => {
+  getHeadCountByCategory: permissionProcedure("dashboard", "view").query(async () => {
     const animals = await getAnimals({ isActive: true });
     const byCategory: Record<string, number> = {};
     for (const a of animals) {
@@ -102,18 +108,18 @@ export const dashboardRouter = router({
 });
 
 export const notificationsRouter = router({
-  list: protectedProcedure
+  list: permissionProcedure("notifications", "view")
     .input(z.object({ unreadOnly: z.boolean().optional() }).optional())
     .query(({ input, ctx }) => getNotifications(ctx.user?.id, input?.unreadOnly)),
 
-  markRead: protectedProcedure
+  markRead: permissionProcedure("notifications", "update")
     .input(z.object({ id: z.number() }))
     .mutation(({ input }) => markNotificationRead(input.id)),
 
-  markAllRead: protectedProcedure
+  markAllRead: permissionProcedure("notifications", "update")
     .mutation(({ ctx }) => markAllNotificationsRead(ctx.user!.id)),
 
-  create: protectedProcedure
+  create: permissionProcedure("notifications", "update")
     .input(
       z.object({
         alertType: z.string(),
@@ -128,7 +134,7 @@ export const notificationsRouter = router({
 });
 
 export const salesRouter = router({
-  list: protectedProcedure
+  list: permissionProcedure("sales", "view")
     .input(
       z.object({
         animalId: z.number().optional(),
@@ -141,7 +147,7 @@ export const salesRouter = router({
     )
     .query(({ input }) => getSales(input ?? {})),
 
-  update: staffProcedure
+  update: permissionProcedure("sales", "update")
     .input(z.object({
       id: z.number(),
       salePrice: z.string().optional(),
@@ -166,7 +172,7 @@ export const salesRouter = router({
 
   // Record an additional payment toward an outstanding balance. amountPaid is
   // incremented by the given delta. The endpoint refuses to overpay.
-  recordPayment: staffProcedure
+  recordPayment: permissionProcedure("sales", "update")
     .input(z.object({
       id: z.number(),
       payment: z.string().refine(v => parseFloat(v) > 0, "Payment must be greater than zero"),
@@ -193,7 +199,7 @@ export const salesRouter = router({
 });
 
 export const auditRouter = router({
-  list: protectedProcedure
+  list: permissionProcedure("audit", "view")
     .input(
       z.object({
         entityType: z.string().optional(),
@@ -204,22 +210,63 @@ export const auditRouter = router({
 });
 
 export const userManagementRouter = router({
-  listUsers: protectedProcedure.query(async () => {
-    const { getDb } = await import("../db");
-    const db = await getDb();
-    if (!db) return [];
-    const { users } = await import("../../drizzle/schema");
-    return db.select().from(users).orderBy(users.createdAt);
+  listUsers: permissionProcedure("users", "view").query(async () => {
+    const allUsers = await getAllUsers();
+    return allUsers.map(user => ({
+      ...user,
+      role: user.role === "owner" && user.openId !== ENV.ownerOpenId
+        ? "admin" as const
+        : user.role,
+      isProtectedOwner: user.openId === ENV.ownerOpenId,
+    }));
   }),
   updateUserRole: privilegedProcedure
-    .input(z.object({ userId: z.number(), role: z.enum(["viewer", "user", "staff", "supervisor", "admin", "owner"]) }))
-    .mutation(async ({ input }) => {
-      const { getDb } = await import("../db");
+    .input(z.object({
+      userId: z.number(),
+      role: z.enum(["viewer", "user", "staff", "supervisor", "admin"]),
+    }))
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("DB unavailable");
-      const { users } = await import("../../drizzle/schema");
-      const { eq } = await import("drizzle-orm");
-      await db.update(users).set({ role: input.role }).where(eq(users.id, input.userId));
+      await db.transaction(async tx => {
+        // Serialize role changes so two concurrent demotions cannot remove the
+        // final administrator.
+        const allUsers = await tx.select().from(users).for("update");
+        const target = allUsers.find(user => user.id === input.userId);
+        if (!target) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        }
+        if (target.openId === ENV.ownerOpenId) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "The owner role cannot be changed",
+          });
+        }
+        if (
+          target.role === "admin" &&
+          input.role !== "admin" &&
+          !allUsers.some(user =>
+            user.id !== target.id &&
+            (user.role === "admin" || user.role === "owner"),
+          )
+        ) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "At least one administrator or owner must remain",
+          });
+        }
+
+        await updateUserRole(input.userId, input.role, tx);
+        await createAuditEntry({
+          userId: ctx.user.id,
+          entityType: "user",
+          entityId: String(input.userId),
+          action: "update",
+          oldValues: { role: target.role },
+          newValues: { role: input.role },
+          ipAddress: getClientIp(ctx),
+        }, tx);
+      });
       return { success: true };
     }),
 });

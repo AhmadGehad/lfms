@@ -6,12 +6,26 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
+import type { PermissionOverrides } from "../shared/permissions";
 
 // ─── Mock DB module ──────────────────────────────────────────────────────────
 vi.mock("./db", () => ({
   getDb: vi.fn().mockResolvedValue(null),
   upsertUser: vi.fn().mockResolvedValue(undefined),
   getUserByOpenId: vi.fn().mockResolvedValue(undefined),
+  getAllUsers: vi.fn().mockResolvedValue([
+    {
+      id: 1, openId: "owner", email: "owner@farm.com", name: "Owner",
+      loginMethod: "manus", role: "owner", createdAt: new Date(),
+      updatedAt: new Date(), lastSignedIn: new Date(),
+    },
+    {
+      id: 2, openId: "staff", email: "staff@farm.com", name: "Staff",
+      loginMethod: "manus", role: "staff", createdAt: new Date(),
+      updatedAt: new Date(), lastSignedIn: new Date(),
+    },
+  ]),
+  updateUserRole: vi.fn().mockResolvedValue(undefined),
   getAllSpecies: vi.fn().mockResolvedValue([
     { id: 1, name: "Sheep", description: null, isActive: 1, createdAt: new Date() },
   ]),
@@ -155,7 +169,10 @@ vi.mock("./db", () => ({
 // ─── Helper: create auth context ─────────────────────────────────────────────
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function makeCtx(role: "owner" | "admin" | "supervisor" | "staff" | "user" = "admin"): TrpcContext {
+function makeCtx(
+  role: "owner" | "admin" | "supervisor" | "staff" | "user" | "viewer" = "admin",
+  permissionOverrides?: PermissionOverrides,
+): TrpcContext {
   const clearedCookies: any[] = [];
   const user: AuthenticatedUser = {
     id: 1, openId: "test-user", email: "test@farm.com", name: "Test User",
@@ -163,6 +180,7 @@ function makeCtx(role: "owner" | "admin" | "supervisor" | "staff" | "user" = "ad
   };
   return {
     user,
+    permissionOverrides,
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: (n: string, o: any) => clearedCookies.push({ n, o }) } as TrpcContext["res"],
   };
@@ -729,7 +747,7 @@ describe("rbac", () => {
   it("'supervisor' role cannot change user roles (privileged only)", async () => {
     const caller = appRouter.createCaller(makeCtx("supervisor"));
     await expect(
-      caller.config.updateUserRole({ userId: 2, role: "admin" })
+      caller.userMgmt.updateUserRole({ userId: 2, role: "admin" })
     ).rejects.toThrow(/permission/i);
   });
 
@@ -743,6 +761,41 @@ describe("rbac", () => {
   it("'admin' role can manage config and users", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
     await expect(caller.config.createSpecies({ name: "Alpaca" } as any)).resolves.toBeDefined();
+  });
+
+  it("does not delegate role administration through a users.update override", async () => {
+    const caller = appRouter.createCaller(makeCtx("supervisor", {
+      "users:view": true,
+      "users:update": true,
+    }));
+    await expect(
+      caller.userMgmt.updateUserRole({ userId: 2, role: "admin" }),
+    ).rejects.toThrow(/permission/i);
+  });
+
+  it("keeps the full animal registry behind animals.view", async () => {
+    const caller = appRouter.createCaller(makeCtx("viewer", {
+      "animals:view": false,
+      "sales:view": true,
+    }));
+    await expect(caller.animals.list()).rejects.toThrow(/animals\.view/i);
+    const lookup = await caller.animals.lookup({ isActive: true });
+    expect(Object.keys(lookup[0]!.animal).sort()).toEqual([
+      "animalId",
+      "id",
+      "sex",
+    ]);
+  });
+
+  it("does not expose animal P&L through animal-page access", async () => {
+    const caller = appRouter.createCaller(makeCtx("viewer", {
+      "animals:view": true,
+      "pnl:view": false,
+    }));
+    await expect(caller.animals.getPnL({ animalId: 1 }))
+      .rejects.toThrow(/pnl\.view/i);
+    await expect(caller.animals.getAllPnL())
+      .rejects.toThrow(/pnl\.view/i);
   });
 });
 

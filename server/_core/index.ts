@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startLowStockScheduler } from "../lowStockCheck";
 import { startVaccineScheduler } from "../vaccineCheck";
+import { ENV } from "./env";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -31,6 +32,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  if (!ENV.ownerOpenId) {
+    throw new Error("OWNER_OPEN_ID is required to preserve owner recovery access");
+  }
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads

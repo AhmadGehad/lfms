@@ -10,15 +10,17 @@ import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function IncomeStatement() {
   const { t } = useTranslation();
+  const { canExport } = usePermissions("incomeStatement");
   const now = new Date();
   const [fromDate, setFromDate] = useState(new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0]);
   const [toDate, setToDate] = useState(now.toISOString().split("T")[0]);
   const [filterOwner, setFilterOwner] = useState("all");
 
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const { data: statement, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({
     fromDate,
     toDate,
@@ -220,18 +222,18 @@ export default function IncomeStatement() {
           <p className="text-sm text-muted-foreground mt-1">{t("incomeStatement.summary")}</p>
         </div>
         <div className="flex gap-2 flex-wrap no-print">
-          <Button variant="outline" className="gap-2" onClick={() => window.print()}>
+          {canExport && <Button variant="outline" className="gap-2" onClick={() => window.print()}>
             <Printer className="h-4 w-4" />
             {t("incomeStatement.print")}
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={handleExportPDF} disabled={isLoading}>
+          </Button>}
+          {canExport && <Button variant="outline" className="gap-2" onClick={handleExportPDF} disabled={isLoading}>
             <Download className="h-4 w-4" />
             {t("common.exportPDF")}
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={handleExportExcel} disabled={isLoading}>
+          </Button>}
+          {canExport && <Button variant="outline" className="gap-2" onClick={handleExportExcel} disabled={isLoading}>
             <FileSpreadsheet className="h-4 w-4" />
             {t("common.exportExcel")}
-          </Button>
+          </Button>}
         </div>
       </div>
 

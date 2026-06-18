@@ -194,10 +194,12 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function Fattening() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { can, canCreate } = usePermissions("fattening");
+  const canUpdateAnimal = can("animals", "update");
+  const canDeleteAnimal = can("animals", "delete");
   const [, setLocation] = useLocation();
 
-  const { data: animals, isLoading } = trpc.animals.list.useQuery({ isActive: true });
+  const { data: animals, isLoading } = trpc.animals.listFattening.useQuery();
   const { data: groups } = trpc.config.getGroups.useQuery();
   const utils = trpc.useUtils();
 
@@ -229,7 +231,7 @@ export default function Fattening() {
             {fatteningAnimals.length} animals in fattening
           </p>
         </div>
-        {canMutate && <RecordWeightDialog animals={fatteningAnimals} onSuccess={() => {}} />}
+        {canCreate && <RecordWeightDialog animals={fatteningAnimals} onSuccess={() => {}} />}
       </div>
 
       <Card>
@@ -314,21 +316,21 @@ export default function Fattening() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {canMutate && (<>
+                            {(canCreate || canUpdateAnimal || canDeleteAnimal) && (<>
                             {/* Record weight for this animal */}
-                            <RecordWeightDialog
+                            {canCreate && <RecordWeightDialog
                               animals={fatteningAnimals}
                               preselectedId={a.animal.id}
                               onSuccess={() => {}}
-                            />
+                            />}
                             {/* Edit animal */}
-                            <EditAnimalDialog
+                            {canUpdateAnimal && <EditAnimalDialog
                               animal={a}
                               groups={groups ?? []}
                               onSuccess={() => {}}
-                            />
+                            />}
                             {/* Delete animal */}
-                            <AlertDialog>
+                            {canDeleteAnimal && <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                   <Trash2 className="h-4 w-4" />
@@ -354,7 +356,7 @@ export default function Fattening() {
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
-                            </AlertDialog>
+                            </AlertDialog>}
                             </>)}
                           </div>
                         </TableCell>

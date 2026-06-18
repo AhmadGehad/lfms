@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { protectedProcedure, staffProcedure, router } from "../_core/trpc";
+import { permissionProcedure, router } from "../_core/trpc";
 import { optionalMoneyString, optionalWeightString, pastOrTodayDate } from "../_core/validators";
 import {
   createLambingRecord,
@@ -20,12 +20,12 @@ import {
 
 export const breedingRouter = router({
   // ─── LIST LAMBING RECORDS ───────────────────────────────────────────────────
-  listLambing: protectedProcedure
+  listLambing: permissionProcedure("breeding", "view")
     .input(z.object({ isPromoted: z.boolean().optional() }).optional())
     .query(({ input }) => getLambingLog(input)),
 
   // ─── RECORD BIRTH ───────────────────────────────────────────────────────────
-  recordBirth: staffProcedure
+  recordBirth: permissionProcedure("breeding", "create")
     .input(
       z.object({
         birthDate: pastOrTodayDate,
@@ -86,7 +86,7 @@ export const breedingRouter = router({
     }),
 
   // ─── PROMOTE LAMB TO ANIMAL REGISTRY ────────────────────────────────────────
-  promoteLamb: staffProcedure
+  promoteLamb: permissionProcedure("breeding", "update")
     .input(
       z.object({
         lambingLogId: z.number(),

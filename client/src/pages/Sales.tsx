@@ -40,7 +40,7 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
     statusId: "",
   });
 
-  const { data: animals } = trpc.animals.list.useQuery({ isActive: true });
+  const { data: animals } = trpc.animals.lookup.useQuery({ isActive: true });
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   // F1: only exit statuses are valid here; default to the one named "sold"
   // when present, otherwise the first exit status.
@@ -347,7 +347,7 @@ function RecordPaymentDialog({ saleId, animalCode, outstanding, onSuccess }: { s
 
 export default function Sales() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canCreate, canUpdate, canDelete } = usePermissions("sales");
   const [filterOwner, setFilterOwner] = useState<string>("all");
   const [filterBuyer, setFilterBuyer] = useState<string>("");
   const [outstandingOnly, setOutstandingOnly] = useState<boolean>(false);
@@ -356,7 +356,7 @@ export default function Sales() {
     buyer: filterBuyer || undefined,
     outstandingOnly: outstandingOnly || undefined,
   });
-  const { data: ownersList } = trpc.config.getOwners.useQuery({ activeOnly: true });
+  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const utils = trpc.useUtils();
 
   const deleteSale = trpc.recycleBin.deleteSale.useMutation({
@@ -390,7 +390,7 @@ export default function Sales() {
             {pendingCount > 0 && <span className="ml-2 text-amber-600 font-medium">· {t("sales.pendingPriceEntry", { count: pendingCount })}</span>}
           </p>
         </div>
-        {canMutate && <RecordSaleDialog onSuccess={refetch} />}
+        {canCreate && <RecordSaleDialog onSuccess={refetch} />}
       </div>
 
       {outstandingCount > 0 && (
@@ -527,11 +527,11 @@ export default function Sales() {
                         <TableCell className="text-muted-foreground">{buyerName ?? "—"}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {canMutate && outstanding > 0 && !isPending && (
+                            {canUpdate && outstanding > 0 && !isPending && (
                               <RecordPaymentDialog saleId={saleId} animalCode={animalCode} outstanding={outstanding} onSuccess={refetch} />
                             )}
-                            {canMutate && <EditSaleDialog sale={saleForEdit} onSuccess={refetch} />}
-                            {canMutate && <AlertDialog>
+                            {canUpdate && <EditSaleDialog sale={saleForEdit} onSuccess={refetch} />}
+                            {canDelete && <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0">
                                   <Trash2 className="h-4 w-4" />

@@ -44,7 +44,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
     },
   });
 
-  const { data: animals } = trpc.animals.list.useQuery({ isActive: true });
+  const { data: animals } = trpc.animals.lookup.useQuery({ isActive: true });
   const { data: birthTypes } = trpc.config.getBirthTypes.useQuery();
   const { data: groups } = trpc.config.getGroups.useQuery();
 
@@ -193,7 +193,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
 
 export default function Breeding() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canCreate, canUpdate, canDelete } = usePermissions("breeding");
   const [, setLocation] = useLocation();
   const { data: lambingLog, isLoading, refetch } = trpc.breeding.listLambing.useQuery();
   const utils = trpc.useUtils();
@@ -250,7 +250,7 @@ export default function Breeding() {
             {(lambingLog ?? []).length} birth records · {(lambingLog ?? []).filter((l: any) => !l.isPromoted).length} pending promotion
           </p>
         </div>
-        {canMutate && <RecordBirthDialog onSuccess={refetch} />}
+        {canCreate && <RecordBirthDialog onSuccess={refetch} />}
       </div>
 
       <Card>
@@ -327,12 +327,12 @@ export default function Breeding() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {canMutate && !l.isPromoted && (
+                          {canUpdate && !l.isPromoted && (
                             <Button size="sm" variant="outline" onClick={() => setPromoteDialog({ open: true, lambId: l.id })}>
                               {t("breeding.promote")}
                             </Button>
                           )}
-                          {canMutate && <AlertDialog>
+                          {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                 <Trash2 className="h-4 w-4" />

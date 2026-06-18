@@ -585,7 +585,7 @@ function PriceFormDialog({ trigger, price, onSuccess }: { trigger: ReactNode; pr
 
 function PriceHistoryTab() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canCreate, canUpdate, canDelete } = usePermissions("feed");
   const { data: prices, isLoading } = trpc.config.getAllFeedItemPrices.useQuery();
   const utils = trpc.useUtils();
   const deletePrice = trpc.config.deleteFeedItemPrice.useMutation({
@@ -598,7 +598,7 @@ function PriceHistoryTab() {
     <>
       <div className="flex items-center justify-between gap-2 mb-3">
         <p className="text-sm text-muted-foreground">{t("feed.priceHistoryHint")}</p>
-        {canMutate && <PriceFormDialog
+        {canCreate && <PriceFormDialog
           trigger={<Button size="sm" className="gap-2"><span className="text-lg leading-none">+</span> {t("feed.addPrice")}</Button>}
           onSuccess={() => {}}
         />}
@@ -634,12 +634,12 @@ function PriceHistoryTab() {
                       <TableCell className="text-muted-foreground text-xs">{fmtDate(p.createdAt)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {canMutate && <PriceFormDialog
+                          {canUpdate && <PriceFormDialog
                             price={p}
                             trigger={<Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground"><Pencil className="h-4 w-4" /></Button>}
                             onSuccess={() => {}}
                           />}
-                          {canMutate && <AlertDialog>
+                          {canDelete && <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
                             </AlertDialogTrigger>
@@ -677,7 +677,7 @@ function PriceHistoryTab() {
 
 export default function Feed() {
   const { t } = useTranslation();
-  const { canMutate } = usePermissions();
+  const { canCreate, canUpdate, canDelete } = usePermissions("feed");
   const { data: stockStatus, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
   const { data: shrinkage } = trpc.feed.getShrinkage.useQuery();
   const { data: stockLedger, isLoading: ledgerLoading } = trpc.feed.getStockLedger.useQuery();
@@ -750,7 +750,7 @@ export default function Feed() {
             {t("feed.feedItemsTracked", { count: (stockStatus ?? []).length })}
           </p>
         </div>
-        {canMutate && <AddStockDialog onSuccess={() => {}} />}
+        {canCreate && <AddStockDialog onSuccess={() => {}} />}
       </div>
 
       {/* Low Stock Alert Banner */}
@@ -898,11 +898,11 @@ export default function Feed() {
                           <TableCell className="text-muted-foreground">{entry.supplierName ?? "—"}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              {canMutate && <EditStockDialog
+                              {canUpdate && <EditStockDialog
                                 entry={entry}
                                 onSuccess={() => {}}
                               />}
-                              {canMutate && <AlertDialog>
+                              {canDelete && <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                     <Trash2 className="h-4 w-4" />
@@ -941,7 +941,7 @@ export default function Feed() {
         <TabsContent value="rations">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
-              {selectedPlanIds.size > 0 && (
+              {canUpdate && selectedPlanIds.size > 0 && (
                 <>
                   <span className="text-sm text-muted-foreground">{selectedPlanIds.size} {t("feed.plansSelected")}</span>
                   <Dialog open={bulkDateOpen} onOpenChange={setBulkDateOpen}>
@@ -985,7 +985,7 @@ export default function Feed() {
                 </>
               )}
             </div>
-            {canMutate && <AddRationPlanDialog onSuccess={() => {}} />}
+            {canCreate && <AddRationPlanDialog onSuccess={() => {}} />}
           </div>
           <Card>
             <CardContent className="p-0">
@@ -993,13 +993,13 @@ export default function Feed() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-10">
+                      {canUpdate && <TableHead className="w-10">
                         <Checkbox
                           checked={(rationPlans ?? []).length > 0 && selectedPlanIds.size === (rationPlans ?? []).length}
                           onCheckedChange={toggleSelectAll}
                           aria-label="Select all"
                         />
-                      </TableHead>
+                      </TableHead>}
                       <TableHead>{t("common.category")}</TableHead>
                       <TableHead>{t("feed.feedItem")}</TableHead>
                       <TableHead>{t("feed.qtyHeadDay")}</TableHead>
@@ -1027,13 +1027,13 @@ export default function Feed() {
                     ) : (
                       (rationPlans ?? []).map((plan: any) => (
                         <TableRow key={plan.id} className={selectedPlanIds.has(plan.id) ? "bg-muted/50" : ""}>
-                          <TableCell className="w-10">
+                          {canUpdate && <TableCell className="w-10">
                             <Checkbox
                               checked={selectedPlanIds.has(plan.id)}
                               onCheckedChange={() => togglePlanSelect(plan.id)}
                               aria-label={`Select plan ${plan.id}`}
                             />
-                          </TableCell>
+                          </TableCell>}
                           <TableCell>{plan.categoryName}</TableCell>
                           <TableCell>{plan.feedItemName}</TableCell>
                           <TableCell>{parseFloat(plan.qtyPerHeadPerDay).toFixed(2)} {plan.unit}</TableCell>
@@ -1048,11 +1048,11 @@ export default function Feed() {
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              {canMutate && <EditRationPlanDialog
+                              {canUpdate && <EditRationPlanDialog
                                 plan={plan}
                                 onSuccess={() => utils.feed.getRationPlans.invalidate()}
                               />}
-                              {canMutate && <AlertDialog>
+                              {canDelete && <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                     <Trash2 className="h-4 w-4" />

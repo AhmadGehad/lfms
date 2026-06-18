@@ -680,6 +680,53 @@ const en = {
     viewerCannotModify: "Viewers cannot modify data"
   },
 
+  permissions: {
+    title: "Role Permissions",
+    subtitle: "Choose which pages each role can see and which actions it can perform.",
+    usersTab: "Users",
+    rolesTab: "Role Permissions",
+    page: "Page",
+    actions: "Allowed actions",
+    changeRole: "Change user role",
+    saved: "Role permissions saved",
+    reset: "Reset to defaults",
+    resetConfirm: "Reset this role to the default permissions?",
+    unsavedConfirm: "Discard unsaved permission changes?",
+    accessDenied: "Access denied",
+    accessDeniedDescription: "Your role does not have permission to view this page.",
+    backToDashboard: "Go to an available page",
+    actionLabels: {
+      view: "View",
+      create: "Create",
+      update: "Update",
+      delete: "Delete",
+      export: "Export",
+      report: "Download report",
+      import: "Import",
+      restore: "Restore",
+      purge: "Purge"
+    },
+    pages: {
+      dashboard: "Dashboard",
+      animals: "Animal Registry",
+      breeding: "Breeding & Lambing",
+      fattening: "Fattening Tracker",
+      feed: "Feed Management",
+      vaccinations: "Vaccinations",
+      expenses: "Expense Log",
+      pnl: "Animal P&L",
+      incomeStatement: "Income Statement",
+      sales: "Sales Records",
+      notifications: "Notifications",
+      audit: "Audit Log",
+      users: "User Management",
+      configuration: "Configuration",
+      farmMap: "Farm Map",
+      data: "Data Management",
+      recycleBin: "Recycle Bin"
+    }
+  },
+
   // Audit Log
   audit: {
     title: "Audit Log",
@@ -1570,6 +1617,53 @@ const ar = {
 
     viewerCannotModify: "لا يمكن للمشاهدين تعديل البيانات",
 
+  },
+
+  permissions: {
+    title: "صلاحيات الأدوار",
+    subtitle: "حدد الصفحات التي يمكن لكل دور رؤيتها والإجراءات التي يمكنه تنفيذها.",
+    usersTab: "المستخدمون",
+    rolesTab: "صلاحيات الأدوار",
+    page: "الصفحة",
+    actions: "الإجراءات المسموحة",
+    changeRole: "تغيير دور المستخدم",
+    saved: "تم حفظ صلاحيات الدور",
+    reset: "إعادة الإعدادات الافتراضية",
+    resetConfirm: "إعادة صلاحيات هذا الدور إلى الإعدادات الافتراضية؟",
+    unsavedConfirm: "تجاهل تغييرات الصلاحيات غير المحفوظة؟",
+    accessDenied: "الوصول مرفوض",
+    accessDeniedDescription: "دورك لا يملك صلاحية عرض هذه الصفحة.",
+    backToDashboard: "الذهاب إلى صفحة متاحة",
+    actionLabels: {
+      view: "عرض",
+      create: "إنشاء",
+      update: "تعديل",
+      delete: "حذف",
+      export: "تصدير",
+      report: "تنزيل تقرير",
+      import: "استيراد",
+      restore: "استعادة",
+      purge: "حذف نهائي"
+    },
+    pages: {
+      dashboard: "لوحة التحكم",
+      animals: "سجل الحيوانات",
+      breeding: "التكاثر والولادات",
+      fattening: "متابعة التسمين",
+      feed: "إدارة الأعلاف",
+      vaccinations: "التطعيمات",
+      expenses: "سجل المصروفات",
+      pnl: "ربحية الحيوان",
+      incomeStatement: "قائمة الدخل",
+      sales: "سجلات المبيعات",
+      notifications: "الإشعارات",
+      audit: "سجل التدقيق",
+      users: "إدارة المستخدمين",
+      configuration: "الإعدادات",
+      farmMap: "خريطة المزرعة",
+      data: "إدارة البيانات",
+      recycleBin: "سلة المحذوفات"
+    }
   },
 
   audit: {

@@ -13,6 +13,7 @@ import { exportRouter } from "./routers/export";
 import { importRouter } from "./routers/import";
 import { backupRouter } from "./routers/backup";
 import { vaccinationRouter } from "./routers/vaccination";
+import { permissionsRouter } from "./routers/permissions";
 
 export const appRouter = router({
   system: systemRouter,
@@ -41,6 +42,7 @@ export const appRouter = router({
   import: importRouter,
   backup: backupRouter,
   vaccination: vaccinationRouter,
+  permissions: permissionsRouter,
 });
 
 export type AppRouter = typeof appRouter;

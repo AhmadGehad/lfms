@@ -118,4 +118,37 @@ describe("canonical transfer modes", () => {
     const feedSpec = CANONICAL_TABLES.find(spec => spec.key === "feed_items")!;
     expect(store.get(feedSpec.table)).toEqual([replacementFeedItem]);
   });
+
+  it("can exclude security tables from normal replace imports", async () => {
+    const rows = emptyCanonicalData();
+    rows.set("users", []);
+    rows.set("role_permissions", []);
+    rows.set("audit_log", []);
+    const existingUser = { id: 1, openId: "owner", role: "owner" };
+    const existingPermission = {
+      id: 1,
+      role: "staff",
+      page: "animals",
+      action: "view",
+      allowed: true,
+    };
+    const existingAudit = { id: 1, action: "login" };
+    const { tx, store, deleted } = createTx({
+      users: [existingUser],
+      role_permissions: [existingPermission],
+      audit_log: [existingAudit],
+    });
+
+    await applyCanonicalData(tx as any, rows, "replace", {
+      excludedTables: new Set(["users", "role_permissions", "audit_log"]),
+    });
+
+    expect(deleted).not.toContain("users");
+    expect(deleted).not.toContain("role_permissions");
+    expect(deleted).not.toContain("audit_log");
+    for (const key of ["users", "role_permissions", "audit_log"]) {
+      const spec = CANONICAL_TABLES.find(item => item.key === key)!;
+      expect(store.get(spec.table)).toHaveLength(1);
+    }
+  });
 });
