@@ -20,6 +20,7 @@ import {
   getStatusById,
   getAllAnimalsPnL,
   getAnimalPnL,
+  getGeneralExpensesTotal,
   getAnimalStatusHistory,
   getAnimals,
   getExpenses,
@@ -645,6 +646,13 @@ export const animalsRouter = router({
       ownerId: z.number().optional(),
     }).optional())
     .query(({ input }) => getAllAnimalsPnL(input ?? undefined)),
+
+  getGeneralExpensesTotal: protectedProcedure
+    .input(z.object({
+      fromDate: z.string().optional(),
+      toDate: z.string().optional(),
+    }).optional())
+    .query(({ input }) => getGeneralExpensesTotal(input ?? {})),
 
   // ─── FEED HISTORY ─────────────────────────────────────────────────────────
   getFeedHistory: protectedProcedure

@@ -121,7 +121,6 @@ function PnLCard({ animalId }: { animalId: number }) {
   const items = [
     { label: t("pnl.purchaseCost"), value: pnl?.purchaseCost ?? 0, type: "cost" },
     { label: t("pnl.animalOperatingCost"), value: pnl?.animalOperatingCost ?? 0, type: "cost" },
-    { label: t("pnl.farmOperatingCost"), value: pnl?.farmOperatingCost ?? 0, type: "cost" },
     { label: t("pnl.feedCost"), value: pnl?.feedCost ?? 0, type: "cost" },
     { label: t("pnl.directExpenses"), value: pnl?.directExpenseTotal ?? 0, type: "cost" },
     { label: t("pnl.allocatedCatExpenses"), value: pnl?.categoryExpenseAllocation ?? 0, type: "cost" },

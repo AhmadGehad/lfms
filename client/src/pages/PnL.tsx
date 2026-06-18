@@ -66,7 +66,7 @@ export default function PnL() {
   // operatingCostActive = running costs excluding purchase price (feed + expenses)
   const operatingCostActive = activeAnimals.reduce((s: number, a: any) => s + ((a.totalCost ?? 0) - (a.purchaseCost ?? 0)), 0);
   const totalAnimalOperatingCost = filtered.reduce((s: number, a: any) => s + (a.animalOperatingCost ?? 0), 0);
-  const totalFarmOperatingCost = filtered.reduce((s: number, a: any) => s + (a.farmOperatingCost ?? 0), 0);
+  const { data: generalExpensesTotal } = trpc.animals.getGeneralExpensesTotal.useQuery({});
   // Current Account Value = Revenue realised + Capital on hoof - Operating expenses spent on active herd
   const currentAccountValue = totalRevenue + capitalMoney - operatingCostActive;
 
@@ -148,7 +148,7 @@ export default function PnL() {
           <Card>
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">{t("pnl.farmOperatingCost")}</p>
-              <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(totalFarmOperatingCost)}</p>
+              <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(generalExpensesTotal ?? 0)}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.farmOperatingCostSub")}</p>
             </CardContent>
           </Card>

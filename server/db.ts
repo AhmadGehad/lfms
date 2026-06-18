@@ -1223,6 +1223,19 @@ export async function updateFeedStockEntry(
 
 // ─── EXPENSESS ─────────────────────────────────────────────────────────────────
 
+export async function getGeneralExpensesTotal(filters?: { fromDate?: string; toDate?: string }) {
+  const db = await getDb();
+  if (!db) return 0;
+  const conditions = [eq(expenses.targetType, "general"), isNull(expenses.deletedAt)];
+  if (filters?.fromDate) conditions.push(sql`${expenses.expenseDate} >= ${filters.fromDate}`);
+  if (filters?.toDate) conditions.push(sql`${expenses.expenseDate} <= ${filters.toDate}`);
+  const rows = await db
+    .select({ total: sql<number>`SUM(amount)` })
+    .from(expenses)
+    .where(and(...conditions));
+  return toMajor(toMinor(String(rows[0]?.total ?? 0)));
+}
+
 export async function getExpenses(filters?: { fromDate?: string; toDate?: string; categoryId?: number; targetType?: "general" | "category" | "head" | "herd"; headId?: number; ownerId?: number; vendor?: string }) {
   const db = await getDb();
   if (!db) return [];
@@ -1444,9 +1457,8 @@ export async function getAnimalPnL(animalId: number) {
   // Operating cost = everything EXCEPT purchase cost. Computed by direct
   // addition (not totalCost - purchaseCost) so it's immune to purchaseCost
   // parsing issues.
-  const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor;
-  const farmOperatingCostMinor = herdExpenseAllocationMinor;
-  const operatingCostMinor = animalOperatingCostMinor + farmOperatingCostMinor;
+  const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+  const operatingCostMinor = animalOperatingCostMinor;
   const totalCostMinor = purchaseCostMinor + operatingCostMinor;
   const netPnLMinor = revenueMinor - totalCostMinor;
 
@@ -1487,14 +1499,12 @@ export async function getAnimalPnL(animalId: number) {
   }
 
   const animalOperatingCost = toMajor(animalOperatingCostMinor);
-  const farmOperatingCost = toMajor(farmOperatingCostMinor);
 
   return {
     animalId,
     daysOnFarm,
     purchaseCost,
     animalOperatingCost,
-    farmOperatingCost,
     feedCost,
     directExpenseTotal,
     categoryExpenseAllocation,
@@ -1685,9 +1695,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
 
     // Operating cost = feed + direct + category + herd (NOT purchase cost).
     // Direct sum avoids any purchaseCost parsing issues.
-    const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor;
-    const farmOperatingCostMinor = herdExpenseAllocationMinor;
-    const operatingCostMinor = animalOperatingCostMinor + farmOperatingCostMinor;
+    const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+    const operatingCostMinor = animalOperatingCostMinor;
     const totalCostMinor = purchaseCostMinor + operatingCostMinor;
     const netPnLMinor = revenueMinor - totalCostMinor;
 
@@ -1701,7 +1710,6 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
     const animalOperatingCost = toMajor(animalOperatingCostMinor);
-    const farmOperatingCost = toMajor(farmOperatingCostMinor);
 
     results.push({
       animalId: animal.id,
@@ -1714,7 +1722,6 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       daysOnFarm,
       purchaseCost,
       animalOperatingCost,
-      farmOperatingCost,
       feedCost,
       directExpenseTotal,
       categoryExpenseAllocation: toMajor(categoryExpenseAllocationMinor),
