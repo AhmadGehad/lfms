@@ -33,7 +33,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   if (!ENV.ownerOpenId) {
-    throw new Error("OWNER_OPEN_ID is required to preserve owner recovery access");
+    console.warn("⚠️  WARNING: OWNER_OPEN_ID is not set. Owner recovery access will not be available. This should only happen during initial setup.");
+  } else {
+    console.log(`✅ Owner recovery access enabled for: ${ENV.ownerOpenId}`);
   }
   const app = express();
   const server = createServer(app);
