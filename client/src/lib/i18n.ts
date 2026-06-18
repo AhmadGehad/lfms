@@ -486,7 +486,9 @@ const en = {
 
     herdExp: "Herd Exp.",
     animalOperatingCost: "Animal Operating Cost",
+    animalOperatingCostSub: "Feed + direct + category expenses",
     farmOperatingCost: "Farm Operating Cost",
+    farmOperatingCostSub: "Herd-wide expenses allocated per head",
     capitalOnHoof: "Capital on Hoof",
     activePurchaseCost: "Purchase cost of active animals",
     runningCostTotal: "Running Cost Total (Active)",
@@ -1373,7 +1375,9 @@ const ar = {
 
     herdExp: "مصروف القطيع",
     animalOperatingCost: "التكلفة التشغيلية للحيوان",
+    animalOperatingCostSub: "العلف + المباشرة + الفئة",
     farmOperatingCost: "التكلفة التشغيلية للمزرعة",
+    farmOperatingCostSub: "مصروفات القطيع المخصصة لكل رأس",
     capitalOnHoof: "رأس المال في القطيع",
     activePurchaseCost: "تكلفة شراء الحيوانات النشطة",
     runningCostTotal: "إجمالي التكلفة الجارية (النشطة)",

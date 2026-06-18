@@ -65,6 +65,8 @@ export default function PnL() {
   const capitalMoney = activeAnimals.reduce((s: number, a: any) => s + (a.purchaseCost ?? 0), 0);
   // operatingCostActive = running costs excluding purchase price (feed + expenses)
   const operatingCostActive = activeAnimals.reduce((s: number, a: any) => s + ((a.totalCost ?? 0) - (a.purchaseCost ?? 0)), 0);
+  const totalAnimalOperatingCost = filtered.reduce((s: number, a: any) => s + (a.animalOperatingCost ?? 0), 0);
+  const totalFarmOperatingCost = filtered.reduce((s: number, a: any) => s + (a.farmOperatingCost ?? 0), 0);
   // Current Account Value = Revenue realised + Capital on hoof - Operating expenses spent on active herd
   const currentAccountValue = totalRevenue + capitalMoney - operatingCostActive;
 
@@ -134,6 +136,20 @@ export default function PnL() {
                 {fmt(currentAccountValue)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.currentAccountValueSub")}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">{t("pnl.animalOperatingCost")}</p>
+              <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(totalAnimalOperatingCost)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalOperatingCostSub")}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">{t("pnl.farmOperatingCost")}</p>
+              <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(totalFarmOperatingCost)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.farmOperatingCostSub")}</p>
             </CardContent>
           </Card>
         </div>
@@ -228,8 +244,6 @@ export default function PnL() {
                     <TableHead className="text-right">{t("pnl.directExp")}</TableHead>
                     <TableHead className="text-right">{t("pnl.catExp")}</TableHead>
                     <TableHead className="text-right">{t("pnl.herdExp")}</TableHead>
-                    <TableHead className="text-right">{t("pnl.animalOperatingCost")}</TableHead>
-                    <TableHead className="text-right">{t("pnl.farmOperatingCost")}</TableHead>
                     <TableHead className="text-right">{t("pnl.totalCost")}</TableHead>
                     <TableHead className="text-right">{t("pnl.revenue")}</TableHead>
                     <TableHead className="text-right">{t("pnl.netPnL")}</TableHead>
@@ -240,7 +254,7 @@ export default function PnL() {
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={17} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
                         {t("pnl.noAnimals")}
                       </TableCell>
                     </TableRow>
@@ -291,12 +305,6 @@ export default function PnL() {
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-orange-600 text-xs">
                             {a.herdExpenseAllocation > 0 ? fmt(a.herdExpenseAllocation) : "—"}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-red-600">
-                            {a.animalOperatingCost > 0 ? fmt(a.animalOperatingCost) : "—"}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums text-red-600">
-                            {a.farmOperatingCost > 0 ? fmt(a.farmOperatingCost) : "—"}
                           </TableCell>
                           <TableCell className="text-right tabular-nums font-medium text-red-600">
                             {fmt(a.totalCost)}
