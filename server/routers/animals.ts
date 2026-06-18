@@ -171,6 +171,8 @@ export const animalsRouter = router({
         exitDate: z.string().optional(),
         exitReason: z.string().optional(),
         isActive: z.boolean().optional(),
+        damId: z.number().int().positive().nullable().optional(),
+        sireId: z.number().int().positive().nullable().optional(),
       })
     )
     .mutation(async ({ input: { id, ...data }, ctx }) => {

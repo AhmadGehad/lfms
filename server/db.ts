@@ -1478,6 +1478,7 @@ export async function getAnimalPnL(animalId: number) {
   const netPnL = toMajor(netPnLMinor);
   const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(operatingCostMinor, daysOnFarm)) : 0;
   const costPerMonth = daysOnFarm > 0 ? toMajor(operatingCostMinor * 30 / daysOnFarm) : 0;
+  const feedCostPerMonth = daysOnFarm > 0 ? toMajor(feedCostMinor * 30 / daysOnFarm) : 0;
   const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
   // Projected cost for active animals — based on actual growth rate and the
@@ -1521,6 +1522,7 @@ export async function getAnimalPnL(animalId: number) {
     netPnL,
     costPerDay,
     costPerMonth,
+    feedCostPerMonth,
     pricePerKg,
     projectedCost,
     isActive: animal.isActive,
@@ -1714,6 +1716,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const netPnL = toMajor(netPnLMinor);
     const costPerDay = daysOnFarm > 0 ? toMajor(divMinor(operatingCostMinor, daysOnFarm)) : 0;
     const costPerMonth = daysOnFarm > 0 ? toMajor(operatingCostMinor * 30 / daysOnFarm) : 0;
+    const feedCostPerMonth = daysOnFarm > 0 ? toMajor(feedCostMinor * 30 / daysOnFarm) : 0;
     const pricePerKg = weightAtSale > 0 ? toMajor(Math.round(revenueMinor / weightAtSale)) : 0;
 
     const animalOperatingCost = toMajor(animalOperatingCostMinor);
@@ -1738,6 +1741,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       netPnL,
       costPerDay,
       costPerMonth,
+      feedCostPerMonth,
       pricePerKg
     });
   }

@@ -70,16 +70,27 @@ function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boole
   };
 
   const url = photo?.url ?? null;
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="h-24 w-24 rounded-lg overflow-hidden border bg-muted flex items-center justify-center shrink-0">
+      <div
+        className={`h-24 w-24 rounded-lg overflow-hidden border bg-muted flex items-center justify-center shrink-0 ${url ? "cursor-pointer" : ""}`}
+        onClick={() => url && setZoomOpen(true)}
+      >
         {url ? (
           <img src={url} alt="animal" className="h-full w-full object-cover" />
         ) : (
           <span className="text-3xl">🐑</span>
         )}
       </div>
+      {url && (
+        <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
+          <DialogContent className="max-w-2xl p-0 overflow-hidden">
+            <img src={url} alt="animal" className="w-full h-auto object-contain max-h-[80vh]" />
+          </DialogContent>
+        </Dialog>
+      )}
       <div className="flex items-center gap-1">
         {canUpdate && <label className="text-xs text-primary cursor-pointer hover:underline">
           {hasPhoto ? t("animalProfile.changePhoto") : t("animalProfile.addPhoto")}

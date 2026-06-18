@@ -742,6 +742,9 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
+  const { data: allAnimals } = trpc.animals.lookup.useQuery({ isActive: true });
+  const females = (allAnimals ?? []).filter((a: any) => a.animal.sex === "female" && a.animal.id !== animalId);
+  const males = (allAnimals ?? []).filter((a: any) => a.animal.sex === "male" && a.animal.id !== animalId);
   const utils = trpc.useUtils();
   const { control, handleSubmit, reset } = useForm<any>();
   React.useEffect(() => {
@@ -758,6 +761,8 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
         notes: animal.animal.notes ?? "",
         exitDate: animal.animal.exitDate ? new Date(animal.animal.exitDate).toISOString().split("T")[0] : "",
         exitReason: animal.animal.exitReason ?? "",
+        damId: animal.animal.damId ? String(animal.animal.damId) : "none",
+        sireId: animal.animal.sireId ? String(animal.animal.sireId) : "none",
       });
     }
   }, [animal, reset]);
@@ -785,6 +790,8 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
       notes: data.notes || undefined,
       exitDate: data.exitDate || undefined,
       exitReason: data.exitReason || undefined,
+      damId: data.damId && data.damId !== "none" ? Number(data.damId) : null,
+      sireId: data.sireId && data.sireId !== "none" ? Number(data.sireId) : null,
     });
   });
   return (
@@ -891,6 +898,34 @@ function EditAnimalDialog({ animalId, open, onOpenChange, onSuccess }: { animalI
                 <Label>{t("animals.exitReason")}</Label>
                 <Controller name="exitReason" control={control} render={({ field }) => (
                   <Input placeholder={t("animals.exitReason")} {...field} />
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("animalProfile.dam")}</Label>
+                <Controller name="damId" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder={t("breeding.selectDam")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("common.unknown")}</SelectItem>
+                      {females.map((a: any) => (
+                        <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("animalProfile.sire")}</Label>
+                <Controller name="sireId" control={control} render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue placeholder={t("breeding.selectSire")} /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("common.unknown")}</SelectItem>
+                      {males.map((a: any) => (
+                        <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )} />
               </div>
               <div className="space-y-1.5 sm:col-span-2">

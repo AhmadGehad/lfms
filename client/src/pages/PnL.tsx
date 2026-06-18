@@ -61,6 +61,7 @@ export default function PnL() {
   // runningCost = total cost (purchase + feed + expenses) of active animals
   const runningCost = activeAnimals.reduce((s: number, a: any) => s + (a.totalCost ?? 0), 0);
   const runningCostMonthly = activeAnimals.reduce((s: number, a: any) => s + (a.costPerMonth ?? 0), 0);
+  const feedCostMonthly = activeAnimals.reduce((s: number, a: any) => s + (a.feedCostPerMonth ?? 0), 0);
   // capitalMoney = purchase cost of active animals only (capital still on hoof)
   const capitalMoney = activeAnimals.reduce((s: number, a: any) => s + (a.purchaseCost ?? 0), 0);
   // operatingCostActive = running costs excluding purchase price (feed + expenses)
@@ -101,6 +102,13 @@ export default function PnL() {
             <CardContent className="pt-4">
               <p className="text-xs text-muted-foreground">{t("pnl.runningCostMonth")}</p>
               <p className="text-xl sm:text-2xl font-bold text-amber-600">{fmt(runningCostMonthly)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalsOngoing", { count: activeCount })}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">{t("pnl.feedCostMonth")}</p>
+              <p className="text-xl sm:text-2xl font-bold text-orange-600">{fmt(feedCostMonthly)}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalsOngoing", { count: activeCount })}</p>
             </CardContent>
           </Card>
