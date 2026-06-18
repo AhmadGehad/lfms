@@ -1209,13 +1209,13 @@ export default function Animals() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-10">
+                    {canMutate && <TableHead className="w-10">
                       <Checkbox
                         checked={allSelected}
                         onCheckedChange={toggleAll}
                         aria-label="Select all"
                       />
-                    </TableHead>
+                    </TableHead>}
                     <SortableHead k="id">{t("animals.animalId")}</SortableHead>
                     <TableHead>{t("common.species")}</TableHead>
                     <TableHead>{t("common.category")}</TableHead>
@@ -1248,13 +1248,13 @@ export default function Animals() {
                       const isSelected = selectedIds.has(a.animal.id);
                       return (
                         <TableRow key={a.animal.id} className={`cursor-pointer hover:bg-muted/40 ${isSelected ? "bg-primary/5" : ""}`} onClick={() => setLocation(`/animals/${a.animal.id}`)}>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          {canMutate && <TableCell onClick={(e) => e.stopPropagation()}>
                             <Checkbox
                               checked={isSelected}
                               onCheckedChange={() => toggleOne(a.animal.id)}
                               aria-label={`Select ${a.animal.animalId}`}
                             />
-                          </TableCell>
+                          </TableCell>}
                           <TableCell className="font-mono font-semibold text-primary">
                             <span className="inline-flex items-center gap-1.5">
                               {a.animal.photoUrl && <span title="Has photo" className="text-xs">📷</span>}

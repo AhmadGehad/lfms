@@ -303,12 +303,12 @@ export default function Breeding() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {!l.isPromoted && (
+                          {canMutate && !l.isPromoted && (
                             <Button size="sm" variant="outline" onClick={() => setPromoteDialog({ open: true, lambId: l.id })}>
                               {t("breeding.promote")}
                             </Button>
                           )}
-                          <AlertDialog>
+                          {canMutate && <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                 <Trash2 className="h-4 w-4" />
@@ -331,7 +331,7 @@ export default function Breeding() {
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
-                          </AlertDialog>
+                          </AlertDialog>}
                         </div>
                       </TableCell>
                     </TableRow>

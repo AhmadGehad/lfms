@@ -436,15 +436,19 @@ function DashboardLayoutContent({
                   <p className="text-xs text-muted-foreground">{user?.email}</p>
                 </div>
                 <DropdownMenuSeparator />
+                {perms.canManageUsers && (
                 <DropdownMenuItem onClick={() => setLocation("/users")} className="cursor-pointer">
                   <Users className="mr-2 h-4 w-4" />
                   {t("nav.users")}
                 </DropdownMenuItem>
+                )}
+                {perms.canEditConfig && (
                 <DropdownMenuItem onClick={() => setLocation("/config")} className="cursor-pointer">
                   <Cog className="mr-2 h-4 w-4" />
                   {t("nav.configuration")}
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                )}
+                {(perms.canManageUsers || perms.canEditConfig) && <DropdownMenuSeparator />}
                 <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   {t("auth.signOut")}

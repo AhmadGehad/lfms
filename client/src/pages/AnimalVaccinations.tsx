@@ -448,7 +448,7 @@ export default function AnimalVaccinations() {
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           {canMutate && <VaccinationRecordFormDialog record={r} onSuccess={() => {}} />}
-                          <AlertDialog>
+                          {canMutate && <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                             </AlertDialogTrigger>
@@ -462,7 +462,7 @@ export default function AnimalVaccinations() {
                                 <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteMutation.mutate({ id: r.id })}>{t("common.delete")}</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
-                          </AlertDialog>
+                          </AlertDialog>}
                         </div>
                       </TableCell>
                     </TableRow>

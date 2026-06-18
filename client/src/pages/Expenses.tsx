@@ -318,7 +318,7 @@ export default function Expenses() {
                       <TableCell className="text-muted-foreground">{e.expense.vendorName ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm max-w-32 truncate">{e.expense.notes ?? "—"}</TableCell>
                       <TableCell className="text-right">
-                        <AlertDialog>
+                        {canMutate && <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                               <Trash2 className="h-4 w-4" />
@@ -341,7 +341,7 @@ export default function Expenses() {
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
-                        </AlertDialog>
+                        </AlertDialog>}
                       </TableCell>
                     </TableRow>
                   ))
