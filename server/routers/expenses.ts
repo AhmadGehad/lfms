@@ -77,22 +77,41 @@ export const expensesRouter = router({
     .input(
       z.object({
         id: z.number().int().positive(),
+        expenseDate: pastOrTodayDate.optional(),
         amount: optionalMoneyString,
         vendorName: z.string().max(100).optional(),
         notes: z.string().max(2000).optional(),
         categoryId: z.number().int().positive().optional(),
         subCategoryId: z.number().int().positive().optional(),
+        targetType: z.enum(["general", "category", "head", "herd"]).optional(),
+        categoryTarget: z.number().int().positive().optional(),
+        headId: z.number().int().positive().optional(),
+      }).superRefine((data, ctx) => {
+        if (data.targetType === "head" && !data.headId) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["headId"], message: "headId is required when targetType is 'head'" });
+        }
+        if (data.targetType === "category" && !data.categoryTarget) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["categoryTarget"], message: "categoryTarget is required when targetType is 'category'" });
+        }
+        if (data.targetType === "general" && (data.headId || data.categoryTarget)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["targetType"], message: "General expenses must not specify headId or categoryTarget" });
+        }
+        if (data.targetType === "herd" && (data.headId || data.categoryTarget)) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["targetType"], message: "Herd (animal-wide) expenses must not specify headId or categoryTarget" });
+        }
       })
     )
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expenseDate, ...data }, ctx }) => {
       const before = await getExpenseById(id);
-      const result = await updateExpense(id, data);
+      const updateData: Record<string, any> = { ...data };
+      if (expenseDate) updateData.expenseDate = new Date(expenseDate);
+      const result = await updateExpense(id, updateData);
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",
         entityType: "expense",
         entityId: String(id),
-        oldValues: before ? { amount: before.amount, vendorName: before.vendorName, categoryId: before.categoryId } as any : undefined,
+        oldValues: before ? { amount: before.amount, vendorName: before.vendorName, categoryId: before.categoryId, targetType: before.targetType, expenseDate: before.expenseDate } as any : undefined,
         newValues: data as any,
         ipAddress: getClientIp(ctx),
       });
