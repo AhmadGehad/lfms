@@ -12,8 +12,8 @@ export function usePermissions(page?: PermissionPage) {
   const permissionsQuery = trpc.permissions.my.useQuery(undefined, {
     enabled: Boolean(user),
     retry: false,
-    refetchOnWindowFocus: false,
-    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
   });
 
   const permissions = useMemo(() => {
