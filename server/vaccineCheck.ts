@@ -5,7 +5,7 @@
  * for the same vaccination record within the last 24 hours.
  */
 
-import { createNotification, getUpcomingVaccinations, getDb } from "./db";
+import { createNotification, getUpcomingVaccinations, getUpcomingBoosterVaccinations, getDb } from "./db";
 import { notifications } from "../drizzle/schema";
 import { and, eq, gte, isNull } from "drizzle-orm";
 
@@ -74,6 +74,61 @@ export async function checkVaccinationsAndNotify(): Promise<void> {
       });
 
       console.log(`[VaccineCheck] Notification created for ${record.animalIdStr} - ${record.vaccineName} (${alertType})`);
+    }
+
+    // ─── Booster Vaccination Checks ───────────────────────────────────────
+    const upcomingBoosters = await getUpcomingBoosterVaccinations(30);
+    for (const record of upcomingBoosters) {
+      if (!record.boosterDueDate) continue;
+
+      const dueDate = new Date(record.boosterDueDate instanceof Date ? record.boosterDueDate.toISOString() : record.boosterDueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+
+      let alertType: string;
+      let title: string;
+      let message: string;
+      let priority: "low" | "medium" | "high" | "critical";
+
+      if (diffDays < 0) {
+        alertType = "booster_overdue";
+        title = "Booster Vaccination Overdue";
+        message = `${record.animalIdStr} is overdue for ${record.vaccineName} booster (was due on ${dueDate.toLocaleDateString()})`;
+        priority = "critical";
+      } else if (diffDays <= 7) {
+        alertType = "booster_due";
+        title = "Booster Vaccination Due Soon";
+        message = `${record.animalIdStr} is due for ${record.vaccineName} booster on ${dueDate.toLocaleDateString()}`;
+        priority = "high";
+      } else {
+        continue;
+      }
+
+      const existing = await db
+        .select({ id: notifications.id })
+        .from(notifications)
+        .where(
+          and(
+            eq(notifications.alertType, alertType),
+            eq(notifications.relatedEntityId, String(record.id)),
+            eq(notifications.isRead, false),
+            gte(notifications.createdAt, cutoff)
+          )
+        )
+        .limit(1);
+
+      if (existing.length > 0) continue;
+
+      await createNotification({
+        alertType,
+        title,
+        message,
+        relatedEntityType: "vaccination_record",
+        relatedEntityId: String(record.id),
+        priority,
+      });
+
+      console.log(`[VaccineCheck] Booster notification created for ${record.animalIdStr} - ${record.vaccineName} (${alertType})`);
     }
   } catch (err) {
     console.error("[VaccineCheck] Check failed:", err);

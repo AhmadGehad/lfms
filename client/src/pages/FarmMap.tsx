@@ -71,7 +71,7 @@ function ZoneShape({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const color = zoneColor(group.id);
+  const color = zoneColor(group.id, group.color);
   const center = shapeCenter(shape);
   const common = {
     fill: color.fill,
@@ -525,7 +525,7 @@ export default function FarmMap() {
               groupList.map((group: any) => {
                 const mapped = Boolean(readMapShape(group.mapShape));
                 const selected = String(group.id) === selectedGroupId;
-                const color = zoneColor(group.id);
+                const color = zoneColor(group.id, group.color);
                 return (
                   <button
                     key={group.id}

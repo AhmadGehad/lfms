@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 import { Egg, Plus, Trash2, AlertTriangle } from "lucide-react";
 import {
   AlertDialog,
@@ -133,7 +134,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
               )} />
             </div>
             <div className="space-y-1.5">
-              <Label>Dam (Mother)</Label>
+              <Label>{t("breeding.dam")}</Label>
               <Controller name="damId" control={control} render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder={t("breeding.selectDam")} /></SelectTrigger>
@@ -193,6 +194,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
 export default function Breeding() {
   const { t } = useTranslation();
   const { canMutate } = usePermissions();
+  const [, setLocation] = useLocation();
   const { data: lambingLog, isLoading, refetch } = trpc.breeding.listLambing.useQuery();
   const utils = trpc.useUtils();
 
@@ -262,6 +264,7 @@ export default function Breeding() {
                 <TableRow>
                   <TableHead>{t("breeding.lambId")}</TableHead>
                   <TableHead>{t("breeding.birthDate")}</TableHead>
+                  <TableHead>{t("breeding.age")}</TableHead>
                   <TableHead>Sex</TableHead>
                   <TableHead>{t("breeding.birthType")}</TableHead>
                   <TableHead>{t("breeding.birthWeight")}</TableHead>
@@ -276,24 +279,45 @@ export default function Breeding() {
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
-                      {Array.from({ length: 10 }).map((_, j) => (
+                      {Array.from({ length: 11 }).map((_, j) => (
                         <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
                       ))}
                     </TableRow>
                   ))
                 ) : (lambingLog ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center py-12 text-muted-foreground">{t("breeding.noBirthRecords")}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center py-12 text-muted-foreground">{t("breeding.noBirthRecords")}</TableCell></TableRow>
                 ) : (
                   (lambingLog ?? []).map((l: any) => (
                     <TableRow key={l.id}>
                       <TableCell className="font-mono font-semibold text-primary">{l.lambId}</TableCell>
                       <TableCell>{new Date(l.birthDate).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{(() => {
+                        const birth = new Date(l.birthDate);
+                        const now = new Date();
+                        const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+                        if (months < 1) {
+                          const days = Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86400000));
+                          return `${days}d`;
+                        }
+                        if (months < 12) return `${months}mo`;
+                        const years = Math.floor(months / 12);
+                        const remMonths = months % 12;
+                        return remMonths === 0 ? `${years}y` : `${years}y ${remMonths}mo`;
+                      })()}</TableCell>
                       <TableCell className="capitalize">{l.sex}</TableCell>
                       <TableCell>{l.birthTypeName ?? "—"}</TableCell>
                       <TableCell>{l.birthWeightKg ? `${parseFloat(l.birthWeightKg).toFixed(1)} kg` : "—"}</TableCell>
                       <TableCell>{l.valueUsed ? `${parseFloat(l.valueUsed).toFixed(2)} EGP` : "—"}</TableCell>
-                      <TableCell className="font-mono text-xs">{l.damAnimalId ?? "—"}</TableCell>
-                      <TableCell className="font-mono text-xs">{l.sireAnimalId ?? "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {l.damAnimalId ? (
+                          <button onClick={() => setLocation(`/animals/${l.effectiveDamId ?? l.damId}`)} className="text-primary hover:underline">{l.damAnimalId}</button>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">
+                        {l.sireAnimalId ? (
+                          <button onClick={() => setLocation(`/animals/${l.effectiveSireId ?? l.sireId}`)} className="text-primary hover:underline">{l.sireAnimalId}</button>
+                        ) : "—"}
+                      </TableCell>
                       <TableCell>
                         {l.isPromoted ? (
                           <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("breeding.promoted")}</Badge>

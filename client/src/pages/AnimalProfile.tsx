@@ -662,6 +662,7 @@ function VaccinationHistoryTab({ animalId }: { animalId: number }) {
               <TableHead>{t("vaccine.vaccineName")}</TableHead>
               <TableHead>{t("vaccine.vaccinationDate")}</TableHead>
               <TableHead>{t("vaccine.nextDueDate")}</TableHead>
+              <TableHead>{t("vaccine.boosterDueDate")}</TableHead>
               <TableHead>{t("vaccine.batchNumber")}</TableHead>
               <TableHead>{t("vaccine.veterinarian")}</TableHead>
               <TableHead>{t("vaccine.status")}</TableHead>
@@ -685,6 +686,22 @@ function VaccinationHistoryTab({ animalId }: { animalId: number }) {
                       return "";
                     })()}>
                       {new Date(v.nextDueDate).toLocaleDateString()}
+                    </span>
+                  ) : "—"}
+                </TableCell>
+                <TableCell>
+                  {v.boosterDueDate ? (
+                    <span className={(() => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      const due = new Date(v.boosterDueDate);
+                      due.setHours(0, 0, 0, 0);
+                      const diffDays = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+                      if (diffDays < 0) return "text-red-600 font-medium";
+                      if (diffDays <= 7) return "text-amber-600 font-medium";
+                      return "";
+                    })()}>
+                      {new Date(v.boosterDueDate).toLocaleDateString()}
                     </span>
                   ) : "—"}
                 </TableCell>

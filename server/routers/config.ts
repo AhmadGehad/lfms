@@ -135,6 +135,7 @@ export const configRouter = router({
       latitude: z.string().optional(),
       longitude: z.string().optional(),
       mapShape: mapShapeSchema.nullable().optional(),
+      color: z.string().max(20).nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await createGroup(input);
@@ -153,6 +154,7 @@ export const configRouter = router({
       latitude: z.string().nullable().optional(),
       longitude: z.string().nullable().optional(),
       mapShape: mapShapeSchema.nullable().optional(),
+      color: z.string().max(20).nullable().optional(),
       isActive: z.boolean().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {

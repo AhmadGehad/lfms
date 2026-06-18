@@ -13,6 +13,7 @@ type FarmMapGroup = {
   groupCode?: string | null;
   name?: string | null;
   mapShape?: unknown;
+  color?: string | null;
 };
 
 function ZoneShape({
@@ -26,7 +27,7 @@ function ZoneShape({
   selected: boolean;
   showLabel: boolean;
 }) {
-  const color = zoneColor(group.id);
+  const color = zoneColor(group.id, group.color);
   const center = shapeCenter(shape);
   const common = {
     fill: selected ? color.fill : "rgba(15, 23, 42, 0.12)",

@@ -258,11 +258,11 @@ function GroupsTab() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
-  const [form, setForm] = useState({ name: "", groupCode: "", description: "", latitude: "", longitude: "" });
+  const [form, setForm] = useState({ name: "", groupCode: "", description: "", latitude: "", longitude: "", color: "" });
   const utils = trpc.useUtils();
 
   const create = trpc.config.createGroup.useMutation({
-    onSuccess: () => { toast.success(`${t("config.groups")} ${t("common.created")}`); utils.config.getGroups.invalidate(); setOpen(false); setForm({ name: "", groupCode: "", description: "", latitude: "", longitude: "" }); },
+    onSuccess: () => { toast.success(`${t("config.groups")} ${t("common.created")}`); utils.config.getGroups.invalidate(); setOpen(false); setForm({ name: "", groupCode: "", description: "", latitude: "", longitude: "", color: "" }); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateGroup.useMutation({
@@ -290,10 +290,16 @@ function GroupsTab() {
                 <div className="space-y-1.5"><Label>Latitude</Label><Input type="number" step="any" placeholder="e.g. 30.0444" value={form.latitude} onChange={(e) => setForm((f) => ({ ...f, latitude: e.target.value }))} /></div>
                 <div className="space-y-1.5"><Label>Longitude</Label><Input type="number" step="any" placeholder="e.g. 31.2357" value={form.longitude} onChange={(e) => setForm((f) => ({ ...f, longitude: e.target.value }))} /></div>
               </div>
+              <div className="space-y-1.5"><Label>Color</Label>
+                <div className="flex items-center gap-2">
+                  <input type="color" className="h-9 w-12 rounded border cursor-pointer" value={form.color || "#2563eb"} onChange={(e) => setForm((f) => ({ ...f, color: e.target.value }))} />
+                  {form.color && <Button variant="ghost" size="sm" onClick={() => setForm((f) => ({ ...f, color: "" }))}>Clear</Button>}
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name: form.name, groupCode: form.groupCode || form.name.toUpperCase().replace(/\s+/g, '-'), description: form.description || undefined, latitude: form.latitude || undefined, longitude: form.longitude || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name: form.name, groupCode: form.groupCode || form.name.toUpperCase().replace(/\s+/g, '-'), description: form.description || undefined, latitude: form.latitude || undefined, longitude: form.longitude || undefined, color: form.color || undefined })} disabled={!form.name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -301,7 +307,7 @@ function GroupsTab() {
 
       {editItem && (
         <EditDialog title={t("config.editGroupPen")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined, latitude: editItem.latitude ?? undefined, longitude: editItem.longitude ?? undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined, latitude: editItem.latitude ?? undefined, longitude: editItem.longitude ?? undefined, color: editItem.color ?? undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.groupCode")}</Label><Input value={editItem.groupCode ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, groupCode: e.target.value.toUpperCase() }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
@@ -309,16 +315,25 @@ function GroupsTab() {
             <div className="space-y-1.5"><Label>Latitude</Label><Input type="number" step="any" value={editItem.latitude ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, latitude: e.target.value }))} /></div>
             <div className="space-y-1.5"><Label>Longitude</Label><Input type="number" step="any" value={editItem.longitude ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, longitude: e.target.value }))} /></div>
           </div>
+          <div className="space-y-1.5"><Label>Color</Label>
+            <div className="flex items-center gap-2">
+              <input type="color" className="h-9 w-12 rounded border cursor-pointer" value={editItem.color || "#2563eb"} onChange={(e) => setEditItem((p: any) => ({ ...p, color: e.target.value }))} />
+              {editItem.color && <Button variant="ghost" size="sm" onClick={() => setEditItem((p: any) => ({ ...p, color: null }))}>Clear</Button>}
+            </div>
+          </div>
         </EditDialog>
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.code")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.code")}</TableHead><TableHead>Color</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(groups ?? []).map((g: any) => (
             <TableRow key={g.id}>
               <TableCell className="font-medium">{g.name}</TableCell>
               <TableCell className="font-mono text-sm">{g.groupCode ?? "—"}</TableCell>
+              <TableCell>
+                {g.color ? <span className="inline-block h-5 w-5 rounded border" style={{ backgroundColor: g.color }} /> : <span className="text-muted-foreground text-sm">—</span>}
+              </TableCell>
               <TableCell className="text-muted-foreground text-sm">{g.description ?? "—"}</TableCell>
               <TableCell>{canMutate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(g)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>

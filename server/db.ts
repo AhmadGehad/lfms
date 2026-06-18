@@ -288,6 +288,7 @@ export async function createGroup(data: {
   latitude?: string | null;
   longitude?: string | null;
   mapShape?: unknown;
+  color?: string | null;
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -833,8 +834,10 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
       createdAt: lambingLog.createdAt,
       birthTypeName: birthTypes.name,
       groupCode: groups.groupCode,
-      damAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.damId})`,
-      sireAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.sireId})`
+      effectiveDamId: sql<number | null>`COALESCE((SELECT an.damId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.damId IS NOT NULL), ${lambingLog.damId})`,
+      effectiveSireId: sql<number | null>`COALESCE((SELECT an.sireId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.sireId IS NOT NULL), ${lambingLog.sireId})`,
+      damAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = COALESCE((SELECT an.damId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.damId IS NOT NULL), ${lambingLog.damId}))`,
+      sireAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = COALESCE((SELECT an.sireId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.sireId IS NOT NULL), ${lambingLog.sireId}))`
     })
     .from(lambingLog)
     .leftJoin(birthTypes, eq(lambingLog.birthTypeId, birthTypes.id))
@@ -2361,6 +2364,7 @@ export async function getVaccinationRecords(animalId?: number) {
       vaccineName: vaccines.name,
       vaccinationDate: vaccinationRecords.vaccinationDate,
       nextDueDate: vaccinationRecords.nextDueDate,
+      boosterDueDate: vaccinationRecords.boosterDueDate,
       batchNumber: vaccinationRecords.batchNumber,
       notes: vaccinationRecords.notes,
       veterinarian: vaccinationRecords.veterinarian,
@@ -2392,6 +2396,14 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
     data.vaccinationDate
   );
 
+  const boosterDueDateStr = calculateBoosterDueDate(
+    {
+      boosterRequired: vaccine[0].boosterRequired,
+      boosterInterval: vaccine[0].boosterInterval ?? undefined,
+    },
+    data.vaccinationDate
+  );
+
   const [result] = await db.insert(vaccinationRecords).values({
     animalId: data.animalId,
     vaccineId: data.vaccineId,
@@ -2400,6 +2412,7 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
     notes: data.notes,
     veterinarian: data.veterinarian,
     nextDueDate: new Date(nextDueDateStr),
+    boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null,
   });
   return result;
 }
@@ -2424,6 +2437,14 @@ export async function updateVaccinationRecord(id: number, data: { vaccinationDat
           data.vaccinationDate
         );
         updateData.nextDueDate = new Date(nextDueDateStr);
+        const boosterDueDateStr = calculateBoosterDueDate(
+          {
+            boosterRequired: vaccine[0].boosterRequired,
+            boosterInterval: vaccine[0].boosterInterval ?? undefined,
+          },
+          data.vaccinationDate
+        );
+        updateData.boosterDueDate = boosterDueDateStr ? new Date(boosterDueDateStr) : null;
       }
     }
   }
@@ -2441,6 +2462,13 @@ export function calculateNextDueDate(vaccine: { validityPeriod: number; validity
   const date = new Date(lastDate);
   const daysToAdd = vaccine.validityUnit === "months" ? vaccine.validityPeriod * 30 : vaccine.validityPeriod;
   date.setDate(date.getDate() + daysToAdd);
+  return date.toISOString().split("T")[0];
+}
+
+export function calculateBoosterDueDate(vaccine: { boosterRequired: boolean; boosterInterval?: number }, lastDate: string): string | null {
+  if (!vaccine.boosterRequired || !vaccine.boosterInterval) return null;
+  const date = new Date(lastDate);
+  date.setDate(date.getDate() + vaccine.boosterInterval);
   return date.toISOString().split("T")[0];
 }
 
@@ -2475,6 +2503,7 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
       animalIdStr: animals.animalId,
       vaccineName: vaccines.name,
       nextDueDate: vaccinationRecords.nextDueDate,
+      boosterDueDate: vaccinationRecords.boosterDueDate,
       isCompleted: vaccinationRecords.isCompleted,
     })
     .from(vaccinationRecords)
@@ -2488,6 +2517,36 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
       )
     )
     .orderBy(vaccinationRecords.nextDueDate);
+}
+
+export async function getUpcomingBoosterVaccinations(input?: { days?: number } | number) {
+  const days = typeof input === 'number' ? input : (input?.days ?? 30);
+  const db = await getDb();
+  if (!db) return [];
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() + days);
+
+  return await db
+    .select({
+      id: vaccinationRecords.id,
+      animalId: vaccinationRecords.animalId,
+      animalIdStr: animals.animalId,
+      vaccineName: vaccines.name,
+      boosterDueDate: vaccinationRecords.boosterDueDate,
+      isCompleted: vaccinationRecords.isCompleted,
+    })
+    .from(vaccinationRecords)
+    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
+    .innerJoin(animals, eq(vaccinationRecords.animalId, animals.id))
+    .where(
+      and(
+        isNull(vaccinationRecords.deletedAt),
+        eq(vaccinationRecords.isCompleted, false),
+        sql`${vaccinationRecords.boosterDueDate} IS NOT NULL AND ${vaccinationRecords.boosterDueDate} <= ${cutoff.toISOString().split("T")[0]}`
+      )
+    )
+    .orderBy(vaccinationRecords.boosterDueDate);
 }
 
 export async function getVaccinationCompliance() {

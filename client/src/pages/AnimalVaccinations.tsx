@@ -422,6 +422,7 @@ export default function AnimalVaccinations() {
                   <TableHead>{t("vaccine.vaccineName")}</TableHead>
                   <TableHead>{t("vaccine.vaccinationDate")}</TableHead>
                   <TableHead>{t("vaccine.nextDueDate")}</TableHead>
+                  <TableHead>{t("vaccine.boosterDueDate")}</TableHead>
                   <TableHead>{t("vaccine.batchNumber")}</TableHead>
                   <TableHead>{t("vaccine.veterinarian")}</TableHead>
                   <TableHead>{t("vaccine.status")}</TableHead>
@@ -431,10 +432,10 @@ export default function AnimalVaccinations() {
               <TableBody>
                 {isLoading ? (
                   Array.from({ length: 8 }).map((_, i) => (
-                    <TableRow key={i}>{Array.from({ length: 8 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>))}</TableRow>
+                    <TableRow key={i}>{Array.from({ length: 9 }).map((_, j) => (<TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>))}</TableRow>
                   ))
                 ) : (records ?? []).length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground">{t("vaccine.noVaccinations")}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={9} className="text-center py-12 text-muted-foreground">{t("vaccine.noVaccinations")}</TableCell></TableRow>
                 ) : (
                   (records ?? []).map((r: any) => (
                     <TableRow key={r.id}>
@@ -442,6 +443,21 @@ export default function AnimalVaccinations() {
                       <TableCell>{r.vaccineName}</TableCell>
                       <TableCell>{fmtDate(r.vaccinationDate)}</TableCell>
                       <TableCell>{fmtDate(r.nextDueDate)}</TableCell>
+                      <TableCell>
+                        {r.boosterDueDate ? (
+                          <span className={(() => {
+                            const today = new Date(); today.setHours(0, 0, 0, 0);
+                            const due = new Date(r.boosterDueDate instanceof Date ? r.boosterDueDate.toISOString() : r.boosterDueDate);
+                            due.setHours(0, 0, 0, 0);
+                            const diff = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+                            if (diff < 0) return "text-red-600 font-medium";
+                            if (diff <= 7) return "text-amber-600 font-medium";
+                            return "text-muted-foreground";
+                          })()}>
+                            {fmtDate(r.boosterDueDate)}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">{r.batchNumber ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{r.veterinarian ?? "—"}</TableCell>
                       <TableCell><VaccinationStatusBadge record={r} /></TableCell>

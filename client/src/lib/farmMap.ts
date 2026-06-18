@@ -59,8 +59,20 @@ export function shapeCenter(shape: MapShape): MapPoint {
   return { x: sum.x / shape.points.length, y: sum.y / shape.points.length };
 }
 
-export function zoneColor(groupId: number) {
+export function zoneColor(groupId: number, customColor?: string | null) {
+  if (customColor) {
+    return { stroke: customColor, fill: hexToRgba(customColor, 0.22) };
+  }
   return ZONE_COLORS[Math.abs(groupId) % ZONE_COLORS.length];
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const cleaned = hex.replace("#", "");
+  const r = parseInt(cleaned.substring(0, 2), 16);
+  const g = parseInt(cleaned.substring(2, 4), 16);
+  const b = parseInt(cleaned.substring(4, 6), 16);
+  if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(37, 99, 235, ${alpha})`;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 function safeJson(value: string) {
