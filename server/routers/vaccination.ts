@@ -28,6 +28,8 @@ export const vaccinationRouter = router({
       batchNumber: z.string().optional(),
       notes: z.string().optional(),
       veterinarian: z.string().optional(),
+      notifyBeforeNext: z.number().int().min(0).max(365).optional(),
+      notifyBeforeBooster: z.number().int().min(0).max(365).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await addVaccinationRecord(input);

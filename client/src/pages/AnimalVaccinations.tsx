@@ -265,6 +265,8 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
     notes: record?.notes || "",
     veterinarian: record?.veterinarian || "",
     isCompleted: record?.isCompleted || false,
+    notifyBeforeNext: record?.notifyBeforeNext != null ? String(record.notifyBeforeNext) : "7",
+    notifyBeforeBooster: record?.notifyBeforeBooster != null ? String(record.notifyBeforeBooster) : "7",
   });
 
   const { data: animals } = trpc.animals.lookup.useQuery();
@@ -313,6 +315,8 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
         batchNumber: form.batchNumber || undefined,
         notes: form.notes || undefined,
         veterinarian: form.veterinarian || undefined,
+        notifyBeforeNext: form.notifyBeforeNext ? parseInt(form.notifyBeforeNext) : undefined,
+        notifyBeforeBooster: form.notifyBeforeBooster ? parseInt(form.notifyBeforeBooster) : undefined,
       });
     }
   };
@@ -363,6 +367,34 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
             <Label>{t("common.notes")}</Label>
             <Input placeholder={t("common.optionalNotes")} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
           </div>
+          {!record && (() => {
+            const selectedVaccine = (vaccines ?? []).find((v: any) => String(v.id) === form.vaccineId);
+            const boosterRequired = selectedVaccine?.boosterRequired;
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-md border p-3 bg-muted/30">
+                <div className="space-y-1.5">
+                  <Label>{t("vaccine.notifyBeforeNext")}</Label>
+                  <Input
+                    type="number" min={0} max={365}
+                    value={form.notifyBeforeNext}
+                    onChange={(e) => setForm((f) => ({ ...f, notifyBeforeNext: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">{t("vaccine.notifyBeforeHint")}</p>
+                </div>
+                {boosterRequired && (
+                  <div className="space-y-1.5">
+                    <Label>{t("vaccine.notifyBeforeBooster")}</Label>
+                    <Input
+                      type="number" min={0} max={365}
+                      value={form.notifyBeforeBooster}
+                      onChange={(e) => setForm((f) => ({ ...f, notifyBeforeBooster: e.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">{t("vaccine.notifyBeforeHint")}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {record && (
             <div className="flex items-center gap-2">
               <input type="checkbox" id="completed" checked={form.isCompleted} onChange={(e) => setForm((f) => ({ ...f, isCompleted: e.target.checked }))} className="h-4 w-4" />
@@ -442,7 +474,22 @@ export default function AnimalVaccinations() {
                       <TableCell className="font-medium">{r.animalIdStr}</TableCell>
                       <TableCell>{r.vaccineName}</TableCell>
                       <TableCell>{fmtDate(r.vaccinationDate)}</TableCell>
-                      <TableCell>{fmtDate(r.nextDueDate)}</TableCell>
+                      <TableCell>
+                        {r.nextDueDate ? (
+                          <span className={(() => {
+                            const today = new Date(); today.setHours(0, 0, 0, 0);
+                            const due = new Date(r.nextDueDate instanceof Date ? r.nextDueDate.toISOString() : r.nextDueDate);
+                            due.setHours(0, 0, 0, 0);
+                            const diff = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+                            const lead = r.notifyBeforeNext ?? 7;
+                            if (diff < 0) return "text-red-600 font-medium";
+                            if (diff <= lead) return "text-amber-600 font-medium";
+                            return "text-muted-foreground";
+                          })()}>
+                            {fmtDate(r.nextDueDate)}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
                       <TableCell>
                         {r.boosterDueDate ? (
                           <span className={(() => {
@@ -450,8 +497,9 @@ export default function AnimalVaccinations() {
                             const due = new Date(r.boosterDueDate instanceof Date ? r.boosterDueDate.toISOString() : r.boosterDueDate);
                             due.setHours(0, 0, 0, 0);
                             const diff = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+                            const lead = r.notifyBeforeBooster ?? 7;
                             if (diff < 0) return "text-red-600 font-medium";
-                            if (diff <= 7) return "text-amber-600 font-medium";
+                            if (diff <= lead) return "text-amber-600 font-medium";
                             return "text-muted-foreground";
                           })()}>
                             {fmtDate(r.boosterDueDate)}

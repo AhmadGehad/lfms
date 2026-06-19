@@ -891,6 +891,10 @@ const en = {
     dateRequired: "Date is required",
     bulkApply: "Bulk Apply Vaccination",
     bulkVaccinationApplied: "Vaccination applied to selected animals",
+    notifyBeforeNext: "Notify before next dose (days)",
+    notifyBeforeBooster: "Notify before booster (days)",
+    notifyBeforeHint: "How many days ahead to alert before the due date.",
+
   },
 
   owners: {
@@ -1356,6 +1360,10 @@ const ar = {
     dateRequired: "التاريخ مطلوب",
     bulkApply: "تطبيق التطعيم بكميات كبيرة",
     bulkVaccinationApplied: "تم تطبيق التطعيم على الحيوانات المختارة",
+
+    notifyBeforeNext: "التنبيه قبل الجرعة التالية (أيام)",
+    notifyBeforeBooster: "التنبيه قبل الجرعة المعززة (أيام)",
+    notifyBeforeHint: "عدد الأيام قبل تاريخ الاستحقاق لإرسال التنبيه.",
 
   },
 

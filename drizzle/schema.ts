@@ -186,6 +186,8 @@ export const vaccinationRecords = mysqlTable("vaccination_records", {
   vaccinationDate: date("vaccinationDate").notNull(),
   nextDueDate: date("nextDueDate"),
   boosterDueDate: date("boosterDueDate"),
+  notifyBeforeNext: int("notifyBeforeNext").default(7),
+  notifyBeforeBooster: int("notifyBeforeBooster").default(7),
   batchNumber: varchar("batchNumber", { length: 50 }),
   notes: text("notes"),
   veterinarian: varchar("veterinarian", { length: 100 }),

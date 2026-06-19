@@ -11,7 +11,7 @@ import { and, eq, gte, isNull } from "drizzle-orm";
 
 export async function checkVaccinationsAndNotify(): Promise<void> {
   try {
-    const upcomingVaccinations = await getUpcomingVaccinations(30); // Check next 30 days
+    const upcomingVaccinations = await getUpcomingVaccinations(365); // wide window; per-record notifyBefore filters below
     const db = await getDb();
     if (!db) return;
 
@@ -37,14 +37,14 @@ export async function checkVaccinationsAndNotify(): Promise<void> {
         title = "Vaccination Overdue";
         message = `${record.animalIdStr} is overdue for ${record.vaccineName} vaccination (was due on ${dueDate.toLocaleDateString()})`;
         priority = "critical";
-      } else if (diffDays <= 7) {
-        // Due within 7 days
+      } else if (diffDays <= (record.notifyBeforeNext ?? 7)) {
+        // Due within the record's notify-before window
         alertType = "vaccination_due";
         title = "Vaccination Due Soon";
         message = `${record.animalIdStr} is due for ${record.vaccineName} vaccination on ${dueDate.toLocaleDateString()}`;
         priority = "high";
       } else {
-        // Upcoming (beyond 7 days) - skip for now to avoid noise
+        // Upcoming (beyond the notify window) - skip for now to avoid noise
         continue;
       }
 
@@ -77,7 +77,7 @@ export async function checkVaccinationsAndNotify(): Promise<void> {
     }
 
     // ─── Booster Vaccination Checks ───────────────────────────────────────
-    const upcomingBoosters = await getUpcomingBoosterVaccinations(30);
+    const upcomingBoosters = await getUpcomingBoosterVaccinations(365); // wide window; per-record notifyBefore filters below
     for (const record of upcomingBoosters) {
       if (!record.boosterDueDate) continue;
 
@@ -95,7 +95,7 @@ export async function checkVaccinationsAndNotify(): Promise<void> {
         title = "Booster Vaccination Overdue";
         message = `${record.animalIdStr} is overdue for ${record.vaccineName} booster (was due on ${dueDate.toLocaleDateString()})`;
         priority = "critical";
-      } else if (diffDays <= 7) {
+      } else if (diffDays <= (record.notifyBeforeBooster ?? 7)) {
         alertType = "booster_due";
         title = "Booster Vaccination Due Soon";
         message = `${record.animalIdStr} is due for ${record.vaccineName} booster on ${dueDate.toLocaleDateString()}`;

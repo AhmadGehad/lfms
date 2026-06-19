@@ -2383,6 +2383,8 @@ export async function getVaccinationRecords(animalId?: number) {
       vaccinationDate: vaccinationRecords.vaccinationDate,
       nextDueDate: vaccinationRecords.nextDueDate,
       boosterDueDate: vaccinationRecords.boosterDueDate,
+      notifyBeforeNext: vaccinationRecords.notifyBeforeNext,
+      notifyBeforeBooster: vaccinationRecords.notifyBeforeBooster,
       batchNumber: vaccinationRecords.batchNumber,
       notes: vaccinationRecords.notes,
       veterinarian: vaccinationRecords.veterinarian,
@@ -2396,7 +2398,7 @@ export async function getVaccinationRecords(animalId?: number) {
     .orderBy(vaccinationRecords.vaccinationDate);
 }
 
-export async function addVaccinationRecord(data: { animalId: number; vaccineId: number; vaccinationDate: string; batchNumber?: string; notes?: string; veterinarian?: string }) {
+export async function addVaccinationRecord(data: { animalId: number; vaccineId: number; vaccinationDate: string; batchNumber?: string; notes?: string; veterinarian?: string; notifyBeforeNext?: number; notifyBeforeBooster?: number }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
 
@@ -2431,6 +2433,8 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
     veterinarian: data.veterinarian,
     nextDueDate: new Date(nextDueDateStr),
     boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null,
+    notifyBeforeNext: data.notifyBeforeNext ?? 7,
+    notifyBeforeBooster: data.notifyBeforeBooster ?? 7,
   });
   return result;
 }
@@ -2522,6 +2526,7 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
       vaccineName: vaccines.name,
       nextDueDate: vaccinationRecords.nextDueDate,
       boosterDueDate: vaccinationRecords.boosterDueDate,
+      notifyBeforeNext: vaccinationRecords.notifyBeforeNext,
       isCompleted: vaccinationRecords.isCompleted,
     })
     .from(vaccinationRecords)
@@ -2552,6 +2557,7 @@ export async function getUpcomingBoosterVaccinations(input?: { days?: number } |
       animalIdStr: animals.animalId,
       vaccineName: vaccines.name,
       boosterDueDate: vaccinationRecords.boosterDueDate,
+      notifyBeforeBooster: vaccinationRecords.notifyBeforeBooster,
       isCompleted: vaccinationRecords.isCompleted,
     })
     .from(vaccinationRecords)
