@@ -29,6 +29,7 @@ import { useForm, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
+import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
 
 function StatusBadge({ status }: { status: string }) {
   const lower = status?.toLowerCase() ?? "";
@@ -44,7 +45,7 @@ function StatusBadge({ status }: { status: string }) {
 function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const { control, handleSubmit, reset, watch } = useForm({
+  const { control, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       speciesId: "",
       categoryId: "",
@@ -57,10 +58,12 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       purchaseCost: "",
       weightAtAcquisition: "",
       ownerId: "none",
+      animalIdNumber: "",
     },
   });
 
   const selectedSpeciesId = watch("speciesId");
+  const selectedCategoryId = watch("categoryId");
 
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery(
@@ -71,6 +74,9 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   );
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
+  const selectedCategory = (categories ?? []).find(
+    (category: any) => String(category.id) === selectedCategoryId,
+  );
 
   const utils = trpc.useUtils();
   const createAnimal = trpc.animals.create.useMutation({
@@ -104,6 +110,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       purchaseCost: data.purchaseCost || undefined,
       weightAtAcquisition: data.weightAtAcquisition || undefined,
       ownerId: (data.ownerId && data.ownerId !== "none") ? Number(data.ownerId) : undefined,
+      animalIdNumber: data.animalIdNumber || undefined,
     });
   };
 
@@ -124,7 +131,14 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
             <div className="space-y-1.5">
               <Label>{t("common.species")} *</Label>
               <Controller name="speciesId" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue("categoryId", "");
+                    setValue("groupId", "");
+                  }}
+                >
                   <SelectTrigger><SelectValue placeholder={t("common.species")} /></SelectTrigger>
                   <SelectContent>
                     {(species ?? []).map((s: any) => (
@@ -147,6 +161,18 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
                 </Select>
               )} />
             </div>
+            <Controller name="animalIdNumber" control={control} render={({ field }) => (
+              <AnimalIdNumberField
+                inputId="add-animal-id-number"
+                label={t("animals.animalIdNumber")}
+                hint={t("animals.animalIdNumberHint")}
+                placeholder={t("animals.animalIdNumberPlaceholder")}
+                prefix={selectedCategory?.idPrefix ?? ""}
+                value={field.value}
+                onChange={field.onChange}
+                className="sm:col-span-2"
+              />
+            )} />
             <div className="space-y-1.5">
               <Label>Group / Pen *</Label>
               <Controller name="groupId" control={control} render={({ field }) => (

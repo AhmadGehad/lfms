@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_ANIMAL_ID_LENGTH, MAX_ANIMAL_ID_NUMBER } from "../../shared/animalIds";
 
 /**
  * Shared input validators for business data. Money and weight come in as
@@ -23,6 +24,21 @@ export const weightString = z
   .refine((s) => parseFloat(s) <= 2000, "Weight is unrealistically large");
 
 export const optionalWeightString = weightString.optional();
+
+export const optionalAnimalIdNumber = z.preprocess(
+  value => value === "" ? undefined : value,
+  z.string()
+    .trim()
+    .min(1)
+    .max(MAX_ANIMAL_ID_LENGTH)
+    .regex(/^\d+$/, "Animal ID number must contain digits only")
+    .refine(
+      value => !/^\d+$/.test(value) ||
+        BigInt(value) <= BigInt(MAX_ANIMAL_ID_NUMBER),
+      "Animal ID number is too large",
+    )
+    .optional(),
+);
 
 // A feed/ration quantity in kg: >= 0 and <= 1,000,000.
 export const qtyString = z

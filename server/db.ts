@@ -172,10 +172,37 @@ export async function createCategory(data: { name: string; speciesId: number; id
   return result;
 }
 
-export async function updateCategory(id: number, data: Partial<typeof animalCategories.$inferInsert>) {
-  const db = await getDb();
+export async function updateCategory(
+  id: number,
+  data: Partial<typeof animalCategories.$inferInsert>,
+  tx?: DbOrTx,
+) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   await db.update(animalCategories).set(data).where(eq(animalCategories.id, id));
+}
+
+/** Lock one category while an ID is allocated or its prefix is changed. */
+export async function getCategoryForUpdate(id: number, tx: DbOrTx) {
+  const rows = await tx
+    .select()
+    .from(animalCategories)
+    .where(eq(animalCategories.id, id))
+    .limit(1)
+    .for("update");
+  return rows[0] ?? null;
+}
+
+/** Includes active and soft-deleted animals because both reserve registry IDs. */
+export async function categoryHasAnimals(categoryId: number, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return false;
+  const rows = await db
+    .select({ id: animals.id })
+    .from(animals)
+    .where(eq(animals.categoryId, categoryId))
+    .limit(1);
+  return rows.length > 0;
 }
 
 export async function incrementCategorySequence(categoryId: number, tx?: DbOrTx): Promise<number> {
@@ -193,6 +220,34 @@ export async function incrementCategorySequence(categoryId: number, tx?: DbOrTx)
     .from(animalCategories)
     .where(eq(animalCategories.id, categoryId));
   return cat?.idSequence ?? 1;
+}
+
+export async function ensureCategorySequenceAtLeast(
+  categoryId: number,
+  sequence: number,
+  tx?: DbOrTx,
+) {
+  const db = tx ?? (await getDb());
+  if (!db) throw new Error("DB not available");
+  await db
+    .update(animalCategories)
+    .set({
+      idSequence: sql`GREATEST(${animalCategories.idSequence}, ${sequence})`,
+    })
+    .where(eq(animalCategories.id, categoryId));
+}
+
+export async function generateNextAnimalId(
+  categoryId: number,
+  prefix: string,
+  tx?: DbOrTx,
+) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const sequence = await incrementCategorySequence(categoryId, tx);
+    const animalId = `${prefix}${String(sequence).padStart(4, "0")}`;
+    if (!await getRawAnimalByAnimalId(animalId, tx)) return animalId;
+  }
+  throw new Error("Could not allocate a unique animal ID");
 }
 
 // ─── ANIMAL STATUSES ──────────────────────────────────────────────────────────
@@ -223,6 +278,17 @@ export async function getLambingRecordById(id: number, tx?: DbOrTx) {
   return rows[0] ?? null;
 }
 
+/** Lock one lambing row for a promotion transaction. */
+export async function getLambingRecordForUpdate(id: number, tx: DbOrTx) {
+  const rows = await tx
+    .select()
+    .from(lambingLog)
+    .where(eq(lambingLog.id, id))
+    .limit(1)
+    .for("update");
+  return rows[0] ?? null;
+}
+
 /** Fetch one animal row (no joins), inside or outside a tx. */
 export async function getRawAnimalById(id: number, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
@@ -231,11 +297,30 @@ export async function getRawAnimalById(id: number, tx?: DbOrTx) {
   return rows[0] ?? null;
 }
 
+/** Lock one animal before an edit or automatic category transition. */
+export async function getRawAnimalForUpdate(id: number, tx: DbOrTx) {
+  const rows = await tx
+    .select()
+    .from(animals)
+    .where(eq(animals.id, id))
+    .limit(1)
+    .for("update");
+  return rows[0] ?? null;
+}
+
 /** Fetch an animal by its exact registry ID, including soft-deleted rows. */
 export async function getRawAnimalByAnimalId(animalId: string, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return null;
   const rows = await db.select().from(animals).where(eq(animals.animalId, animalId)).limit(1);
+  return rows[0] ?? null;
+}
+
+/** Fetch one owner including inactive and soft-deleted records. */
+export async function getRawOwnerById(id: number, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return null;
+  const rows = await db.select().from(owners).where(eq(owners.id, id)).limit(1);
   return rows[0] ?? null;
 }
 
@@ -679,7 +764,7 @@ export async function getAnimalById(id: number) {
     .leftJoin(groups, eq(animals.groupId, groups.id))
     .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
     .leftJoin(owners, eq(animals.ownerId, owners.id))
-    .where(eq(animals.id, id))
+    .where(and(eq(animals.id, id), isNull(animals.deletedAt)))
     .limit(1);
   return rows.length > 0 ? rows[0] : null;
 }
@@ -1330,8 +1415,11 @@ export async function getNotifications(userId?: number, unreadOnly?: boolean) {
   return query.orderBy(desc(notifications.createdAt)).limit(50);
 }
 
-export async function createNotification(data: typeof notifications.$inferInsert) {
-  const db = await getDb();
+export async function createNotification(
+  data: typeof notifications.$inferInsert,
+  tx?: DbOrTx,
+) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(notifications).values(data);
   return result;
@@ -1762,51 +1850,62 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
  * Check if an animal should be auto-staged to another category based on its latest weight.
  * Called after every weight log entry. Returns the new categoryId if staged.
  *
- * IMPORTANT (F5): the animal KEEPS its lifetime animalId code. Changing the
- * display code on promotion broke historical references (audit entries,
- * expense notes, exported reports all pointed at a code that no longer
- * existed). Identity is for life; the category change alone is recorded.
+ * The category prefix is part of the registry ID. Auto-staging therefore
+ * allocates a new ID from the target category's sequence.
  */
-export async function checkAndStageAnimal(animalId: number, currentWeightKg: number, changedBy?: number): Promise<{ staged: boolean; newCategoryId?: number; newAnimalId?: string }> {
-  const db = await getDb();
-  if (!db) return { staged: false };
+export async function checkAndStageAnimal(
+  animalId: number,
+  currentWeightKg: number,
+  changedBy?: number,
+  tx?: DbOrTx,
+): Promise<{ staged: boolean; newCategoryId?: number; newAnimalId?: string }> {
+  const sharedDb = tx ?? (await getDb());
+  if (!sharedDb) return { staged: false };
 
-  const animal = await getAnimalById(animalId);
-  if (!animal) return { staged: false };
+  const stageWithin = async (scope: DbOrTx) => {
+    const lockedAnimal = await getRawAnimalForUpdate(animalId, scope);
+    if (!lockedAnimal || lockedAnimal.deletedAt) return { staged: false };
 
-  // Get current category's auto-stage config
-  const [catRow] = await db
-    .select({
-      autoStageWeightKg: animalCategories.autoStageWeightKg,
-      autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId
-    })
-    .from(animalCategories)
-    .where(eq(animalCategories.id, animal.animal.categoryId))
-    .limit(1);
+    const [catRow] = await scope
+      .select({
+        autoStageWeightKg: animalCategories.autoStageWeightKg,
+        autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
+      })
+      .from(animalCategories)
+      .where(eq(animalCategories.id, lockedAnimal.categoryId))
+      .limit(1);
 
-  if (!catRow?.autoStageWeightKg || !catRow?.autoStageTargetCategoryId) return { staged: false };
+    if (!catRow?.autoStageWeightKg || !catRow.autoStageTargetCategoryId) {
+      return { staged: false };
+    }
+    if (currentWeightKg < parseFloat(catRow.autoStageWeightKg)) {
+      return { staged: false };
+    }
 
-  const threshold = parseFloat(catRow.autoStageWeightKg);
-  if (currentWeightKg < threshold) return { staged: false };
+    const targetCat = await getCategoryForUpdate(
+      catRow.autoStageTargetCategoryId,
+      scope,
+    );
+    if (!targetCat?.isActive ||
+        targetCat.deletedAt ||
+        targetCat.speciesId !== lockedAnimal.speciesId ||
+        targetCat.id === lockedAnimal.categoryId) {
+      return { staged: false };
+    }
 
-  // Confirm target category exists
-  const [targetCat] = await db
-    .select({ id: animalCategories.id })
-    .from(animalCategories)
-    .where(eq(animalCategories.id, catRow.autoStageTargetCategoryId))
-    .limit(1);
-
-  if (!targetCat) return { staged: false };
-
-  // F6: category change + audit entry are atomic.
-  await db.transaction(async (tx) => {
-    await tx
+    const stagedAnimalId = await generateNextAnimalId(
+      targetCat.id,
+      targetCat.idPrefix,
+      scope,
+    );
+    await scope
       .update(animals)
       .set({
         categoryId: targetCat.id,
-        updatedAt: new Date()
+        animalId: stagedAnimalId,
+        updatedAt: new Date(),
       })
-      .where(eq(animals.id, animalId));
+      .where(and(eq(animals.id, animalId), isNull(animals.deletedAt)));
 
     await createAuditEntry({
       userId: changedBy,
@@ -1814,16 +1913,26 @@ export async function checkAndStageAnimal(animalId: number, currentWeightKg: num
       entityType: "animal",
       entityId: String(animalId),
       oldValues: {
-        categoryId: animal.animal.categoryId,
+        categoryId: lockedAnimal.categoryId,
+        animalId: lockedAnimal.animalId,
       } as any,
       newValues: {
         categoryId: targetCat.id,
-        autoStagedAtWeightKg: currentWeightKg
-      } as any
-    }, tx);
-  });
+        animalId: stagedAnimalId,
+        autoStagedAtWeightKg: currentWeightKg,
+      } as any,
+    }, scope);
 
-  return { staged: true, newCategoryId: targetCat.id, newAnimalId: animal.animal.animalId };
+    return {
+      staged: true,
+      newCategoryId: targetCat.id,
+      newAnimalId: stagedAnimalId,
+    };
+  };
+
+  return tx
+    ? stageWithin(tx)
+    : sharedDb.transaction(stageWithin);
 }
 
 export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number }) {

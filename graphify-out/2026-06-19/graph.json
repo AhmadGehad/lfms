@@ -230,7 +230,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_aichatbox",
-      "community": 20,
+      "community": 12,
       "norm_label": "aichatbox.tsx"
     },
     {
@@ -240,7 +240,7 @@
       "source_location": "L12",
       "_origin": "ast",
       "id": "components_aichatbox_message",
-      "community": 20,
+      "community": 12,
       "norm_label": "message"
     },
     {
@@ -250,7 +250,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "components_aichatbox_aichatboxprops",
-      "community": 20,
+      "community": 12,
       "norm_label": "aichatboxprops"
     },
     {
@@ -260,7 +260,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "components_aichatbox_aichatbox",
-      "community": 20,
+      "community": 12,
       "norm_label": "aichatbox()"
     },
     {
@@ -610,7 +610,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "components_map",
-      "community": 55,
+      "community": 12,
       "norm_label": "map.tsx"
     },
     {
@@ -620,7 +620,7 @@
       "source_location": "L84",
       "_origin": "ast",
       "id": "components_map_window",
-      "community": 55,
+      "community": 12,
       "norm_label": "window"
     },
     {
@@ -630,7 +630,7 @@
       "source_location": "L95",
       "_origin": "ast",
       "id": "components_map_loadmapscript",
-      "community": 55,
+      "community": 12,
       "norm_label": "loadmapscript()"
     },
     {
@@ -640,7 +640,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "components_map_mapviewprops",
-      "community": 55,
+      "community": 12,
       "norm_label": "mapviewprops"
     },
     {
@@ -650,7 +650,7 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "components_map_mapview",
-      "community": 55,
+      "community": 12,
       "norm_label": "mapview()"
     },
     {
@@ -830,7 +830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_alert",
-      "community": 12,
+      "community": 14,
       "norm_label": "alert.tsx"
     },
     {
@@ -840,7 +840,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_alert_alertvariants",
-      "community": 12,
+      "community": 14,
       "norm_label": "alertvariants"
     },
     {
@@ -850,7 +850,7 @@
       "source_location": "L22",
       "_origin": "ast",
       "id": "ui_alert_alert",
-      "community": 12,
+      "community": 14,
       "norm_label": "alert()"
     },
     {
@@ -860,7 +860,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "ui_alert_alerttitle",
-      "community": 12,
+      "community": 14,
       "norm_label": "alerttitle()"
     },
     {
@@ -870,7 +870,7 @@
       "source_location": "L50",
       "_origin": "ast",
       "id": "ui_alert_alertdescription",
-      "community": 12,
+      "community": 14,
       "norm_label": "alertdescription()"
     },
     {
@@ -1050,7 +1050,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_button_group",
-      "community": 14,
+      "community": 28,
       "norm_label": "button-group.tsx"
     },
     {
@@ -1060,7 +1060,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "ui_button_group_buttongroupvariants",
-      "community": 14,
+      "community": 28,
       "norm_label": "buttongroupvariants"
     },
     {
@@ -1070,7 +1070,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "ui_button_group_buttongroup",
-      "community": 14,
+      "community": 28,
       "norm_label": "buttongroup()"
     },
     {
@@ -1080,7 +1080,7 @@
       "source_location": "L40",
       "_origin": "ast",
       "id": "ui_button_group_buttongrouptext",
-      "community": 14,
+      "community": 28,
       "norm_label": "buttongrouptext()"
     },
     {
@@ -1090,7 +1090,7 @@
       "source_location": "L60",
       "_origin": "ast",
       "id": "ui_button_group_buttongroupseparator",
-      "community": 14,
+      "community": 28,
       "norm_label": "buttongroupseparator()"
     },
     {
@@ -1550,7 +1550,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_command",
-      "community": 28,
+      "community": 22,
       "norm_label": "command.tsx"
     },
     {
@@ -1560,7 +1560,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "ui_command_command",
-      "community": 28,
+      "community": 22,
       "norm_label": "command()"
     },
     {
@@ -1570,7 +1570,7 @@
       "source_location": "L32",
       "_origin": "ast",
       "id": "ui_command_commanddialog",
-      "community": 28,
+      "community": 22,
       "norm_label": "commanddialog()"
     },
     {
@@ -1580,7 +1580,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "ui_command_commandinput",
-      "community": 28,
+      "community": 22,
       "norm_label": "commandinput()"
     },
     {
@@ -1590,7 +1590,7 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "ui_command_commandlist",
-      "community": 28,
+      "community": 22,
       "norm_label": "commandlist()"
     },
     {
@@ -1600,7 +1600,7 @@
       "source_location": "L101",
       "_origin": "ast",
       "id": "ui_command_commandempty",
-      "community": 28,
+      "community": 22,
       "norm_label": "commandempty()"
     },
     {
@@ -1610,7 +1610,7 @@
       "source_location": "L113",
       "_origin": "ast",
       "id": "ui_command_commandgroup",
-      "community": 28,
+      "community": 22,
       "norm_label": "commandgroup()"
     },
     {
@@ -1620,7 +1620,7 @@
       "source_location": "L129",
       "_origin": "ast",
       "id": "ui_command_commandseparator",
-      "community": 28,
+      "community": 22,
       "norm_label": "commandseparator()"
     },
     {
@@ -1630,7 +1630,7 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "ui_command_commanditem",
-      "community": 28,
+      "community": 22,
       "norm_label": "commanditem()"
     },
     {
@@ -1640,7 +1640,7 @@
       "source_location": "L158",
       "_origin": "ast",
       "id": "ui_command_commandshortcut",
-      "community": 28,
+      "community": 22,
       "norm_label": "commandshortcut()"
     },
     {
@@ -1650,7 +1650,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_context_menu",
-      "community": 28,
+      "community": 45,
       "norm_label": "context-menu.tsx"
     },
     {
@@ -1660,7 +1660,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenu",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenu()"
     },
     {
@@ -1670,7 +1670,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenutrigger",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenutrigger()"
     },
     {
@@ -1680,7 +1680,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenugroup",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenugroup()"
     },
     {
@@ -1690,7 +1690,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuportal",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenuportal()"
     },
     {
@@ -1700,7 +1700,7 @@
       "source_location": "L37",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenusub",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenusub()"
     },
     {
@@ -1710,7 +1710,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuradiogroup",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenuradiogroup()"
     },
     {
@@ -1720,7 +1720,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenusubtrigger",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenusubtrigger()"
     },
     {
@@ -1730,7 +1730,7 @@
       "source_location": "L78",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenusubcontent",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenusubcontent()"
     },
     {
@@ -1740,7 +1740,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenucontent",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenucontent()"
     },
     {
@@ -1750,7 +1750,7 @@
       "source_location": "L112",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuitem",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenuitem()"
     },
     {
@@ -1760,7 +1760,7 @@
       "source_location": "L135",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenucheckboxitem",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenucheckboxitem()"
     },
     {
@@ -1770,7 +1770,7 @@
       "source_location": "L161",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuradioitem",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenuradioitem()"
     },
     {
@@ -1780,7 +1780,7 @@
       "source_location": "L185",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenulabel",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenulabel()"
     },
     {
@@ -1790,7 +1790,7 @@
       "source_location": "L205",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenuseparator",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenuseparator()"
     },
     {
@@ -1800,7 +1800,7 @@
       "source_location": "L218",
       "_origin": "ast",
       "id": "ui_context_menu_contextmenushortcut",
-      "community": 28,
+      "community": 45,
       "norm_label": "contextmenushortcut()"
     },
     {
@@ -1930,7 +1930,7 @@
       "source_location": "L184",
       "_origin": "ast",
       "id": "ui_dialog_dialogdescription",
-      "community": 28,
+      "community": 22,
       "norm_label": "dialogdescription()"
     },
     {
@@ -2730,7 +2730,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_item",
-      "community": 14,
+      "community": 28,
       "norm_label": "item.tsx"
     },
     {
@@ -2740,7 +2740,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "ui_item_itemgroup",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemgroup()"
     },
     {
@@ -2750,7 +2750,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "ui_item_itemseparator",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemseparator()"
     },
     {
@@ -2760,7 +2760,7 @@
       "source_location": "L33",
       "_origin": "ast",
       "id": "ui_item_itemvariants",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemvariants"
     },
     {
@@ -2770,7 +2770,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "ui_item_item",
-      "community": 14,
+      "community": 28,
       "norm_label": "item()"
     },
     {
@@ -2780,7 +2780,7 @@
       "source_location": "L74",
       "_origin": "ast",
       "id": "ui_item_itemmediavariants",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemmediavariants"
     },
     {
@@ -2790,7 +2790,7 @@
       "source_location": "L91",
       "_origin": "ast",
       "id": "ui_item_itemmedia",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemmedia()"
     },
     {
@@ -2800,7 +2800,7 @@
       "source_location": "L106",
       "_origin": "ast",
       "id": "ui_item_itemcontent",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemcontent()"
     },
     {
@@ -2810,7 +2810,7 @@
       "source_location": "L119",
       "_origin": "ast",
       "id": "ui_item_itemtitle",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemtitle()"
     },
     {
@@ -2820,7 +2820,7 @@
       "source_location": "L132",
       "_origin": "ast",
       "id": "ui_item_itemdescription",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemdescription()"
     },
     {
@@ -2830,7 +2830,7 @@
       "source_location": "L146",
       "_origin": "ast",
       "id": "ui_item_itemactions",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemactions()"
     },
     {
@@ -2840,7 +2840,7 @@
       "source_location": "L156",
       "_origin": "ast",
       "id": "ui_item_itemheader",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemheader()"
     },
     {
@@ -2850,7 +2850,7 @@
       "source_location": "L169",
       "_origin": "ast",
       "id": "ui_item_itemfooter",
-      "community": 14,
+      "community": 28,
       "norm_label": "itemfooter()"
     },
     {
@@ -3410,7 +3410,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_scroll_area",
-      "community": 20,
+      "community": 12,
       "norm_label": "scroll-area.tsx"
     },
     {
@@ -3420,7 +3420,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_scroll_area_scrollarea",
-      "community": 20,
+      "community": 12,
       "norm_label": "scrollarea()"
     },
     {
@@ -3430,7 +3430,7 @@
       "source_location": "L29",
       "_origin": "ast",
       "id": "ui_scroll_area_scrollbar",
-      "community": 20,
+      "community": 12,
       "norm_label": "scrollbar()"
     },
     {
@@ -3550,7 +3550,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_separator",
-      "community": 14,
+      "community": 28,
       "norm_label": "separator.tsx"
     },
     {
@@ -3560,7 +3560,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_separator_separator",
-      "community": 14,
+      "community": 28,
       "norm_label": "separator()"
     },
     {
@@ -4000,7 +4000,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_sonner",
-      "community": 0,
+      "community": 3,
       "norm_label": "sonner.tsx"
     },
     {
@@ -4010,7 +4010,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "ui_sonner_toaster",
-      "community": 0,
+      "community": 3,
       "norm_label": "toaster()"
     },
     {
@@ -4020,7 +4020,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_spinner",
-      "community": 12,
+      "community": 28,
       "norm_label": "spinner.tsx"
     },
     {
@@ -4030,7 +4030,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "ui_spinner_spinner",
-      "community": 12,
+      "community": 28,
       "norm_label": "spinner()"
     },
     {
@@ -4200,7 +4200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "ui_textarea",
-      "community": 20,
+      "community": 12,
       "norm_label": "textarea.tsx"
     },
     {
@@ -4210,7 +4210,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "ui_textarea_textarea",
-      "community": 20,
+      "community": 12,
       "norm_label": "textarea()"
     },
     {
@@ -4430,7 +4430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "hooks_usecomposition",
-      "community": 55,
+      "community": 12,
       "norm_label": "usecomposition.ts"
     },
     {
@@ -4440,7 +4440,7 @@
       "source_location": "L4",
       "_origin": "ast",
       "id": "hooks_usecomposition_usecompositionreturn",
-      "community": 55,
+      "community": 12,
       "norm_label": "usecompositionreturn"
     },
     {
@@ -4450,7 +4450,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "hooks_usecomposition_usecompositionoptions",
-      "community": 55,
+      "community": 12,
       "norm_label": "usecompositionoptions"
     },
     {
@@ -4460,7 +4460,7 @@
       "source_location": "L21",
       "_origin": "ast",
       "id": "hooks_usecomposition_timerresponse",
-      "community": 55,
+      "community": 12,
       "norm_label": "timerresponse"
     },
     {
@@ -4470,7 +4470,7 @@
       "source_location": "L23",
       "_origin": "ast",
       "id": "hooks_usecomposition_usecomposition",
-      "community": 20,
+      "community": 12,
       "norm_label": "usecomposition()"
     },
     {
@@ -4560,7 +4560,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "hooks_usepersistfn",
-      "community": 55,
+      "community": 12,
       "norm_label": "usepersistfn.ts"
     },
     {
@@ -4570,7 +4570,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "hooks_usepersistfn_noop",
-      "community": 55,
+      "community": 12,
       "norm_label": "noop"
     },
     {
@@ -4580,7 +4580,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "hooks_usepersistfn_usepersistfn",
-      "community": 55,
+      "community": 12,
       "norm_label": "usepersistfn()"
     },
     {
@@ -4670,7 +4670,7 @@
       "source_location": "L57",
       "_origin": "ast",
       "id": "lib_farmmap_isvalidshape",
-      "community": 0,
+      "community": 21,
       "norm_label": "isvalidshape()"
     },
     {
@@ -5580,7 +5580,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "pages_farmmap",
-      "community": 0,
+      "community": 21,
       "norm_label": "farmmap.tsx"
     },
     {
@@ -5590,7 +5590,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "pages_farmmap_drawmode",
-      "community": 0,
+      "community": 21,
       "norm_label": "drawmode"
     },
     {
@@ -5610,7 +5610,7 @@
       "source_location": "L54",
       "_origin": "ast",
       "id": "pages_farmmap_filetodataurl",
-      "community": 0,
+      "community": 21,
       "norm_label": "filetodataurl()"
     },
     {
@@ -5630,7 +5630,7 @@
       "source_location": "L140",
       "_origin": "ast",
       "id": "pages_farmmap_farmmap",
-      "community": 0,
+      "community": 21,
       "norm_label": "farmmap()"
     },
     {
@@ -6270,7 +6270,7 @@
       "source_location": "L28",
       "_origin": "ast",
       "id": "drizzle_schema_user",
-      "community": 45,
+      "community": 5,
       "norm_label": "user"
     },
     {
@@ -6290,7 +6290,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "drizzle_schema_rolepermissions",
-      "community": 8,
+      "community": 38,
       "norm_label": "rolepermissions"
     },
     {
@@ -6320,7 +6320,7 @@
       "source_location": "L63",
       "_origin": "ast",
       "id": "drizzle_schema_animalcategories",
-      "community": 7,
+      "community": 38,
       "norm_label": "animalcategories"
     },
     {
@@ -6330,7 +6330,7 @@
       "source_location": "L82",
       "_origin": "ast",
       "id": "drizzle_schema_animalstatuses",
-      "community": 38,
+      "community": 7,
       "norm_label": "animalstatuses"
     },
     {
@@ -8380,7 +8380,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_audit",
-      "community": 23,
+      "community": 13,
       "norm_label": "audit.ts"
     },
     {
@@ -8390,7 +8390,7 @@
       "source_location": "L8",
       "_origin": "ast",
       "id": "core_audit_getclientip",
-      "community": 23,
+      "community": 13,
       "norm_label": "getclientip()"
     },
     {
@@ -8400,7 +8400,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_context",
-      "community": 45,
+      "community": 8,
       "norm_label": "context.ts"
     },
     {
@@ -8410,7 +8410,7 @@
       "source_location": "L9",
       "_origin": "ast",
       "id": "core_context_trpccontext",
-      "community": 45,
+      "community": 8,
       "norm_label": "trpccontext"
     },
     {
@@ -8420,7 +8420,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "core_context_createcontext",
-      "community": 45,
+      "community": 8,
       "norm_label": "createcontext()"
     },
     {
@@ -8430,7 +8430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_cookies",
-      "community": 58,
+      "community": 5,
       "norm_label": "cookies.ts"
     },
     {
@@ -8440,7 +8440,7 @@
       "source_location": "L3",
       "_origin": "ast",
       "id": "core_cookies_local_hosts",
-      "community": 58,
+      "community": 5,
       "norm_label": "local_hosts"
     },
     {
@@ -8450,7 +8450,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "core_cookies_isipaddress",
-      "community": 58,
+      "community": 5,
       "norm_label": "isipaddress()"
     },
     {
@@ -8460,7 +8460,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "core_cookies_issecurerequest",
-      "community": 58,
+      "community": 5,
       "norm_label": "issecurerequest()"
     },
     {
@@ -8470,7 +8470,7 @@
       "source_location": "L24",
       "_origin": "ast",
       "id": "core_cookies_getsessioncookieoptions",
-      "community": 58,
+      "community": 5,
       "norm_label": "getsessioncookieoptions()"
     },
     {
@@ -9330,7 +9330,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_oauth",
-      "community": 58,
+      "community": 5,
       "norm_label": "oauth.ts"
     },
     {
@@ -9340,7 +9340,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "core_oauth_getqueryparam",
-      "community": 58,
+      "community": 5,
       "norm_label": "getqueryparam()"
     },
     {
@@ -9450,7 +9450,7 @@
       "source_location": "L85",
       "_origin": "ast",
       "id": "core_sdk_sdkserver",
-      "community": 54,
+      "community": 5,
       "norm_label": "sdkserver"
     },
     {
@@ -9460,7 +9460,7 @@
       "source_location": "L89",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_constructor",
-      "community": 54,
+      "community": 5,
       "norm_label": ".constructor()"
     },
     {
@@ -9470,7 +9470,7 @@
       "source_location": "L94",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_deriveloginmethod",
-      "community": 54,
+      "community": 5,
       "norm_label": ".deriveloginmethod()"
     },
     {
@@ -9500,7 +9500,7 @@
       "source_location": "L148",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_parsecookies",
-      "community": 54,
+      "community": 5,
       "norm_label": ".parsecookies()"
     },
     {
@@ -9510,7 +9510,7 @@
       "source_location": "L157",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_getsessionsecret",
-      "community": 54,
+      "community": 5,
       "norm_label": ".getsessionsecret()"
     },
     {
@@ -9520,7 +9520,7 @@
       "source_location": "L167",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_createsessiontoken",
-      "community": 54,
+      "community": 5,
       "norm_label": ".createsessiontoken()"
     },
     {
@@ -9530,7 +9530,7 @@
       "source_location": "L181",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_signsession",
-      "community": 54,
+      "community": 5,
       "norm_label": ".signsession()"
     },
     {
@@ -9540,7 +9540,7 @@
       "source_location": "L200",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_verifysession",
-      "community": 54,
+      "community": 5,
       "norm_label": ".verifysession()"
     },
     {
@@ -9550,7 +9550,7 @@
       "source_location": "L235",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_getuserinfowithjwt",
-      "community": 54,
+      "community": 5,
       "norm_label": ".getuserinfowithjwt()"
     },
     {
@@ -9560,7 +9560,7 @@
       "source_location": "L259",
       "_origin": "ast",
       "id": "core_sdk_sdkserver_authenticaterequest",
-      "community": 54,
+      "community": 5,
       "norm_label": ".authenticaterequest()"
     },
     {
@@ -9580,7 +9580,7 @@
       "source_location": "L321",
       "_origin": "ast",
       "id": "core_sdk_buildcronuser",
-      "community": 54,
+      "community": 5,
       "norm_label": "buildcronuser()"
     },
     {
@@ -9590,7 +9590,7 @@
       "source_location": "L340",
       "_origin": "ast",
       "id": "core_sdk_sdk",
-      "community": 58,
+      "community": 5,
       "norm_label": "sdk"
     },
     {
@@ -9620,7 +9620,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_systemrouter",
-      "community": 23,
+      "community": 49,
       "norm_label": "systemrouter.ts"
     },
     {
@@ -9630,7 +9630,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "core_systemrouter_systemrouter",
-      "community": 23,
+      "community": 49,
       "norm_label": "systemrouter"
     },
     {
@@ -9640,7 +9640,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_trpc",
-      "community": 23,
+      "community": 8,
       "norm_label": "trpc.ts"
     },
     {
@@ -9660,7 +9660,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "core_trpc_requireuser",
-      "community": 23,
+      "community": 8,
       "norm_label": "requireuser"
     },
     {
@@ -9670,7 +9670,7 @@
       "source_location": "L34",
       "_origin": "ast",
       "id": "core_trpc_protectedprocedure",
-      "community": 23,
+      "community": 13,
       "norm_label": "protectedprocedure"
     },
     {
@@ -9680,7 +9680,7 @@
       "source_location": "L36",
       "_origin": "ast",
       "id": "core_trpc_adminprocedure",
-      "community": 23,
+      "community": 49,
       "norm_label": "adminprocedure"
     },
     {
@@ -9690,7 +9690,7 @@
       "source_location": "L56",
       "_origin": "ast",
       "id": "core_trpc_role_rank",
-      "community": 23,
+      "community": 8,
       "norm_label": "role_rank"
     },
     {
@@ -9700,7 +9700,7 @@
       "source_location": "L65",
       "_origin": "ast",
       "id": "core_trpc_makeroleprocedure",
-      "community": 23,
+      "community": 8,
       "norm_label": "makeroleprocedure()"
     },
     {
@@ -9710,7 +9710,7 @@
       "source_location": "L80",
       "_origin": "ast",
       "id": "core_trpc_staffprocedure",
-      "community": 23,
+      "community": 13,
       "norm_label": "staffprocedure"
     },
     {
@@ -9720,7 +9720,7 @@
       "source_location": "L83",
       "_origin": "ast",
       "id": "core_trpc_supervisorprocedure",
-      "community": 23,
+      "community": 15,
       "norm_label": "supervisorprocedure"
     },
     {
@@ -9740,7 +9740,7 @@
       "source_location": "L88",
       "_origin": "ast",
       "id": "core_trpc_ownerprocedure",
-      "community": 23,
+      "community": 8,
       "norm_label": "ownerprocedure"
     },
     {
@@ -9760,7 +9760,7 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "core_trpc_anypermissionprocedure",
-      "community": 23,
+      "community": 15,
       "norm_label": "anypermissionprocedure()"
     },
     {
@@ -9770,7 +9770,7 @@
       "source_location": "L142",
       "_origin": "ast",
       "id": "core_trpc_allpermissionsprocedure",
-      "community": 23,
+      "community": 8,
       "norm_label": "allpermissionsprocedure()"
     },
     {
@@ -9890,7 +9890,7 @@
       "source_location": "L62",
       "_origin": "ast",
       "id": "types_manustypes_getuserinfowithjwtresponse",
-      "community": 54,
+      "community": 5,
       "norm_label": "getuserinfowithjwtresponse"
     },
     {
@@ -9910,7 +9910,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "core_validators_moneystring",
-      "community": 23,
+      "community": 13,
       "norm_label": "moneystring"
     },
     {
@@ -9957,27 +9957,27 @@
       "label": "qtyString",
       "file_type": "code",
       "source_file": "server/_core/validators.ts",
-      "source_location": "L44",
+      "source_location": "L39",
       "_origin": "ast",
       "id": "core_validators_qtystring",
-      "community": 23,
+      "community": 13,
       "norm_label": "qtystring"
     },
     {
       "label": "rationRateString",
       "file_type": "code",
       "source_file": "server/_core/validators.ts",
-      "source_location": "L51",
+      "source_location": "L46",
       "_origin": "ast",
       "id": "core_validators_rationratestring",
-      "community": 23,
+      "community": 13,
       "norm_label": "rationratestring"
     },
     {
       "label": "pastOrTodayDate",
       "file_type": "code",
       "source_file": "server/_core/validators.ts",
-      "source_location": "L58",
+      "source_location": "L53",
       "_origin": "ast",
       "id": "core_validators_pastortodaydate",
       "community": 13,
@@ -9987,10 +9987,10 @@
       "label": "isoDate",
       "file_type": "code",
       "source_file": "server/_core/validators.ts",
-      "source_location": "L67",
+      "source_location": "L62",
       "_origin": "ast",
       "id": "core_validators_isodate",
-      "community": 23,
+      "community": 13,
       "norm_label": "isodate"
     },
     {
@@ -10130,7 +10130,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "server_auth_logout_test",
-      "community": 45,
+      "community": 8,
       "norm_label": "auth.logout.test.ts"
     },
     {
@@ -10140,7 +10140,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "server_auth_logout_test_cookiecall",
-      "community": 45,
+      "community": 8,
       "norm_label": "cookiecall"
     },
     {
@@ -10150,7 +10150,7 @@
       "source_location": "L11",
       "_origin": "ast",
       "id": "server_auth_logout_test_authenticateduser",
-      "community": 45,
+      "community": 8,
       "norm_label": "authenticateduser"
     },
     {
@@ -10160,7 +10160,7 @@
       "source_location": "L13",
       "_origin": "ast",
       "id": "server_auth_logout_test_createauthcontext",
-      "community": 45,
+      "community": 8,
       "norm_label": "createauthcontext()"
     },
     {
@@ -10310,7 +10310,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "server_datenormalize_test",
-      "community": 25,
+      "community": 2,
       "norm_label": "datenormalize.test.ts"
     },
     {
@@ -10464,30 +10464,10 @@
       "norm_label": "updatecategory()"
     },
     {
-      "label": "getCategoryForUpdate()",
-      "file_type": "code",
-      "source_file": "server/db.ts",
-      "source_location": "L186",
-      "_origin": "ast",
-      "id": "server_db_getcategoryforupdate",
-      "community": 13,
-      "norm_label": "getcategoryforupdate()"
-    },
-    {
-      "label": "categoryHasAnimals()",
-      "file_type": "code",
-      "source_file": "server/db.ts",
-      "source_location": "L197",
-      "_origin": "ast",
-      "id": "server_db_categoryhasanimals",
-      "community": 2,
-      "norm_label": "categoryhasanimals()"
-    },
-    {
       "label": "incrementCategorySequence()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L208",
+      "source_location": "L181",
       "_origin": "ast",
       "id": "server_db_incrementcategorysequence",
       "community": 13,
@@ -10497,27 +10477,17 @@
       "label": "ensureCategorySequenceAtLeast()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L225",
+      "source_location": "L198",
       "_origin": "ast",
       "id": "server_db_ensurecategorysequenceatleast",
       "community": 13,
       "norm_label": "ensurecategorysequenceatleast()"
     },
     {
-      "label": "generateNextAnimalId()",
-      "file_type": "code",
-      "source_file": "server/db.ts",
-      "source_location": "L240",
-      "_origin": "ast",
-      "id": "server_db_generatenextanimalid",
-      "community": 13,
-      "norm_label": "generatenextanimalid()"
-    },
-    {
       "label": "getAllStatuses()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L255",
+      "source_location": "L215",
       "_origin": "ast",
       "id": "server_db_getallstatuses",
       "community": 17,
@@ -10527,27 +10497,27 @@
       "label": "getStatusById()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L262",
+      "source_location": "L222",
       "_origin": "ast",
       "id": "server_db_getstatusbyid",
-      "community": 2,
+      "community": 13,
       "norm_label": "getstatusbyid()"
     },
     {
       "label": "getLambingRecordById()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L274",
+      "source_location": "L234",
       "_origin": "ast",
       "id": "server_db_getlambingrecordbyid",
-      "community": 2,
+      "community": 13,
       "norm_label": "getlambingrecordbyid()"
     },
     {
       "label": "getLambingRecordForUpdate()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L282",
+      "source_location": "L242",
       "_origin": "ast",
       "id": "server_db_getlambingrecordforupdate",
       "community": 13,
@@ -10557,57 +10527,37 @@
       "label": "getRawAnimalById()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L293",
+      "source_location": "L253",
       "_origin": "ast",
       "id": "server_db_getrawanimalbyid",
       "community": 13,
       "norm_label": "getrawanimalbyid()"
     },
     {
-      "label": "getRawAnimalForUpdate()",
-      "file_type": "code",
-      "source_file": "server/db.ts",
-      "source_location": "L301",
-      "_origin": "ast",
-      "id": "server_db_getrawanimalforupdate",
-      "community": 13,
-      "norm_label": "getrawanimalforupdate()"
-    },
-    {
       "label": "getRawAnimalByAnimalId()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L312",
+      "source_location": "L261",
       "_origin": "ast",
       "id": "server_db_getrawanimalbyanimalid",
       "community": 13,
       "norm_label": "getrawanimalbyanimalid()"
     },
     {
-      "label": "getRawOwnerById()",
-      "file_type": "code",
-      "source_file": "server/db.ts",
-      "source_location": "L320",
-      "_origin": "ast",
-      "id": "server_db_getrawownerbyid",
-      "community": 2,
-      "norm_label": "getrawownerbyid()"
-    },
-    {
       "label": "getAnimalsByIds()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L328",
+      "source_location": "L269",
       "_origin": "ast",
       "id": "server_db_getanimalsbyids",
-      "community": 2,
+      "community": 13,
       "norm_label": "getanimalsbyids()"
     },
     {
       "label": "createStatus()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L352",
+      "source_location": "L293",
       "_origin": "ast",
       "id": "server_db_createstatus",
       "community": 2,
@@ -10617,7 +10567,7 @@
       "label": "updateStatus()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L359",
+      "source_location": "L300",
       "_origin": "ast",
       "id": "server_db_updatestatus",
       "community": 2,
@@ -10627,7 +10577,7 @@
       "label": "getAllGroups()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L367",
+      "source_location": "L308",
       "_origin": "ast",
       "id": "server_db_getallgroups",
       "community": 17,
@@ -10637,7 +10587,7 @@
       "label": "createGroup()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L379",
+      "source_location": "L320",
       "_origin": "ast",
       "id": "server_db_creategroup",
       "community": 2,
@@ -10647,7 +10597,7 @@
       "label": "updateGroup()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L396",
+      "source_location": "L337",
       "_origin": "ast",
       "id": "server_db_updategroup",
       "community": 2,
@@ -10657,7 +10607,7 @@
       "label": "getAllOwners()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L404",
+      "source_location": "L345",
       "_origin": "ast",
       "id": "server_db_getallowners",
       "community": 2,
@@ -10667,7 +10617,7 @@
       "label": "createOwner()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L413",
+      "source_location": "L354",
       "_origin": "ast",
       "id": "server_db_createowner",
       "community": 2,
@@ -10677,7 +10627,7 @@
       "label": "updateOwner()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L420",
+      "source_location": "L361",
       "_origin": "ast",
       "id": "server_db_updateowner",
       "community": 2,
@@ -10687,7 +10637,7 @@
       "label": "deleteOwner()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L426",
+      "source_location": "L367",
       "_origin": "ast",
       "id": "server_db_deleteowner",
       "community": 2,
@@ -10697,7 +10647,7 @@
       "label": "getAllBirthTypes()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L436",
+      "source_location": "L377",
       "_origin": "ast",
       "id": "server_db_getallbirthtypes",
       "community": 2,
@@ -10707,7 +10657,7 @@
       "label": "createBirthType()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L442",
+      "source_location": "L383",
       "_origin": "ast",
       "id": "server_db_createbirthtype",
       "community": 2,
@@ -10717,7 +10667,7 @@
       "label": "updateBirthType()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L448",
+      "source_location": "L389",
       "_origin": "ast",
       "id": "server_db_updatebirthtype",
       "community": 2,
@@ -10727,7 +10677,7 @@
       "label": "getAllFeedItems()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L455",
+      "source_location": "L396",
       "_origin": "ast",
       "id": "server_db_getallfeeditems",
       "community": 17,
@@ -10737,7 +10687,7 @@
       "label": "createFeedItem()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L488",
+      "source_location": "L429",
       "_origin": "ast",
       "id": "server_db_createfeeditem",
       "community": 2,
@@ -10747,7 +10697,7 @@
       "label": "getCurrentFeedItemPrice()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L507",
+      "source_location": "L448",
       "_origin": "ast",
       "id": "server_db_getcurrentfeeditemprice",
       "community": 2,
@@ -10757,7 +10707,7 @@
       "label": "updateFeedItem()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L519",
+      "source_location": "L460",
       "_origin": "ast",
       "id": "server_db_updatefeeditem",
       "community": 2,
@@ -10767,7 +10717,7 @@
       "label": "getFeedItemPriceHistory()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L525",
+      "source_location": "L466",
       "_origin": "ast",
       "id": "server_db_getfeeditempricehistory",
       "community": 2,
@@ -10777,7 +10727,7 @@
       "label": "addFeedItemPrice()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L531",
+      "source_location": "L472",
       "_origin": "ast",
       "id": "server_db_addfeeditemprice",
       "community": 2,
@@ -10787,7 +10737,7 @@
       "label": "getAllFeedItemPrices()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L561",
+      "source_location": "L502",
       "_origin": "ast",
       "id": "server_db_getallfeeditemprices",
       "community": 2,
@@ -10797,7 +10747,7 @@
       "label": "updateFeedItemPrice()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L580",
+      "source_location": "L521",
       "_origin": "ast",
       "id": "server_db_updatefeeditemprice",
       "community": 2,
@@ -10807,7 +10757,7 @@
       "label": "deleteFeedItemPrice()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L594",
+      "source_location": "L535",
       "_origin": "ast",
       "id": "server_db_deletefeeditemprice",
       "community": 2,
@@ -10817,7 +10767,7 @@
       "label": "getFeedPriceOnDate()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L600",
+      "source_location": "L541",
       "_origin": "ast",
       "id": "server_db_getfeedpriceondate",
       "community": 17,
@@ -10827,7 +10777,7 @@
       "label": "getAllExpenseCategories()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L614",
+      "source_location": "L555",
       "_origin": "ast",
       "id": "server_db_getallexpensecategories",
       "community": 17,
@@ -10837,7 +10787,7 @@
       "label": "createExpenseCategory()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L620",
+      "source_location": "L561",
       "_origin": "ast",
       "id": "server_db_createexpensecategory",
       "community": 2,
@@ -10847,7 +10797,7 @@
       "label": "updateExpenseCategory()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L626",
+      "source_location": "L567",
       "_origin": "ast",
       "id": "server_db_updateexpensecategory",
       "community": 2,
@@ -10857,7 +10807,7 @@
       "label": "getAllExpenseSubCategories()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L631",
+      "source_location": "L572",
       "_origin": "ast",
       "id": "server_db_getallexpensesubcategories",
       "community": 2,
@@ -10867,7 +10817,7 @@
       "label": "createExpenseSubCategory()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L640",
+      "source_location": "L581",
       "_origin": "ast",
       "id": "server_db_createexpensesubcategory",
       "community": 2,
@@ -10877,7 +10827,7 @@
       "label": "updateExpenseSubCategory()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L646",
+      "source_location": "L587",
       "_origin": "ast",
       "id": "server_db_updateexpensesubcategory",
       "community": 2,
@@ -10887,7 +10837,7 @@
       "label": "getAllSettings()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L653",
+      "source_location": "L594",
       "_origin": "ast",
       "id": "server_db_getallsettings",
       "community": 2,
@@ -10897,7 +10847,7 @@
       "label": "getSetting()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L659",
+      "source_location": "L600",
       "_origin": "ast",
       "id": "server_db_getsetting",
       "community": 2,
@@ -10907,7 +10857,7 @@
       "label": "upsertSetting()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L666",
+      "source_location": "L607",
       "_origin": "ast",
       "id": "server_db_upsertsetting",
       "community": 2,
@@ -10917,7 +10867,7 @@
       "label": "getAnimals()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L677",
+      "source_location": "L618",
       "_origin": "ast",
       "id": "server_db_getanimals",
       "community": 17,
@@ -10927,17 +10877,17 @@
       "label": "getAnimalById()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L734",
+      "source_location": "L675",
       "_origin": "ast",
       "id": "server_db_getanimalbyid",
-      "community": 13,
+      "community": 2,
       "norm_label": "getanimalbyid()"
     },
     {
       "label": "createAnimal()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L772",
+      "source_location": "L713",
       "_origin": "ast",
       "id": "server_db_createanimal",
       "community": 13,
@@ -10947,7 +10897,7 @@
       "label": "updateAnimal()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L779",
+      "source_location": "L720",
       "_origin": "ast",
       "id": "server_db_updateanimal",
       "community": 19,
@@ -10957,7 +10907,7 @@
       "label": "getActiveHeadCountByCategory()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L785",
+      "source_location": "L726",
       "_origin": "ast",
       "id": "server_db_getactiveheadcountbycategory",
       "community": 17,
@@ -10967,17 +10917,17 @@
       "label": "getAnimalStatusHistory()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L808",
+      "source_location": "L749",
       "_origin": "ast",
       "id": "server_db_getanimalstatushistory",
-      "community": 2,
+      "community": 13,
       "norm_label": "getanimalstatushistory()"
     },
     {
       "label": "recordStatusChange()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L826",
+      "source_location": "L767",
       "_origin": "ast",
       "id": "server_db_recordstatuschange",
       "community": 13,
@@ -10987,7 +10937,7 @@
       "label": "getSales()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L843",
+      "source_location": "L784",
       "_origin": "ast",
       "id": "server_db_getsales",
       "community": 17,
@@ -10997,7 +10947,7 @@
       "label": "createSale()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L871",
+      "source_location": "L812",
       "_origin": "ast",
       "id": "server_db_createsale",
       "community": 19,
@@ -11007,37 +10957,37 @@
       "label": "getSaleById()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L879",
+      "source_location": "L820",
       "_origin": "ast",
       "id": "server_db_getsalebyid",
-      "community": 2,
+      "community": 23,
       "norm_label": "getsalebyid()"
     },
     {
       "label": "getExpenseById()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L887",
+      "source_location": "L828",
       "_origin": "ast",
       "id": "server_db_getexpensebyid",
-      "community": 2,
+      "community": 13,
       "norm_label": "getexpensebyid()"
     },
     {
       "label": "updateSale()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L893",
+      "source_location": "L834",
       "_origin": "ast",
       "id": "server_db_updatesale",
-      "community": 2,
+      "community": 23,
       "norm_label": "updatesale()"
     },
     {
       "label": "getLambingLog()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L915",
+      "source_location": "L856",
       "_origin": "ast",
       "id": "server_db_getlambinglog",
       "community": 17,
@@ -11047,7 +10997,7 @@
       "label": "createLambingRecord()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L949",
+      "source_location": "L890",
       "_origin": "ast",
       "id": "server_db_createlambingrecord",
       "community": 19,
@@ -11057,27 +11007,27 @@
       "label": "updateLambingRecord()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L956",
+      "source_location": "L897",
       "_origin": "ast",
       "id": "server_db_updatelambingrecord",
-      "community": 2,
+      "community": 13,
       "norm_label": "updatelambingrecord()"
     },
     {
       "label": "getWeightLog()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L964",
+      "source_location": "L905",
       "_origin": "ast",
       "id": "server_db_getweightlog",
-      "community": 2,
+      "community": 13,
       "norm_label": "getweightlog()"
     },
     {
       "label": "createWeightEntry()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L974",
+      "source_location": "L915",
       "_origin": "ast",
       "id": "server_db_createweightentry",
       "community": 19,
@@ -11087,27 +11037,27 @@
       "label": "getWeightEntryById()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L982",
+      "source_location": "L923",
       "_origin": "ast",
       "id": "server_db_getweightentrybyid",
-      "community": 2,
+      "community": 13,
       "norm_label": "getweightentrybyid()"
     },
     {
       "label": "softDeleteWeightEntry()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L990",
+      "source_location": "L931",
       "_origin": "ast",
       "id": "server_db_softdeleteweightentry",
-      "community": 2,
+      "community": 13,
       "norm_label": "softdeleteweightentry()"
     },
     {
       "label": "getLatestWeightForAnimals()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L998",
+      "source_location": "L939",
       "_origin": "ast",
       "id": "server_db_getlatestweightforanimals",
       "community": 2,
@@ -11117,37 +11067,37 @@
       "label": "getRationPlans()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1020",
+      "source_location": "L961",
       "_origin": "ast",
       "id": "server_db_getrationplans",
-      "community": 23,
+      "community": 13,
       "norm_label": "getrationplans()"
     },
     {
       "label": "createRationPlan()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1049",
+      "source_location": "L990",
       "_origin": "ast",
       "id": "server_db_createrationplan",
-      "community": 23,
+      "community": 13,
       "norm_label": "createrationplan()"
     },
     {
       "label": "updateRationPlan()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1056",
+      "source_location": "L997",
       "_origin": "ast",
       "id": "server_db_updaterationplan",
-      "community": 2,
+      "community": 13,
       "norm_label": "updaterationplan()"
     },
     {
       "label": "getActivePlanOnDate()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1062",
+      "source_location": "L1003",
       "_origin": "ast",
       "id": "server_db_getactiveplanondate",
       "community": 2,
@@ -11157,37 +11107,37 @@
       "label": "buildPricesByItem()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1079",
+      "source_location": "L1020",
       "_origin": "ast",
       "id": "server_db_buildpricesbyitem",
-      "community": 25,
+      "community": 2,
       "norm_label": "buildpricesbyitem()"
     },
     {
       "label": "segmentedFeedCostPure()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1105",
+      "source_location": "L1046",
       "_origin": "ast",
       "id": "server_db_segmentedfeedcostpure",
-      "community": 25,
+      "community": 2,
       "norm_label": "segmentedfeedcostpure()"
     },
     {
       "label": "computeFeedCostForPeriod()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1202",
+      "source_location": "L1143",
       "_origin": "ast",
       "id": "server_db_computefeedcostforperiod",
-      "community": 25,
+      "community": 2,
       "norm_label": "computefeedcostforperiod()"
     },
     {
       "label": "getCategoryHeadCountDuring()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1245",
+      "source_location": "L1186",
       "_origin": "ast",
       "id": "server_db_getcategoryheadcountduring",
       "community": 2,
@@ -11197,17 +11147,17 @@
       "label": "getHerdHeadCountOnDate()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1262",
+      "source_location": "L1203",
       "_origin": "ast",
       "id": "server_db_getherdheadcountondate",
-      "community": 2,
+      "community": 25,
       "norm_label": "getherdheadcountondate()"
     },
     {
       "label": "getFeedStockLedger()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1275",
+      "source_location": "L1216",
       "_origin": "ast",
       "id": "server_db_getfeedstockledger",
       "community": 17,
@@ -11217,27 +11167,27 @@
       "label": "createFeedStockEntry()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1298",
+      "source_location": "L1239",
       "_origin": "ast",
       "id": "server_db_createfeedstockentry",
-      "community": 23,
+      "community": 13,
       "norm_label": "createfeedstockentry()"
     },
     {
       "label": "updateFeedStockEntry()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1305",
+      "source_location": "L1246",
       "_origin": "ast",
       "id": "server_db_updatefeedstockentry",
-      "community": 2,
+      "community": 13,
       "norm_label": "updatefeedstockentry()"
     },
     {
       "label": "getGeneralExpensesTotal()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1328",
+      "source_location": "L1269",
       "_origin": "ast",
       "id": "server_db_getgeneralexpensestotal",
       "community": 25,
@@ -11247,7 +11197,7 @@
       "label": "getExpenses()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1341",
+      "source_location": "L1282",
       "_origin": "ast",
       "id": "server_db_getexpenses",
       "community": 17,
@@ -11257,47 +11207,47 @@
       "label": "createExpense()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1379",
+      "source_location": "L1320",
       "_origin": "ast",
       "id": "server_db_createexpense",
-      "community": 23,
+      "community": 13,
       "norm_label": "createexpense()"
     },
     {
       "label": "updateExpense()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1386",
+      "source_location": "L1327",
       "_origin": "ast",
       "id": "server_db_updateexpense",
-      "community": 2,
+      "community": 13,
       "norm_label": "updateexpense()"
     },
     {
       "label": "deleteExpense()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1392",
+      "source_location": "L1333",
       "_origin": "ast",
       "id": "server_db_deleteexpense",
-      "community": 2,
+      "community": 13,
       "norm_label": "deleteexpense()"
     },
     {
       "label": "getNotifications()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1403",
+      "source_location": "L1344",
       "_origin": "ast",
       "id": "server_db_getnotifications",
-      "community": 2,
+      "community": 23,
       "norm_label": "getnotifications()"
     },
     {
       "label": "createNotification()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1418",
+      "source_location": "L1359",
       "_origin": "ast",
       "id": "server_db_createnotification",
       "community": 15,
@@ -11307,47 +11257,47 @@
       "label": "markNotificationRead()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1428",
+      "source_location": "L1366",
       "_origin": "ast",
       "id": "server_db_marknotificationread",
-      "community": 2,
+      "community": 23,
       "norm_label": "marknotificationread()"
     },
     {
       "label": "markAllNotificationsRead()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1434",
+      "source_location": "L1372",
       "_origin": "ast",
       "id": "server_db_markallnotificationsread",
-      "community": 2,
+      "community": 23,
       "norm_label": "markallnotificationsread()"
     },
     {
       "label": "createAuditEntry()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1446",
+      "source_location": "L1384",
       "_origin": "ast",
       "id": "server_db_createauditentry",
-      "community": 23,
+      "community": 13,
       "norm_label": "createauditentry()"
     },
     {
       "label": "getAuditLog()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1452",
+      "source_location": "L1390",
       "_origin": "ast",
       "id": "server_db_getauditlog",
-      "community": 2,
+      "community": 23,
       "norm_label": "getauditlog()"
     },
     {
       "label": "getAnimalPnL()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1469",
+      "source_location": "L1407",
       "_origin": "ast",
       "id": "server_db_getanimalpnl",
       "community": 25,
@@ -11357,7 +11307,7 @@
       "label": "getAllAnimalsPnL()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1635",
+      "source_location": "L1573",
       "_origin": "ast",
       "id": "server_db_getallanimalspnl",
       "community": 25,
@@ -11367,17 +11317,17 @@
       "label": "checkAndStageAnimal()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1856",
+      "source_location": "L1796",
       "_origin": "ast",
       "id": "server_db_checkandstageanimal",
-      "community": 13,
+      "community": 2,
       "norm_label": "checkandstageanimal()"
     },
     {
       "label": "getDashboardKPIs()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L1937",
+      "source_location": "L1855",
       "_origin": "ast",
       "id": "server_db_getdashboardkpis",
       "community": 25,
@@ -11387,7 +11337,7 @@
       "label": "getFeedStockStatus()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2048",
+      "source_location": "L1966",
       "_origin": "ast",
       "id": "server_db_getfeedstockstatus",
       "community": 17,
@@ -11397,7 +11347,7 @@
       "label": "computeRationConsumptionBetween()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2154",
+      "source_location": "L2072",
       "_origin": "ast",
       "id": "server_db_computerationconsumptionbetween",
       "community": 2,
@@ -11407,7 +11357,7 @@
       "label": "ShrinkageRow",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2176",
+      "source_location": "L2094",
       "_origin": "ast",
       "id": "server_db_shrinkagerow",
       "community": 2,
@@ -11417,7 +11367,7 @@
       "label": "getFeedShrinkage()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2188",
+      "source_location": "L2106",
       "_origin": "ast",
       "id": "server_db_getfeedshrinkage",
       "community": 2,
@@ -11427,7 +11377,7 @@
       "label": "getIncomeStatement()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2311",
+      "source_location": "L2229",
       "_origin": "ast",
       "id": "server_db_getincomestatement",
       "community": 25,
@@ -11437,7 +11387,7 @@
       "label": "getVaccines()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2451",
+      "source_location": "L2369",
       "_origin": "ast",
       "id": "server_db_getvaccines",
       "community": 2,
@@ -11447,7 +11397,7 @@
       "label": "addVaccine()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2457",
+      "source_location": "L2375",
       "_origin": "ast",
       "id": "server_db_addvaccine",
       "community": 2,
@@ -11457,7 +11407,7 @@
       "label": "updateVaccine()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2464",
+      "source_location": "L2382",
       "_origin": "ast",
       "id": "server_db_updatevaccine",
       "community": 2,
@@ -11467,7 +11417,7 @@
       "label": "deleteVaccine()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2470",
+      "source_location": "L2388",
       "_origin": "ast",
       "id": "server_db_deletevaccine",
       "community": 2,
@@ -11477,77 +11427,77 @@
       "label": "getVaccinationRecords()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2476",
+      "source_location": "L2394",
       "_origin": "ast",
       "id": "server_db_getvaccinationrecords",
-      "community": 2,
+      "community": 15,
       "norm_label": "getvaccinationrecords()"
     },
     {
       "label": "addVaccinationRecord()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2507",
+      "source_location": "L2425",
       "_origin": "ast",
       "id": "server_db_addvaccinationrecord",
-      "community": 2,
+      "community": 15,
       "norm_label": "addvaccinationrecord()"
     },
     {
       "label": "updateVaccinationRecord()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2546",
+      "source_location": "L2464",
       "_origin": "ast",
       "id": "server_db_updatevaccinationrecord",
-      "community": 2,
+      "community": 15,
       "norm_label": "updatevaccinationrecord()"
     },
     {
       "label": "deleteVaccinationRecord()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2581",
+      "source_location": "L2499",
       "_origin": "ast",
       "id": "server_db_deletevaccinationrecord",
-      "community": 2,
+      "community": 15,
       "norm_label": "deletevaccinationrecord()"
     },
     {
       "label": "calculateNextDueDate()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2587",
+      "source_location": "L2505",
       "_origin": "ast",
       "id": "server_db_calculatenextduedate",
-      "community": 2,
+      "community": 15,
       "norm_label": "calculatenextduedate()"
     },
     {
       "label": "calculateBoosterDueDate()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2594",
+      "source_location": "L2512",
       "_origin": "ast",
       "id": "server_db_calculateboosterduedate",
-      "community": 2,
+      "community": 15,
       "norm_label": "calculateboosterduedate()"
     },
     {
       "label": "getVaccinationStatus()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2601",
+      "source_location": "L2519",
       "_origin": "ast",
       "id": "server_db_getvaccinationstatus",
-      "community": 23,
+      "community": 15,
       "norm_label": "getvaccinationstatus()"
     },
     {
       "label": "getUpcomingVaccinations()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2617",
+      "source_location": "L2535",
       "_origin": "ast",
       "id": "server_db_getupcomingvaccinations",
       "community": 15,
@@ -11557,7 +11507,7 @@
       "label": "getUpcomingBoosterVaccinations()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2648",
+      "source_location": "L2566",
       "_origin": "ast",
       "id": "server_db_getupcomingboostervaccinations",
       "community": 15,
@@ -11567,17 +11517,17 @@
       "label": "getVaccinationCompliance()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2678",
+      "source_location": "L2596",
       "_origin": "ast",
       "id": "server_db_getvaccinationcompliance",
-      "community": 2,
+      "community": 15,
       "norm_label": "getvaccinationcompliance()"
     },
     {
       "label": "getNextVaccinationDate()",
       "file_type": "code",
       "source_file": "server/db.ts",
-      "source_location": "L2718",
+      "source_location": "L2636",
       "_origin": "ast",
       "id": "server_db_getnextvaccinationdate",
       "community": 2,
@@ -11770,7 +11720,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "server_feedcost_test",
-      "community": 25,
+      "community": 2,
       "norm_label": "feedcost.test.ts"
     },
     {
@@ -11780,38 +11730,28 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "server_lfms_test",
-      "community": 45,
+      "community": 8,
       "norm_label": "lfms.test.ts"
     },
     {
       "label": "AuthenticatedUser",
       "file_type": "code",
       "source_file": "server/lfms.test.ts",
-      "source_location": "L216",
+      "source_location": "L195",
       "_origin": "ast",
       "id": "server_lfms_test_authenticateduser",
-      "community": 45,
+      "community": 8,
       "norm_label": "authenticateduser"
     },
     {
       "label": "makeCtx()",
       "file_type": "code",
       "source_file": "server/lfms.test.ts",
-      "source_location": "L218",
+      "source_location": "L197",
       "_origin": "ast",
       "id": "server_lfms_test_makectx",
-      "community": 45,
+      "community": 8,
       "norm_label": "makectx()"
-    },
-    {
-      "label": "mockTransactionDb()",
-      "file_type": "code",
-      "source_file": "server/lfms.test.ts",
-      "source_location": "L235",
-      "_origin": "ast",
-      "id": "server_lfms_test_mocktransactiondb",
-      "community": 45,
-      "norm_label": "mocktransactiondb()"
     },
     {
       "label": "lowStockCheck.ts",
@@ -11960,7 +11900,7 @@
       "source_location": "L48",
       "_origin": "ast",
       "id": "server_routers_approuter",
-      "community": 45,
+      "community": 8,
       "norm_label": "approuter"
     },
     {
@@ -11974,23 +11914,13 @@
       "norm_label": "animals.ts"
     },
     {
-      "label": "validateAnimalReferences()",
-      "file_type": "code",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L47",
-      "_origin": "ast",
-      "id": "routers_animals_validateanimalreferences",
-      "community": 17,
-      "norm_label": "validateanimalreferences()"
-    },
-    {
       "label": "animalsRouter",
       "file_type": "code",
       "source_file": "server/routers/animals.ts",
-      "source_location": "L102",
+      "source_location": "L40",
       "_origin": "ast",
       "id": "routers_animals_animalsrouter",
-      "community": 23,
+      "community": 13,
       "norm_label": "animalsrouter"
     },
     {
@@ -12057,10 +11987,10 @@
       "label": "breedingRouter",
       "file_type": "code",
       "source_file": "server/routers/breeding.ts",
-      "source_location": "L30",
+      "source_location": "L27",
       "_origin": "ast",
       "id": "routers_breeding_breedingrouter",
-      "community": 23,
+      "community": 13,
       "norm_label": "breedingrouter"
     },
     {
@@ -12077,7 +12007,7 @@
       "label": "REFERENCE_VIEW_PERMISSIONS",
       "file_type": "code",
       "source_file": "server/routers/config.ts",
-      "source_location": "L31",
+      "source_location": "L30",
       "_origin": "ast",
       "id": "routers_config_reference_view_permissions",
       "community": 2,
@@ -12087,7 +12017,7 @@
       "label": "OWNER_VIEW_PERMISSIONS",
       "file_type": "code",
       "source_file": "server/routers/config.ts",
-      "source_location": "L45",
+      "source_location": "L44",
       "_origin": "ast",
       "id": "routers_config_owner_view_permissions",
       "community": 2,
@@ -12097,7 +12027,7 @@
       "label": "mapPointSchema",
       "file_type": "code",
       "source_file": "server/routers/config.ts",
-      "source_location": "L54",
+      "source_location": "L53",
       "_origin": "ast",
       "id": "routers_config_mappointschema",
       "community": 2,
@@ -12107,7 +12037,7 @@
       "label": "mapShapeSchema",
       "file_type": "code",
       "source_file": "server/routers/config.ts",
-      "source_location": "L59",
+      "source_location": "L58",
       "_origin": "ast",
       "id": "routers_config_mapshapeschema",
       "community": 2,
@@ -12117,7 +12047,7 @@
       "label": "configRouter",
       "file_type": "code",
       "source_file": "server/routers/config.ts",
-      "source_location": "L75",
+      "source_location": "L74",
       "_origin": "ast",
       "id": "routers_config_configrouter",
       "community": 23,
@@ -12190,7 +12120,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_expenses",
-      "community": 23,
+      "community": 13,
       "norm_label": "expenses.ts"
     },
     {
@@ -12200,7 +12130,7 @@
       "source_location": "L7",
       "_origin": "ast",
       "id": "routers_expenses_expensesrouter",
-      "community": 23,
+      "community": 13,
       "norm_label": "expensesrouter"
     },
     {
@@ -12270,7 +12200,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_feed",
-      "community": 23,
+      "community": 13,
       "norm_label": "feed.ts"
     },
     {
@@ -12280,7 +12210,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "routers_feed_feedrouter",
-      "community": 23,
+      "community": 13,
       "norm_label": "feedrouter"
     },
     {
@@ -12410,7 +12340,7 @@
       "source_location": "L72",
       "_origin": "ast",
       "id": "routers_import_applycanonicalworkbook",
-      "community": 23,
+      "community": 13,
       "norm_label": "applycanonicalworkbook()"
     },
     {
@@ -12420,7 +12350,7 @@
       "source_location": "L117",
       "_origin": "ast",
       "id": "routers_import_importrouter",
-      "community": 23,
+      "community": 19,
       "norm_label": "importrouter"
     },
     {
@@ -12460,7 +12390,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "routers_permissions_permissionsrouter",
-      "community": 8,
+      "community": 23,
       "norm_label": "permissionsrouter"
     },
     {
@@ -12500,7 +12430,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "routers_vaccination",
-      "community": 23,
+      "community": 15,
       "norm_label": "vaccination.ts"
     },
     {
@@ -12510,7 +12440,7 @@
       "source_location": "L14",
       "_origin": "ast",
       "id": "routers_vaccination_vaccinationrouter",
-      "community": 23,
+      "community": 15,
       "norm_label": "vaccinationrouter"
     },
     {
@@ -12620,7 +12550,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "core_errors",
-      "community": 59,
+      "community": 5,
       "norm_label": "errors.ts"
     },
     {
@@ -12630,7 +12560,7 @@
       "source_location": "L5",
       "_origin": "ast",
       "id": "core_errors_httperror",
-      "community": 59,
+      "community": 5,
       "norm_label": "httperror"
     },
     {
@@ -12640,7 +12570,7 @@
       "source_location": "L6",
       "_origin": "ast",
       "id": "core_errors_httperror_constructor",
-      "community": 59,
+      "community": 5,
       "norm_label": ".constructor()"
     },
     {
@@ -12650,7 +12580,7 @@
       "source_location": "L16",
       "_origin": "ast",
       "id": "core_errors_badrequesterror",
-      "community": 59,
+      "community": 5,
       "norm_label": "badrequesterror()"
     },
     {
@@ -12660,7 +12590,7 @@
       "source_location": "L17",
       "_origin": "ast",
       "id": "core_errors_unauthorizederror",
-      "community": 59,
+      "community": 5,
       "norm_label": "unauthorizederror()"
     },
     {
@@ -12670,7 +12600,7 @@
       "source_location": "L18",
       "_origin": "ast",
       "id": "core_errors_forbiddenerror",
-      "community": 54,
+      "community": 5,
       "norm_label": "forbiddenerror()"
     },
     {
@@ -12680,7 +12610,7 @@
       "source_location": "L19",
       "_origin": "ast",
       "id": "core_errors_notfounderror",
-      "community": 59,
+      "community": 5,
       "norm_label": "notfounderror()"
     },
     {
@@ -12697,7 +12627,7 @@
       "label": "normalizeAnimalIdNumber()",
       "file_type": "code",
       "source_file": "shared/animalIds.ts",
-      "source_location": "L4",
+      "source_location": "L3",
       "_origin": "ast",
       "id": "shared_animalids_normalizeanimalidnumber",
       "community": 13,
@@ -12707,7 +12637,7 @@
       "label": "composeAnimalId()",
       "file_type": "code",
       "source_file": "shared/animalIds.ts",
-      "source_location": "L12",
+      "source_location": "L8",
       "_origin": "ast",
       "id": "shared_animalids_composeanimalid",
       "community": 13,
@@ -12717,7 +12647,7 @@
       "label": "extractAnimalIdNumber()",
       "file_type": "code",
       "source_file": "shared/animalIds.ts",
-      "source_location": "L25",
+      "source_location": "L21",
       "_origin": "ast",
       "id": "shared_animalids_extractanimalidnumber",
       "community": 13,
@@ -12730,7 +12660,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "shared_const",
-      "community": 58,
+      "community": 8,
       "norm_label": "const.ts"
     },
     {
@@ -12780,7 +12710,7 @@
       "source_location": "L39",
       "_origin": "ast",
       "id": "shared_permissions_permissionpage",
-      "community": 0,
+      "community": 8,
       "norm_label": "permissionpage"
     },
     {
@@ -12810,7 +12740,7 @@
       "source_location": "L43",
       "_origin": "ast",
       "id": "shared_permissions_permissionoverrides",
-      "community": 45,
+      "community": 8,
       "norm_label": "permissionoverrides"
     },
     {
@@ -12870,7 +12800,7 @@
       "source_location": "L118",
       "_origin": "ast",
       "id": "shared_permissions_builddeniedpermissionoverrides",
-      "community": 45,
+      "community": 8,
       "norm_label": "builddeniedpermissionoverrides()"
     },
     {
@@ -12900,7 +12830,7 @@
       "source_location": "L1",
       "_origin": "ast",
       "id": "shared_types",
-      "community": 59,
+      "community": 5,
       "norm_label": "types.ts"
     },
     {
@@ -16111,9 +16041,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L18",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "components_animalidnumberfield_animalidnumberfield"
+      "target": "components_animalidnumberfield_animalidnumberfield",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16121,9 +16051,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "components_animalidnumberfield_animalidnumberfieldprops"
+      "target": "components_animalidnumberfield_animalidnumberfieldprops",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16132,9 +16062,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "lib_utils"
+      "target": "lib_utils",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16143,9 +16073,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "lib_utils_cn"
+      "target": "lib_utils_cn",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16154,9 +16084,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "shared_animalids"
+      "target": "shared_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16165,9 +16095,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "shared_animalids_normalizeanimalidnumber"
+      "target": "shared_animalids_normalizeanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16176,9 +16106,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "ui_input"
+      "target": "ui_input",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16187,9 +16117,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "ui_input_input"
+      "target": "ui_input_input",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16198,9 +16128,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "ui_label"
+      "target": "ui_label",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16209,9 +16139,9 @@
       "source_file": "client/src/components/AnimalIdNumberField.tsx",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_animalidnumberfield",
-      "target": "ui_label_label"
+      "target": "ui_label_label",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16220,9 +16150,9 @@
       "source_file": "client/src/components/EditAnimalDialog.tsx",
       "source_location": "L20",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_editanimaldialog",
-      "target": "components_animalidnumberfield"
+      "target": "components_animalidnumberfield",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16231,9 +16161,9 @@
       "source_file": "client/src/pages/Animals.tsx",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "pages_animals",
-      "target": "components_animalidnumberfield"
+      "target": "components_animalidnumberfield",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -16242,9 +16172,9 @@
       "source_file": "client/src/pages/Breeding.tsx",
       "source_location": "L29",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "pages_breeding",
-      "target": "components_animalidnumberfield"
+      "target": "components_animalidnumberfield",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -16264,9 +16194,9 @@
       "source_file": "client/src/components/EditAnimalDialog.tsx",
       "source_location": "L20",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_editanimaldialog",
-      "target": "components_animalidnumberfield_animalidnumberfield"
+      "target": "components_animalidnumberfield_animalidnumberfield",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16275,9 +16205,9 @@
       "source_file": "client/src/pages/Animals.tsx",
       "source_location": "L32",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "pages_animals",
-      "target": "components_animalidnumberfield_animalidnumberfield"
+      "target": "components_animalidnumberfield_animalidnumberfield",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16286,9 +16216,9 @@
       "source_file": "client/src/pages/Breeding.tsx",
       "source_location": "L29",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "pages_breeding",
-      "target": "components_animalidnumberfield_animalidnumberfield"
+      "target": "components_animalidnumberfield_animalidnumberfield",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -16941,9 +16871,9 @@
       "source_file": "client/src/components/EditAnimalDialog.tsx",
       "source_location": "L21",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_editanimaldialog",
-      "target": "shared_animalids"
+      "target": "shared_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -16952,9 +16882,9 @@
       "source_file": "client/src/components/EditAnimalDialog.tsx",
       "source_location": "L21",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "components_editanimaldialog",
-      "target": "shared_animalids_extractanimalidnumber"
+      "target": "shared_animalids_extractanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -42370,9 +42300,9 @@
       "source_file": "server/_core/animalIds.ts",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_animalids",
-      "target": "core_animalids_composeanimalidorthrow"
+      "target": "core_animalids_composeanimalidorthrow",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -42380,9 +42310,9 @@
       "source_file": "server/_core/animalIds.ts",
       "source_location": "L15",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_animalids",
-      "target": "core_animalids_sequencevaluefromanimalidnumber"
+      "target": "core_animalids_sequencevaluefromanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -42391,9 +42321,9 @@
       "source_file": "server/_core/animalIds.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_animalids",
-      "target": "shared_animalids"
+      "target": "shared_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -42402,9 +42332,9 @@
       "source_file": "server/_core/animalIds.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_animalids",
-      "target": "shared_animalids_composeanimalid"
+      "target": "shared_animalids_composeanimalid",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -42413,9 +42343,9 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "core_animalids"
+      "target": "core_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -42424,9 +42354,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "core_animalids"
+      "target": "core_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -42446,9 +42376,9 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "core_animalids_composeanimalidorthrow"
+      "target": "core_animalids_composeanimalidorthrow",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -42457,9 +42387,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "core_animalids_composeanimalidorthrow"
+      "target": "core_animalids_composeanimalidorthrow",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -42468,9 +42398,9 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "core_animalids_sequencevaluefromanimalidnumber"
+      "target": "core_animalids_sequencevaluefromanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -42479,9 +42409,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L4",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "core_animalids_sequencevaluefromanimalidnumber"
+      "target": "core_animalids_sequencevaluefromanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -43140,9 +43070,9 @@
       "source_file": "server/_core/databaseErrors.ts",
       "source_location": "L1",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_databaseerrors",
-      "target": "core_databaseerrors_isduplicateentryerror"
+      "target": "core_databaseerrors_isduplicateentryerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -43151,9 +43081,9 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "core_databaseerrors"
+      "target": "core_databaseerrors",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -43162,9 +43092,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "core_databaseerrors"
+      "target": "core_databaseerrors",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -43173,9 +43103,9 @@
       "source_file": "server/animalIds.test.ts",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_animalids_test",
-      "target": "core_databaseerrors"
+      "target": "core_databaseerrors",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -43184,9 +43114,9 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "core_databaseerrors_isduplicateentryerror"
+      "target": "core_databaseerrors_isduplicateentryerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -43195,9 +43125,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L5",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "core_databaseerrors_isduplicateentryerror"
+      "target": "core_databaseerrors_isduplicateentryerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -43206,9 +43136,9 @@
       "source_file": "server/animalIds.test.ts",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_animalids_test",
-      "target": "core_databaseerrors_isduplicateentryerror"
+      "target": "core_databaseerrors_isduplicateentryerror",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -45723,9 +45653,9 @@
       "source_file": "server/_core/trpc.ts",
       "source_location": "L142",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_trpc",
-      "target": "core_trpc_allpermissionsprocedure"
+      "target": "core_trpc_allpermissionsprocedure",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -46581,9 +46511,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L6",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "core_trpc_allpermissionsprocedure"
+      "target": "core_trpc_allpermissionsprocedure",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -46711,9 +46641,9 @@
       "source_file": "server/_core/validators.ts",
       "source_location": "L28",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_validators",
-      "target": "core_validators_optionalanimalidnumber"
+      "target": "core_validators_optionalanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -46782,9 +46712,9 @@
       "source_file": "server/_core/validators.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "core_validators",
-      "target": "shared_animalids"
+      "target": "shared_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports_from",
@@ -46925,9 +46855,9 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L8",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "core_validators_optionalanimalidnumber"
+      "target": "core_validators_optionalanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -46936,9 +46866,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L7",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "core_validators_optionalanimalidnumber"
+      "target": "core_validators_optionalanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -47146,9 +47076,9 @@
       "source_file": "server/animalIds.test.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_animalids_test",
-      "target": "shared_animalids"
+      "target": "shared_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -47157,9 +47087,9 @@
       "source_file": "server/animalIds.test.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_animalids_test",
-      "target": "shared_animalids_composeanimalid"
+      "target": "shared_animalids_composeanimalid",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -47168,9 +47098,9 @@
       "source_file": "server/animalIds.test.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_animalids_test",
-      "target": "shared_animalids_extractanimalidnumber"
+      "target": "shared_animalids_extractanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -47179,9 +47109,9 @@
       "source_file": "server/animalIds.test.ts",
       "source_location": "L2",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_animalids_test",
-      "target": "shared_animalids_normalizeanimalidnumber"
+      "target": "shared_animalids_normalizeanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -47848,16 +47778,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "server/db.ts",
-      "source_location": "L197",
-      "weight": 1.0,
-      "source": "server_db",
-      "target": "server_db_categoryhasanimals",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
       "source_location": "L1728",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -48140,18 +48060,8 @@
       "source_file": "server/db.ts",
       "source_location": "L198",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_db",
-      "target": "server_db_ensurecategorysequenceatleast"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
-      "source_location": "L240",
-      "weight": 1.0,
-      "source": "server_db",
-      "target": "server_db_generatenextanimalid",
+      "target": "server_db_ensurecategorysequenceatleast",
       "confidence_score": 1.0
     },
     {
@@ -48368,16 +48278,6 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "server/db.ts",
-      "source_location": "L186",
-      "weight": 1.0,
-      "source": "server_db",
-      "target": "server_db_getcategoryforupdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
       "source_location": "L1143",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -48540,9 +48440,9 @@
       "source_file": "server/db.ts",
       "source_location": "L242",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_db",
-      "target": "server_db_getlambingrecordforupdate"
+      "target": "server_db_getlambingrecordforupdate",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -48590,9 +48490,9 @@
       "source_file": "server/db.ts",
       "source_location": "L261",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_db",
-      "target": "server_db_getrawanimalbyanimalid"
+      "target": "server_db_getrawanimalbyanimalid",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -48603,26 +48503,6 @@
       "confidence_score": 1.0,
       "source": "server_db",
       "target": "server_db_getrawanimalbyid"
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
-      "source_location": "L301",
-      "weight": 1.0,
-      "source": "server_db",
-      "target": "server_db_getrawanimalforupdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
-      "source_location": "L320",
-      "weight": 1.0,
-      "source": "server_db",
-      "target": "server_db_getrawownerbyid",
-      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -49059,17 +48939,6 @@
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "server/lfms.test.ts",
-      "source_location": "L236",
-      "weight": 1.0,
-      "source": "server_lfms_test_mocktransactiondb",
-      "target": "server_db",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "server/lowStockCheck.ts",
       "source_location": "L8",
       "weight": 1.0,
@@ -49131,17 +49000,6 @@
       "confidence_score": 1.0,
       "source": "routers_breeding",
       "target": "server_db_getdb"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/config.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_config",
-      "target": "server_db_getdb",
-      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -49252,17 +49110,6 @@
       "confidence_score": 1.0,
       "source": "server_db_addvaccine",
       "target": "server_db_getdb"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
-      "source_location": "L198",
-      "weight": 1.0,
-      "source": "server_db_categoryhasanimals",
-      "target": "server_db_getdb",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -49557,9 +49404,9 @@
       "source_file": "server/db.ts",
       "source_location": "L203",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_db_ensurecategorysequenceatleast",
-      "target": "server_db_getdb"
+      "target": "server_db_getdb",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -50008,9 +49855,9 @@
       "source_file": "server/db.ts",
       "source_location": "L262",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "server_db_getrawanimalbyanimalid",
-      "target": "server_db_getdb"
+      "target": "server_db_getdb",
+      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -50022,17 +49869,6 @@
       "confidence_score": 1.0,
       "source": "server_db_getrawanimalbyid",
       "target": "server_db_getdb"
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
-      "source_location": "L321",
-      "weight": 1.0,
-      "source": "server_db_getrawownerbyid",
-      "target": "server_db_getdb",
-      "confidence_score": 1.0
     },
     {
       "relation": "calls",
@@ -50602,9 +50438,9 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L8",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "server_db_getallspecies"
+      "target": "server_db_getallspecies",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -50765,50 +50601,6 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "server/routers/animals.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "server_db_getcategoryforupdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/breeding.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "source": "routers_breeding",
-      "target": "server_db_getcategoryforupdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/config.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_config",
-      "target": "server_db_getcategoryforupdate",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/config.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_config",
-      "target": "server_db_categoryhasanimals",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
       "source_location": "L7",
       "weight": 1.0,
       "confidence_score": 1.0,
@@ -50827,47 +50619,14 @@
       "target": "server_db_incrementcategorysequence"
     },
     {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
-      "source_location": "L246",
-      "weight": 1.0,
-      "source": "server_db_generatenextanimalid",
-      "target": "server_db_incrementcategorysequence",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "server/routers/animals.ts",
       "source_location": "L10",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "server_db_ensurecategorysequenceatleast"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/breeding.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routers_breeding",
-      "target": "server_db_ensurecategorysequenceatleast"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "server_db_generatenextanimalid",
+      "target": "server_db_ensurecategorysequenceatleast",
       "confidence_score": 1.0
     },
     {
@@ -50878,40 +50637,7 @@
       "source_location": "L8",
       "weight": 1.0,
       "source": "routers_breeding",
-      "target": "server_db_generatenextanimalid",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/db.ts",
-      "source_location": "L248",
-      "weight": 1.0,
-      "source": "server_db_generatenextanimalid",
-      "target": "server_db_getrawanimalbyanimalid",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "server_db_getallstatuses",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L59",
-      "weight": 1.0,
-      "source": "routers_animals_validateanimalreferences",
-      "target": "server_db_getallstatuses",
+      "target": "server_db_ensurecategorysequenceatleast",
       "confidence_score": 1.0
     },
     {
@@ -50998,30 +50724,8 @@
       "source_file": "server/routers/breeding.ts",
       "source_location": "L8",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_breeding",
-      "target": "server_db_getlambingrecordforupdate"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "server_db_getrawanimalbyid",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L61",
-      "weight": 1.0,
-      "source": "routers_animals_validateanimalreferences",
-      "target": "server_db_getrawanimalbyid",
+      "target": "server_db_getlambingrecordforupdate",
       "confidence_score": 1.0
     },
     {
@@ -51040,43 +50744,21 @@
       "context": "import",
       "confidence": "EXTRACTED",
       "source_file": "server/routers/animals.ts",
-      "source_location": "L11",
+      "source_location": "L10",
       "weight": 1.0,
       "source": "routers_animals",
-      "target": "server_db_getrawanimalforupdate",
+      "target": "server_db_getrawanimalbyanimalid",
       "confidence_score": 1.0
     },
     {
       "relation": "imports",
       "context": "import",
       "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L10",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routers_animals",
-      "target": "server_db_getrawanimalbyanimalid"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/breeding.ts",
-      "source_location": "L8",
-      "weight": 1.0,
-      "confidence_score": 1.0,
-      "source": "routers_breeding",
-      "target": "server_db_getrawanimalbyanimalid"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
       "source_file": "server/routers/breeding.ts",
       "source_location": "L8",
       "weight": 1.0,
       "source": "routers_breeding",
-      "target": "server_db_getrawownerbyid",
+      "target": "server_db_getrawanimalbyanimalid",
       "confidence_score": 1.0
     },
     {
@@ -51111,28 +50793,6 @@
       "confidence_score": 1.0,
       "source": "routers_config",
       "target": "server_db_updatestatus"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "server_db_getallgroups",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L58",
-      "weight": 1.0,
-      "source": "routers_animals_validateanimalreferences",
-      "target": "server_db_getallgroups",
-      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -51210,28 +50870,6 @@
       "confidence_score": 1.0,
       "source": "routers_config",
       "target": "server_db_updategroup"
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L11",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "server_db_getallowners",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "context": "call",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L60",
-      "weight": 1.0,
-      "source": "routers_animals_validateanimalreferences",
-      "target": "server_db_getallowners",
-      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -53516,16 +53154,6 @@
       "target": "server_lfms_test_makectx"
     },
     {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "server/lfms.test.ts",
-      "source_location": "L235",
-      "weight": 1.0,
-      "source": "server_lfms_test",
-      "target": "server_lfms_test_mocktransactiondb",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -54252,16 +53880,6 @@
       "target": "routers_animals_animalsrouter"
     },
     {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L47",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "routers_animals_validateanimalreferences",
-      "confidence_score": 1.0
-    },
-    {
       "relation": "imports_from",
       "context": "import",
       "confidence": "EXTRACTED",
@@ -54301,9 +53919,9 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "shared_animalids"
+      "target": "shared_animalids",
+      "confidence_score": 1.0
     },
     {
       "relation": "imports",
@@ -54312,30 +53930,8 @@
       "source_file": "server/routers/animals.ts",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "routers_animals",
-      "target": "shared_animalids_extractanimalidnumber"
-    },
-    {
-      "relation": "imports_from",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L4",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "shared_permissions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "imports",
-      "context": "import",
-      "confidence": "EXTRACTED",
-      "source_file": "server/routers/animals.ts",
-      "source_location": "L4",
-      "weight": 1.0,
-      "source": "routers_animals",
-      "target": "shared_permissions_haspermission",
+      "target": "shared_animalids_extractanimalidnumber",
       "confidence_score": 1.0
     },
     {
@@ -55158,9 +54754,9 @@
       "source_file": "shared/animalIds.ts",
       "source_location": "L8",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "shared_animalids",
-      "target": "shared_animalids_composeanimalid"
+      "target": "shared_animalids_composeanimalid",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -55168,9 +54764,9 @@
       "source_file": "shared/animalIds.ts",
       "source_location": "L21",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "shared_animalids",
-      "target": "shared_animalids_extractanimalidnumber"
+      "target": "shared_animalids_extractanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",
@@ -55178,9 +54774,9 @@
       "source_file": "shared/animalIds.ts",
       "source_location": "L3",
       "weight": 1.0,
-      "confidence_score": 1.0,
       "source": "shared_animalids",
-      "target": "shared_animalids_normalizeanimalidnumber"
+      "target": "shared_animalids_normalizeanimalidnumber",
+      "confidence_score": 1.0
     },
     {
       "relation": "contains",

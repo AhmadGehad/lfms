@@ -1,8 +1,12 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { extractAnimalIdNumber } from "@shared/animalIds";
+import { hasPermission } from "@shared/permissions";
 import { getClientIp } from "../_core/audit";
+import { composeAnimalIdOrThrow, sequenceValueFromAnimalIdNumber } from "../_core/animalIds";
+import { isDuplicateEntryError } from "../_core/databaseErrors";
 import { anyPermissionProcedure, permissionProcedure, router } from "../_core/trpc";
-import { optionalMoneyString, optionalWeightString, weightString, pastOrTodayDate } from "../_core/validators";
+import { optionalAnimalIdNumber, optionalMoneyString, optionalWeightString, weightString, pastOrTodayDate } from "../_core/validators";
 import { storagePut, storageGetSignedUrl } from "../storage";
 import {
   checkAndStageAnimal,
@@ -15,8 +19,17 @@ import {
   softDeleteWeightEntry,
   getDb,
   getAllCategories,
+  getAllGroups,
+  getAllOwners,
+  getAllStatuses,
+  ensureCategorySequenceAtLeast,
+  generateNextAnimalId,
   getAnimalById,
   getAnimalsByIds,
+  getRawAnimalByAnimalId,
+  getRawAnimalForUpdate,
+  getRawAnimalById,
+  getCategoryForUpdate,
   getStatusById,
   getAllAnimalsPnL,
   getAnimalPnL,
@@ -27,10 +40,64 @@ import {
   getRationPlans,
   getSales,
   getWeightLog,
-  incrementCategorySequence,
   recordStatusChange,
   updateAnimal,
 } from "../db";
+
+async function validateAnimalReferences(input: {
+  animalId?: number;
+  speciesId: number;
+  categoryId: number;
+  groupId?: number;
+  statusId?: number;
+  ownerId?: number | null;
+  damId?: number | null;
+  sireId?: number | null;
+}) {
+  const [groups, statuses, owners, dam, sire] = await Promise.all([
+    input.groupId ? getAllGroups(input.speciesId) : Promise.resolve([]),
+    input.statusId ? getAllStatuses() : Promise.resolve([]),
+    input.ownerId ? getAllOwners() : Promise.resolve([]),
+    input.damId ? getRawAnimalById(input.damId) : Promise.resolve(null),
+    input.sireId ? getRawAnimalById(input.sireId) : Promise.resolve(null),
+  ]);
+
+  if (input.groupId) {
+    const group = groups.find((item: any) => item.id === input.groupId);
+    if (!group?.isActive ||
+        (group.speciesId && group.speciesId !== input.speciesId) ||
+        (group.categoryId && group.categoryId !== input.categoryId)) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Selected group is not valid for this animal" });
+    }
+  }
+  if (input.statusId) {
+    const status = statuses.find((item: any) => item.id === input.statusId);
+    if (!status?.isActive) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Selected status is not active" });
+    }
+  }
+  if (input.ownerId && !owners.some((item: any) => item.id === input.ownerId)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Selected owner is not active" });
+  }
+  if (input.damId &&
+      (input.damId === input.animalId ||
+       !dam ||
+       dam.deletedAt ||
+       !dam.isActive ||
+       dam.sex !== "female" ||
+       dam.speciesId !== input.speciesId)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Selected dam is not valid" });
+  }
+  if (input.sireId &&
+      (input.sireId === input.animalId ||
+       !sire ||
+       sire.deletedAt ||
+       !sire.isActive ||
+       sire.sex !== "male" ||
+       sire.speciesId !== input.speciesId)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Selected sire is not valid" });
+  }
+}
 
 export const animalsRouter = router({
   // ─── LIST ───────────────────────────────────────────────────────────────────
@@ -116,47 +183,106 @@ export const animalsRouter = router({
         purchaseCost: optionalMoneyString,
         weightAtAcquisition: optionalWeightString,
         notes: z.string().max(2000).optional(),
+        animalIdNumber: optionalAnimalIdNumber,
       }).refine(
         (d) => new Date(d.birthDate) <= new Date(d.acquisitionDate),
         { message: "Birth date cannot be after acquisition date", path: ["birthDate"] }
       )
     )
     .mutation(async ({ input, ctx }) => {
-      // Auto-generate Animal ID
-      const seq = await incrementCategorySequence(input.categoryId);
-      // Get category prefix from DB
-      const { getAllCategories } = await import("../db");
       const cats = await getAllCategories(input.speciesId);
       const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
-      const prefix = cat?.idPrefix ?? "A-";
-      const animalId = `${prefix}${String(seq).padStart(4, "0")}`;
-
-      const result = await createAnimal({
-        ...input,
-        animalId,
-        acquisitionDate: input.acquisitionDate as any,
-        birthDate: input.birthDate as any,
-        createdBy: ctx.user?.id,
+      if (!cat || cat.speciesId !== input.speciesId || !cat.isActive) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected category is not valid for this species" });
+      }
+      await validateAnimalReferences({
+        speciesId: input.speciesId,
+        categoryId: input.categoryId,
+        groupId: input.groupId,
+        statusId: input.statusId,
+        ownerId: input.ownerId,
+        damId: input.damId,
+        sireId: input.sireId,
       });
 
-      // Record initial status
-      await recordStatusChange({
-        animalId: (result as any).insertId,
-        newStatusId: input.statusId,
-        changedBy: ctx.user?.id,
-        notes: "Initial registration",
-      });
+      const { animalIdNumber, ...animalInput } = input;
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      }
+      try {
+        return await db.transaction(async (tx) => {
+          const lockedCat = await getCategoryForUpdate(input.categoryId, tx);
+          if (!lockedCat ||
+              lockedCat.deletedAt ||
+              !lockedCat.isActive ||
+              lockedCat.speciesId !== input.speciesId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Selected category is no longer available",
+            });
+          }
+          let animalId: string;
+          if (animalIdNumber) {
+            animalId = composeAnimalIdOrThrow(lockedCat.idPrefix, animalIdNumber);
+            if (await getRawAnimalByAnimalId(animalId, tx)) {
+              throw new TRPCError({
+                code: "CONFLICT",
+                message: "Animal ID already exists or is in the Recycle Bin",
+              });
+            }
+            const manualSequence = sequenceValueFromAnimalIdNumber(animalIdNumber);
+            if (manualSequence !== null) {
+              await ensureCategorySequenceAtLeast(input.categoryId, manualSequence, tx);
+            }
+          } else {
+            animalId = await generateNextAnimalId(
+              input.categoryId,
+              lockedCat.idPrefix,
+              tx,
+            );
+          }
 
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "create",
-        ipAddress: getClientIp(ctx),
-        entityType: "animal",
-        entityId: animalId,
-        newValues: input as any,
-      });
+          const result = await createAnimal({
+            ...animalInput,
+            animalId,
+            acquisitionDate: input.acquisitionDate as any,
+            birthDate: input.birthDate as any,
+            createdBy: ctx.user?.id,
+          }, tx);
 
-      return { ...result, animalId };
+          await recordStatusChange({
+            animalId: (result as any).insertId,
+            newStatusId: input.statusId,
+            changedBy: ctx.user?.id,
+            notes: "Initial registration",
+          }, tx);
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "create",
+            ipAddress: getClientIp(ctx),
+            entityType: "animal",
+            entityId: animalId,
+            newValues: { ...input, animalId } as any,
+          }, tx);
+
+          return { ...result, animalId };
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (isDuplicateEntryError(error)) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Animal ID already exists or is in the Recycle Bin",
+          });
+        }
+        console.error("[Animals] Animal creation failed", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not register animal. Try again.",
+        });
+      }
     }),
 
   // ─── UPDATE ─────────────────────────────────────────────────────────────────
@@ -178,22 +304,35 @@ export const animalsRouter = router({
         isActive: z.boolean().optional(),
         damId: z.number().int().positive().nullable().optional(),
         sireId: z.number().int().positive().nullable().optional(),
+        animalIdNumber: optionalAnimalIdNumber,
       })
     )
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, animalIdNumber, ...data }, ctx }) => {
       const existing = await getAnimalById(id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // If category changed, regenerate the animalId
-      if (data.categoryId && data.categoryId !== existing.animal.categoryId) {
-        const cats = await getAllCategories();
-        const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === data.categoryId);
-        if (cat) {
-          const seq = await incrementCategorySequence(data.categoryId);
-          const newAnimalId = `${cat.idPrefix}${String(seq).padStart(4, "0")}`;
-          await updateAnimal(id, { animalId: newAnimalId } as any);
-        }
+      const cats = await getAllCategories();
+      const currentCat = cats.find((cat: any) => cat.id === existing.animal.categoryId);
+      const targetCategoryId = data.categoryId ?? existing.animal.categoryId;
+      const targetCat = cats.find((cat: any) => cat.id === targetCategoryId);
+      if (!targetCat ||
+          targetCat.speciesId !== existing.animal.speciesId ||
+          (!targetCat.isActive && targetCategoryId !== existing.animal.categoryId)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected category is not valid for this animal" });
       }
+      await validateAnimalReferences({
+        animalId: id,
+        speciesId: existing.animal.speciesId,
+        categoryId: targetCategoryId,
+        groupId: data.groupId ??
+          (targetCategoryId !== existing.animal.categoryId
+            ? existing.animal.groupId
+            : undefined),
+        statusId: data.statusId,
+        ownerId: data.ownerId,
+        damId: data.damId,
+        sireId: data.sireId,
+      });
 
       // Cross-field date sanity using incoming values where provided,
       // falling back to the stored ones.
@@ -207,38 +346,120 @@ export const animalsRouter = router({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Exit date cannot be before acquisition date" });
       }
 
-      // If status changed, record history
-      if (data.statusId && data.statusId !== existing.animal.statusId) {
-        await recordStatusChange({
-          animalId: id,
-          previousStatusId: existing.animal.statusId,
-          newStatusId: data.statusId,
-          changedBy: ctx.user?.id,
-        });
-      }
-
       // If exit status set, cascade isActive = false
       if (data.exitDate || existing.isExitStatus) {
         data.isActive = false;
       }
 
-      await updateAnimal(id, {
-        ...data,
-        acquisitionDate: data.acquisitionDate as any,
-        birthDate: data.birthDate as any,
-        exitDate: data.exitDate as any,
-        updatedAt: new Date(),
-      });
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      }
+      try {
+        await db.transaction(async (tx) => {
+          const lockedAnimal = await getRawAnimalForUpdate(id, tx);
+          if (!lockedAnimal || lockedAnimal.deletedAt) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Animal not found" });
+          }
+          const changedWhileEditing =
+            lockedAnimal.categoryId !== existing.animal.categoryId ||
+            lockedAnimal.animalId !== existing.animal.animalId ||
+            (lockedAnimal.updatedAt &&
+             existing.animal.updatedAt &&
+             new Date(lockedAnimal.updatedAt).getTime() !==
+               new Date(existing.animal.updatedAt).getTime());
+          if (changedWhileEditing) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Animal changed while editing. Reopen it and try again.",
+            });
+          }
+          const lockedTargetCat = await getCategoryForUpdate(targetCategoryId, tx);
+          if (!lockedTargetCat ||
+              lockedTargetCat.deletedAt ||
+              lockedTargetCat.speciesId !== existing.animal.speciesId ||
+              (!lockedTargetCat.isActive &&
+               targetCategoryId !== existing.animal.categoryId)) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Selected category is no longer available",
+            });
+          }
+          let nextAnimalId = existing.animal.animalId;
+          let controlledNumber = animalIdNumber;
+          if (!controlledNumber && targetCategoryId !== existing.animal.categoryId) {
+            controlledNumber = extractAnimalIdNumber(
+              existing.animal.animalId,
+              currentCat?.idPrefix ?? "",
+            ) || undefined;
+          }
 
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "update",
-        ipAddress: getClientIp(ctx),
-        entityType: "animal",
-        entityId: String(id),
-        oldValues: existing as any,
-        newValues: data as any,
-      });
+          if (controlledNumber) {
+            nextAnimalId = composeAnimalIdOrThrow(
+              lockedTargetCat.idPrefix,
+              controlledNumber,
+            );
+            const duplicate = await getRawAnimalByAnimalId(nextAnimalId, tx);
+            if (duplicate && duplicate.id !== id) {
+              throw new TRPCError({
+                code: "CONFLICT",
+                message: "Animal ID already exists or is in the Recycle Bin",
+              });
+            }
+            const sequence = sequenceValueFromAnimalIdNumber(controlledNumber);
+            if (sequence !== null) {
+              await ensureCategorySequenceAtLeast(targetCategoryId, sequence, tx);
+            }
+          } else if (targetCategoryId !== existing.animal.categoryId) {
+            nextAnimalId = await generateNextAnimalId(
+              targetCategoryId,
+              lockedTargetCat.idPrefix,
+              tx,
+            );
+          }
+
+          if (data.statusId && data.statusId !== existing.animal.statusId) {
+            await recordStatusChange({
+              animalId: id,
+              previousStatusId: existing.animal.statusId,
+              newStatusId: data.statusId,
+              changedBy: ctx.user?.id,
+            }, tx);
+          }
+
+          await updateAnimal(id, {
+            ...data,
+            animalId: nextAnimalId,
+            acquisitionDate: data.acquisitionDate as any,
+            birthDate: data.birthDate as any,
+            exitDate: data.exitDate as any,
+            updatedAt: new Date(),
+          }, tx);
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "update",
+            ipAddress: getClientIp(ctx),
+            entityType: "animal",
+            entityId: String(id),
+            oldValues: existing as any,
+            newValues: { ...data, animalId: nextAnimalId } as any,
+          }, tx);
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (isDuplicateEntryError(error)) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Animal ID already exists or is in the Recycle Bin",
+          });
+        }
+        console.error("[Animals] Animal update failed", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update animal. Try again.",
+        });
+      }
 
       return { success: true };
     }),
@@ -618,46 +839,86 @@ export const animalsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const result = await createWeightEntry({
-        animalId: input.animalId,
-        weighDate: input.weighDate as any,
-        weightKg: input.weightKg,
-        notes: input.notes,
-        createdBy: ctx.user?.id,
-      });
-
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "create",
-        ipAddress: getClientIp(ctx),
-        entityType: "weightLog",
-        entityId: String((result as any).insertId),
-        newValues: input as any,
-      });
-
-      // Check if target weight reached
       const animal = await getAnimalById(input.animalId);
+      if (!animal) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Animal not found" });
+      }
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      }
+      const canAutoStage = hasPermission(
+        ctx.user.role,
+        ctx.permissionOverrides,
+        "animals",
+        "update",
+      );
+      let result;
+      let stageResult: Awaited<ReturnType<typeof checkAndStageAnimal>> = {
+        staged: false,
+      };
+      try {
+        ({ result, stageResult } = await db.transaction(async (tx) => {
+          const lockedAnimal = await getRawAnimalForUpdate(input.animalId, tx);
+          if (!lockedAnimal || lockedAnimal.deletedAt) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Animal not found" });
+          }
+          const created = await createWeightEntry({
+            animalId: input.animalId,
+            weighDate: input.weighDate as any,
+            weightKg: input.weightKg,
+            notes: input.notes,
+            createdBy: ctx.user?.id,
+          }, tx);
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "create",
+            ipAddress: getClientIp(ctx),
+            entityType: "weightLog",
+            entityId: String((created as any).insertId),
+            newValues: input as any,
+          }, tx);
+
+          const staged = canAutoStage
+            ? await checkAndStageAnimal(
+                input.animalId,
+                parseFloat(input.weightKg),
+                ctx.user?.id,
+                tx,
+              )
+            : { staged: false };
+          return { result: created, stageResult: staged };
+        }));
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        console.error("[Animals] Weight entry failed", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not record weight. Try again.",
+        });
+      }
+
+      // Notifications are best-effort and must not make a committed weight
+      // look failed to the caller.
       if (animal?.targetWeightKg) {
         const target = parseFloat(String(animal.targetWeightKg));
         const current = parseFloat(input.weightKg);
         if (current >= target) {
-          await createNotification({
-            alertType: "target_weight_reached",
-            title: "Target Weight Reached",
-            message: `Animal ${animal.animal.animalId} has reached target weight of ${target}kg (current: ${current}kg)`,
-            relatedEntityType: "animal",
-            relatedEntityId: String(input.animalId),
-            priority: "high",
-          });
+          try {
+            await createNotification({
+              alertType: "target_weight_reached",
+              title: "Target Weight Reached",
+              message: `Animal ${stageResult.newAnimalId ?? animal.animal.animalId} has reached target weight of ${target}kg (current: ${current}kg)`,
+              relatedEntityType: "animal",
+              relatedEntityId: String(input.animalId),
+              priority: "high",
+            });
+          } catch (error) {
+            console.error("[Animals] Target-weight notification failed", error);
+          }
         }
       }
-
-      // ─── Auto-stage check ──────────────────────────────────────────────────
-      const stageResult = await checkAndStageAnimal(
-        input.animalId,
-        parseFloat(input.weightKg),
-        ctx.user?.id
-      );
 
       return { ...result, autoStaged: stageResult.staged, newAnimalId: stageResult.newAnimalId };
     }),

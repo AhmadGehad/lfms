@@ -1,20 +1,27 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { permissionProcedure, router } from "../_core/trpc";
-import { optionalMoneyString, optionalWeightString, pastOrTodayDate } from "../_core/validators";
+import { composeAnimalIdOrThrow, sequenceValueFromAnimalIdNumber } from "../_core/animalIds";
+import { isDuplicateEntryError } from "../_core/databaseErrors";
+import { allPermissionsProcedure, permissionProcedure, router } from "../_core/trpc";
+import { optionalAnimalIdNumber, optionalMoneyString, optionalWeightString, pastOrTodayDate } from "../_core/validators";
 import {
   createLambingRecord,
   createAnimal,
   createAuditEntry,
+  ensureCategorySequenceAtLeast,
   getDb,
   getAllCategories,
+  getAllSpecies,
   getAllStatuses,
   getAllGroups,
+  generateNextAnimalId,
   getLambingLog,
-  getLambingRecordById,
+  getLambingRecordForUpdate,
+  getCategoryForUpdate,
   getRawAnimalByAnimalId,
   getRawAnimalById,
+  getRawOwnerById,
   updateLambingRecord,
   incrementCategorySequence,
   recordStatusChange,
@@ -88,52 +95,118 @@ export const breedingRouter = router({
     }),
 
   // ─── PROMOTE LAMB TO ANIMAL REGISTRY ────────────────────────────────────────
-  promoteLamb: permissionProcedure("breeding", "update")
+  promoteLamb: allPermissionsProcedure([
+    ["breeding", "update"],
+    ["animals", "create"],
+  ])
     .input(
       z.object({
-        lambingLogId: z.number(),
-        categoryId: z.number(),
-        speciesId: z.number(),
-        groupId: z.number(),
-        statusId: z.number(),
+        lambingLogId: z.number().int().positive(),
+        categoryId: z.number().int().positive(),
+        speciesId: z.number().int().positive(),
+        groupId: z.number().int().positive(),
+        statusId: z.number().int().positive(),
         acquisitionDate: pastOrTodayDate,
-        customAnimalId: z.string()
-          .trim()
-          .min(1)
-          .max(20)
-          .regex(/^\d+$/, "Specific animal ID must contain digits only")
-          .optional(),
+        animalIdNumber: optionalAnimalIdNumber,
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const cats = await getAllCategories();
-      const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
-      const prefix = cat?.idPrefix ?? "A-";
+      const [cats, speciesRows, groupRows, statusRows] = await Promise.all([
+        getAllCategories(),
+        getAllSpecies(),
+        getAllGroups(),
+        getAllStatuses(),
+      ]);
+      const cat = cats.find((item: any) => item.id === input.categoryId);
+      const selectedSpecies = speciesRows.find((item: any) => item.id === input.speciesId);
+      const group = groupRows.find((item: any) => item.id === input.groupId);
+      const status = statusRows.find((item: any) => item.id === input.statusId);
+
+      if (!selectedSpecies?.isActive) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected species is not active" });
+      }
+      if (!cat?.isActive || cat.speciesId !== input.speciesId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected category is not valid for this species" });
+      }
+      if (!group?.isActive ||
+          (group.speciesId && group.speciesId !== input.speciesId) ||
+          (group.categoryId && group.categoryId !== input.categoryId)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected group is not valid for this animal" });
+      }
+      if (!status?.isActive || status.isExitStatus) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected initial status is not valid" });
+      }
 
       const db = await getDb();
-      if (!db) throw new Error("DB unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       // All-or-nothing: lamb re-check + optional sequence bump + animal insert +
-      // status history + lamb update — all inside ONE transaction.
+      // status history + lamb update + audit — all inside ONE transaction.
       let out;
       try {
         out = await db.transaction(async (tx) => {
-          // F8: re-read the lamb INSIDE the transaction so a concurrent
-          // promotion of the same lamb cannot pass the isPromoted check twice.
-          const lamb = await getLambingRecordById(input.lambingLogId, tx);
-          if (!lamb) throw new Error("Lambing record not found");
-          if (lamb.isPromoted) throw new Error("Lamb already promoted");
-
-          // F7: inherit the dam's owner so animals born on-farm stay attributed
-          // to the same owner as their mother (owner can be changed later).
-          let inheritedOwnerId: number | null = null;
-          if (lamb.damId) {
-            const dam = await getRawAnimalById(lamb.damId, tx);
-            inheritedOwnerId = dam?.ownerId ?? null;
+          const lamb = await getLambingRecordForUpdate(input.lambingLogId, tx);
+          if (!lamb || lamb.deletedAt) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Lambing record not found" });
+          }
+          if (lamb.isPromoted) {
+            throw new TRPCError({ code: "CONFLICT", message: "Lamb already promoted" });
           }
 
-          let animalId = input.customAnimalId;
-          if (animalId) {
+          const lockedCat = await getCategoryForUpdate(input.categoryId, tx);
+          if (!lockedCat ||
+              lockedCat.deletedAt ||
+              !lockedCat.isActive ||
+              lockedCat.speciesId !== input.speciesId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Selected category is no longer available",
+            });
+          }
+
+          let dam = null;
+          if (lamb.damId) {
+            dam = await getRawAnimalById(lamb.damId, tx);
+            if (!dam ||
+                dam.deletedAt ||
+                !dam.isActive ||
+                dam.sex !== "female" ||
+                dam.speciesId !== input.speciesId) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Lamb dam is no longer valid for promotion",
+              });
+            }
+          }
+          if (lamb.sireId) {
+            const sire = await getRawAnimalById(lamb.sireId, tx);
+            if (!sire ||
+                sire.deletedAt ||
+                !sire.isActive ||
+                sire.sex !== "male" ||
+                sire.speciesId !== input.speciesId) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: "Lamb sire is no longer valid for promotion",
+              });
+            }
+          }
+
+          // Inherit only an owner that still exists and is active.
+          let inheritedOwnerId: number | null = null;
+          if (dam?.ownerId) {
+            const owner = await getRawOwnerById(dam.ownerId, tx);
+            if (owner && !owner.deletedAt && owner.isActive) {
+              inheritedOwnerId = owner.id;
+            }
+          }
+
+          let animalId: string;
+          if (input.animalIdNumber) {
+            animalId = composeAnimalIdOrThrow(
+              lockedCat.idPrefix,
+              input.animalIdNumber,
+            );
             const existing = await getRawAnimalByAnimalId(animalId, tx);
             if (existing) {
               throw new TRPCError({
@@ -142,8 +215,11 @@ export const breedingRouter = router({
               });
             }
           } else {
-            const seq = await incrementCategorySequence(input.categoryId, tx);
-            animalId = `${prefix}${String(seq).padStart(4, "0")}`;
+            animalId = await generateNextAnimalId(
+              input.categoryId,
+              lockedCat.idPrefix,
+              tx,
+            );
           }
 
           const result = await createAnimal({
@@ -162,6 +238,12 @@ export const breedingRouter = router({
             weightAtAcquisition: lamb.birthWeightKg,
             createdBy: ctx.user?.id,
           }, tx);
+          const manualSequence = input.animalIdNumber
+            ? sequenceValueFromAnimalIdNumber(input.animalIdNumber)
+            : null;
+          if (manualSequence !== null) {
+            await ensureCategorySequenceAtLeast(input.categoryId, manualSequence, tx);
+          }
 
           const insertId = (result as any).insertId;
           await recordStatusChange({
@@ -176,17 +258,37 @@ export const breedingRouter = router({
             promotedHeadId: insertId,
           }, tx);
 
+          await createAuditEntry({
+            userId: ctx.user.id,
+            action: "promote",
+            ipAddress: getClientIp(ctx),
+            entityType: "animal",
+            entityId: animalId,
+            newValues: {
+              lambingLogId: input.lambingLogId,
+              animalId,
+              categoryId: input.categoryId,
+              speciesId: input.speciesId,
+              groupId: input.groupId,
+              statusId: input.statusId,
+            },
+          }, tx);
+
           return { animalId, insertId };
         });
       } catch (error) {
-        const databaseError = error as { code?: string; errno?: number };
-        if (databaseError.code === "ER_DUP_ENTRY" || databaseError.errno === 1062) {
+        if (error instanceof TRPCError) throw error;
+        if (isDuplicateEntryError(error)) {
           throw new TRPCError({
             code: "CONFLICT",
             message: "Animal ID already exists or is in the Recycle Bin",
           });
         }
-        throw error;
+        console.error("[Breeding] Lamb promotion failed", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not promote lamb. Try again.",
+        });
       }
 
       return out;

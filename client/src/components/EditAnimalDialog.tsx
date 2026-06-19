@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
+import { extractAnimalIdNumber } from "@shared/animalIds";
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -39,10 +41,19 @@ export function EditAnimalDialog({
     { id: animalId! },
     { enabled: queryEnabled },
   );
-  const { data: groups } = trpc.config.getGroups.useQuery({}, { enabled: open });
+  const speciesFilter = animal?.animal.speciesId
+    ? { speciesId: animal.animal.speciesId }
+    : undefined;
+  const { data: groups } = trpc.config.getGroups.useQuery(
+    speciesFilter,
+    { enabled: open && Boolean(animal) },
+  );
   const { data: statuses } = trpc.config.getStatuses.useQuery(undefined, { enabled: open });
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery(undefined, { enabled: open });
-  const { data: categories } = trpc.config.getCategories.useQuery(undefined, { enabled: open });
+  const { data: categories } = trpc.config.getCategories.useQuery(
+    speciesFilter,
+    { enabled: open && Boolean(animal) },
+  );
   const { data: females } = trpc.animals.lookup.useQuery(
     { isActive: true, sex: "female", limit: 500 },
     { enabled: open },
@@ -52,10 +63,17 @@ export function EditAnimalDialog({
     { enabled: open },
   );
   const utils = trpc.useUtils();
-  const { control, handleSubmit, reset } = useForm<any>();
+  const { control, handleSubmit, reset, watch } = useForm<any>();
+  const selectedCategoryId = watch("categoryId");
+  const selectedCategory = (categories ?? []).find(
+    (category: any) => String(category.id) === selectedCategoryId,
+  );
 
   useEffect(() => {
     if (!open || !animal) return;
+    const currentCategory = (categories ?? []).find(
+      (category: any) => category.id === animal.animal.categoryId,
+    );
     reset({
       categoryId: String(animal.animal.categoryId ?? ""),
       groupId: String(animal.animal.groupId ?? ""),
@@ -78,8 +96,12 @@ export function EditAnimalDialog({
       exitReason: animal.animal.exitReason ?? "",
       damId: animal.animal.damId ? String(animal.animal.damId) : "none",
       sireId: animal.animal.sireId ? String(animal.animal.sireId) : "none",
+      animalIdNumber: extractAnimalIdNumber(
+        animal.animal.animalId,
+        currentCategory?.idPrefix ?? "",
+      ),
     });
-  }, [animal, open, reset]);
+  }, [animal, categories, open, reset]);
 
   const updateAnimal = trpc.animals.update.useMutation({
     onSuccess: () => {
@@ -110,6 +132,7 @@ export function EditAnimalDialog({
       exitReason: data.exitReason || undefined,
       damId: data.damId && data.damId !== "none" ? Number(data.damId) : null,
       sireId: data.sireId && data.sireId !== "none" ? Number(data.sireId) : null,
+      animalIdNumber: data.animalIdNumber || undefined,
     });
   });
 
@@ -141,6 +164,18 @@ export function EditAnimalDialog({
                   </Select>
                 )} />
               </div>
+              <Controller name="animalIdNumber" control={control} render={({ field }) => (
+                <AnimalIdNumberField
+                  inputId="edit-animal-id-number"
+                  label={t("animals.animalIdNumber")}
+                  hint={t("animals.animalIdNumberEditHint")}
+                  placeholder={t("animals.animalIdNumberPlaceholder")}
+                  prefix={selectedCategory?.idPrefix ?? ""}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  className="sm:col-span-2"
+                />
+              )} />
               <div className="space-y-1.5">
                 <Label htmlFor="edit-animal-group">{t("common.group")}</Label>
                 <Controller name="groupId" control={control} render={({ field }) => (

@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
 
 function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
@@ -193,7 +194,8 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
 
 export default function Breeding() {
   const { t } = useTranslation();
-  const { canCreate, canUpdate, canDelete } = usePermissions("breeding");
+  const { can, canCreate, canUpdate, canDelete } = usePermissions("breeding");
+  const canPromote = canUpdate && can("animals", "create");
   const [, setLocation] = useLocation();
   const { data: lambingLog, isLoading, refetch } = trpc.breeding.listLambing.useQuery();
   const utils = trpc.useUtils();
@@ -206,7 +208,7 @@ export default function Breeding() {
     onSuccess: (data) => {
       toast.success(t("breeding.lambPromotedAs", { id: data.animalId }));
       setPromoteDialog({ open: false, lambId: null });
-      setPromoteForm((form) => ({ ...form, customAnimalId: "" }));
+      setPromoteForm((form) => ({ ...form, animalIdNumber: "" }));
       utils.breeding.listLambing.invalidate();
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
@@ -228,8 +230,20 @@ export default function Breeding() {
     groupId: "",
     statusId: "",
     acquisitionDate: new Date().toISOString().split("T")[0],
-    customAnimalId: "",
+    animalIdNumber: "",
   });
+  const selectedPromotionCategory = (categories ?? []).find(
+    (category: any) => String(category.id) === promoteForm.categoryId,
+  );
+  const promotionCategories = (categories ?? []).filter(
+    (category: any) =>
+      !promoteForm.speciesId || String(category.speciesId) === promoteForm.speciesId,
+  );
+  const promotionGroups = (groups ?? []).filter(
+    (group: any) =>
+      (!group.speciesId || String(group.speciesId) === promoteForm.speciesId) &&
+      (!group.categoryId || String(group.categoryId) === promoteForm.categoryId),
+  );
 
   const handlePromote = () => {
     if (!promoteDialog.lambId || !promoteForm.categoryId || !promoteForm.speciesId || !promoteForm.groupId || !promoteForm.statusId) {
@@ -243,7 +257,7 @@ export default function Breeding() {
       groupId: Number(promoteForm.groupId),
       statusId: Number(promoteForm.statusId),
       acquisitionDate: promoteForm.acquisitionDate,
-      customAnimalId: promoteForm.customAnimalId || undefined,
+      animalIdNumber: promoteForm.animalIdNumber || undefined,
     });
   };
 
@@ -336,12 +350,12 @@ export default function Breeding() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {canUpdate && !l.isPromoted && (
+                          {canPromote && !l.isPromoted && (
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                setPromoteForm((form) => ({ ...form, customAnimalId: "" }));
+                                setPromoteForm((form) => ({ ...form, animalIdNumber: "" }));
                                 setPromoteDialog({ open: true, lambId: l.id });
                               }}
                             >
@@ -385,12 +399,20 @@ export default function Breeding() {
 
       {/* Promote Dialog */}
       <Dialog open={promoteDialog.open} onOpenChange={(o) => setPromoteDialog({ open: o, lambId: promoteDialog.lambId })}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto overscroll-contain">
           <DialogHeader><DialogTitle>{t("breeding.promoteLambToRegistry")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="promotion-species">Species *</Label>
-              <Select value={promoteForm.speciesId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, speciesId: v }))}>
+              <Select
+                value={promoteForm.speciesId}
+                onValueChange={(value) => setPromoteForm((form) => ({
+                  ...form,
+                  speciesId: value,
+                  categoryId: "",
+                  groupId: "",
+                }))}
+              >
                 <SelectTrigger id="promotion-species"><SelectValue placeholder={t("common.selectSpecies")} /></SelectTrigger>
                 <SelectContent>
                   {(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
@@ -399,40 +421,35 @@ export default function Breeding() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="promotion-category">Category *</Label>
-              <Select value={promoteForm.categoryId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, categoryId: v }))}>
+              <Select
+                value={promoteForm.categoryId}
+                onValueChange={(value) => setPromoteForm((form) => ({
+                  ...form,
+                  categoryId: value,
+                  groupId: "",
+                }))}
+              >
                 <SelectTrigger id="promotion-category"><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                 <SelectContent>
-                  {(categories ?? []).map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                  {promotionCategories.map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="promotion-custom-animal-id">{t("breeding.specificAnimalId")}</Label>
-              <Input
-                id="promotion-custom-animal-id"
-                name="customAnimalId"
-                value={promoteForm.customAnimalId}
-                onChange={(event) => {
-                  const digits = event.target.value.replace(/\D/g, "").slice(0, 20);
-                  setPromoteForm((form) => ({ ...form, customAnimalId: digits }));
-                }}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={20}
-                autoComplete="off"
-                spellCheck={false}
-                placeholder={t("breeding.specificAnimalIdPlaceholder")}
-              />
-              <p className="text-xs text-muted-foreground">
-                {t("breeding.specificAnimalIdHint")}
-              </p>
-            </div>
+            <AnimalIdNumberField
+              inputId="promotion-animal-id-number"
+              label={t("animals.animalIdNumber")}
+              hint={t("animals.animalIdNumberHint")}
+              placeholder={t("animals.animalIdNumberPlaceholder")}
+              prefix={selectedPromotionCategory?.idPrefix ?? ""}
+              value={promoteForm.animalIdNumber}
+              onChange={(animalIdNumber) => setPromoteForm((form) => ({ ...form, animalIdNumber }))}
+            />
             <div className="space-y-1.5">
               <Label htmlFor="promotion-group">Group *</Label>
               <Select value={promoteForm.groupId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, groupId: v }))}>
                 <SelectTrigger id="promotion-group"><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
                 <SelectContent>
-                  {(groups ?? []).map((g: any) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
+                  {promotionGroups.map((g: any) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

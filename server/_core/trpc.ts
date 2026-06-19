@@ -138,3 +138,28 @@ export function anyPermissionProcedure(
     }),
   );
 }
+
+export function allPermissionsProcedure(
+  permissions: ReadonlyArray<readonly [PermissionPage, PermissionAction]>,
+) {
+  return t.procedure.use(requireUser).use(
+    t.middleware(async opts => {
+      const { ctx, next } = opts;
+      const allowed = permissions.every(([page, action]) =>
+        hasPermission(
+          ctx.user!.role,
+          ctx.permissionOverrides,
+          page,
+          action,
+        ),
+      );
+      if (!allowed) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Missing required permissions",
+        });
+      }
+      return next({ ctx: { ...ctx, user: ctx.user! } });
+    }),
+  );
+}

@@ -11,6 +11,7 @@ import { storageGetSignedUrl, storagePut } from "../storage";
 import {
   getAllSpecies, createSpecies, updateSpecies,
   getAllCategories, createCategory, updateCategory,
+  categoryHasAnimals, getCategoryForUpdate, getDb,
   getAllStatuses, createStatus, updateStatus,
   getAllGroups, createGroup, updateGroup,
   getAllOwners, createOwner, updateOwner, deleteOwner,
@@ -100,7 +101,7 @@ export const configRouter = router({
     .input(z.object({
       name: z.string().min(1),
       speciesId: z.number(),
-      idPrefix: z.string().min(1),
+      idPrefix: z.string().trim().min(1).max(10),
       targetWeightKg: z.string().optional(),
       expectedCycleDays: z.number().optional(),
     }))
@@ -114,7 +115,7 @@ export const configRouter = router({
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
-      idPrefix: z.string().optional(),
+      idPrefix: z.string().trim().min(1).max(10).optional(),
       targetWeightKg: z.string().optional(),
       expectedCycleDays: z.number().optional(),
       autoStageWeightKg: z.string().nullable().optional(),
@@ -122,9 +123,35 @@ export const configRouter = router({
       isActive: z.boolean().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
-      const result = await updateCategory(id, data as any);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "category", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
-      return result;
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      }
+      return db.transaction(async (tx) => {
+        const current = await getCategoryForUpdate(id, tx);
+        if (!current || current.deletedAt) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
+        }
+        if (data.idPrefix &&
+            data.idPrefix !== current.idPrefix &&
+            await categoryHasAnimals(id, tx)) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Category prefix cannot change after animal IDs have been assigned",
+          });
+        }
+        const result = await updateCategory(id, data as any, tx);
+        await createAuditEntry({
+          userId: ctx.user.id,
+          entityType: "category",
+          entityId: String(id),
+          action: "update",
+          oldValues: current as any,
+          newValues: data,
+          ipAddress: getClientIp(ctx),
+        }, tx);
+        return result;
+      });
     }),
 
   // ─── STATUSES ───────────────────────────────────────────────────────────────

@@ -36,6 +36,15 @@ vi.mock("./db", () => ({
   ]),
   createCategory: vi.fn().mockResolvedValue({ id: 2, name: "Ewe", idPrefix: "EWE", speciesId: 1, targetWeightKg: null }),
   updateCategory: vi.fn().mockResolvedValue(undefined),
+  getCategoryForUpdate: vi.fn().mockResolvedValue({
+    id: 1,
+    name: "Lamb",
+    idPrefix: "LMB",
+    speciesId: 1,
+    isActive: 1,
+    deletedAt: null,
+  }),
+  categoryHasAnimals: vi.fn().mockResolvedValue(false),
   getAllStatuses: vi.fn().mockResolvedValue([
     { id: 1, name: "Active", isExitStatus: 0, isActive: 1 },
     { id: 6, name: "Sold", isExitStatus: 1, isActive: 1 },
@@ -88,7 +97,42 @@ vi.mock("./db", () => ({
     animal: { id: 1, animalId: "LMB-001", sex: "male", acquisitionType: "born", isActive: 1, categoryId: 1, speciesId: 1, groupId: 1, statusId: 1 },
     categoryName: "Lamb", speciesName: "Sheep", groupName: "Pen A", statusName: "Active",
   }),
+  getLambingRecordById: vi.fn().mockResolvedValue({
+    id: 1,
+    lambId: "LMB-0001",
+    sex: "male",
+    birthDate: "2024-01-15",
+    birthWeightKg: "4.50",
+    damId: null,
+    sireId: null,
+    isPromoted: false,
+  }),
+  getLambingRecordForUpdate: vi.fn().mockResolvedValue({
+    id: 1,
+    lambId: "LMB-0001",
+    sex: "male",
+    birthDate: "2024-01-15",
+    birthWeightKg: "4.50",
+    damId: null,
+    sireId: null,
+    isPromoted: false,
+    deletedAt: null,
+  }),
+  getRawAnimalByAnimalId: vi.fn().mockResolvedValue(null),
+  getRawAnimalById: vi.fn().mockResolvedValue(null),
+  getRawAnimalForUpdate: vi.fn().mockResolvedValue({
+    id: 1,
+    animalId: "LMB-001",
+    categoryId: 1,
+    speciesId: 1,
+    groupId: 1,
+    statusId: 1,
+    isActive: 1,
+    deletedAt: null,
+  }),
+  getRawOwnerById: vi.fn().mockResolvedValue(null),
   createAnimal: vi.fn().mockResolvedValue({ id: 3, animalId: "LMB-003" }),
+  updateLambingRecord: vi.fn().mockResolvedValue(undefined),
   updateAnimal: vi.fn().mockResolvedValue(undefined),
   recordStatusChange: vi.fn().mockResolvedValue(undefined),
   getAnimalStatusHistory: vi.fn().mockResolvedValue([
@@ -108,6 +152,8 @@ vi.mock("./db", () => ({
   createAuditEntry: vi.fn().mockResolvedValue(undefined),
   createNotification: vi.fn().mockResolvedValue({ id: 1, title: "Test", message: "Test msg" }),
   incrementCategorySequence: vi.fn().mockResolvedValue(1),
+  ensureCategorySequenceAtLeast: vi.fn().mockResolvedValue(undefined),
+  generateNextAnimalId: vi.fn().mockResolvedValue("LMB0001"),
   getLambingEvents: vi.fn().mockResolvedValue([]),
   createLambingEvent: vi.fn().mockResolvedValue({ id: 1, damId: 1, sireId: 2, birthDate: new Date() }),
   getFatteningEntries: vi.fn().mockResolvedValue([]),
@@ -186,6 +232,13 @@ function makeCtx(
   };
 }
 
+async function mockTransactionDb() {
+  const dbModule = await import("./db");
+  const transaction = vi.fn(async (callback: (tx: object) => unknown) => callback({}));
+  vi.mocked(dbModule.getDb).mockResolvedValueOnce({ transaction } as any);
+  return { dbModule, transaction };
+}
+
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 describe("auth", () => {
   it("me returns authenticated user", async () => {
@@ -246,6 +299,17 @@ describe("config.categories", () => {
     const result = await caller.config.createCategory({ name: "Ewe", idPrefix: "EWE", speciesId: 1 });
     expect(result).toBeDefined();
     expect(result.idPrefix).toBe("EWE");
+  });
+
+  it("rejects changing a prefix after animal IDs exist", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.categoryHasAnimals).mockResolvedValueOnce(true);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.config.updateCategory({
+      id: 1,
+      idPrefix: "NEW",
+    })).rejects.toThrow(/prefix cannot change/i);
   });
 });
 
@@ -380,6 +444,7 @@ describe("animals.getById", () => {
 
 describe("animals.create", () => {
   it("creates an animal with auto-generated ID", async () => {
+    await mockTransactionDb();
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.animals.create({
       categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
@@ -388,6 +453,294 @@ describe("animals.create", () => {
     });
     expect(result).toBeDefined();
     expect(result.animalId).toBeDefined();
+  });
+
+  it("adds the category prefix to a controlled ID number", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.createAnimal).mockResolvedValueOnce({ insertId: 3 } as any);
+    const sequenceCallsBefore = vi.mocked(dbModule.incrementCategorySequence).mock.calls.length;
+
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.animals.create({
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      sex: "male",
+      acquisitionType: "born",
+      acquisitionDate: "2024-01-15",
+      birthDate: "2024-01-15",
+      animalIdNumber: "00123",
+    });
+
+    expect(result.animalId).toBe("LMB00123");
+    expect(vi.mocked(dbModule.ensureCategorySequenceAtLeast))
+      .toHaveBeenLastCalledWith(1, 123, expect.anything());
+    expect(vi.mocked(dbModule.incrementCategorySequence).mock.calls.length)
+      .toBe(sequenceCallsBefore);
+  });
+
+  it("rejects a duplicate controlled ID when adding", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getRawAnimalByAnimalId).mockResolvedValueOnce({
+      id: 9,
+      animalId: "LMB00123",
+    } as any);
+
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.animals.create({
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      sex: "male",
+      acquisitionType: "born",
+      acquisitionDate: "2024-01-15",
+      birthDate: "2024-01-15",
+      animalIdNumber: "00123",
+    })).rejects.toThrow(/already exists|Recycle Bin/i);
+  });
+});
+
+describe("animals.update ID", () => {
+  it("updates the numeric part while retaining the category prefix", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.updateAnimal).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+
+    await caller.animals.update({
+      id: 1,
+      categoryId: 1,
+      animalIdNumber: "0099",
+    });
+
+    expect(vi.mocked(dbModule.updateAnimal)).toHaveBeenLastCalledWith(
+      1,
+      expect.objectContaining({ animalId: "LMB0099" }),
+      expect.anything(),
+    );
+  });
+
+  it("rejects a duplicate controlled ID when editing", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getRawAnimalByAnimalId).mockResolvedValueOnce({
+      id: 9,
+      animalId: "LMB0099",
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.animals.update({
+      id: 1,
+      categoryId: 1,
+      animalIdNumber: "0099",
+    })).rejects.toThrow(/already exists|Recycle Bin/i);
+  });
+
+  it("changes the prefix automatically when the category changes", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getAllCategories).mockResolvedValueOnce([
+      { id: 1, name: "Lamb", idPrefix: "LMB", speciesId: 1, isActive: 1 },
+      { id: 2, name: "Ewe", idPrefix: "EWE", speciesId: 1, isActive: 1 },
+    ] as any);
+    vi.mocked(dbModule.getCategoryForUpdate).mockResolvedValueOnce({
+      id: 2,
+      name: "Ewe",
+      idPrefix: "EWE",
+      speciesId: 1,
+      isActive: 1,
+      deletedAt: null,
+    } as any);
+    vi.mocked(dbModule.updateAnimal).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+
+    await caller.animals.update({
+      id: 1,
+      categoryId: 2,
+      animalIdNumber: "0099",
+    });
+
+    expect(vi.mocked(dbModule.updateAnimal)).toHaveBeenLastCalledWith(
+      1,
+      expect.objectContaining({ animalId: "EWE0099" }),
+      expect.anything(),
+    );
+  });
+
+  it("rejects an edit when the animal changed concurrently", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getRawAnimalForUpdate).mockResolvedValueOnce({
+      id: 1,
+      animalId: "EWE0002",
+      categoryId: 2,
+      speciesId: 1,
+      deletedAt: null,
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.animals.update({
+      id: 1,
+      animalIdNumber: "0099",
+    })).rejects.toThrow(/changed while editing/i);
+  });
+});
+
+describe("breeding.promoteLamb", () => {
+  it("keeps prefixed sequence generation when no exact ID is supplied", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.generateNextAnimalId).mockResolvedValueOnce("LMB0007");
+    vi.mocked(dbModule.createAnimal).mockResolvedValueOnce({ insertId: 3 } as any);
+
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.breeding.promoteLamb({
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+      animalIdNumber: "",
+    });
+
+    expect(result.animalId).toBe("LMB0007");
+  });
+
+  it("adds the category prefix to a controlled ID number", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.createAnimal).mockResolvedValueOnce({ insertId: 3 } as any);
+    const sequenceCallsBefore = vi.mocked(dbModule.incrementCategorySequence).mock.calls.length;
+
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.breeding.promoteLamb({
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+      animalIdNumber: "00123",
+    });
+
+    expect(result.animalId).toBe("LMB00123");
+    expect(vi.mocked(dbModule.ensureCategorySequenceAtLeast))
+      .toHaveBeenLastCalledWith(1, 123, expect.anything());
+    expect(vi.mocked(dbModule.createAnimal)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ animalId: "LMB00123" }),
+      expect.anything(),
+    );
+    expect(vi.mocked(dbModule.incrementCategorySequence).mock.calls.length)
+      .toBe(sequenceCallsBefore);
+    expect(vi.mocked(dbModule.createAuditEntry)).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: "promote",
+        entityId: "LMB00123",
+      }),
+      expect.anything(),
+    );
+  });
+
+  it("rejects non-numeric or oversized exact IDs", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const promotion = {
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+    };
+
+    await expect(
+      caller.breeding.promoteLamb({ ...promotion, animalIdNumber: "ABC123" }),
+    ).rejects.toThrow(/digits only/i);
+    await expect(
+      caller.breeding.promoteLamb({ ...promotion, animalIdNumber: "1".repeat(21) }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects a prefixed ID already used by an active or deleted animal", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getRawAnimalByAnimalId).mockResolvedValueOnce({
+      id: 9,
+      animalId: "LMB12345",
+    } as any);
+
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.breeding.promoteLamb({
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+      animalIdNumber: "12345",
+    })).rejects.toThrow(/already exists|Recycle Bin/i);
+  });
+
+  it("requires both breeding update and animal create permissions", async () => {
+    const caller = appRouter.createCaller(makeCtx("supervisor", {
+      "breeding:update": true,
+      "animals:create": false,
+    }));
+
+    await expect(caller.breeding.promoteLamb({
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+      animalIdNumber: "12345",
+    })).rejects.toThrow(/permission/i);
+  });
+
+  it("rejects promotion of a deleted lambing record", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getLambingRecordForUpdate).mockResolvedValueOnce({
+      id: 1,
+      deletedAt: new Date(),
+      isPromoted: false,
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.breeding.promoteLamb({
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+    })).rejects.toThrow(/not found/i);
+  });
+
+  it("rejects promotion when a recorded parent is no longer valid", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getLambingRecordForUpdate).mockResolvedValueOnce({
+      id: 1,
+      lambId: "LMB-0001",
+      sex: "male",
+      birthDate: "2024-01-15",
+      damId: 20,
+      sireId: null,
+      isPromoted: false,
+      deletedAt: null,
+    } as any);
+    vi.mocked(dbModule.getRawAnimalById).mockResolvedValueOnce({
+      id: 20,
+      sex: "male",
+      speciesId: 1,
+      isActive: 1,
+      deletedAt: null,
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.breeding.promoteLamb({
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+    })).rejects.toThrow(/dam.*valid/i);
   });
 });
 
@@ -400,12 +753,37 @@ describe("animals.weightLog", () => {
   });
 
   it("adds a weight entry", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.checkAndStageAnimal).mockClear();
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.animals.addWeight({
       animalId: 1, weightKg: "18.00", weighDate: "2024-02-01",
     });
     expect(result).toBeDefined();
     expect(result.weightKg).toBe("18.00");
+    expect(vi.mocked(dbModule.checkAndStageAnimal)).toHaveBeenCalledWith(
+      1,
+      18,
+      1,
+      expect.anything(),
+    );
+  });
+
+  it("does not auto-stage without animal update permission", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.checkAndStageAnimal).mockClear();
+    const caller = appRouter.createCaller(makeCtx("supervisor", {
+      "animals:update": false,
+    }));
+
+    const result = await caller.animals.addWeight({
+      animalId: 1,
+      weightKg: "18.00",
+      weighDate: "2024-02-01",
+    });
+
+    expect(result.autoStaged).toBe(false);
+    expect(vi.mocked(dbModule.checkAndStageAnimal)).not.toHaveBeenCalled();
   });
 });
 
