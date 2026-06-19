@@ -500,6 +500,10 @@ export const configRouter = router({
       validityUnit: z.enum(["days", "months"]),
       boosterRequired: z.boolean(),
       boosterInterval: z.number().optional(),
+    }).superRefine((val, ctx) => {
+      if (val.boosterRequired && (val.boosterInterval == null || val.boosterInterval < 1)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["boosterInterval"], message: "Booster interval (days) is required when booster is required" });
+      }
     }))
     .mutation(async ({ input, ctx }) => {
       const result = await addVaccine(input);
@@ -517,6 +521,10 @@ export const configRouter = router({
       boosterRequired: z.boolean().optional(),
       boosterInterval: z.number().optional(),
       isActive: z.boolean().optional(),
+    }).superRefine((val, ctx) => {
+      if (val.boosterRequired === true && (val.boosterInterval == null || val.boosterInterval < 1)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["boosterInterval"], message: "Booster interval (days) is required when booster is required" });
+      }
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       await updateVaccine(id, data);

@@ -964,12 +964,12 @@ function VaccinesTab() {
                 <Label htmlFor="booster">{t("vaccine.boosterRequired")}</Label>
               </div>
               {boosterRequired && (
-                <div className="space-y-1.5"><Label>{t("vaccine.boosterInterval")}</Label><Input type="number" placeholder="180" value={boosterInterval} onChange={(e) => setBoosterInterval(e.target.value)} /></div>
+                <div className="space-y-1.5"><Label>{t("vaccine.boosterInterval")} *</Label><Input type="number" min={1} placeholder="180" value={boosterInterval} onChange={(e) => setBoosterInterval(e.target.value)} /><p className="text-xs text-muted-foreground">{t("vaccine.boosterIntervalHint")}</p></div>
               )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name, description: description || undefined, validityPeriod: parseInt(validityPeriod), validityUnit, boosterRequired, boosterInterval: boosterInterval ? parseInt(boosterInterval) : undefined })} disabled={!name || !validityPeriod || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name, description: description || undefined, validityPeriod: parseInt(validityPeriod), validityUnit, boosterRequired, boosterInterval: boosterInterval ? parseInt(boosterInterval) : undefined })} disabled={!name || !validityPeriod || (boosterRequired && (!boosterInterval || parseInt(boosterInterval) < 1)) || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -977,7 +977,13 @@ function VaccinesTab() {
 
       {editItem && (
         <EditDialog title={t("vaccine.editVaccine")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description, validityPeriod: editItem.validityPeriod, validityUnit: editItem.validityUnit, boosterRequired: editItem.boosterRequired, boosterInterval: editItem.boosterInterval })}>
+          onSave={() => {
+            if (editItem.boosterRequired && (!editItem.boosterInterval || editItem.boosterInterval < 1)) {
+              toast.error(t("vaccine.boosterIntervalRequired"));
+              return;
+            }
+            update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description, validityPeriod: editItem.validityPeriod, validityUnit: editItem.validityUnit, boosterRequired: editItem.boosterRequired, boosterInterval: editItem.boosterInterval });
+          }}>
           <div className="space-y-1.5"><Label>{t("vaccine.vaccineName")} *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("vaccine.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
           <div className="grid grid-cols-2 gap-4">
@@ -994,7 +1000,7 @@ function VaccinesTab() {
             <Label htmlFor="editBooster">{t("vaccine.boosterRequired")}</Label>
           </div>
           {editItem.boosterRequired && (
-            <div className="space-y-1.5"><Label>{t("vaccine.boosterInterval")}</Label><Input type="number" value={editItem.boosterInterval ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, boosterInterval: parseInt(e.target.value) || undefined }))} /></div>
+            <div className="space-y-1.5"><Label>{t("vaccine.boosterInterval")} *</Label><Input type="number" min={1} value={editItem.boosterInterval ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, boosterInterval: parseInt(e.target.value) || undefined }))} /><p className="text-xs text-muted-foreground">{t("vaccine.boosterIntervalHint")}</p></div>
           )}
         </EditDialog>
       )}

@@ -895,6 +895,9 @@ const en = {
     notifyBeforeBooster: "Notify before booster (days)",
     notifyBeforeHint: "How many days ahead to alert before the due date.",
 
+    boosterIntervalHint: "Days after the dose when the booster is due.",
+    boosterIntervalRequired: "Booster interval (days) is required when booster is required.",
+
   },
 
   owners: {
@@ -1364,6 +1367,9 @@ const ar = {
     notifyBeforeNext: "التنبيه قبل الجرعة التالية (أيام)",
     notifyBeforeBooster: "التنبيه قبل الجرعة المعززة (أيام)",
     notifyBeforeHint: "عدد الأيام قبل تاريخ الاستحقاق لإرسال التنبيه.",
+
+    boosterIntervalHint: "عدد الأيام بعد الجرعة موعد الجرعة المعززة.",
+    boosterIntervalRequired: "فترة الجرعة المعززة (بالأيام) مطلوبة عند تفعيل الجرعة المعززة.",
 
   },
 

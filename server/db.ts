@@ -2357,6 +2357,50 @@ export async function updateVaccine(id: number, data: { name?: string; descripti
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(vaccines).set(data).where(eq(vaccines.id, id));
+
+  // If the schedule-affecting fields changed, recompute next-due and booster
+  // dates for all (non-deleted, not-completed) records of this vaccine — this
+  // backfills records that were created while the vaccine had no booster
+  // interval, so their booster due date stops being empty.
+  if (
+    data.validityPeriod !== undefined ||
+    data.validityUnit !== undefined ||
+    data.boosterRequired !== undefined ||
+    data.boosterInterval !== undefined
+  ) {
+    await recomputeVaccinationDatesForVaccine(id);
+  }
+}
+
+/** Recompute nextDueDate + boosterDueDate for every active record of a vaccine. */
+export async function recomputeVaccinationDatesForVaccine(vaccineId: number) {
+  const db = await getDb();
+  if (!db) return;
+  const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, vaccineId)).limit(1);
+  if (!vaccine.length) return;
+  const v = vaccine[0];
+
+  const records = await db
+    .select({ id: vaccinationRecords.id, vaccinationDate: vaccinationRecords.vaccinationDate })
+    .from(vaccinationRecords)
+    .where(and(eq(vaccinationRecords.vaccineId, vaccineId), isNull(vaccinationRecords.deletedAt), eq(vaccinationRecords.isCompleted, false)));
+
+  for (const rec of records) {
+    const dateStr = rec.vaccinationDate instanceof Date
+      ? rec.vaccinationDate.toISOString().split("T")[0]
+      : String(rec.vaccinationDate).split("T")[0];
+    const nextDueDateStr = calculateNextDueDate(
+      { validityPeriod: v.validityPeriod, validityUnit: v.validityUnit as "days" | "months", boosterRequired: v.boosterRequired, boosterInterval: v.boosterInterval ?? undefined },
+      dateStr
+    );
+    const boosterDueDateStr = calculateBoosterDueDate(
+      { boosterRequired: v.boosterRequired, boosterInterval: v.boosterInterval ?? undefined },
+      dateStr
+    );
+    await db.update(vaccinationRecords)
+      .set({ nextDueDate: new Date(nextDueDateStr), boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null })
+      .where(eq(vaccinationRecords.id, rec.id));
+  }
 }
 
 export async function deleteVaccine(id: number) {
