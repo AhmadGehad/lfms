@@ -123,6 +123,7 @@ export const animalsRouter = router({
     ["sales", "view"],
   ])
     .input(z.object({
+      speciesId: z.number().int().positive().optional(),
       isActive: z.boolean().optional(),
       sex: z.enum(["male", "female"]).optional(),
       limit: z.number().int().min(1).max(500).optional(),

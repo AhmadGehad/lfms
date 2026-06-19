@@ -2,8 +2,12 @@ import ExcelJS from "exceljs";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import { permissionProcedure, router } from "../_core/trpc";
-import { createAnimal, createExpense, createFeedStockEntry, createLambingRecord, createRationPlan, createSale, createWeightEntry, getAllBirthTypes, getAllCategories, getAllExpenseCategories, getAllExpenseSubCategories, getAllFeedItems, getAllGroups, getAllSpecies, getAllStatuses, getAnimals, createAuditEntry, getDb, updateAnimal } from "../db";
-import { isCanonicalWorkbook, readCanonicalWorkbook } from "../excelDataContract";
+import { createAnimal, createExpense, createFeedStockEntry, createLambingRecord, createRationPlan, createSale, createWeightEntry, ensureCategoryLambSequenceAtLeast, getAllBirthTypes, getAllCategories, getAllExpenseCategories, getAllExpenseSubCategories, getAllFeedItems, getAllGroups, getAllSpecies, getAllStatuses, getAnimals, createAuditEntry, getDb, updateAnimal } from "../db";
+import {
+  EXCEL_DATA_FORMAT_VERSION,
+  isCanonicalWorkbook,
+  readCanonicalWorkbook,
+} from "../excelDataContract";
 import { applyCanonicalData, type ImportMode } from "../canonicalTransfer";
 
 // Helper to find a row by header→value mapping
@@ -21,6 +25,13 @@ function asDate(v: any): string | null {
   if (v instanceof Date) return v.toISOString().split("T")[0];
   const d = new Date(v);
   return isNaN(d.getTime()) ? null : d.toISOString().split("T")[0];
+}
+
+function asTimestamp(v: any): Date | null {
+  if (!v) return null;
+  if (v instanceof Date) return v;
+  const parsed = new Date(v);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 function asString(v: any): string {
@@ -91,9 +102,9 @@ async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode
         action: "import",
         ipAddress: getClientIp(ctx),
         entityType: "bulk",
-        entityId: `excel-v3-${mode}`,
+        entityId: `excel-v${EXCEL_DATA_FORMAT_VERSION}-${mode}`,
         newValues: {
-          formatVersion: 3,
+          formatVersion: EXCEL_DATA_FORMAT_VERSION,
           mode,
           totalApplied: stats.reduce((sum, stat) => sum + stat.inserted, 0),
           sheets: stats.map(stat => ({
@@ -109,7 +120,7 @@ async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode
   return {
     stats,
     totalInserted: stats.reduce((sum, stat) => sum + stat.inserted, 0),
-    formatVersion: 3,
+    formatVersion: EXCEL_DATA_FORMAT_VERSION,
     mode
   };
 }
@@ -158,6 +169,10 @@ export const importRouter = router({
     const birthTypeByName = new Map(birthTypes.map((b: any) => [b.name.toLowerCase(), b.id]));
     const expSubCatByName = new Map(expenseSubCats.map((e: any) => [`${e.categoryId}:${e.name.toLowerCase()}`, e.id]));
     const animalByCode = new Map((existingAnimals as any[]).map((a: any) => [a.animal.animalId, a.animal.id]));
+    const animalDetailsById = new Map((existingAnimals as any[]).map((a: any) => [a.animal.id, a.animal]));
+    const categoriesByPrefix = [...categories]
+      .filter((category: any) => category.idPrefix)
+      .sort((a: any, b: any) => b.idPrefix.length - a.idPrefix.length);
 
     return db.transaction(async tx => {
       const stats: ImportStats[] = [];
@@ -220,7 +235,10 @@ export const importRouter = router({
             } as any;
             const created = await createAnimal(data, tx);
             const insertedId = Number((created as any).insertId);
-            if (insertedId) animalByCode.set(animalCode, insertedId);
+            if (insertedId) {
+              animalByCode.set(animalCode, insertedId);
+              animalDetailsById.set(insertedId, { ...data, id: insertedId });
+            }
             newAnimalCodes.add(animalCode);
             s.inserted++;
           } catch (e: any) {
@@ -367,11 +385,56 @@ export const importRouter = router({
             const groupId = groupName ? (groupByCode.get(groupName.toLowerCase()) ?? groupByName.get(groupName.toLowerCase())) : null;
             if (!birthTypeId) throw new Error(`birth type ${birthTypeName || "(blank)"} not found`);
             if (groupName && !groupId) throw new Error(`group ${groupName} not found`);
+            const isPromoted = requireYesNo(getCell(row, 9), "isPromoted");
             const promotedHeadCode = asString(getCell(row, 12));
             const promotedHeadId = promotedHeadCode ? animalByCode.get(promotedHeadCode) : null;
-            if (promotedHeadCode && !promotedHeadId) throw new Error(`promoted head ${promotedHeadCode} not found`);
+            if (promotedHeadCode && !promotedHeadId && !isPromoted) {
+              throw new Error(`promoted head ${promotedHeadCode} not found`);
+            }
+            const promotedAnimal = promotedHeadId
+              ? animalDetailsById.get(promotedHeadId)
+              : null;
+            const damAnimal = damId ? animalDetailsById.get(damId) : null;
+            const explicitSpeciesName = asString(getCell(row, 13));
+            const explicitCategoryName = asString(getCell(row, 14));
+            const explicitCategory = explicitCategoryName
+              ? categoryByName.get(explicitCategoryName.toLowerCase())
+              : null;
+            if (explicitCategoryName && !explicitCategory) {
+              throw new Error(`category ${explicitCategoryName} not found`);
+            }
+            const prefixMatches = categoriesByPrefix.filter((category: any) =>
+              lambCode.startsWith(category.idPrefix));
+            const longestPrefixLength = prefixMatches[0]?.idPrefix.length ?? 0;
+            const longestPrefixMatches = prefixMatches.filter(
+              (category: any) => category.idPrefix.length === longestPrefixLength,
+            );
+            const prefixCategory = longestPrefixMatches.length === 1
+              ? longestPrefixMatches[0]
+              : null;
+            const categoryId = explicitCategory?.id ??
+              promotedAnimal?.categoryId ??
+              damAnimal?.categoryId ??
+              prefixCategory?.id ??
+              null;
+            const category = categories.find((item: any) => item.id === categoryId);
+            const speciesId = (explicitSpeciesName
+              ? speciesByName.get(explicitSpeciesName.toLowerCase())
+              : null) ??
+              promotedAnimal?.speciesId ??
+              damAnimal?.speciesId ??
+              category?.speciesId ??
+              null;
+            if (explicitSpeciesName && !speciesId) {
+              throw new Error(`species ${explicitSpeciesName} not found`);
+            }
+            if (category && speciesId && category.speciesId !== speciesId) {
+              throw new Error("birth category does not belong to the selected species");
+            }
             const data = {
               lambId: lambCode,
+              speciesId,
+              categoryId,
               damId: damId ?? null,
               sireId,
               birthDate: requireDate(getCell(row, 5), "birthDate"),
@@ -380,12 +443,24 @@ export const importRouter = router({
               birthWeightKg: asOptionalNumber(getCell(row, 11)) === null ? null : String(asOptionalNumber(getCell(row, 11))),
               groupId: groupId ?? null,
               notes: asString(getCell(row, 10)) || null,
-              isPromoted: requireYesNo(getCell(row, 9), "isPromoted"),
-              promotedHeadId: promotedHeadId ?? null
+              isPromoted,
+              promotedHeadId: promotedHeadId ?? null,
+              promotedAnimalCode: promotedHeadCode || null,
+              promotedAnimalPurgedAt: asTimestamp(getCell(row, 15)) ??
+                (isPromoted && !promotedHeadId ? new Date() : null)
             } as any;
             const id = asOptionalNumber(getCell(row, 1));
             if (id !== null) throw new Error("Append manual template requires blank Lambing id; use a canonical Excel export to import existing IDs");
             await createLambingRecord(data, tx);
+            if (category?.idPrefix && lambCode.startsWith(category.idPrefix)) {
+              const suffix = lambCode.slice(category.idPrefix.length);
+              if (/^\d+$/.test(suffix)) {
+                const sequence = Number(suffix);
+                if (Number.isSafeInteger(sequence) && sequence <= 2_147_483_646) {
+                  await ensureCategoryLambSequenceAtLeast(category.id, sequence, tx);
+                }
+              }
+            }
             s.inserted++;
           } catch (e: any) {
             s.errors.push(`Row ${i}: ${e.message}`);

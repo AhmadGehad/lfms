@@ -126,6 +126,7 @@ export async function getAllCategories(speciesId?: number) {
       speciesName: species.name,
       idPrefix: animalCategories.idPrefix,
       idSequence: animalCategories.idSequence,
+      lambIdSequence: animalCategories.lambIdSequence,
       targetWeightKg: animalCategories.targetWeightKg,
       expectedCycleDays: animalCategories.expectedCycleDays,
       autoStageWeightKg: animalCategories.autoStageWeightKg,
@@ -148,6 +149,7 @@ export async function getAllCategories(speciesId?: number) {
           speciesName: species.name,
           idPrefix: animalCategories.idPrefix,
           idSequence: animalCategories.idSequence,
+          lambIdSequence: animalCategories.lambIdSequence,
           targetWeightKg: animalCategories.targetWeightKg,
           expectedCycleDays: animalCategories.expectedCycleDays,
           autoStageWeightKg: animalCategories.autoStageWeightKg,
@@ -193,16 +195,24 @@ export async function getCategoryForUpdate(id: number, tx: DbOrTx) {
   return rows[0] ?? null;
 }
 
-/** Includes active and soft-deleted animals because both reserve registry IDs. */
+/**
+ * Includes active/deleted animals and all birth records because both ID
+ * namespaces permanently depend on the category prefix.
+ */
 export async function categoryHasAnimals(categoryId: number, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return false;
-  const rows = await db
+  const animalRows = await db
     .select({ id: animals.id })
     .from(animals)
     .where(eq(animals.categoryId, categoryId))
     .limit(1);
-  return rows.length > 0;
+  const birthRows = await db
+    .select({ id: lambingLog.id })
+    .from(lambingLog)
+    .where(eq(lambingLog.categoryId, categoryId))
+    .limit(1);
+  return animalRows.length > 0 || birthRows.length > 0;
 }
 
 export async function incrementCategorySequence(categoryId: number, tx?: DbOrTx): Promise<number> {
@@ -235,6 +245,62 @@ export async function ensureCategorySequenceAtLeast(
       idSequence: sql`GREATEST(${animalCategories.idSequence}, ${sequence})`,
     })
     .where(eq(animalCategories.id, categoryId));
+}
+
+export async function incrementCategoryLambSequence(
+  categoryId: number,
+  tx?: DbOrTx,
+): Promise<number> {
+  const db = tx ?? (await getDb());
+  if (!db) throw new Error("DB not available");
+  await db
+    .update(animalCategories)
+    .set({ lambIdSequence: sql`${animalCategories.lambIdSequence} + 1` })
+    .where(eq(animalCategories.id, categoryId));
+  const [cat] = await db
+    .select({ lambIdSequence: animalCategories.lambIdSequence })
+    .from(animalCategories)
+    .where(eq(animalCategories.id, categoryId));
+  return cat?.lambIdSequence ?? 1;
+}
+
+export async function ensureCategoryLambSequenceAtLeast(
+  categoryId: number,
+  sequence: number,
+  tx?: DbOrTx,
+) {
+  const db = tx ?? (await getDb());
+  if (!db) throw new Error("DB not available");
+  await db
+    .update(animalCategories)
+    .set({
+      lambIdSequence: sql`GREATEST(${animalCategories.lambIdSequence}, ${sequence})`,
+    })
+    .where(eq(animalCategories.id, categoryId));
+}
+
+export async function getRawLambingByLambId(lambId: string, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(lambingLog)
+    .where(eq(lambingLog.lambId, lambId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function generateNextLambId(
+  categoryId: number,
+  prefix: string,
+  tx?: DbOrTx,
+) {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const sequence = await incrementCategoryLambSequence(categoryId, tx);
+    const lambId = `${prefix}${String(sequence).padStart(4, "0")}`;
+    if (!await getRawLambingByLambId(lambId, tx)) return lambId;
+  }
+  throw new Error("Could not allocate a unique lamb ID");
 }
 
 export async function generateNextAnimalId(
@@ -715,6 +781,17 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
         INNER JOIN vaccines v ON vr.vaccineId = v.id
         WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
         ORDER BY vr.nextDueDate ASC LIMIT 1
+      )`,
+      nextBoosterDate: sql<string | null>`(
+        SELECT vr.boosterDueDate FROM vaccination_records vr
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        ORDER BY vr.boosterDueDate ASC LIMIT 1
+      )`,
+      nextBoosterName: sql<string | null>`(
+        SELECT v.name FROM vaccination_records vr
+        INNER JOIN vaccines v ON vr.vaccineId = v.id
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        ORDER BY vr.boosterDueDate ASC LIMIT 1
       )`
     })
     .from(animals)
@@ -756,6 +833,17 @@ export async function getAnimalById(id: number) {
         INNER JOIN vaccines v ON vr.vaccineId = v.id
         WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
         ORDER BY vr.nextDueDate ASC LIMIT 1
+      )`,
+      nextBoosterDate: sql<string | null>`(
+        SELECT vr.boosterDueDate FROM vaccination_records vr
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        ORDER BY vr.boosterDueDate ASC LIMIT 1
+      )`,
+      nextBoosterName: sql<string | null>`(
+        SELECT v.name FROM vaccination_records vr
+        INNER JOIN vaccines v ON vr.vaccineId = v.id
+        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        ORDER BY vr.boosterDueDate ASC LIMIT 1
       )`
     })
     .from(animals)
@@ -766,7 +854,23 @@ export async function getAnimalById(id: number) {
     .leftJoin(owners, eq(animals.ownerId, owners.id))
     .where(and(eq(animals.id, id), isNull(animals.deletedAt)))
     .limit(1);
-  return rows.length > 0 ? rows[0] : null;
+  if (rows.length === 0) return null;
+  const [originBirthRecord] = await db
+    .select({
+      id: lambingLog.id,
+      lambId: lambingLog.lambId,
+      birthDate: lambingLog.birthDate,
+    })
+    .from(lambingLog)
+    .where(and(
+      eq(lambingLog.promotedHeadId, id),
+      isNull(lambingLog.deletedAt),
+    ))
+    .limit(1);
+  return {
+    ...rows[0],
+    originBirthRecord: originBirthRecord ?? null,
+  };
 }
 
 export async function createAnimal(data: typeof animals.$inferInsert, tx?: DbOrTx) {
@@ -780,6 +884,19 @@ export async function updateAnimal(id: number, data: Partial<typeof animals.$inf
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   await db.update(animals).set(data).where(eq(animals.id, id));
+  const parentage: Partial<typeof lambingLog.$inferInsert> = {};
+  if (Object.prototype.hasOwnProperty.call(data, "damId")) {
+    parentage.damId = data.damId ?? null;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, "sireId")) {
+    parentage.sireId = data.sireId ?? null;
+  }
+  if (Object.keys(parentage).length > 0) {
+    await db
+      .update(lambingLog)
+      .set(parentage)
+      .where(eq(lambingLog.promotedHeadId, id));
+  }
 }
 
 export async function getActiveHeadCountByCategory(dateStr?: string): Promise<Record<number, number>> {
@@ -919,6 +1036,8 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
     .select({
       id: lambingLog.id,
       lambId: lambingLog.lambId,
+      speciesId: lambingLog.speciesId,
+      categoryId: lambingLog.categoryId,
       birthDate: lambingLog.birthDate,
       damId: lambingLog.damId,
       sireId: lambingLog.sireId,
@@ -930,20 +1049,50 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
       notes: lambingLog.notes,
       isPromoted: lambingLog.isPromoted,
       promotedHeadId: lambingLog.promotedHeadId,
+      promotedAnimalCode: sql<string | null>`COALESCE(
+        (SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.promotedHeadId}),
+        ${lambingLog.promotedAnimalCode}
+      )`,
+      promotedAnimalDeletedAt: sql<Date | null>`(
+        SELECT a.deletedAt FROM animals a WHERE a.id = ${lambingLog.promotedHeadId}
+      )`,
+      promotedAnimalPurgedAt: lambingLog.promotedAnimalPurgedAt,
       createdAt: lambingLog.createdAt,
       birthTypeName: birthTypes.name,
       groupCode: groups.groupCode,
-      effectiveDamId: sql<number | null>`COALESCE((SELECT an.damId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.damId IS NOT NULL), ${lambingLog.damId})`,
-      effectiveSireId: sql<number | null>`COALESCE((SELECT an.sireId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.sireId IS NOT NULL), ${lambingLog.sireId})`,
-      damAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = COALESCE((SELECT an.damId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.damId IS NOT NULL), ${lambingLog.damId}))`,
-      sireAnimalId: sql<string>`(SELECT a.animalId FROM animals a WHERE a.id = COALESCE((SELECT an.sireId FROM animals an WHERE an.id = ${lambingLog.promotedHeadId} AND an.sireId IS NOT NULL), ${lambingLog.sireId}))`
+      speciesName: species.name,
+      categoryName: animalCategories.name,
+      effectiveDamId: lambingLog.damId,
+      effectiveSireId: lambingLog.sireId,
+      damAnimalId: sql<string | null>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.damId})`,
+      sireAnimalId: sql<string | null>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.sireId})`
     })
     .from(lambingLog)
     .leftJoin(birthTypes, eq(lambingLog.birthTypeId, birthTypes.id))
-    .leftJoin(groups, eq(lambingLog.groupId, groups.id));
+    .leftJoin(groups, eq(lambingLog.groupId, groups.id))
+    .leftJoin(species, eq(lambingLog.speciesId, species.id))
+    .leftJoin(animalCategories, eq(lambingLog.categoryId, animalCategories.id));
   const lambingConditions = [isNull(lambingLog.deletedAt)];
   if (filters?.isPromoted !== undefined) lambingConditions.push(eq(lambingLog.isPromoted, filters.isPromoted) as any);
   return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
+}
+
+export async function getLambingSummary() {
+  const db = await getDb();
+  if (!db) return { total: 0, pending: 0, promoted: 0 };
+  const [row] = await db
+    .select({
+      total: sql<number>`COUNT(*)`,
+      pending: sql<number>`SUM(CASE WHEN ${lambingLog.isPromoted} = false THEN 1 ELSE 0 END)`,
+      promoted: sql<number>`SUM(CASE WHEN ${lambingLog.isPromoted} = true THEN 1 ELSE 0 END)`,
+    })
+    .from(lambingLog)
+    .where(isNull(lambingLog.deletedAt));
+  return {
+    total: Number(row?.total ?? 0),
+    pending: Number(row?.pending ?? 0),
+    promoted: Number(row?.promoted ?? 0),
+  };
 }
 
 export async function createLambingRecord(data: typeof lambingLog.$inferInsert, tx?: DbOrTx) {

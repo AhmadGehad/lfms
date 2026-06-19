@@ -137,7 +137,7 @@ export const configRouter = router({
             await categoryHasAnimals(id, tx)) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "Category prefix cannot change after animal IDs have been assigned",
+            message: "Category prefix cannot change after animal or birth IDs have been assigned",
           });
         }
         const result = await updateCategory(id, data as any, tx);

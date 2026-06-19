@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
-import { Egg, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
+import { Egg, Plus, Trash2, AlertTriangle, ExternalLink } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,17 +22,68 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
 
-function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
+function isActiveReference(record: { isActive?: boolean | number }) {
+  return record.isActive !== false && record.isActive !== 0;
+}
+
+function PromotionStatus({ record }: { record: any }) {
+  const { t } = useTranslation();
+  const [, setLocation] = useLocation();
+
+  if (!record.isPromoted) {
+    return <Badge variant="outline" className="text-xs">{t("common.pending")}</Badge>;
+  }
+
+  const animalCode = record.promotedAnimalCode ?? null;
+  if (record.promotedAnimalPurgedAt) {
+    return (
+      <div className="space-y-1">
+        <Badge variant="secondary" className="text-xs">{t("breeding.promotedAnimalPurged")}</Badge>
+        {animalCode ? <p className="font-mono text-xs text-muted-foreground">{animalCode}</p> : null}
+      </div>
+    );
+  }
+
+  if (record.promotedAnimalDeletedAt || (!record.promotedHeadId && record.isPromoted)) {
+    return (
+      <div className="space-y-1">
+        <Badge className="border-amber-200 bg-amber-100 text-xs text-amber-800">
+          {t("breeding.promotedAnimalDeleted")}
+        </Badge>
+        {animalCode ? <p className="font-mono text-xs text-muted-foreground">{animalCode}</p> : null}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1.5 text-left text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      onClick={() => setLocation(`/animals/${record.promotedHeadId}`)}
+    >
+      <span>
+        <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+          {t("breeding.promoted")}
+        </Badge>
+        {animalCode ? <span className="ms-1.5 font-mono text-xs">{animalCode}</span> : null}
+      </span>
+      <ExternalLink aria-hidden="true" className="h-3 w-3" />
+      <span className="sr-only">{t("breeding.viewPromotedAnimal")}</span>
+    </button>
+  );
+}
+
+function RecordBirthDialog() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const { control, handleSubmit, reset } = useForm({
+  const { control, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       birthDate: new Date().toISOString().split("T")[0],
       damId: "",
@@ -41,36 +93,61 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
       birthWeightKg: "",
       valueUsed: "",
       groupId: "",
+      speciesId: "",
+      categoryId: "",
       notes: "",
     },
   });
 
-  const { data: animals } = trpc.animals.lookup.useQuery({ isActive: true });
+  const selectedSpeciesId = watch("speciesId");
+  const selectedCategoryId = watch("categoryId");
+  const { data: animals } = trpc.animals.lookup.useQuery(
+    {
+      isActive: true,
+      speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined,
+    },
+    { enabled: Boolean(selectedSpeciesId) },
+  );
   const { data: birthTypes } = trpc.config.getBirthTypes.useQuery();
+  const { data: species } = trpc.config.getSpecies.useQuery();
+  const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: groups } = trpc.config.getGroups.useQuery();
 
   const females = (animals ?? []).filter((a: any) => a.animal.sex === "female");
   const males = (animals ?? []).filter((a: any) => a.animal.sex === "male");
+  const lambCategories = (categories ?? []).filter(
+    (category: any) =>
+      isActiveReference(category) &&
+      (!selectedSpeciesId || String(category.speciesId) === selectedSpeciesId),
+  );
+  const compatibleGroups = (groups ?? []).filter(
+    (group: any) =>
+      isActiveReference(group) &&
+      (!group.speciesId || String(group.speciesId) === selectedSpeciesId) &&
+      (!group.categoryId || String(group.categoryId) === selectedCategoryId),
+  );
 
   const utils = trpc.useUtils();
   const recordBirth = trpc.breeding.recordBirth.useMutation({
     onSuccess: () => {
       toast.success(t("breeding.birthRecorded"));
       utils.breeding.listLambing.invalidate();
+      utils.breeding.summary.invalidate();
       setOpen(false);
       reset();
-      onSuccess();
     },
     onError: (e) => toast.error(e.message),
   });
 
   const onSubmit = (data: any) => {
-    if (!data.sex || !data.birthTypeId) {
-      toast.error(t("breeding.sexBirthTypeRequired"));
+    if (!data.speciesId || !data.categoryId || !data.sex || !data.birthTypeId) {
+      toast.error(t("breeding.birthRequiredFields"));
       return;
     }
     recordBirth.mutate({
       birthDate: data.birthDate,
+      speciesId: Number(data.speciesId),
+      categoryId: Number(data.categoryId),
       damId: data.damId ? Number(data.damId) : undefined,
       sireId: data.sireId ? Number(data.sireId) : undefined,
       sex: data.sex as "male" | "female",
@@ -92,6 +169,50 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
+              <Label htmlFor="birth-species">{t("common.species")} *</Label>
+              <Controller name="speciesId" control={control} render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue("categoryId", "");
+                    setValue("groupId", "");
+                    setValue("damId", "");
+                    setValue("sireId", "");
+                  }}
+                >
+                  <SelectTrigger id="birth-species"><SelectValue placeholder={t("common.selectSpecies")} /></SelectTrigger>
+                  <SelectContent>
+                    {(species ?? []).filter(isActiveReference).map((item: any) => (
+                      <SelectItem key={item.id} value={String(item.id)}>{item.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="birth-category">{t("breeding.lambCategory")} *</Label>
+              <Controller name="categoryId" control={control} render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue("groupId", "");
+                  }}
+                  disabled={!selectedSpeciesId}
+                >
+                  <SelectTrigger id="birth-category"><SelectValue placeholder={t("breeding.selectLambCategory")} /></SelectTrigger>
+                  <SelectContent>
+                    {lambCategories.map((category: any) => (
+                      <SelectItem key={category.id} value={String(category.id)}>
+                        {category.name} ({category.idPrefix})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5">
               <Label>{t("breeding.birthDate")} *</Label>
               <Controller name="birthDate" control={control} render={({ field }) => (
                 <Input type="date" {...field} />
@@ -103,7 +224,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger><SelectValue placeholder={t("common.selectType")} /></SelectTrigger>
                   <SelectContent>
-                    {(birthTypes ?? []).map((bt: any) => (
+                    {(birthTypes ?? []).filter(isActiveReference).map((bt: any) => (
                       <SelectItem key={bt.id} value={String(bt.id)}>{bt.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -160,20 +281,24 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
                 </Select>
               )} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>{t("breeding.assignToGroup")}</Label>
               <Controller name="groupId" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  disabled={!selectedCategoryId}
+                >
                   <SelectTrigger><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
                   <SelectContent>
-                    {(groups ?? []).map((g: any) => (
+                    {compatibleGroups.map((g: any) => (
                       <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )} />
             </div>
-            <div className="space-y-1.5 col-span-2">
+            <div className="space-y-1.5 sm:col-span-2">
               <Label>{t("common.notes")}</Label>
               <Controller name="notes" control={control} render={({ field }) => (
                 <Input placeholder={t("common.optionalNotes")} {...field} />
@@ -183,7 +308,7 @@ function RecordBirthDialog({ onSuccess }: { onSuccess: () => void }) {
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             <Button type="submit" disabled={recordBirth.isPending}>
-              {recordBirth.isPending ? "Recording..." : t("breeding.recordBirth")}
+              {recordBirth.isPending ? t("breeding.recording") : t("breeding.recordBirth")}
             </Button>
           </DialogFooter>
         </form>
@@ -197,11 +322,55 @@ export default function Breeding() {
   const { can, canCreate, canUpdate, canDelete } = usePermissions("breeding");
   const canPromote = canUpdate && can("animals", "create");
   const [, setLocation] = useLocation();
-  const { data: lambingLog, isLoading, refetch } = trpc.breeding.listLambing.useQuery();
+  const search = useSearch();
+  const focusedRecordId = useMemo(() => {
+    const value = new URLSearchParams(search).get("record");
+    if (!value) return null;
+    const parsed = Number(value);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+  }, [search]);
+  type LambingFilter = "all" | "pending" | "promoted";
+  const [lambingFilter, setLambingFilter] = useState<LambingFilter>(
+    () => focusedRecordId ? "all" : "pending",
+  );
+  const listInput = lambingFilter === "all"
+    ? undefined
+    : { isPromoted: lambingFilter === "promoted" };
+  const { data: lambingLog, isLoading } = trpc.breeding.listLambing.useQuery(listInput);
+  const { data: lambingSummary } = trpc.breeding.summary.useQuery();
   const utils = trpc.useUtils();
+  const deepLinkResolvedId = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!focusedRecordId || !lambingLog || isLoading) return;
+    if (deepLinkResolvedId.current !== focusedRecordId && lambingFilter !== "all") {
+      setLambingFilter("all");
+      return;
+    }
+    const focusedRecord = (lambingLog as any[]).find((record) => record.id === focusedRecordId);
+    if (deepLinkResolvedId.current !== focusedRecordId &&
+        lambingFilter === "all" &&
+        focusedRecord) {
+      deepLinkResolvedId.current = focusedRecordId;
+      setLambingFilter(focusedRecord.isPromoted ? "promoted" : "pending");
+      return;
+    }
+    if (!focusedRecord) return;
+    deepLinkResolvedId.current = focusedRecordId;
+    const frame = window.requestAnimationFrame(() => {
+      const row = document.getElementById(`lambing-record-${focusedRecordId}`);
+      row?.scrollIntoView({ behavior: "smooth", block: "center" });
+      row?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusedRecordId, isLoading, lambingFilter, lambingLog]);
 
   const deleteLambingLog = trpc.recycleBin.deleteLambingLog.useMutation({
-    onSuccess: () => { toast.success(t("breeding.birthMovedToBin")); utils.breeding.listLambing.invalidate(); },
+    onSuccess: () => {
+      toast.success(t("breeding.birthMovedToBin"));
+      utils.breeding.listLambing.invalidate();
+      utils.breeding.summary.invalidate();
+    },
     onError: (e) => toast.error(e.message),
   });
   const promoteLamb = trpc.breeding.promoteLamb.useMutation({
@@ -210,6 +379,7 @@ export default function Breeding() {
       setPromoteDialog({ open: false, lambId: null });
       setPromoteForm((form) => ({ ...form, animalIdNumber: "" }));
       utils.breeding.listLambing.invalidate();
+      utils.breeding.summary.invalidate();
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.dashboard.getHeadCountByCategory.invalidate();
@@ -237,10 +407,12 @@ export default function Breeding() {
   );
   const promotionCategories = (categories ?? []).filter(
     (category: any) =>
-      !promoteForm.speciesId || String(category.speciesId) === promoteForm.speciesId,
+      isActiveReference(category) &&
+      (!promoteForm.speciesId || String(category.speciesId) === promoteForm.speciesId),
   );
   const promotionGroups = (groups ?? []).filter(
     (group: any) =>
+      isActiveReference(group) &&
       (!group.speciesId || String(group.speciesId) === promoteForm.speciesId) &&
       (!group.categoryId || String(group.categoryId) === promoteForm.categoryId),
   );
@@ -270,11 +442,42 @@ export default function Breeding() {
             {t("breeding.title")}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {(lambingLog ?? []).length} birth records · {(lambingLog ?? []).filter((l: any) => !l.isPromoted).length} pending promotion
+            {lambingSummary
+              ? t("breeding.recordsSummary", {
+                  total: lambingSummary.total,
+                  pending: lambingSummary.pending,
+                })
+              : t("common.loading")}
           </p>
         </div>
-        {canCreate && <RecordBirthDialog onSuccess={refetch} />}
+        {canCreate && <RecordBirthDialog />}
       </div>
+
+      <Tabs
+        value={lambingFilter}
+        onValueChange={(value) => setLambingFilter(value as LambingFilter)}
+      >
+        <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
+          <TabsTrigger value="all">
+            {t("common.all")}
+            <Badge variant="secondary" className="ms-1 text-[10px]">
+              {lambingSummary?.total ?? "…"}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="pending">
+            {t("common.pending")}
+            <Badge variant="secondary" className="ms-1 text-[10px]">
+              {lambingSummary?.pending ?? "…"}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="promoted">
+            {t("breeding.promoted")}
+            <Badge variant="secondary" className="ms-1 text-[10px]">
+              {lambingSummary?.promoted ?? "…"}
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <Card>
         <CardHeader>
@@ -311,7 +514,15 @@ export default function Breeding() {
                   <TableRow><TableCell colSpan={11} className="text-center py-12 text-muted-foreground">{t("breeding.noBirthRecords")}</TableCell></TableRow>
                 ) : (
                   (lambingLog ?? []).map((l: any) => (
-                    <TableRow key={l.id}>
+                    <TableRow
+                      key={l.id}
+                      id={`lambing-record-${l.id}`}
+                      tabIndex={l.id === focusedRecordId ? -1 : undefined}
+                      aria-current={l.id === focusedRecordId ? "true" : undefined}
+                      className={l.id === focusedRecordId
+                        ? "bg-primary/10 ring-2 ring-inset ring-primary focus:outline-none"
+                        : undefined}
+                    >
                       <TableCell className="font-mono font-semibold text-primary">{l.lambId}</TableCell>
                       <TableCell>{new Date(l.birthDate).toLocaleDateString()}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{(() => {
@@ -342,11 +553,7 @@ export default function Breeding() {
                         ) : "—"}
                       </TableCell>
                       <TableCell>
-                        {l.isPromoted ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("breeding.promoted")}</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs">{t("common.pending")}</Badge>
-                        )}
+                        <PromotionStatus record={l} />
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -362,7 +569,7 @@ export default function Breeding() {
                               {t("breeding.promote")}
                             </Button>
                           )}
-                          {canDelete && <AlertDialog>
+                          {canDelete && !l.isPromoted && <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
                                 <Trash2 className="h-4 w-4" />
@@ -375,7 +582,7 @@ export default function Breeding() {
                                   {t("breeding.deleteBirthRecord")}
                                 </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Move birth record <strong>{l.lambId}</strong> to the Recycle Bin? You can restore it anytime.
+                                  {t("breeding.deleteBirthRecordDescription", { id: l.lambId })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -415,7 +622,9 @@ export default function Breeding() {
               >
                 <SelectTrigger id="promotion-species"><SelectValue placeholder={t("common.selectSpecies")} /></SelectTrigger>
                 <SelectContent>
-                  {(species ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                  {(species ?? []).filter(isActiveReference).map((s: any) => (
+                    <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -428,6 +637,7 @@ export default function Breeding() {
                   categoryId: value,
                   groupId: "",
                 }))}
+                disabled={!promoteForm.speciesId}
               >
                 <SelectTrigger id="promotion-category"><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
                 <SelectContent>
@@ -446,7 +656,11 @@ export default function Breeding() {
             />
             <div className="space-y-1.5">
               <Label htmlFor="promotion-group">Group *</Label>
-              <Select value={promoteForm.groupId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, groupId: v }))}>
+              <Select
+                value={promoteForm.groupId}
+                onValueChange={(v) => setPromoteForm((f) => ({ ...f, groupId: v }))}
+                disabled={!promoteForm.categoryId}
+              >
                 <SelectTrigger id="promotion-group"><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
                 <SelectContent>
                   {promotionGroups.map((g: any) => <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>)}
@@ -458,7 +672,9 @@ export default function Breeding() {
               <Select value={promoteForm.statusId} onValueChange={(v) => setPromoteForm((f) => ({ ...f, statusId: v }))}>
                 <SelectTrigger id="promotion-status"><SelectValue placeholder={t("common.selectStatus")} /></SelectTrigger>
                 <SelectContent>
-                  {(statuses ?? []).map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                  {(statuses ?? [])
+                    .filter((item: any) => isActiveReference(item) && !item.isExitStatus)
+                    .map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

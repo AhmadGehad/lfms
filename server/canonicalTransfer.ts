@@ -1,4 +1,5 @@
 import { getTableColumns } from "drizzle-orm";
+import { animalCategories, animals, lambingLog } from "../drizzle/schema";
 import type { DbOrTx } from "./db";
 import { CANONICAL_TABLES, type CanonicalWorkbookData } from "./excelDataContract";
 
@@ -24,6 +25,161 @@ function rowsMatch(imported: Record<string, unknown>, existing: Record<string, u
   return columnNames.every(name => comparable(imported[name]) === comparable(existing[name]));
 }
 
+function numericId(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+async function normalizeBirthIntegrity(
+  tx: DbOrTx,
+  rowsByTable: CanonicalWorkbookData,
+  mode: ImportMode,
+) {
+  rowsByTable.set(
+    "vaccination_records",
+    (rowsByTable.get("vaccination_records") ?? []).map(row => ({
+      ...row,
+      notifyBeforeNext: row.notifyBeforeNext ?? 7,
+      notifyBeforeBooster: row.notifyBeforeBooster ?? 7,
+    })),
+  );
+
+  const importedCategories = (rowsByTable.get("animal_categories") ?? [])
+    .map(row => ({ ...row }));
+  const categoriesMissingLambSequence = new Set<number>();
+  for (const category of importedCategories) {
+    if (category.lambIdSequence === undefined) {
+      const categoryId = numericId(category.id);
+      if (categoryId !== null) categoriesMissingLambSequence.add(categoryId);
+      category.lambIdSequence = 0;
+    }
+  }
+  rowsByTable.set("animal_categories", importedCategories);
+
+  let existingCategories: Record<string, unknown>[] = [];
+  let existingAnimals: Record<string, unknown>[] = [];
+  let existingBirths: Record<string, unknown>[] = [];
+  if (mode === "append") {
+    existingCategories = await tx.select().from(animalCategories);
+    existingAnimals = await tx.select().from(animals);
+    existingBirths = await tx.select().from(lambingLog);
+  }
+  const categories = [...existingCategories, ...importedCategories];
+  const existingCategoryById = new Map(
+    existingCategories.map(row => [numericId(row.id), row]),
+  );
+  const importedAnimals = (rowsByTable.get("animals") ?? []).map(row => ({ ...row }));
+  const allAnimals = [...existingAnimals, ...importedAnimals];
+  const categoryById = new Map(categories.map(row => [numericId(row.id), row]));
+  const animalById = new Map(allAnimals.map(row => [numericId(row.id), row]));
+  const categoriesByPrefix = Array.from(categoryById.values())
+    .filter(row => typeof row.idPrefix === "string" && row.idPrefix.length > 0)
+    .sort((a, b) => String(b.idPrefix).length - String(a.idPrefix).length);
+
+  const birthByPromotedHead = new Map<number, number>();
+  for (const birth of existingBirths) {
+    const promotedHeadId = numericId(birth.promotedHeadId);
+    const birthId = numericId(birth.id);
+    if (promotedHeadId !== null && birthId !== null) {
+      birthByPromotedHead.set(promotedHeadId, birthId);
+    }
+  }
+
+  const importedBirths = (rowsByTable.get("lambing_log") ?? []).map(source => {
+    const birth = { ...source };
+    const birthId = numericId(birth.id);
+    const promotedHeadId = numericId(birth.promotedHeadId);
+    const promotedAnimal = promotedHeadId !== null
+      ? animalById.get(promotedHeadId)
+      : undefined;
+    if (promotedHeadId !== null || birth.promotedAnimalCode) {
+      birth.isPromoted = true;
+    }
+    if (birth.isPromoted) {
+      birth.deletedAt = null;
+      birth.deletedBy = null;
+    }
+    if (promotedAnimal) {
+      birth.speciesId = promotedAnimal.speciesId ?? birth.speciesId ?? null;
+      birth.categoryId = promotedAnimal.categoryId ?? birth.categoryId ?? null;
+      birth.damId = promotedAnimal.damId ?? null;
+      birth.sireId = promotedAnimal.sireId ?? null;
+      birth.promotedAnimalCode = promotedAnimal.animalId ?? birth.promotedAnimalCode ?? null;
+      birth.isPromoted = true;
+      birth.deletedAt = null;
+      birth.deletedBy = null;
+    }
+
+    const dam = numericId(birth.damId) !== null
+      ? animalById.get(numericId(birth.damId))
+      : undefined;
+    birth.speciesId ??= dam?.speciesId ?? null;
+    birth.categoryId ??= dam?.categoryId ?? null;
+
+    if (birth.categoryId === null || birth.categoryId === undefined) {
+      const lambId = String(birth.lambId ?? "");
+      const matchingCategories = categoriesByPrefix.filter(category =>
+        lambId.startsWith(String(category.idPrefix)));
+      const longestPrefixLength = String(
+        matchingCategories[0]?.idPrefix ?? "",
+      ).length;
+      const longestMatches = matchingCategories.filter(category =>
+        String(category.idPrefix).length === longestPrefixLength);
+      birth.categoryId = longestMatches.length === 1
+        ? longestMatches[0]?.id ?? null
+        : null;
+    }
+    const category = categoryById.get(numericId(birth.categoryId));
+    birth.speciesId ??= category?.speciesId ?? null;
+    birth.promotedAnimalCode ??= promotedAnimal?.animalId ?? null;
+    birth.promotedAnimalPurgedAt ??= null;
+    if (birth.isPromoted && !promotedAnimal) {
+      if (promotedHeadId !== null) birth.promotedHeadId = null;
+      birth.promotedAnimalPurgedAt ??= new Date();
+    }
+
+    const normalizedPromotedHeadId = numericId(birth.promotedHeadId);
+    if (normalizedPromotedHeadId !== null) {
+      const existingBirthId = birthByPromotedHead.get(normalizedPromotedHeadId);
+      if (existingBirthId !== undefined && existingBirthId !== birthId) {
+        throw new Error(
+          `lambing_log: promotedHeadId=${normalizedPromotedHeadId} is linked to multiple birth records`,
+        );
+      }
+      if (birthId !== null) {
+        birthByPromotedHead.set(normalizedPromotedHeadId, birthId);
+      }
+    }
+    return birth;
+  });
+  rowsByTable.set("lambing_log", importedBirths);
+
+  if (categoriesMissingLambSequence.size > 0) {
+    const allBirths = [...existingBirths, ...importedBirths];
+    for (const category of importedCategories) {
+      const categoryId = numericId(category.id);
+      if (categoryId === null || !categoriesMissingLambSequence.has(categoryId)) continue;
+      const prefix = String(category.idPrefix ?? "");
+      let maxSequence = numericId(
+        existingCategoryById.get(categoryId)?.lambIdSequence,
+      ) ?? 0;
+      for (const birth of allBirths) {
+        const lambId = String(birth.lambId ?? "");
+        if (!prefix || !lambId.startsWith(prefix)) continue;
+        const suffix = lambId.slice(prefix.length);
+        if (/^\d+$/.test(suffix)) {
+          const sequence = Number(suffix);
+          if (Number.isSafeInteger(sequence)) {
+            maxSequence = Math.max(maxSequence, Math.min(sequence, 2_147_483_646));
+          }
+        }
+      }
+      category.lambIdSequence = maxSequence;
+    }
+  }
+}
+
 export async function readAllCanonicalTables(db: DbOrTx): Promise<CanonicalWorkbookData> {
   const rows: CanonicalWorkbookData = new Map();
   for (const spec of CANONICAL_TABLES) {
@@ -44,6 +200,7 @@ export async function applyCanonicalData(
 ): Promise<TransferStat[]> {
   const stats: TransferStat[] = [];
   const excludedTables = options.excludedTables ?? new Set<string>();
+  await normalizeBirthIntegrity(tx, rowsByTable, mode);
 
   if (mode === "replace") {
     for (const spec of [...CANONICAL_TABLES].reverse()) {

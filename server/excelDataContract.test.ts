@@ -168,4 +168,82 @@ describe("canonical Excel data contract", () => {
       })
     ).toThrow(/feed_items row 1: missing field name/);
   });
+
+  it("accepts version 3 snapshots without the new birth-integrity fields", () => {
+    const complete = Object.fromEntries(
+      CANONICAL_TABLES.map(spec => [spec.key, []]),
+    );
+    complete.animal_categories = [{
+      id: 1,
+      name: "Lamb",
+      speciesId: 1,
+      idPrefix: "LMB",
+      idSequence: 12,
+      targetWeightKg: null,
+      expectedCycleDays: null,
+      autoStageWeightKg: null,
+      autoStageTargetCategoryId: null,
+      isExitStatus: false,
+      isActive: true,
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+      createdBy: null,
+      deletedAt: null,
+      deletedBy: null,
+    }];
+    complete.lambing_log = [{
+      id: 1,
+      lambId: "LMB0010",
+      birthDate: "2026-01-01",
+      damId: null,
+      sireId: null,
+      sex: "female",
+      birthTypeId: 1,
+      birthWeightKg: "4.00",
+      valueUsed: null,
+      groupId: null,
+      notes: null,
+      isPromoted: false,
+      promotedHeadId: null,
+      createdAt: new Date("2026-01-01"),
+      createdBy: null,
+      deletedAt: null,
+      deletedBy: null,
+    }];
+
+    const parsed = validateCanonicalDataObject(complete, 3);
+
+    expect(parsed.get("animal_categories")?.[0])
+      .not.toHaveProperty("lambIdSequence");
+    expect(parsed.get("lambing_log")?.[0]).not.toHaveProperty("speciesId");
+    expect(parsed.get("lambing_log")?.[0]).not.toHaveProperty("categoryId");
+  });
+
+  it("reads a version 3 workbook without version 4 columns", () => {
+    const workbook = new ExcelJS.Workbook();
+    addCanonicalSheets(workbook, new Map());
+    workbook.getWorksheet(EXCEL_MANIFEST_SHEET)!.getCell("B1").value = 3;
+
+    const removeColumns = (sheetName: string, names: string[]) => {
+      const sheet = workbook.getWorksheet(sheetName)!;
+      for (const name of names) {
+        const column = sheet.getRow(1).values.findIndex(value => value === name);
+        if (column > 0) sheet.spliceColumns(column, 1);
+      }
+    };
+    removeColumns("Data - Animal Categories", ["lambIdSequence"]);
+    removeColumns("Data - Lambing Log", [
+      "speciesId",
+      "categoryId",
+      "promotedAnimalCode",
+      "promotedAnimalPurgedAt",
+    ]);
+    removeColumns("Data - Vaccination Records", [
+      "notifyBeforeNext",
+      "notifyBeforeBooster",
+    ]);
+
+    expect(isCanonicalWorkbook(workbook)).toBe(true);
+    expect(() => readCanonicalWorkbook(workbook)).not.toThrow();
+  });
 });

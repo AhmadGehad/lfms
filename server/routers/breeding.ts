@@ -12,18 +12,20 @@ import {
   ensureCategorySequenceAtLeast,
   getDb,
   getAllCategories,
+  getAllBirthTypes,
   getAllSpecies,
   getAllStatuses,
   getAllGroups,
   generateNextAnimalId,
+  generateNextLambId,
   getLambingLog,
+  getLambingSummary,
   getLambingRecordForUpdate,
   getCategoryForUpdate,
   getRawAnimalByAnimalId,
   getRawAnimalById,
   getRawOwnerById,
   updateLambingRecord,
-  incrementCategorySequence,
   recordStatusChange,
 } from "../db";
 
@@ -33,10 +35,15 @@ export const breedingRouter = router({
     .input(z.object({ isPromoted: z.boolean().optional() }).optional())
     .query(({ input }) => getLambingLog(input)),
 
+  summary: permissionProcedure("breeding", "view")
+    .query(() => getLambingSummary()),
+
   // ─── RECORD BIRTH ───────────────────────────────────────────────────────────
   recordBirth: permissionProcedure("breeding", "create")
     .input(
       z.object({
+        speciesId: z.number().int().positive(),
+        categoryId: z.number().int().positive(),
         birthDate: pastOrTodayDate,
         damId: z.number().int().positive().optional(),
         sireId: z.number().int().positive().optional(),
@@ -51,47 +58,113 @@ export const breedingRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const results = [];
+      const [categories, speciesRows, groups, birthTypes] = await Promise.all([
+        getAllCategories(),
+        getAllSpecies(),
+        getAllGroups(input.speciesId),
+        getAllBirthTypes(),
+      ]);
+      const category = categories.find((row: any) => row.id === input.categoryId);
+      const selectedSpecies = speciesRows.find((row: any) => row.id === input.speciesId);
+      const group = input.groupId
+        ? groups.find((row: any) => row.id === input.groupId)
+        : null;
+      const birthType = birthTypes.find((row: any) => row.id === input.birthTypeId);
 
-      // Get lamb category (first category with "Lamb" in name, or speciesId from dam)
-      const allCats = await getAllCategories();
-      const lambCat = allCats.find((c: { id: number; name: string; idPrefix: string }) => c.name.toLowerCase().includes("lamb") || c.name.toLowerCase().includes("baby"));
-
-      for (let i = 0; i < input.count; i++) {
-        let lambId = `LAMB-${Date.now()}-${i}`;
-
-        if (lambCat) {
-          const seq = await incrementCategorySequence(lambCat.id);
-          lambId = `${lambCat.idPrefix}${String(seq).padStart(4, "0")}`;
-        }
-
-        const record = await createLambingRecord({
-          lambId,
-          birthDate: input.birthDate as any,
-          damId: input.damId,
-          sireId: input.sireId,
-          sex: input.sex,
-          birthTypeId: input.birthTypeId,
-          birthWeightKg: input.birthWeightKg,
-          valueUsed: input.valueUsed,
-          groupId: input.groupId,
-          notes: input.notes,
-          createdBy: ctx.user?.id,
-        });
-
-        results.push({ ...record, lambId });
+      if (!selectedSpecies?.isActive) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected species is not active" });
+      }
+      if (!category?.isActive || category.speciesId !== input.speciesId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected birth category is not valid for this species" });
+      }
+      if (input.groupId &&
+          (!group?.isActive ||
+           (group.speciesId && group.speciesId !== input.speciesId) ||
+           (group.categoryId && group.categoryId !== input.categoryId))) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected group is not valid for this birth category" });
+      }
+      if (!birthType?.isActive) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Selected birth type is not active" });
       }
 
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "create",
-        ipAddress: getClientIp(ctx),
-        entityType: "lambing_log",
-        entityId: results[0]?.lambId ?? "unknown",
-        newValues: input as any,
-      });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
-      return results;
+      try {
+        return await db.transaction(async tx => {
+          const lockedCategory = await getCategoryForUpdate(input.categoryId, tx);
+          if (!lockedCategory ||
+              lockedCategory.deletedAt ||
+              !lockedCategory.isActive ||
+              lockedCategory.speciesId !== input.speciesId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Selected birth category is no longer available",
+            });
+          }
+
+          if (input.damId) {
+            const dam = await getRawAnimalById(input.damId, tx);
+            if (!dam || dam.deletedAt || !dam.isActive ||
+                dam.sex !== "female" || dam.speciesId !== input.speciesId) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Selected dam is not valid" });
+            }
+          }
+          if (input.sireId) {
+            const sire = await getRawAnimalById(input.sireId, tx);
+            if (!sire || sire.deletedAt || !sire.isActive ||
+                sire.sex !== "male" || sire.speciesId !== input.speciesId) {
+              throw new TRPCError({ code: "BAD_REQUEST", message: "Selected sire is not valid" });
+            }
+          }
+
+          const results = [];
+          for (let i = 0; i < input.count; i += 1) {
+            const lambId = await generateNextLambId(
+              input.categoryId,
+              lockedCategory.idPrefix,
+              tx,
+            );
+            const record = await createLambingRecord({
+              lambId,
+              speciesId: input.speciesId,
+              categoryId: input.categoryId,
+              birthDate: input.birthDate as any,
+              damId: input.damId,
+              sireId: input.sireId,
+              sex: input.sex,
+              birthTypeId: input.birthTypeId,
+              birthWeightKg: input.birthWeightKg,
+              valueUsed: input.valueUsed,
+              groupId: input.groupId,
+              notes: input.notes,
+              createdBy: ctx.user?.id,
+            }, tx);
+            results.push({ ...record, lambId });
+          }
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "create",
+            ipAddress: getClientIp(ctx),
+            entityType: "lambing_log",
+            entityId: results[0]?.lambId ?? "unknown",
+            newValues: input as any,
+          }, tx);
+
+          return results;
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (isDuplicateEntryError(error)) {
+          throw new TRPCError({ code: "CONFLICT", message: "Lamb ID already exists" });
+        }
+        console.error("[Breeding] Birth recording failed", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not record birth. Try again.",
+        });
+      }
     }),
 
   // ─── PROMOTE LAMB TO ANIMAL REGISTRY ────────────────────────────────────────
@@ -152,6 +225,12 @@ export const breedingRouter = router({
           if (lamb.isPromoted) {
             throw new TRPCError({ code: "CONFLICT", message: "Lamb already promoted" });
           }
+          if (lamb.speciesId && lamb.speciesId !== input.speciesId) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Promotion species must match the recorded birth species",
+            });
+          }
 
           const lockedCat = await getCategoryForUpdate(input.categoryId, tx);
           if (!lockedCat ||
@@ -168,26 +247,22 @@ export const breedingRouter = router({
           if (lamb.damId) {
             dam = await getRawAnimalById(lamb.damId, tx);
             if (!dam ||
-                dam.deletedAt ||
-                !dam.isActive ||
                 dam.sex !== "female" ||
                 dam.speciesId !== input.speciesId) {
               throw new TRPCError({
                 code: "BAD_REQUEST",
-                message: "Lamb dam is no longer valid for promotion",
+                message: "Lamb dam is not valid for promotion",
               });
             }
           }
           if (lamb.sireId) {
             const sire = await getRawAnimalById(lamb.sireId, tx);
             if (!sire ||
-                sire.deletedAt ||
-                !sire.isActive ||
                 sire.sex !== "male" ||
                 sire.speciesId !== input.speciesId) {
               throw new TRPCError({
                 code: "BAD_REQUEST",
-                message: "Lamb sire is no longer valid for promotion",
+                message: "Lamb sire is not valid for promotion",
               });
             }
           }
@@ -256,6 +331,8 @@ export const breedingRouter = router({
           await updateLambingRecord(input.lambingLogId, {
             isPromoted: true,
             promotedHeadId: insertId,
+            promotedAnimalCode: animalId,
+            promotedAnimalPurgedAt: null,
           }, tx);
 
           await createAuditEntry({

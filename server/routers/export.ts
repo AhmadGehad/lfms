@@ -72,9 +72,9 @@ async function buildWorkbook(): Promise<Buffer> {
   cfg.getCell(`A${r}`).value = "CATEGORIES";
   cfg.getCell(`A${r}`).font = { bold: true, size: 12 };
   r++;
-  cfg.getRow(r).values = ["id", "name", "speciesId", "idPrefix", "idSequence", "targetWeightKg", "autoStageWeightKg", "autoStageTargetCategoryId"];
+  cfg.getRow(r).values = ["id", "name", "speciesId", "idPrefix", "idSequence", "lambIdSequence", "targetWeightKg", "autoStageWeightKg", "autoStageTargetCategoryId"];
   headerRow(cfg, r);
-  categories.forEach((c: any) => cfg.addRow([c.id, c.name, c.speciesId, c.idPrefix, c.idSequence, c.targetWeightKg, c.autoStageWeightKg, c.autoStageTargetCategoryId]));
+  categories.forEach((c: any) => cfg.addRow([c.id, c.name, c.speciesId, c.idPrefix, c.idSequence, c.lambIdSequence, c.targetWeightKg, c.autoStageWeightKg, c.autoStageTargetCategoryId]));
 
   r = cfg.lastRow!.number + 2;
   cfg.getCell(`A${r}`).value = "STATUSES";
@@ -324,7 +324,15 @@ async function buildWorkbook(): Promise<Buffer> {
       width: 14,
       style: { numFmt: "0.00" }
     },
-    { header: "promotedHead (code)", key: "promotedHeadCode", width: 20 }
+    { header: "promotedHead (code)", key: "promotedHeadCode", width: 20 },
+    { header: "species", key: "speciesName", width: 14 },
+    { header: "category", key: "categoryName", width: 16 },
+    {
+      header: "promotedAnimalPurgedAt",
+      key: "promotedAnimalPurgedAt",
+      width: 22,
+      style: { numFmt: "yyyy-mm-dd hh:mm:ss" }
+    }
   ];
   headerRow(wsLamb, 1);
   lambing.forEach((l: any) =>
@@ -340,7 +348,13 @@ async function buildWorkbook(): Promise<Buffer> {
       isPromoted: l.isPromoted ? "YES" : "no",
       notes: l.notes,
       birthWeightKg: l.birthWeightKg ? parseFloat(l.birthWeightKg) : null,
-      promotedHeadCode: l.promotedHeadId ? (animalCodeById.get(l.promotedHeadId) ?? `#${l.promotedHeadId}`) : ""
+      promotedHeadCode: l.promotedAnimalCode ??
+        (l.promotedHeadId ? (animalCodeById.get(l.promotedHeadId) ?? `#${l.promotedHeadId}`) : ""),
+      speciesName: l.speciesName ?? "",
+      categoryName: l.categoryName ?? "",
+      promotedAnimalPurgedAt: l.promotedAnimalPurgedAt
+        ? new Date(l.promotedAnimalPurgedAt)
+        : null
     })
   );
   wsLamb.views = [{ state: "frozen", ySplit: 1 }];

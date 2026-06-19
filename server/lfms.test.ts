@@ -5,6 +5,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
+import { animals, lambingLog } from "../drizzle/schema";
 import type { TrpcContext } from "./_core/context";
 import type { PermissionOverrides } from "../shared/permissions";
 
@@ -118,6 +119,12 @@ vi.mock("./db", () => ({
     isPromoted: false,
     deletedAt: null,
   }),
+  getLambingLog: vi.fn().mockResolvedValue([]),
+  getLambingSummary: vi.fn().mockResolvedValue({
+    total: 3,
+    pending: 2,
+    promoted: 1,
+  }),
   getRawAnimalByAnimalId: vi.fn().mockResolvedValue(null),
   getRawAnimalById: vi.fn().mockResolvedValue(null),
   getRawAnimalForUpdate: vi.fn().mockResolvedValue({
@@ -131,6 +138,7 @@ vi.mock("./db", () => ({
     deletedAt: null,
   }),
   getRawOwnerById: vi.fn().mockResolvedValue(null),
+  createLambingRecord: vi.fn().mockResolvedValue({ insertId: 10 }),
   createAnimal: vi.fn().mockResolvedValue({ id: 3, animalId: "LMB-003" }),
   updateLambingRecord: vi.fn().mockResolvedValue(undefined),
   updateAnimal: vi.fn().mockResolvedValue(undefined),
@@ -152,8 +160,11 @@ vi.mock("./db", () => ({
   createAuditEntry: vi.fn().mockResolvedValue(undefined),
   createNotification: vi.fn().mockResolvedValue({ id: 1, title: "Test", message: "Test msg" }),
   incrementCategorySequence: vi.fn().mockResolvedValue(1),
+  incrementCategoryLambSequence: vi.fn().mockResolvedValue(1),
   ensureCategorySequenceAtLeast: vi.fn().mockResolvedValue(undefined),
+  ensureCategoryLambSequenceAtLeast: vi.fn().mockResolvedValue(undefined),
   generateNextAnimalId: vi.fn().mockResolvedValue("LMB0001"),
+  generateNextLambId: vi.fn().mockResolvedValue("LMB0001"),
   getLambingEvents: vi.fn().mockResolvedValue([]),
   createLambingEvent: vi.fn().mockResolvedValue({ id: 1, damId: 1, sireId: 2, birthDate: new Date() }),
   getFatteningEntries: vi.fn().mockResolvedValue([]),
@@ -424,6 +435,28 @@ describe("animals.list", () => {
     const result = await caller.animals.list({ isActive: true });
     expect(Array.isArray(result)).toBe(true);
   });
+
+  it("supports species-scoped parent lookup without expanding its projection", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.getAnimals).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+
+    const result = await caller.animals.lookup({
+      speciesId: 1,
+      isActive: true,
+    });
+
+    expect(vi.mocked(dbModule.getAnimals)).toHaveBeenLastCalledWith({
+      speciesId: 1,
+      isActive: true,
+      limit: 500,
+    });
+    expect(Object.keys(result[0]!.animal).sort()).toEqual([
+      "animalId",
+      "id",
+      "sex",
+    ]);
+  });
 });
 
 describe("animals.getById", () => {
@@ -636,6 +669,16 @@ describe("breeding.promoteLamb", () => {
       }),
       expect.anything(),
     );
+    expect(vi.mocked(dbModule.updateLambingRecord)).toHaveBeenLastCalledWith(
+      1,
+      expect.objectContaining({
+        isPromoted: true,
+        promotedHeadId: 3,
+        promotedAnimalCode: "LMB00123",
+        promotedAnimalPurgedAt: null,
+      }),
+      expect.anything(),
+    );
   });
 
   it("rejects non-numeric or oversized exact IDs", async () => {
@@ -741,6 +784,181 @@ describe("breeding.promoteLamb", () => {
       statusId: 1,
       acquisitionDate: "2024-01-15",
     })).rejects.toThrow(/dam.*valid/i);
+  });
+
+  it("keeps historical parent links when a valid parent was exited or deleted", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getLambingRecordForUpdate).mockResolvedValueOnce({
+      id: 1,
+      lambId: "LMB-0001",
+      sex: "male",
+      birthDate: "2024-01-15",
+      damId: 20,
+      sireId: null,
+      isPromoted: false,
+      deletedAt: null,
+    } as any);
+    vi.mocked(dbModule.getRawAnimalById).mockResolvedValueOnce({
+      id: 20,
+      sex: "female",
+      speciesId: 1,
+      isActive: 0,
+      deletedAt: new Date(),
+    } as any);
+    vi.mocked(dbModule.createAnimal).mockResolvedValueOnce({ insertId: 3 } as any);
+
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.breeding.promoteLamb({
+      lambingLogId: 1,
+      categoryId: 1,
+      speciesId: 1,
+      groupId: 1,
+      statusId: 1,
+      acquisitionDate: "2024-01-15",
+    })).resolves.toEqual({ animalId: "LMB0001", insertId: 3 });
+    expect(vi.mocked(dbModule.createAnimal)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ damId: 20 }),
+      expect.anything(),
+    );
+  });
+});
+
+describe("breeding birth integrity", () => {
+  it("uses a separate category-prefixed sequence for birth IDs", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.generateNextLambId)
+      .mockResolvedValueOnce("LMB0041")
+      .mockResolvedValueOnce("LMB0042");
+    vi.mocked(dbModule.createLambingRecord).mockClear();
+    const animalSequenceCalls =
+      vi.mocked(dbModule.incrementCategorySequence).mock.calls.length;
+
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.breeding.recordBirth({
+      speciesId: 1,
+      categoryId: 1,
+      birthDate: "2024-01-15",
+      sex: "female",
+      birthTypeId: 2,
+      count: 2,
+    });
+
+    expect(result.map(row => row.lambId)).toEqual(["LMB0041", "LMB0042"]);
+    expect(vi.mocked(dbModule.generateNextLambId)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(dbModule.createLambingRecord)).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        lambId: "LMB0042",
+        speciesId: 1,
+        categoryId: 1,
+      }),
+      expect.anything(),
+    );
+    expect(vi.mocked(dbModule.incrementCategorySequence).mock.calls.length)
+      .toBe(animalSequenceCalls);
+  });
+
+  it("returns stable pending and promoted counts", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.breeding.summary()).resolves.toEqual({
+      total: 3,
+      pending: 2,
+      promoted: 1,
+    });
+  });
+
+  it("passes the pending/promoted filter to the database query", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.getLambingLog).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+
+    await caller.breeding.listLambing({ isPromoted: false });
+
+    expect(vi.mocked(dbModule.getLambingLog))
+      .toHaveBeenLastCalledWith({ isPromoted: false });
+  });
+});
+
+describe("birth history lifecycle", () => {
+  it("blocks deletion of a promoted birth record", async () => {
+    const dbModule = await import("./db");
+    const tx = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => ({
+              for: async () => [{
+                id: 1,
+                lambId: "LMB0001",
+                isPromoted: true,
+              }],
+            }),
+          }),
+        }),
+      }),
+    };
+    vi.mocked(dbModule.getDb).mockResolvedValueOnce({
+      transaction: async (callback: (scope: object) => unknown) => callback(tx),
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.recycleBin.deleteLambingLog({ id: 1 }))
+      .rejects.toThrow(/permanent history/i);
+  });
+
+  it("keeps the birth row and snapshots the animal code on purge", async () => {
+    const dbModule = await import("./db");
+    const updates: Array<{ table: unknown; data: Record<string, unknown> }> = [];
+    const deletes: unknown[] = [];
+    const tx = {
+      select: () => ({
+        from: (table: unknown) => ({
+          where: () => ({
+            limit: () => ({
+              for: async () => table === animals
+                ? [{
+                    id: 3,
+                    animalId: "RAM0003",
+                    deletedAt: new Date("2026-01-01"),
+                  }]
+                : [],
+            }),
+          }),
+        }),
+      }),
+      update: (table: unknown) => ({
+        set: (data: Record<string, unknown>) => ({
+          where: async () => {
+            updates.push({ table, data });
+          },
+        }),
+      }),
+      delete: (table: unknown) => ({
+        where: async () => {
+          deletes.push(table);
+        },
+      }),
+      insert: () => ({
+        values: async () => undefined,
+      }),
+    };
+    vi.mocked(dbModule.getDb).mockResolvedValueOnce({
+      transaction: async (callback: (scope: object) => unknown) => callback(tx),
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await caller.recycleBin.purgeAnimal({ id: 3 });
+
+    const birthUpdate = updates.find(write => write.table === lambingLog);
+    expect(birthUpdate?.data).toMatchObject({
+      isPromoted: true,
+      promotedAnimalCode: "RAM0003",
+      promotedHeadId: null,
+      deletedAt: null,
+      deletedBy: null,
+    });
+    expect(birthUpdate?.data.promotedAnimalPurgedAt).toBeInstanceOf(Date);
+    expect(deletes).not.toContain(lambingLog);
+    expect(deletes).toContain(animals);
   });
 });
 

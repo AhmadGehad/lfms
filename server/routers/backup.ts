@@ -14,12 +14,13 @@ import { ENV } from "../_core/env";
 import { eq } from "drizzle-orm";
 
 const JSON_BACKUP_FORMAT = "lfms-canonical-json";
-const JSON_BACKUP_VERSION = 3;
+const JSON_BACKUP_VERSION = 4;
+const SUPPORTED_JSON_BACKUP_VERSIONS = [3, 4] as const;
 const importModeSchema = z.enum(["append", "replace"]).default("append");
 
 type CompleteSnapshot = {
   format: typeof JSON_BACKUP_FORMAT;
-  version: typeof JSON_BACKUP_VERSION;
+  version: number;
   generatedAt: string;
   tables: Record<string, Record<string, unknown>[]>;
 };
@@ -33,14 +34,15 @@ function parseSnapshot(base64: string) {
   }
   if (!parsed || typeof parsed !== "object") throw new Error("Invalid backup file");
   const snapshot = parsed as Partial<CompleteSnapshot>;
-  if (snapshot.format !== JSON_BACKUP_FORMAT || snapshot.version !== JSON_BACKUP_VERSION) {
+  if (snapshot.format !== JSON_BACKUP_FORMAT ||
+      !SUPPORTED_JSON_BACKUP_VERSIONS.includes(snapshot.version as 3 | 4)) {
     throw new Error(
-      `Unsupported JSON backup format/version. Expected ${JSON_BACKUP_FORMAT} version ${JSON_BACKUP_VERSION}. Export a new complete backup before restoring.`,
+      `Unsupported JSON backup format/version. Expected ${JSON_BACKUP_FORMAT} version ${SUPPORTED_JSON_BACKUP_VERSIONS.join(" or ")}.`,
     );
   }
   return {
     snapshot: snapshot as CompleteSnapshot,
-    rowsByTable: validateCanonicalDataObject(snapshot.tables),
+    rowsByTable: validateCanonicalDataObject(snapshot.tables, snapshot.version),
   };
 }
 

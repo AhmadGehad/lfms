@@ -107,6 +107,7 @@ export function EditAnimalDialog({
     onSuccess: () => {
       toast.success(t("common.saved") || "Saved");
       utils.animals.list.invalidate();
+      utils.breeding.listLambing.invalidate();
       if (animalId !== null) {
         utils.animals.getById.invalidate({ id: animalId });
       }

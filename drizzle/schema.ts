@@ -66,6 +66,7 @@ export const animalCategories = mysqlTable("animal_categories", {
   speciesId: int("speciesId").notNull(),
   idPrefix: varchar("idPrefix", { length: 10 }).notNull(),
   idSequence: int("idSequence").default(0).notNull(),
+  lambIdSequence: int("lambIdSequence").default(0).notNull(),
   targetWeightKg: decimal("targetWeightKg", { precision: 8, scale: 2 }),
   expectedCycleDays: int("expectedCycleDays"),
   autoStageWeightKg: decimal("autoStageWeightKg", { precision: 8, scale: 2 }),
@@ -294,6 +295,8 @@ export const sales = mysqlTable("sales", {
 export const lambingLog = mysqlTable("lambing_log", {
   id: int("id").autoincrement().primaryKey(),
   lambId: varchar("lambId", { length: 20 }).notNull().unique(),
+  speciesId: int("speciesId"),
+  categoryId: int("categoryId"),
   birthDate: date("birthDate").notNull(),
   damId: int("damId"),
   sireId: int("sireId"),
@@ -305,11 +308,16 @@ export const lambingLog = mysqlTable("lambing_log", {
   notes: text("notes"),
   isPromoted: boolean("isPromoted").default(false).notNull(),
   promotedHeadId: int("promotedHeadId"),
+  promotedAnimalCode: varchar("promotedAnimalCode", { length: 20 }),
+  promotedAnimalPurgedAt: timestamp("promotedAnimalPurgedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
   deletedAt: timestamp("deletedAt"),
   deletedBy: int("deletedBy"),
-});
+}, table => ({
+  promotedHeadUnique: uniqueIndex("lambing_log_promoted_head_unique")
+    .on(table.promotedHeadId),
+}));
 
 // ─── FATTENING / WEIGHT LOG ───────────────────────────────────────────────────
 

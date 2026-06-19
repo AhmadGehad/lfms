@@ -12,7 +12,7 @@ import { FarmMapPreview } from "@/components/FarmMapPreview";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { readMapShape } from "@/lib/farmMap";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, DollarSign, FileDown, GitBranch, MapPinned, Maximize2, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2, Syringe } from "lucide-react";
+import { ArrowLeft, DollarSign, Egg, ExternalLink, FileDown, GitBranch, MapPinned, Maximize2, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2, Syringe } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateAnimalPnLPdf } from "@/lib/pdfReports";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -773,6 +773,8 @@ export default function AnimalProfile() {
   const acqDate = new Date(animal.animal.acquisitionDate);
   const exitDate = animal.animal.exitDate ? new Date(animal.animal.exitDate) : new Date();
   const daysOnFarm = Math.floor((exitDate.getTime() - acqDate.getTime()) / (1000 * 60 * 60 * 24));
+  const originBirthRecord = animal.originBirthRecord;
+  const canViewBirthRecord = permissions.can("breeding", "view");
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -857,6 +859,29 @@ export default function AnimalProfile() {
                 <span className="text-sm font-medium text-right max-w-32 truncate">{value ?? "—"}</span>
               </div>
             ))}
+            {originBirthRecord ? (
+              <div className="flex items-start justify-between gap-3 border-t pt-3">
+                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Egg aria-hidden="true" className="h-3.5 w-3.5" />
+                  {t("animalProfile.birthRecord")}
+                </span>
+                {canViewBirthRecord ? (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 text-right font-mono text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    onClick={() => setLocation(`/breeding?record=${originBirthRecord.id}`)}
+                  >
+                    {originBirthRecord.lambId}
+                    <ExternalLink aria-hidden="true" className="h-3 w-3" />
+                    <span className="sr-only">{t("animalProfile.viewBirthRecord")}</span>
+                  </button>
+                ) : (
+                  <span className="font-mono text-sm font-semibold">
+                    {originBirthRecord.lambId}
+                  </span>
+                )}
+              </div>
+            ) : null}
             {animal.nextVaccineDate && (
               <div className="flex justify-between items-start border-t pt-2">
                 <span className="text-sm text-muted-foreground flex items-center gap-1.5">

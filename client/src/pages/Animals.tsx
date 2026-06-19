@@ -42,6 +42,35 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge variant="outline" className="text-xs">{status}</Badge>;
 }
 
+function VaccineDueCell({
+  date,
+  name,
+}: {
+  date?: string | Date | null;
+  name?: string | null;
+}) {
+  if (!date) return <span className="text-muted-foreground">—</span>;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueDate = new Date(date);
+  dueDate.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+  const dateClassName = diffDays < 0
+    ? "text-red-600 font-medium"
+    : diffDays <= 7
+      ? "text-amber-600 font-medium"
+      : "text-muted-foreground";
+
+  return (
+    <div className="flex min-w-max items-center gap-1.5">
+      <Syringe aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
+      {name ? <span className="text-muted-foreground">{name}</span> : null}
+      <span className={dateClassName}>{dueDate.toLocaleDateString()}</span>
+    </div>
+  );
+}
+
 function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -1083,6 +1112,7 @@ export default function Animals() {
                     <SortableHead k="acquisitionDate">{t("animals.acquisitionDate")}</SortableHead>
                     <SortableHead k="cost">{t("animals.purchaseCost")}</SortableHead>
                     <TableHead>{t("vaccine.nextVaccine")}</TableHead>
+                    <TableHead>{t("vaccine.boosterDue")}</TableHead>
                     <TableHead>{t("animals.daysOnFarm")}</TableHead>
                     <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
@@ -1090,7 +1120,7 @@ export default function Animals() {
                 <TableBody>
                   {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={16} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={17} className="text-center py-12 text-muted-foreground">
                         {t("animals.noAnimalsFound")}
                       </TableCell>
                     </TableRow>
@@ -1135,24 +1165,10 @@ export default function Animals() {
                               : <span className="text-muted-foreground">—</span>}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {a.nextVaccineDate ? (
-                              <div className="flex items-center gap-1.5">
-                                <Syringe className="h-3.5 w-3.5 text-muted-foreground" />
-                                <span className="text-muted-foreground">{a.nextVaccineName}</span>
-                                <span className={(() => {
-                                  const today = new Date();
-                                  today.setHours(0, 0, 0, 0);
-                                  const dueDate = new Date(a.nextVaccineDate);
-                                  dueDate.setHours(0, 0, 0, 0);
-                                  const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
-                                  if (diffDays < 0) return "text-red-600 font-medium";
-                                  if (diffDays <= 7) return "text-amber-600 font-medium";
-                                  return "text-muted-foreground";
-                                })()}>
-                                  {new Date(a.nextVaccineDate).toLocaleDateString()}
-                                </span>
-                              </div>
-                            ) : <span className="text-muted-foreground">—</span>}
+                            <VaccineDueCell date={a.nextVaccineDate} name={a.nextVaccineName} />
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <VaccineDueCell date={a.nextBoosterDate} name={a.nextBoosterName} />
                           </TableCell>
                           <TableCell>{days}</TableCell>
                           <TableCell className="text-right">

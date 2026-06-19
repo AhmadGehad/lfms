@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   animalCategories,
@@ -18,12 +18,12 @@ import {
   species,
   weightLog,
 } from "../../drizzle/schema";
-import { getDb } from "../db";
+import { getDb, type DbOrTx } from "../db";
 import { permissionProcedure, router } from "../_core/trpc";
 
 // Helper: log to audit trail
 async function logAudit(
-  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  db: DbOrTx,
   userId: number,
   action: string,
   entityType: string,
@@ -315,35 +315,43 @@ export const recycleBinRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const now = new Date();
-      const userId = ctx.user.id;
+      await db.transaction(async tx => {
+        const [animal] = await tx
+          .select()
+          .from(animals)
+          .where(and(eq(animals.id, input.id), isNull(animals.deletedAt)))
+          .limit(1)
+          .for("update");
+        if (!animal) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Animal not found" });
+        }
 
-      // Soft-delete the animal
-      await db.update(animals)
-        .set({ deletedAt: now, deletedBy: userId, isActive: false })
-        .where(and(eq(animals.id, input.id), isNull(animals.deletedAt)));
+        const now = new Date();
+        const userId = ctx.user.id;
+        await tx.update(lambingLog)
+          .set({
+            isPromoted: true,
+            promotedAnimalCode: animal.animalId,
+            deletedAt: null,
+            deletedBy: null,
+          })
+          .where(eq(lambingLog.promotedHeadId, input.id));
 
-      // Cascade: weight logs
-      await db.update(weightLog)
-        .set({ deletedAt: now, deletedBy: userId })
-        .where(and(eq(weightLog.animalId, input.id), isNull(weightLog.deletedAt)));
+        await tx.update(animals)
+          .set({ deletedAt: now, deletedBy: userId, isActive: false })
+          .where(eq(animals.id, input.id));
+        await tx.update(weightLog)
+          .set({ deletedAt: now, deletedBy: userId })
+          .where(and(eq(weightLog.animalId, input.id), isNull(weightLog.deletedAt)));
+        await tx.update(expenses)
+          .set({ deletedAt: now, deletedBy: userId })
+          .where(and(eq(expenses.headId, input.id), isNull(expenses.deletedAt)));
+        await tx.update(sales)
+          .set({ deletedAt: now, deletedBy: userId })
+          .where(and(eq(sales.animalId, input.id), isNull(sales.deletedAt)));
 
-      // Cascade: expenses targeting this head
-      await db.update(expenses)
-        .set({ deletedAt: now, deletedBy: userId })
-        .where(and(eq(expenses.headId, input.id), isNull(expenses.deletedAt)));
-
-      // Cascade: sales
-      await db.update(sales)
-        .set({ deletedAt: now, deletedBy: userId })
-        .where(and(eq(sales.animalId, input.id), isNull(sales.deletedAt)));
-
-      // Cascade: lambing log entries where this animal is the lamb (by promotedHeadId)
-      await db.update(lambingLog)
-        .set({ deletedAt: now, deletedBy: userId })
-        .where(and(eq(lambingLog.promotedHeadId, input.id), isNull(lambingLog.deletedAt)));
-
-      await logAudit(db, userId, "SOFT_DELETE", "animal", input.id, input.reason);
+        await logAudit(tx, userId, "SOFT_DELETE", "animal", input.id, input.reason);
+      });
       return { success: true };
     }),
 
@@ -353,29 +361,22 @@ export const recycleBinRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      const userId = ctx.user.id;
-
-      await db.update(animals)
-        .set({ deletedAt: null, deletedBy: null, isActive: true })
-        .where(eq(animals.id, input.id));
-
-      await db.update(weightLog)
-        .set({ deletedAt: null, deletedBy: null })
-        .where(eq(weightLog.animalId, input.id));
-
-      await db.update(expenses)
-        .set({ deletedAt: null, deletedBy: null })
-        .where(eq(expenses.headId, input.id));
-
-      await db.update(sales)
-        .set({ deletedAt: null, deletedBy: null })
-        .where(eq(sales.animalId, input.id));
-
-      await db.update(lambingLog)
-        .set({ deletedAt: null, deletedBy: null })
-        .where(eq(lambingLog.promotedHeadId, input.id));
-
-      await logAudit(db, userId, "RESTORE", "animal", input.id);
+      await db.transaction(async tx => {
+        const userId = ctx.user.id;
+        await tx.update(animals)
+          .set({ deletedAt: null, deletedBy: null, isActive: true })
+          .where(eq(animals.id, input.id));
+        await tx.update(weightLog)
+          .set({ deletedAt: null, deletedBy: null })
+          .where(eq(weightLog.animalId, input.id));
+        await tx.update(expenses)
+          .set({ deletedAt: null, deletedBy: null })
+          .where(eq(expenses.headId, input.id));
+        await tx.update(sales)
+          .set({ deletedAt: null, deletedBy: null })
+          .where(eq(sales.animalId, input.id));
+        await logAudit(tx, userId, "RESTORE", "animal", input.id);
+      });
       return { success: true };
     }),
 
@@ -386,19 +387,34 @@ export const recycleBinRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      // Must already be soft-deleted
-      const [row] = await db.select().from(animals).where(eq(animals.id, input.id)).limit(1);
-      if (!row?.deletedAt) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Animal must be soft-deleted first" });
-      }
+      await db.transaction(async tx => {
+        const [row] = await tx
+          .select()
+          .from(animals)
+          .where(eq(animals.id, input.id))
+          .limit(1)
+          .for("update");
+        if (!row?.deletedAt) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Animal must be soft-deleted first" });
+        }
 
-      await db.delete(weightLog).where(eq(weightLog.animalId, input.id));
-      await db.delete(expenses).where(eq(expenses.headId, input.id));
-      await db.delete(sales).where(eq(sales.animalId, input.id));
-      await db.delete(lambingLog).where(eq(lambingLog.promotedHeadId, input.id));
-      await db.delete(animals).where(eq(animals.id, input.id));
-
-      await logAudit(db, ctx.user.id, "PURGE", "animal", input.id);
+        const purgedAt = new Date();
+        await tx.update(lambingLog)
+          .set({
+            isPromoted: true,
+            promotedAnimalCode: row.animalId,
+            promotedHeadId: null,
+            promotedAnimalPurgedAt: purgedAt,
+            deletedAt: null,
+            deletedBy: null,
+          })
+          .where(eq(lambingLog.promotedHeadId, input.id));
+        await tx.delete(weightLog).where(eq(weightLog.animalId, input.id));
+        await tx.delete(expenses).where(eq(expenses.headId, input.id));
+        await tx.delete(sales).where(eq(sales.animalId, input.id));
+        await tx.delete(animals).where(eq(animals.id, input.id));
+        await logAudit(tx, ctx.user.id, "PURGE", "animal", input.id);
+      });
       return { success: true };
     }),
 
@@ -479,10 +495,25 @@ export const recycleBinRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      await db.update(lambingLog)
-        .set({ deletedAt: new Date(), deletedBy: ctx.user.id })
-        .where(and(eq(lambingLog.id, input.id), isNull(lambingLog.deletedAt)));
-      await logAudit(db, ctx.user.id, "SOFT_DELETE", "lambingLog", input.id);
+      await db.transaction(async tx => {
+        const [record] = await tx
+          .select()
+          .from(lambingLog)
+          .where(eq(lambingLog.id, input.id))
+          .limit(1)
+          .for("update");
+        if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Lambing record not found" });
+        if (record.isPromoted) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Promoted birth records are permanent history and cannot be deleted",
+          });
+        }
+        await tx.update(lambingLog)
+          .set({ deletedAt: new Date(), deletedBy: ctx.user.id })
+          .where(and(eq(lambingLog.id, input.id), isNull(lambingLog.deletedAt)));
+        await logAudit(tx, ctx.user.id, "SOFT_DELETE", "lambingLog", input.id);
+      });
       return { success: true };
     }),
 
@@ -503,7 +534,23 @@ export const recycleBinRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-      await db.delete(lambingLog).where(eq(lambingLog.id, input.id));
+      await db.transaction(async tx => {
+        const [record] = await tx
+          .select()
+          .from(lambingLog)
+          .where(eq(lambingLog.id, input.id))
+          .limit(1)
+          .for("update");
+        if (!record) throw new TRPCError({ code: "NOT_FOUND", message: "Lambing record not found" });
+        if (record.isPromoted) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Promoted birth records are permanent history and cannot be purged",
+          });
+        }
+        await tx.delete(lambingLog).where(eq(lambingLog.id, input.id));
+        await logAudit(tx, ctx.user.id, "PURGE", "lambingLog", input.id);
+      });
       return { success: true };
     }),
 
@@ -788,22 +835,44 @@ export const recycleBinRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      await db.delete(weightLog).where(isNotNull(weightLog.deletedAt));
-      await db.delete(expenses).where(isNotNull(expenses.deletedAt));
-      await db.delete(sales).where(isNotNull(sales.deletedAt));
-      await db.delete(lambingLog).where(isNotNull(lambingLog.deletedAt));
-      await db.delete(animals).where(isNotNull(animals.deletedAt));
-      await db.delete(rationPlans).where(isNotNull(rationPlans.deletedAt));
-      await db.delete(feedStockLedger).where(isNotNull(feedStockLedger.deletedAt));
-      await db.delete(species).where(isNotNull(species.deletedAt));
-      await db.delete(animalCategories).where(isNotNull(animalCategories.deletedAt));
-      await db.delete(groups).where(isNotNull(groups.deletedAt));
-      await db.delete(animalStatuses).where(isNotNull(animalStatuses.deletedAt));
-      await db.delete(birthTypes).where(isNotNull(birthTypes.deletedAt));
-      await db.delete(feedItems).where(isNotNull(feedItems.deletedAt));
-      await db.delete(expenseCategories).where(isNotNull(expenseCategories.deletedAt));
+      await db.transaction(async tx => {
+        const deletedAnimals = await tx
+          .select({ id: animals.id, animalId: animals.animalId })
+          .from(animals)
+          .where(isNotNull(animals.deletedAt));
+        const purgedAt = new Date();
+        for (const animal of deletedAnimals) {
+          await tx.update(lambingLog)
+            .set({
+              isPromoted: true,
+              promotedAnimalCode: animal.animalId,
+              promotedHeadId: null,
+              promotedAnimalPurgedAt: purgedAt,
+              deletedAt: null,
+              deletedBy: null,
+            })
+            .where(eq(lambingLog.promotedHeadId, animal.id));
+        }
 
-      await logAudit(db, ctx.user.id, "PURGE_ALL", "recycle_bin", "all");
+        await tx.delete(weightLog).where(isNotNull(weightLog.deletedAt));
+        await tx.delete(expenses).where(isNotNull(expenses.deletedAt));
+        await tx.delete(sales).where(isNotNull(sales.deletedAt));
+        await tx.delete(lambingLog).where(and(
+          isNotNull(lambingLog.deletedAt),
+          eq(lambingLog.isPromoted, false),
+        ));
+        await tx.delete(animals).where(isNotNull(animals.deletedAt));
+        await tx.delete(rationPlans).where(isNotNull(rationPlans.deletedAt));
+        await tx.delete(feedStockLedger).where(isNotNull(feedStockLedger.deletedAt));
+        await tx.delete(species).where(isNotNull(species.deletedAt));
+        await tx.delete(animalCategories).where(isNotNull(animalCategories.deletedAt));
+        await tx.delete(groups).where(isNotNull(groups.deletedAt));
+        await tx.delete(animalStatuses).where(isNotNull(animalStatuses.deletedAt));
+        await tx.delete(birthTypes).where(isNotNull(birthTypes.deletedAt));
+        await tx.delete(feedItems).where(isNotNull(feedItems.deletedAt));
+        await tx.delete(expenseCategories).where(isNotNull(expenseCategories.deletedAt));
+        await logAudit(tx, ctx.user.id, "PURGE_ALL", "recycle_bin", "all");
+      });
       return { success: true };
     }),
 });

@@ -151,4 +151,201 @@ describe("canonical transfer modes", () => {
       expect(store.get(spec.table)).toHaveLength(1);
     }
   });
+
+  it("derives the independent birth sequence from existing lamb IDs", async () => {
+    const rows = emptyCanonicalData();
+    rows.set("animal_categories", [{
+      id: 1,
+      name: "Lamb",
+      speciesId: 1,
+      idPrefix: "LMB",
+      idSequence: 900,
+    }]);
+    rows.set("lambing_log", [{
+      id: 1,
+      lambId: "LMB0042",
+      birthDate: "2026-01-01",
+      sex: "female",
+      birthTypeId: 1,
+      isPromoted: false,
+    }]);
+    const { tx, store } = createTx();
+
+    await applyCanonicalData(tx as any, rows, "replace");
+
+    const categorySpec = CANONICAL_TABLES.find(
+      spec => spec.key === "animal_categories",
+    )!;
+    expect(store.get(categorySpec.table)?.[0]).toMatchObject({
+      idSequence: 900,
+      lambIdSequence: 42,
+    });
+  });
+
+  it("repairs an orphaned promoted link as preserved purge history", async () => {
+    const rows = emptyCanonicalData();
+    rows.set("lambing_log", [{
+      id: 4,
+      lambId: "LMB0004",
+      birthDate: "2026-01-01",
+      sex: "male",
+      birthTypeId: 1,
+      isPromoted: true,
+      promotedHeadId: 999,
+      promotedAnimalCode: "RAM0999",
+      deletedAt: new Date("2026-02-01"),
+      deletedBy: 2,
+    }]);
+    const { tx, store } = createTx();
+
+    await applyCanonicalData(tx as any, rows, "replace");
+
+    const birthSpec = CANONICAL_TABLES.find(spec => spec.key === "lambing_log")!;
+    expect(store.get(birthSpec.table)?.[0]).toMatchObject({
+      isPromoted: true,
+      promotedHeadId: null,
+      promotedAnimalCode: "RAM0999",
+      deletedAt: null,
+      deletedBy: null,
+    });
+    expect(store.get(birthSpec.table)?.[0]?.promotedAnimalPurgedAt)
+      .toBeInstanceOf(Date);
+  });
+
+  it("rejects two birth records linked to one promoted animal", async () => {
+    const rows = emptyCanonicalData();
+    rows.set("animals", [{
+      id: 20,
+      animalId: "RAM0020",
+      speciesId: 1,
+      categoryId: 2,
+      damId: null,
+      sireId: null,
+    }]);
+    rows.set("lambing_log", [
+      {
+        id: 1,
+        lambId: "LMB0001",
+        birthDate: "2026-01-01",
+        sex: "male",
+        birthTypeId: 1,
+        isPromoted: true,
+        promotedHeadId: 20,
+      },
+      {
+        id: 2,
+        lambId: "LMB0002",
+        birthDate: "2026-01-02",
+        sex: "male",
+        birthTypeId: 1,
+        isPromoted: true,
+        promotedHeadId: 20,
+      },
+    ]);
+    const { tx } = createTx();
+
+    await expect(applyCanonicalData(tx as any, rows, "replace"))
+      .rejects.toThrow(/linked to multiple birth records/);
+  });
+
+  it("does not invent a birth category when prefixes are ambiguous", async () => {
+    const rows = emptyCanonicalData();
+    rows.set("animal_categories", [
+      { id: 1, speciesId: 1, idPrefix: "LMB", idSequence: 0 },
+      { id: 2, speciesId: 2, idPrefix: "LMB", idSequence: 0 },
+    ]);
+    rows.set("lambing_log", [{
+      id: 1,
+      lambId: "LMB0001",
+      birthDate: "2026-01-01",
+      sex: "female",
+      birthTypeId: 1,
+      isPromoted: false,
+    }]);
+    const { tx, store } = createTx();
+
+    await applyCanonicalData(tx as any, rows, "replace");
+
+    const birthSpec = CANONICAL_TABLES.find(spec => spec.key === "lambing_log")!;
+    expect(store.get(birthSpec.table)?.[0]).toMatchObject({
+      categoryId: null,
+      speciesId: null,
+    });
+  });
+
+  it("preserves the current birth sequence during a version 3 append", async () => {
+    const existingCategory = {
+      id: 1,
+      speciesId: 1,
+      idPrefix: "LMB",
+      idSequence: 900,
+      lambIdSequence: 75,
+    };
+    const rows = emptyCanonicalData();
+    const { lambIdSequence: _legacyMissing, ...version3Category } =
+      existingCategory;
+    rows.set("animal_categories", [version3Category]);
+    const { tx } = createTx({
+      animal_categories: [existingCategory],
+    });
+
+    const stats = await applyCanonicalData(tx as any, rows, "append");
+
+    expect(stats.find(stat => stat.table === "animal_categories")).toEqual({
+      table: "animal_categories",
+      applied: 0,
+      skipped: 1,
+    });
+  });
+
+  it("matches a version 3 birth to its existing normalized record on append", async () => {
+    const existingCategory = {
+      id: 1,
+      speciesId: 1,
+      idPrefix: "LMB",
+      idSequence: 900,
+      lambIdSequence: 75,
+    };
+    const existingBirth = {
+      id: 10,
+      lambId: "LMB0042",
+      speciesId: 1,
+      categoryId: 1,
+      birthDate: "2026-01-01",
+      damId: null,
+      sireId: null,
+      sex: "female",
+      birthTypeId: 1,
+      isPromoted: false,
+      promotedHeadId: null,
+      promotedAnimalCode: null,
+      promotedAnimalPurgedAt: null,
+      deletedAt: null,
+      deletedBy: null,
+    };
+    const rows = emptyCanonicalData();
+    const { lambIdSequence: _legacySequence, ...version3Category } =
+      existingCategory;
+    const {
+      speciesId: _legacySpecies,
+      categoryId: _legacyCategory,
+      promotedAnimalCode: _legacyCode,
+      promotedAnimalPurgedAt: _legacyPurge,
+      ...version3Birth
+    } = existingBirth;
+    rows.set("animal_categories", [version3Category]);
+    rows.set("lambing_log", [version3Birth]);
+    const { tx } = createTx({
+      animal_categories: [existingCategory],
+      lambing_log: [existingBirth],
+    });
+
+    const stats = await applyCanonicalData(tx as any, rows, "append");
+
+    expect(stats.find(stat => stat.table === "lambing_log")).toEqual({
+      table: "lambing_log",
+      applied: 0,
+      skipped: 1,
+    });
+  });
 });
