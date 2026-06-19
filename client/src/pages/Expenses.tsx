@@ -354,7 +354,7 @@ export default function Expenses() {
     toDate,
     ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
     vendor: filterVendor || undefined,
-    targetType: filterTargetType !== "all" ? (filterTargetType as "general" | "category" | "head" | "herd") : undefined,
+    targetType: filterTargetType !== "all" ? (filterTargetType as "general" | "category" | "head") : undefined,
   });
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const utils = trpc.useUtils();

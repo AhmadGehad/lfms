@@ -177,6 +177,7 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
             onClick={() =>
               updateAnimal.mutate({
                 id: animal.animal.id,
+                animalIdNumber: animal.animal.animalIdNumber,
                 groupId: form.groupId && form.groupId !== "none" ? Number(form.groupId) : undefined,
                 notes: form.notes || undefined,
               })
