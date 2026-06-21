@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MAX_ANIMAL_ID_LENGTH, MAX_ANIMAL_ID_NUMBER } from "../../shared/animalIds";
+import { MAX_ANIMAL_ID_LENGTH, MAX_ANIMAL_ID_NUMBER, normalizeAnimalIdNumber } from "../../shared/animalIds";
 
 /**
  * Shared input validators for business data. Money and weight come in as
@@ -26,7 +26,11 @@ export const weightString = z
 export const optionalWeightString = weightString.optional();
 
 export const optionalAnimalIdNumber = z.preprocess(
-  value => value === "" ? undefined : value,
+  value => {
+    if (value === "" || value === undefined || value === null) return undefined;
+    if (typeof value === "string") return normalizeAnimalIdNumber(value);
+    return value;
+  },
   z.string()
     .trim()
     .min(1)

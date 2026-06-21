@@ -304,7 +304,11 @@ const en = {
     recordNewBirth: "Record New Birth",
     recording: "Recording…",
     recordsSummary: "{{total}} birth records · {{pending}} pending promotion",
-    valueUsed: "Value (EGP)"
+    valueUsed: "Value (EGP)",
+    lambIdNumber: "Lamb ID Number (Optional)",
+    lambIdNumberPlaceholder: "Example: 00123",
+    lambIdNumberHint: "The selected category prefix is added automatically. Leave blank to use the next sequence number.",
+    lambIdNumberEditHint: "Change the number; the category prefix is always applied automatically."
   },
 
   // Fattening
@@ -1230,7 +1234,11 @@ const ar = {
     recordNewBirth: "تسجيل ولادة جديدة",
     recording: "جارٍ التسجيل…",
     recordsSummary: "{{total}} سجل ولادة · {{pending}} بانتظار الترقية",
-    valueUsed: "القيمة (جنيه)"
+    valueUsed: "القيمة (جنيه)",
+    lambIdNumber: "رقم معرّف الحمل (اختياري)",
+    lambIdNumberPlaceholder: "مثال: 00123",
+    lambIdNumberHint: "تُضاف بادئة الفئة المحددة تلقائيًا. اترك الرقم فارغًا لاستخدام الرقم التسلسلي التالي.",
+    lambIdNumberEditHint: "غيّر الرقم؛ تتم إضافة بادئة الفئة تلقائيًا دائمًا."
   },
 
   fattening: {

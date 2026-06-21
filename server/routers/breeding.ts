@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { lambingLog } from "../../drizzle/schema";
 import { getClientIp } from "../_core/audit";
 import { composeAnimalIdOrThrow, sequenceValueFromAnimalIdNumber } from "../_core/animalIds";
 import { isDuplicateEntryError } from "../_core/databaseErrors";
@@ -10,6 +11,7 @@ import {
   createAnimal,
   createAuditEntry,
   ensureCategorySequenceAtLeast,
+  ensureCategoryLambSequenceAtLeast,
   getDb,
   getAllCategories,
   getAllBirthTypes,
@@ -24,6 +26,7 @@ import {
   getCategoryForUpdate,
   getRawAnimalByAnimalId,
   getRawAnimalById,
+  getRawLambingByLambId,
   getRawOwnerById,
   updateLambingRecord,
   recordStatusChange,
@@ -53,6 +56,7 @@ export const breedingRouter = router({
         valueUsed: optionalMoneyString,
         groupId: z.number().int().positive().optional(),
         notes: z.string().max(2000).optional(),
+        lambIdNumber: optionalAnimalIdNumber,
         // If multiple births (twins/triplets), call multiple times
         count: z.number().int().min(1).max(10).default(1),
       })
@@ -120,11 +124,30 @@ export const breedingRouter = router({
 
           const results = [];
           for (let i = 0; i < input.count; i += 1) {
-            const lambId = await generateNextLambId(
-              input.categoryId,
-              lockedCategory.idPrefix,
-              tx,
-            );
+            let lambId: string;
+            if (input.lambIdNumber && i === 0) {
+              lambId = composeAnimalIdOrThrow(
+                lockedCategory.idPrefix,
+                input.lambIdNumber,
+              );
+              const existingLamb = await getRawLambingByLambId(lambId, tx);
+              if (existingLamb) {
+                throw new TRPCError({
+                  code: "CONFLICT",
+                  message: "Lamb ID already exists",
+                });
+              }
+              const lambSequence = sequenceValueFromAnimalIdNumber(input.lambIdNumber);
+              if (lambSequence !== null) {
+                await ensureCategoryLambSequenceAtLeast(input.categoryId, lambSequence, tx);
+              }
+            } else {
+              lambId = await generateNextLambId(
+                input.categoryId,
+                lockedCategory.idPrefix,
+                tx,
+              );
+            }
             const record = await createLambingRecord({
               lambId,
               speciesId: input.speciesId,
@@ -369,5 +392,97 @@ export const breedingRouter = router({
       }
 
       return out;
+    }),
+
+  // ─── UPDATE LAMBING RECORD ──────────────────────────────────────────────────
+  updateLambing: permissionProcedure("breeding", "update")
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        lambIdNumber: optionalAnimalIdNumber,
+        birthDate: pastOrTodayDate.optional(),
+        sex: z.enum(["male", "female"]).optional(),
+        birthTypeId: z.number().int().positive().optional(),
+        birthWeightKg: optionalWeightString,
+        valueUsed: optionalMoneyString,
+        groupId: z.number().int().positive().optional(),
+        notes: z.string().max(2000).optional(),
+        damId: z.number().int().positive().nullable().optional(),
+        sireId: z.number().int().positive().nullable().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      try {
+        return await db.transaction(async (tx) => {
+          const lamb = await getLambingRecordForUpdate(input.id, tx);
+          if (!lamb || lamb.deletedAt) {
+            throw new TRPCError({ code: "NOT_FOUND", message: "Lambing record not found" });
+          }
+          if (lamb.isPromoted) {
+            throw new TRPCError({ code: "CONFLICT", message: "Cannot edit a promoted lambing record" });
+          }
+
+          const updateData: Partial<typeof lambingLog.$inferInsert> = {};
+
+          if (input.lambIdNumber !== undefined) {
+            const category = (await getAllCategories()).find((c: any) => c.id === lamb.categoryId);
+            const prefix = category?.idPrefix ?? "";
+            const newLambId = composeAnimalIdOrThrow(prefix, input.lambIdNumber);
+            if (newLambId !== lamb.lambId) {
+              const existing = await getRawLambingByLambId(newLambId, tx);
+              if (existing && existing.id !== input.id) {
+                throw new TRPCError({
+                  code: "CONFLICT",
+                  message: "Lamb ID already exists",
+                });
+              }
+              updateData.lambId = newLambId;
+              const lambSequence = sequenceValueFromAnimalIdNumber(input.lambIdNumber);
+              if (lambSequence !== null && lamb.categoryId) {
+                await ensureCategoryLambSequenceAtLeast(lamb.categoryId, lambSequence, tx);
+              }
+            }
+          }
+
+          if (input.birthDate !== undefined) updateData.birthDate = input.birthDate as any;
+          if (input.sex !== undefined) updateData.sex = input.sex;
+          if (input.birthTypeId !== undefined) updateData.birthTypeId = input.birthTypeId;
+          if (input.birthWeightKg !== undefined) updateData.birthWeightKg = input.birthWeightKg;
+          if (input.valueUsed !== undefined) updateData.valueUsed = input.valueUsed;
+          if (input.groupId !== undefined) updateData.groupId = input.groupId;
+          if (input.notes !== undefined) updateData.notes = input.notes;
+          if (input.damId !== undefined) updateData.damId = input.damId;
+          if (input.sireId !== undefined) updateData.sireId = input.sireId;
+
+          if (Object.keys(updateData).length > 0) {
+            await updateLambingRecord(input.id, updateData, tx);
+          }
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "update",
+            ipAddress: getClientIp(ctx),
+            entityType: "lambing_log",
+            entityId: String(input.id),
+            oldValues: lamb as any,
+            newValues: updateData as any,
+          }, tx);
+
+          return { id: input.id };
+        });
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (isDuplicateEntryError(error)) {
+          throw new TRPCError({ code: "CONFLICT", message: "Lamb ID already exists" });
+        }
+        console.error("[Breeding] Lambing record update failed", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Could not update lambing record. Try again.",
+        });
+      }
     }),
 });

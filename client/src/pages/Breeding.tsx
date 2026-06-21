@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useLocation, useSearch } from "wouter";
-import { Egg, Plus, Trash2, AlertTriangle, ExternalLink } from "lucide-react";
+import { Egg, Plus, Trash2, AlertTriangle, ExternalLink, Pencil } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
+import { extractAnimalIdNumber } from "@shared/animalIds";
 
 function isActiveReference(record: { isActive?: boolean | number }) {
   return record.isActive !== false && record.isActive !== 0;
@@ -96,6 +97,7 @@ function RecordBirthDialog() {
       speciesId: "",
       categoryId: "",
       notes: "",
+      lambIdNumber: "",
     },
   });
 
@@ -112,6 +114,9 @@ function RecordBirthDialog() {
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: groups } = trpc.config.getGroups.useQuery();
+  const selectedCategory = (categories ?? []).find(
+    (category: any) => String(category.id) === selectedCategoryId,
+  );
 
   const females = (animals ?? []).filter((a: any) => a.animal.sex === "female");
   const males = (animals ?? []).filter((a: any) => a.animal.sex === "male");
@@ -156,6 +161,7 @@ function RecordBirthDialog() {
       valueUsed: data.valueUsed || undefined,
       groupId: data.groupId ? Number(data.groupId) : undefined,
       notes: data.notes || undefined,
+      lambIdNumber: data.lambIdNumber || undefined,
     });
   };
 
@@ -298,6 +304,18 @@ function RecordBirthDialog() {
                 </Select>
               )} />
             </div>
+            <Controller name="lambIdNumber" control={control} render={({ field }) => (
+              <AnimalIdNumberField
+                inputId="birth-lamb-id-number"
+                label={t("breeding.lambIdNumber")}
+                hint={t("breeding.lambIdNumberHint")}
+                placeholder={t("breeding.lambIdNumberPlaceholder")}
+                prefix={selectedCategory?.idPrefix ?? ""}
+                value={field.value}
+                onChange={field.onChange}
+                className="sm:col-span-2"
+              />
+            )} />
             <div className="space-y-1.5 sm:col-span-2">
               <Label>{t("common.notes")}</Label>
               <Controller name="notes" control={control} render={({ field }) => (
@@ -309,6 +327,230 @@ function RecordBirthDialog() {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
             <Button type="submit" disabled={recordBirth.isPending}>
               {recordBirth.isPending ? t("breeding.recording") : t("breeding.recordBirth")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditLambingDialog({ record, open, onOpenChange }: { record: any; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { t } = useTranslation();
+  const { control, handleSubmit, reset, watch } = useForm<any>();
+  const selectedSpeciesId = watch("speciesId");
+  const selectedCategoryId = watch("categoryId");
+
+  const { data: species } = trpc.config.getSpecies.useQuery(undefined, { enabled: open });
+  const { data: categories } = trpc.config.getCategories.useQuery(
+    { speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined },
+    { enabled: open },
+  );
+  const { data: groups } = trpc.config.getGroups.useQuery(
+    { speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined },
+    { enabled: open },
+  );
+  const { data: birthTypes } = trpc.config.getBirthTypes.useQuery(undefined, { enabled: open });
+  const { data: animals } = trpc.animals.lookup.useQuery(
+    { isActive: true, speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined },
+    { enabled: open && Boolean(selectedSpeciesId) },
+  );
+
+  const selectedCategory = (categories ?? []).find(
+    (category: any) => String(category.id) === selectedCategoryId,
+  );
+  const females = (animals ?? []).filter((a: any) => a.animal.sex === "female");
+  const males = (animals ?? []).filter((a: any) => a.animal.sex === "male");
+
+  useEffect(() => {
+    if (!open || !record) return;
+    const currentCategory = (categories ?? []).find(
+      (category: any) => category.id === record.categoryId,
+    );
+    reset({
+      speciesId: record.speciesId ? String(record.speciesId) : "",
+      categoryId: record.categoryId ? String(record.categoryId) : "",
+      lambIdNumber: extractAnimalIdNumber(record.lambId, currentCategory?.idPrefix ?? ""),
+      birthDate: record.birthDate ? new Date(record.birthDate).toISOString().split("T")[0] : "",
+      sex: record.sex ?? "",
+      birthTypeId: record.birthTypeId ? String(record.birthTypeId) : "",
+      birthWeightKg: record.birthWeightKg ? String(record.birthWeightKg) : "",
+      valueUsed: record.valueUsed ? String(record.valueUsed) : "",
+      groupId: record.groupId ? String(record.groupId) : "",
+      notes: record.notes ?? "",
+      damId: record.damId ? String(record.damId) : "none",
+      sireId: record.sireId ? String(record.sireId) : "none",
+    });
+  }, [record, categories, open, reset]);
+
+  const utils = trpc.useUtils();
+  const updateLambing = trpc.breeding.updateLambing.useMutation({
+    onSuccess: () => {
+      toast.success(t("common.saved") || "Saved");
+      utils.breeding.listLambing.invalidate();
+      utils.breeding.summary.invalidate();
+      onOpenChange(false);
+    },
+    onError: (error) => toast.error(error.message),
+  });
+
+  const onSubmit = handleSubmit((data) => {
+    updateLambing.mutate({
+      id: record.id,
+      lambIdNumber: data.lambIdNumber || undefined,
+      birthDate: data.birthDate || undefined,
+      sex: data.sex || undefined,
+      birthTypeId: data.birthTypeId ? Number(data.birthTypeId) : undefined,
+      birthWeightKg: data.birthWeightKg || undefined,
+      valueUsed: data.valueUsed || undefined,
+      groupId: data.groupId ? Number(data.groupId) : undefined,
+      notes: data.notes || undefined,
+      damId: data.damId && data.damId !== "none" ? Number(data.damId) : null,
+      sireId: data.sireId && data.sireId !== "none" ? Number(data.sireId) : null,
+    });
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto overscroll-contain">
+        <DialogHeader>
+          <DialogTitle>{t("common.edit")} {record?.lambId}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>{t("common.species")}</Label>
+              <Controller name="speciesId" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled>
+                  <SelectTrigger><SelectValue placeholder={t("common.species")} /></SelectTrigger>
+                  <SelectContent>
+                    {(species ?? []).filter(isActiveReference).map((s: any) => (
+                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("common.category")}</Label>
+              <Controller name="categoryId" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled>
+                  <SelectTrigger><SelectValue placeholder={t("common.category")} /></SelectTrigger>
+                  <SelectContent>
+                    {(categories ?? []).filter(isActiveReference).map((c: any) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name} ({c.idPrefix})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <Controller name="lambIdNumber" control={control} render={({ field }) => (
+              <AnimalIdNumberField
+                inputId="edit-lamb-id-number"
+                label={t("breeding.lambIdNumber")}
+                hint={t("breeding.lambIdNumberEditHint")}
+                placeholder={t("breeding.lambIdNumberPlaceholder")}
+                prefix={selectedCategory?.idPrefix ?? ""}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                className="sm:col-span-2"
+              />
+            )} />
+            <div className="space-y-1.5">
+              <Label>{t("breeding.birthDate")}</Label>
+              <Controller name="birthDate" control={control} render={({ field }) => (
+                <Input type="date" {...field} />
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Sex</Label>
+              <Controller name="sex" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectSex")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="female">{t("common.female")}</SelectItem>
+                    <SelectItem value="male">{t("common.male")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("breeding.birthType")}</Label>
+              <Controller name="birthTypeId" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectType")} /></SelectTrigger>
+                  <SelectContent>
+                    {(birthTypes ?? []).filter(isActiveReference).map((bt: any) => (
+                      <SelectItem key={bt.id} value={String(bt.id)}>{bt.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("breeding.birthWeight")}</Label>
+              <Controller name="birthWeightKg" control={control} render={({ field }) => (
+                <Input type="number" placeholder="0.0" {...field} />
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("breeding.valueUsed")}</Label>
+              <Controller name="valueUsed" control={control} render={({ field }) => (
+                <Input type="number" placeholder="0.00" {...field} />
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("breeding.dam")}</Label>
+              <Controller name="damId" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder={t("breeding.selectDam")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("common.unknown")}</SelectItem>
+                    {females.map((a: any) => (
+                      <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("breeding.sire")}</Label>
+              <Controller name="sireId" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger><SelectValue placeholder={t("breeding.selectSire")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("common.unknown")}</SelectItem>
+                    {males.map((a: any) => (
+                      <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>{t("breeding.assignToGroup")}</Label>
+              <Controller name="groupId" control={control} render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange} disabled={!selectedCategoryId}>
+                  <SelectTrigger><SelectValue placeholder={t("common.selectGroup")} /></SelectTrigger>
+                  <SelectContent>
+                    {(groups ?? []).filter(isActiveReference).map((g: any) => (
+                      <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label>{t("common.notes")}</Label>
+              <Controller name="notes" control={control} render={({ field }) => (
+                <Input placeholder={t("common.optionalNotes")} {...field} />
+              )} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+            <Button type="submit" disabled={updateLambing.isPending}>
+              {updateLambing.isPending ? "…" : t("common.save")}
             </Button>
           </DialogFooter>
         </form>
@@ -394,6 +636,7 @@ export default function Breeding() {
   const { data: statuses } = trpc.config.getStatuses.useQuery();
 
   const [promoteDialog, setPromoteDialog] = useState<{ open: boolean; lambId: number | null }>({ open: false, lambId: null });
+  const [editDialog, setEditDialog] = useState<{ open: boolean; record: any }>({ open: false, record: null });
   const [promoteForm, setPromoteForm] = useState({
     categoryId: "",
     speciesId: "",
@@ -557,6 +800,15 @@ export default function Breeding() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {canUpdate && !l.isPromoted && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditDialog({ open: true, record: l })}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
                           {canPromote && !l.isPromoted && (
                             <Button
                               size="sm"
@@ -697,6 +949,12 @@ export default function Breeding() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EditLambingDialog
+        record={editDialog.record}
+        open={editDialog.open}
+        onOpenChange={(o) => setEditDialog({ open: o, record: o ? editDialog.record : null })}
+      />
     </div>
   );
 }
