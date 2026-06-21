@@ -28,13 +28,19 @@ export const optionalWeightString = weightString.optional();
 export const optionalAnimalIdNumber = z.preprocess(
   value => {
     if (value === "" || value === undefined || value === null) return undefined;
-    if (typeof value === "string") return normalizeAnimalIdNumber(value);
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      // If it contains non-digits, return as-is so Zod regex validation catches it
+      if (!/^\d+$/.test(trimmed)) return trimmed;
+      // Only normalize if it's already numeric
+      return normalizeAnimalIdNumber(value);
+    }
     return value;
   },
   z.string()
     .trim()
     .min(1)
-    .max(MAX_ANIMAL_ID_LENGTH)
+    .max(MAX_ANIMAL_ID_LENGTH, `Animal ID number cannot exceed ${MAX_ANIMAL_ID_LENGTH} characters`)
     .regex(/^\d+$/, "Animal ID number must contain digits only")
     .refine(
       value => !/^\d+$/.test(value) ||
