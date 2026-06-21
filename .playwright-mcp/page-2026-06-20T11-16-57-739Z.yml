@@ -1,0 +1,425 @@
+- generic:
+  - generic:
+    - region "Notifications alt+T"
+    - generic:
+      - main:
+        - generic:
+          - generic:
+            - button:
+              - img
+              - generic: Toggle Sidebar
+            - generic: Dashboard
+          - generic:
+            - button:
+              - img
+              - text: عربي
+            - button:
+              - img
+        - main:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]: Dashboard
+                - paragraph: Saturday, June 20, 2026
+              - generic:
+                - button:
+                  - img
+                  - text: Export Excel
+                - button:
+                  - img
+                  - text: PDF Report
+                - button:
+                  - img
+                  - text: This Year
+                - combobox:
+                  - generic: All Species
+                  - img
+                - combobox:
+                  - generic: All Category
+                  - img
+                - combobox:
+                  - generic: All Group
+                  - img
+            - generic:
+              - img
+              - generic: 1 critical.
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Active Animals
+                      - paragraph: "92"
+                      - paragraph: 10 category
+                    - generic:
+                      - img
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Total Revenue
+                      - paragraph: EGP 256,500
+                      - paragraph: Sold
+                    - generic:
+                      - img
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Total Expenses
+                      - paragraph: EGP 210,998
+                      - paragraph: "Feed: EGP 192,438 · Other: EGP 18,560"
+                    - generic:
+                      - img
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - paragraph: Cost / Head / Day
+                      - paragraph: EGP 15.20
+                      - paragraph: 92 heads · 170 days
+                    - generic:
+                      - img
+            - generic:
+              - generic: Net P&L for period
+              - generic: EGP 45,502
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Head Count by Category
+                - generic:
+                  - generic:
+                    - generic:
+                      - img:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                            - generic:
+                              - img
+                          - generic:
+                            - generic:
+                              - generic: 37%
+                            - generic:
+                              - generic: 11%
+                            - generic:
+                              - generic: 3%
+                            - generic:
+                              - generic: 7%
+                            - generic:
+                              - generic: 14%
+                            - generic:
+                              - generic: 2%
+                            - generic:
+                              - generic: 13%
+                            - generic:
+                              - generic: 8%
+                            - generic:
+                              - generic: 1%
+                            - generic:
+                              - generic: 4%
+                      - generic:
+                        - list:
+                          - listitem:
+                            - img
+                            - text: Ewe
+                          - listitem:
+                            - img
+                            - text: Fattening
+                          - listitem:
+                            - img
+                            - text: Cow
+                          - listitem:
+                            - img
+                            - text: Beef Calf
+                          - listitem:
+                            - img
+                            - text: Lamb
+                          - listitem:
+                            - img
+                            - text: Ram
+                          - listitem:
+                            - img
+                            - text: Baby Goat
+                          - listitem:
+                            - img
+                            - text: Goat
+                          - listitem:
+                            - img
+                            - text: Billy Goat
+                          - listitem:
+                            - img
+                            - text: Dog
+              - generic:
+                - generic:
+                  - generic: Recent Expenses — This Year
+                - generic:
+                  - generic:
+                    - generic:
+                      - img:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: Jun 01
+                            - generic:
+                              - generic: Jun 01
+                            - generic:
+                              - generic: Jun 01
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "0"
+                            - generic:
+                              - generic: "3000"
+                            - generic:
+                              - generic: "6000"
+                            - generic:
+                              - generic: "9000"
+                            - generic:
+                              - generic: "12000"
+              - generic:
+                - generic:
+                  - generic: Sales Revenue — This Year
+                - generic:
+                  - generic:
+                    - generic:
+                      - img:
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: Jun 01
+                            - generic:
+                              - generic: May 01
+                            - generic:
+                              - generic: Jun 01
+                        - generic:
+                          - generic:
+                            - generic:
+                              - generic: "0"
+                            - generic:
+                              - generic: "35000"
+                            - generic:
+                              - generic: "70000"
+                            - generic:
+                              - generic: "105000"
+                            - generic:
+                              - generic: "140000"
+            - generic:
+              - generic:
+                - generic:
+                  - generic: Feed Stock Status
+                  - generic: Feed stock is always shown unfiltered
+              - generic:
+                - generic:
+                  - generic:
+                    - table:
+                      - rowgroup:
+                        - row:
+                          - columnheader: Feed Item
+                          - columnheader: Current Stock
+                          - columnheader: Type
+                          - columnheader: Daily Consumption
+                          - columnheader: Days Remaining
+                          - columnheader: Reorder Level
+                          - columnheader: Status
+                      - rowgroup:
+                        - row:
+                          - cell: Alfalfa
+                          - cell: "50.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: ∞
+                          - cell: —
+                          - cell:
+                            - generic: Adequate
+                        - row:
+                          - cell: Alfalfa Hay
+                          - cell: "0.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: "0"
+                          - cell: —
+                          - cell:
+                            - generic: Critical
+                        - row:
+                          - cell: Chicken
+                          - cell: "460.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: "57"
+                          - cell: —
+                          - cell:
+                            - generic: Adequate
+                        - row:
+                          - cell: Concentrate 14%
+                          - cell: "200.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: ∞
+                          - cell: —
+                          - cell:
+                            - generic: Adequate
+                        - row:
+                          - cell: Concentrate 16%
+                          - cell: "1151.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: "38"
+                          - cell: —
+                          - cell:
+                            - generic: Adequate
+                        - row:
+                          - cell: Corn
+                          - cell: "443.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: "69"
+                          - cell: —
+                          - cell:
+                            - generic: Adequate
+                        - row:
+                          - cell: Hay
+                          - cell: "738.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: "36"
+                          - cell: —
+                          - cell:
+                            - generic: Adequate
+                        - row:
+                          - cell: Milking concentrate
+                          - cell: "390.0"
+                          - cell: kg
+                          - cell: "0.00"
+                          - cell: "32"
+                          - cell: —
+                          - cell:
+                            - generic: Adequate
+  - generic: "35000"
+  - dialog "Sidebar" [ref=e369]:
+    - generic [ref=e370]:
+      - heading "Sidebar" [level=2]
+      - paragraph: Displays the mobile sidebar.
+    - generic [ref=e371]:
+      - generic [ref=e373]:
+        - button "Toggle navigation" [active] [ref=e374] [cursor=pointer]:
+          - img [ref=e375]
+        - generic [ref=e377]:
+          - img [ref=e379]
+          - generic [ref=e382]:
+            - paragraph [ref=e383]: Azal Farms
+            - paragraph [ref=e384]: مزارع أزَل
+      - generic [ref=e385]:
+        - generic [ref=e386]:
+          - generic [ref=e387]: Overview
+          - list [ref=e388]:
+            - listitem [ref=e389]:
+              - button "Dashboard" [ref=e390] [cursor=pointer]:
+                - img [ref=e391]
+                - generic [ref=e393]: Dashboard
+        - generic [ref=e394]:
+          - generic [ref=e395]: Livestock
+          - list [ref=e396]:
+            - listitem [ref=e397]:
+              - button "Animal Registry" [ref=e398] [cursor=pointer]:
+                - img [ref=e399]
+                - generic [ref=e402]: Animal Registry
+            - listitem [ref=e403]:
+              - button "Breeding & Lambing" [ref=e404] [cursor=pointer]:
+                - img [ref=e405]
+                - generic [ref=e407]: Breeding & Lambing
+            - listitem [ref=e408]:
+              - button "Fattening Tracker" [ref=e409] [cursor=pointer]:
+                - img [ref=e410]
+                - generic [ref=e414]: Fattening Tracker
+        - generic [ref=e415]:
+          - generic [ref=e416]: Operations
+          - list [ref=e417]:
+            - listitem [ref=e418]:
+              - button "Feed Management" [ref=e419] [cursor=pointer]:
+                - img [ref=e420]
+                - generic [ref=e429]: Feed Management
+            - listitem [ref=e430]:
+              - button "Vaccines" [ref=e431] [cursor=pointer]:
+                - img [ref=e432]
+                - generic [ref=e439]: Vaccines
+            - listitem [ref=e440]:
+              - button "Expense Log" [ref=e441] [cursor=pointer]:
+                - img [ref=e442]
+                - generic [ref=e444]: Expense Log
+        - generic [ref=e445]:
+          - generic [ref=e446]: Finance
+          - list [ref=e447]:
+            - listitem [ref=e448]:
+              - button "Animal P&L" [ref=e449] [cursor=pointer]:
+                - img [ref=e450]
+                - generic [ref=e452]: Animal P&L
+            - listitem [ref=e453]:
+              - button "Income Statement" [ref=e454] [cursor=pointer]:
+                - img [ref=e455]
+                - generic [ref=e458]: Income Statement
+            - listitem [ref=e459]:
+              - button "Sales Records" [ref=e460] [cursor=pointer]:
+                - img [ref=e461]
+                - generic [ref=e465]: Sales Records
+        - generic [ref=e466]:
+          - generic [ref=e467]: System
+          - list [ref=e468]:
+            - listitem [ref=e469]:
+              - button "Notifications 4" [ref=e470] [cursor=pointer]:
+                - img [ref=e471]
+                - generic [ref=e474]: Notifications
+                - generic [ref=e475]: "4"
+            - listitem [ref=e476]:
+              - button "Audit Log" [ref=e477] [cursor=pointer]:
+                - img [ref=e478]
+                - generic [ref=e480]: Audit Log
+            - listitem [ref=e481]:
+              - button "User Management" [ref=e482] [cursor=pointer]:
+                - img [ref=e483]
+                - generic [ref=e488]: User Management
+            - listitem [ref=e489]:
+              - button "Configuration" [ref=e490] [cursor=pointer]:
+                - img [ref=e491]
+                - generic [ref=e502]: Configuration
+            - listitem [ref=e503]:
+              - button "Farm Map" [ref=e504] [cursor=pointer]:
+                - img [ref=e505]
+                - generic [ref=e509]: Farm Map
+            - listitem [ref=e510]:
+              - button "Data Management" [ref=e511] [cursor=pointer]:
+                - img [ref=e512]
+                - generic [ref=e516]: Data Management
+            - listitem [ref=e517]:
+              - button "Recycle Bin" [ref=e518] [cursor=pointer]:
+                - img [ref=e519]
+                - generic [ref=e522]: Recycle Bin
+      - generic [ref=e523]:
+        - generic [ref=e524]:
+          - button "عربي" [ref=e525] [cursor=pointer]:
+            - img
+            - text: عربي
+          - button "Toggle theme" [ref=e526] [cursor=pointer]:
+            - img [ref=e527]
+        - button "A Ahmed Gehad owner" [ref=e529] [cursor=pointer]:
+          - generic [ref=e531]: A
+          - generic [ref=e532]:
+            - paragraph [ref=e533]: Ahmed Gehad
+            - paragraph [ref=e534]: owner
+          - img [ref=e535]

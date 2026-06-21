@@ -1,0 +1,46 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - img [ref=e5]
+    - generic [ref=e39]:
+      - generic:
+        - generic:
+          - heading [level=1]
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - img [ref=e47]
+            - generic [ref=e48]: Sign in to Livestock Farm Management System
+          - generic [ref=e50]:
+            - generic [ref=e51]:
+              - button "Continue with Facebook" [ref=e54] [cursor=pointer]:
+                - img [ref=e56]
+                - generic [ref=e60]: Continue with Facebook
+              - button "Continue with Google" [ref=e61] [cursor=pointer]:
+                - img [ref=e63]
+                - generic [ref=e69]: Continue with Google
+              - button "Continue with Microsoft" [ref=e70] [cursor=pointer]:
+                - img [ref=e72]
+                - generic [ref=e78]: Continue with Microsoft
+              - button "Continue with Apple" [ref=e79] [cursor=pointer]:
+                - img [ref=e81]
+                - generic [ref=e85]: Continue with Apple
+            - generic [ref=e86]: Or
+            - generic [ref=e87]:
+              - textbox "Enter your email address" [active] [ref=e89]
+              - button "Continue" [disabled] [ref=e94]:
+                - generic [ref=e95]: Continue
+        - generic [ref=e96]:
+          - img [ref=e97]
+          - text: Powered by Manus
+    - generic [ref=e105]:
+      - img [ref=e106]
+      - paragraph [ref=e116]:
+        - text: By continuing, you agree to our
+        - link "Terms of Service" [ref=e117] [cursor=pointer]:
+          - /url: /terms
+        - text: and have read our
+        - link "Privacy Policy" [ref=e118] [cursor=pointer]:
+          - /url: /privacy
+        - text: . ©2026 Meta
+  - list
+  - alert [ref=e119]

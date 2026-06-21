@@ -1,0 +1,274 @@
+- generic:
+  - generic:
+    - region "Notifications alt+T"
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - button:
+                  - img
+                - generic:
+                  - generic:
+                    - img
+                  - generic:
+                    - paragraph: Azal Farms
+                    - paragraph: مزارع أزَل
+            - generic:
+              - generic:
+                - generic: Overview
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Dashboard
+              - generic:
+                - generic: Livestock
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Animal Registry
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Breeding & Lambing
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Fattening Tracker
+              - generic:
+                - generic: Operations
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Feed Management
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Vaccines
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Expense Log
+              - generic:
+                - generic: Finance
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Animal P&L
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Income Statement
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Sales Records
+              - generic:
+                - generic: System
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Notifications
+                      - generic: "4"
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Audit Log
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: User Management
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Configuration
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Farm Map
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Data Management
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Recycle Bin
+            - generic:
+              - generic:
+                - button:
+                  - img
+                  - text: عربي
+                - button:
+                  - img
+              - button:
+                - generic:
+                  - generic: A
+                - generic:
+                  - paragraph: Ahmed Gehad
+                  - paragraph: owner
+                - img
+      - main:
+        - main:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]:
+                  - img
+                  - text: Expense Log
+                - paragraph: "5 entries · Total: EGP 18,560.00"
+              - button [expanded]:
+                - img
+                - text: Add Expense
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - generic: "From:"
+                    - textbox: 2026-05-20
+                  - generic:
+                    - generic: "To:"
+                    - textbox: 2026-06-20
+                  - combobox:
+                    - generic: All Allocations
+                    - img
+                  - combobox:
+                    - generic: All Owners
+                    - img
+                  - textbox:
+                    - /placeholder: Search vendor...
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - table:
+                      - rowgroup:
+                        - row:
+                          - columnheader: Date
+                          - columnheader: Category
+                          - columnheader: Sub-Category
+                          - columnheader: Amount (EGP)
+                          - columnheader: Allocation
+                          - columnheader: Owner
+                          - columnheader: Vendor
+                          - columnheader: Notes
+                          - columnheader: Actions
+                      - rowgroup:
+                        - row:
+                          - cell: 6/18/2026
+                          - cell: Vet
+                          - cell: —
+                          - cell: 1,160.00
+                          - cell: category
+                          - cell: —
+                          - cell: —
+                          - cell: Shaving
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell: 6/17/2026
+                          - cell: Vet
+                          - cell: —
+                          - cell: 6,000.00
+                          - cell: category
+                          - cell: —
+                          - cell: Dr. Kareem
+                          - cell: Ticks Vaccine
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell: 6/12/2026
+                          - cell: Vaccine
+                          - cell: —
+                          - cell: 1,000.00
+                          - cell: category
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell: 6/12/2026
+                          - cell: Labor
+                          - cell: —
+                          - cell: 10,000.00
+                          - cell: general
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell: 6/10/2026
+                          - cell: Vaccine
+                          - cell: —
+                          - cell: "400.00"
+                          - cell: head
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: Dr. Ehab
+                          - cell: —
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+  - dialog "Record Expense" [ref=e300]:
+    - heading "Record Expense" [level=2] [ref=e302]
+    - generic [ref=e303]:
+      - generic [ref=e304]:
+        - generic [ref=e305]:
+          - generic [ref=e306]: Date *
+          - textbox [active] [ref=e307]: 2026-06-20
+        - generic [ref=e308]:
+          - generic [ref=e309]: Amount (EGP) *
+          - spinbutton [ref=e310]
+        - generic [ref=e311]:
+          - generic [ref=e312]: Category *
+          - combobox [ref=e313] [cursor=pointer]:
+            - generic: Select category
+            - img
+        - generic [ref=e314]:
+          - generic [ref=e315]: Sub-Category
+          - combobox [disabled] [ref=e316]:
+            - generic: Select sub-category
+            - img
+        - generic [ref=e317]:
+          - generic [ref=e318]: Allocation Type *
+          - combobox [ref=e319] [cursor=pointer]:
+            - generic: General (Farm-wide)
+            - img
+      - generic [ref=e320]:
+        - generic [ref=e321]: Vendor / Supplier
+        - textbox "Vendor name" [ref=e322]
+      - generic [ref=e323]:
+        - generic [ref=e324]: Notes
+        - textbox "Optional notes..." [ref=e325]
+    - generic [ref=e326]:
+      - button "Cancel" [ref=e327] [cursor=pointer]
+      - button "Save Expense" [ref=e328] [cursor=pointer]
+    - button "Close" [ref=e329] [cursor=pointer]:
+      - img
+      - generic [ref=e330]: Close

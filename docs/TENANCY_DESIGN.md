@@ -1,7 +1,7 @@
 # LFMS Multi-Tenant SaaS Architecture & Security Design
 
-> **Status**: Conditionally approved — six final corrections required before schema implementation
-> **Date**: 2026-06-19 (rev 4 — third security review feedback incorporated)
+> **Status**: Conditionally approved — 18 DDL and enforcement corrections required before schema implementation
+> **Date**: 2026-06-19 (rev 5 — fourth security review feedback incorporated)
 > **Scope**: Full transformation from single-farm to multi-tenant, company-based SaaS
 
 ---
@@ -108,7 +108,15 @@ When an animal moves farms (`moveAnimal`), only `animals.farm_id` changes. All h
 
 ### Explicit scope type (company-level vs farm-level)
 
-- `expenses`: add `scope_type ENUM('company', 'farm') NOT NULL` + `farmId` nullable. Company expenses have `scope_type='company', farmId=NULL`. Farm expenses have `scope_type='farm', farmId NOT NULL`.
+- `expenses`: add `scope_type ENUM('company', 'farm') NOT NULL` + `farmId` nullable. Company expenses have `scope_type='company', farmId=NULL`. Farm expenses have `scope_type='farm', farmId NOT NULL`. Enforce at DB level:
+  ```sql
+  ALTER TABLE expenses ADD CONSTRAINT chk_expenses_scope_farm
+    CHECK (
+      (scope_type = 'company' AND farm_id IS NULL)
+      OR
+      (scope_type = 'farm' AND farm_id IS NOT NULL)
+    );
+  ```
 - `ration_plans`: company-wide by default. `farmId` nullable for farm-specific overrides.
 - `feed_item_price_history`: `farmId` nullable. NULL = company-wide price.
 - `notifications`: `companyId` NOT NULL, `farmId` nullable (context only).
@@ -218,15 +226,27 @@ CREATE TABLE company_invitations (
   public_id BINARY(16) NOT NULL UNIQUE,
   company_id INT NOT NULL,
   email VARCHAR(320) NOT NULL,
-  role ENUM('owner','admin','supervisor','staff','user','viewer') DEFAULT 'viewer' NOT NULL,
+  email_normalized VARCHAR(320) NOT NULL,           -- canonical lowercase for uniqueness check
+  role ENUM('admin','supervisor','staff','user','viewer') DEFAULT 'viewer' NOT NULL,  -- 'owner' excluded: cannot invite to owner
   token_hash BINARY(32) NOT NULL UNIQUE,           -- SHA-256 hash, never raw token
   expires_at TIMESTAMP(6) NOT NULL,
   accepted_at TIMESTAMP(6),
-  accepted_by INT,
+  accepted_by_user_id INT,                           -- user who accepted (FK to users)
   invited_by_membership_id INT NOT NULL,
   created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL,
-  FOREIGN KEY (company_id) REFERENCES companies(id)
+  FOREIGN KEY (company_id) REFERENCES companies(id),
+  FOREIGN KEY (accepted_by_user_id) REFERENCES users(id),
+  -- Prevent duplicate pending invitations per company/email:
+  pending_invitation_guard INT
+    GENERATED ALWAYS AS (
+      CASE WHEN accepted_at IS NULL AND expires_at > CURRENT_TIMESTAMP(6)
+           THEN company_id ELSE NULL END
+    ) STORED,
+  UNIQUE KEY uq_pending_invitation_email (pending_invitation_guard, email_normalized)
 );
+-- NOTE: 'owner' removed from role enum — cannot invite to owner role (business rule enforced at DB level).
+-- NOTE: pending_invitation_guard prevents duplicate pending invitations per company+email.
+--   Once accepted or expired, guard becomes NULL, allowing re-invitation.
 
 -- ─── SUBSCRIPTION_PLANS ──────────────────────────────────────────────────────
 CREATE TABLE subscription_plans (
@@ -365,13 +385,14 @@ CREATE TABLE user_identities (
   linked_at TIMESTAMP(6),
   FOREIGN KEY (user_id) REFERENCES users(id),
   UNIQUE(provider, provider_subject),
-  UNIQUE KEY uq_user_identities_user_provider (user_id, provider)
+  UNIQUE KEY uq_user_identities_user_provider (user_id, provider),
+  UNIQUE KEY uq_user_identities_user_id_id (user_id, id)   -- composite FK target for users.primary_email_identity_id
 );
--- NOTE: users.primary_email_identity_id references this table.
---   Use a composite relationship ensuring the identity actually belongs to the same user:
---   ALTER TABLE users ADD UNIQUE KEY uq_users_id_id (id, primary_email_identity_id);
---   Then: FOREIGN KEY (id, primary_email_identity_id) REFERENCES user_identities (user_id, id)
---   This prevents pointing to another user's identity.
+-- NOTE: users.primary_email_identity_id uses a composite FK ensuring the identity belongs to the same user:
+--   ALTER TABLE users ADD CONSTRAINT fk_users_primary_identity
+--     FOREIGN KEY (id, primary_email_identity_id) REFERENCES user_identities (user_id, id);
+--   The UNIQUE(user_id, id) on user_identities makes this composite FK valid.
+--   Do NOT add UNIQUE(id, primary_email_identity_id) on users — that does not make the FK valid.
 
 -- ─── PASSWORD_CREDENTIALS ────────────────────────────────────────────────────
 CREATE TABLE password_credentials (
@@ -395,12 +416,15 @@ CREATE TABLE authentication_tokens (
   used_at DATETIME(6),
   created_at DATETIME(6) NOT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (user_identity_id) REFERENCES user_identities(id),
+  -- Composite FK ensures user_identity_id belongs to user_id:
+  FOREIGN KEY (user_id, user_identity_id) REFERENCES user_identities (user_id, id),
   INDEX idx_auth_tokens_lookup (user_id, purpose, expires_at)
 );
 -- NOTE: For verify_email and identity_link purposes, user_identity_id is NOT NULL.
 --   This ensures the correct identity is verified, not just the user account.
 --   For reset_password and change_email, user_identity_id may be NULL.
+--   The composite FK (user_id, user_identity_id) → user_identities(user_id, id) ensures
+--   the identity belongs to the same user, not just any identity.
 
 -- ─── MFA_CREDENTIALS ─────────────────────────────────────────────────────────
 CREATE TABLE mfa_credentials (
@@ -435,7 +459,7 @@ CREATE TABLE mfa_recovery_codes (
 -- ─── OUTBOX_EVENTS (transactional email/jobs) ────────────────────────────────
 CREATE TABLE outbox_events (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  company_id INT,
+  company_id INT,                                   -- nullable for platform-level events (e.g. password reset)
   event_type VARCHAR(100) NOT NULL,                 -- 'email.verification', 'email.invitation', etc.
   payload JSON NOT NULL,                            -- encrypted if contains tokens/secrets
   encrypted_payload BLOB,                           -- for payloads containing raw tokens
@@ -446,13 +470,21 @@ CREATE TABLE outbox_events (
   next_retry_at TIMESTAMP(6),
   locked_by VARCHAR(100),                           -- worker ID for leasing
   locked_until TIMESTAMP(6),                        -- lease expiry for crash recovery
-  deduplication_key VARCHAR(200),                   -- prevent duplicate processing
+  deduplication_key VARCHAR(200) NOT NULL DEFAULT '', -- non-null; empty string for events without dedup
+  dedup_company_guard INT
+    GENERATED ALWAYS AS (
+      CASE WHEN deduplication_key != '' THEN company_id ELSE NULL END
+    ) STORED,
   last_error TEXT,
   created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL,
   processed_at TIMESTAMP(6),
-  UNIQUE KEY uq_outbox_dedup (company_id, event_type, deduplication_key)
+  UNIQUE KEY uq_outbox_dedup (dedup_company_guard, event_type, deduplication_key),
+  FOREIGN KEY (company_id) REFERENCES companies(id)
 );
--- NOTE: deduplication_key has an actual UNIQUE constraint, not just a comment.
+-- NOTE: deduplication_key is NOT NULL with default '' to avoid MySQL NULL-in-UNIQUE semantics.
+--   For company-scoped events: dedup_company_guard = company_id, so uniqueness is per-company.
+--   For platform events (company_id=NULL): dedup_company_guard = NULL, so multiple rows allowed.
+--   For events without dedup: deduplication_key='', dedup_company_guard=NULL, no constraint enforced.
 -- NOTE: If payload contains raw tokens (invitation, verification), store in
 --   encrypted_payload with envelope encryption. Delete/erase after sending.
 --   Never store raw tokens in plaintext JSON payload.
@@ -594,21 +626,60 @@ CREATE TABLE company_deletion_requests (
 --   ADD CONSTRAINT fk_deletion_approved_by
 --     FOREIGN KEY (company_id, approved_by_membership_id) REFERENCES company_users(company_id, id);
 --
--- All FKs must define ON DELETE behavior explicitly (typically SET NULL for actor columns).
+-- All FKs must define ON DELETE behavior explicitly. Use the FK deletion matrix below:
+--
+-- | FK Category | ON DELETE | Rationale |
+-- |-------------|-----------|-----------|
+-- | Business relationships (animals→farm, animals→category, expenses→category) | RESTRICT | Prevent orphaned records; parent must be re-assigned before deletion |
+-- | Actor columns (created_by, deleted_by, uploaded_by, requested_by, approved_by) | SET NULL | Historical records must survive member removal |
+-- | Session→user | CASCADE | Sessions are meaningless without user |
+-- | Session→company (last_selected_company_id) | SET NULL | UX preference only |
+-- | company_users→company | RESTRICT | Must remove members before deleting company |
+-- | company_user_farms→company_users | CASCADE | Farm access removed with membership |
+-- | Link tables (animal_attachments→animals, →file_attachments) | CASCADE | Links removed with either parent |
+-- | file_attachments→company | RESTRICT | Files must be cleaned up before company deletion |
+-- | audit_log→company | RESTRICT | Audit records must NOT be cascade-deleted |
+-- | outbox_events→company | SET NULL | Events may outlive company (platform events) |
+-- | authentication_tokens→user | CASCADE | Tokens meaningless without user |
+-- | authentication_tokens→user_identities | CASCADE | Token removed with identity |
+-- | mfa_credentials→user | CASCADE | Credentials removed with user |
+-- | mfa_recovery_codes→mfa_credentials | CASCADE | Codes removed with credential |
+-- | platform_admins→user | CASCADE | Admin record removed with user |
+--
+-- Company deletion purge order (when state machine reaches 'purging'):
+--   1. animal_attachments, expense_attachments, company_logo_attachments (link tables)
+--   2. file_attachments (after links removed)
+--   3. weight_log, vaccination_records, lambing_log, sales, animal_status_history
+--   4. animals (after history removed)
+--   5. feed_stock_ledger, ration_plans
+--   6. groups, owners
+--   7. expenses
+--   8. species, animal_categories, animal_statuses, birth_types, vaccines, feed_items, expense_categories, expense_sub_categories
+--   9. system_settings
+--  10. company_user_farms, company_users
+--  11. company_invitations, company_security_policies
+--  12. company_subscriptions, company_usage_current, usage_daily
+--  13. farms
+--  14. audit_log rows for this company (unless retention policy requires keeping)
+--  15. companies (last)
+-- Never cascade-delete audit/security records unless explicitly required by retention policy.
 
 -- ─── PLATFORM_ADMINS (separate from users.role) ──────────────────────────────
 CREATE TABLE platform_admins (
   user_id INT PRIMARY KEY,
-  role ENUM('platform_admin','platform_support') NOT NULL DEFAULT 'platform_admin',
+  role ENUM('platform_admin','platform_support') NOT NULL,  -- NO default — must be explicit
   granted_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) NOT NULL,
-  granted_by INT,                                   -- user_id of granting admin
+  granted_by INT NOT NULL,                           -- user_id of granting admin (never NULL)
   revoked_at TIMESTAMP(6),
-  FOREIGN KEY (user_id) REFERENCES users(id)
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (granted_by) REFERENCES users(id)
 );
 -- NOTE: Replaces users.role for platform-level authorization.
 --   Legacy users.role must be fully deprecated and removed from tenant authorization paths.
 --   Keeping users.role while legacy code references it creates privilege-escalation risk.
 --   Platform role must never be derived from OAuth provider metadata.
+-- NOTE: No DEFAULT on role — an incomplete insert must NOT silently create a platform_admin.
+--   Granting platform_admin requires: explicit role, recent MFA, audit entry, and preferably dual approval.
 ```
 
 ### Existing table modifications
@@ -618,8 +689,8 @@ Add `companyId INT` and `public_id BINARY(16) UNIQUE` to all 24 tenant-scoped ta
 ### Users table changes
 
 ```sql
-ALTER TABLE users ADD COLUMN email_normalized VARCHAR(320);   -- canonical lowercase, UNIQUE
-ALTER TABLE users ADD COLUMN primary_email_identity_id INT;   -- FK to user_identities (composite, ensures same user)
+ALTER TABLE users ADD COLUMN email_normalized VARCHAR(320);   -- canonical lowercase, backfilled then UNIQUE
+ALTER TABLE users ADD COLUMN primary_email_identity_id INT;   -- composite FK to user_identities(user_id, id)
 ALTER TABLE users ADD COLUMN auth_version INT NOT NULL DEFAULT 1;  -- bumped on password change/MFA reset
 ALTER TABLE users ADD COLUMN failed_login_attempts INT NOT NULL DEFAULT 0;
 ALTER TABLE users ADD COLUMN locked_until TIMESTAMP(6);
@@ -632,13 +703,19 @@ ALTER TABLE users ADD COLUMN last_password_change TIMESTAMP(6);
 -- NOTE: users.role is DEPRECATED — replaced by platform_admins table for platform-level
 --   authorization and company_users.role for tenant-level authorization.
 --   Legacy users.role must be fully removed from all authorization paths.
--- NOTE: primary_email_identity_id uses a composite FK ensuring the identity belongs to the same user:
---   ALTER TABLE users ADD UNIQUE KEY uq_users_id_id (id, primary_email_identity_id);
+-- NOTE: primary_email_identity_id uses a composite FK:
+--   user_identities already has UNIQUE(user_id, id) — that is the FK target.
 --   ALTER TABLE users ADD CONSTRAINT fk_users_primary_identity
 --     FOREIGN KEY (id, primary_email_identity_id) REFERENCES user_identities (user_id, id);
--- NOTE: email_normalized UNIQUE must be reconciled with "never auto-link accounts."
---   Registration using an email already attached to an OAuth account must enter a
---   secure account-link/recovery flow rather than creating another user or auto-linking.
+--   Do NOT add UNIQUE(id, primary_email_identity_id) on users — the target-side unique is sufficient.
+-- NOTE: email_normalized UNIQUE: backfill first, resolve duplicates, then add UNIQUE(email_normalized).
+--   Must be reconciled with "never auto-link accounts" — registration using an email already
+--   attached to an OAuth account must enter a secure account-link/recovery flow.
+-- Migration steps for email_normalized:
+--   1. ADD COLUMN email_normalized VARCHAR(320) (nullable)
+--   2. Backfill: UPDATE users SET email_normalized = LOWER(TRIM(email))
+--   3. Resolve duplicates (manual review)
+--   4. ADD UNIQUE KEY uq_users_email_normalized (email_normalized)
 ```
 
 `users.role` is **deprecated** — replaced by `platform_admins` table for platform-level authorization and `company_users.role` for tenant-level authorization. Legacy `users.role` must be fully removed from all authorization paths to prevent privilege escalation.
@@ -647,18 +724,23 @@ ALTER TABLE users ADD COLUMN last_password_change TIMESTAMP(6);
 
 ```sql
 ALTER TABLE audit_log
-  ADD COLUMN company_id INT,                        -- nullable initially, backfilled, then NOT NULL
+  ADD COLUMN company_id INT,                        -- nullable permanently for platform/auth events
   ADD COLUMN farm_id INT,
   ADD COLUMN action_category ENUM(
     'auth','crud','config','membership','billing',
     'security','data_export','data_delete','company'
-  ),                                               -- nullable initially, backfilled, then NOT NULL
+  ),                                               -- nullable initially, backfilled, then NOT NULL for new rows
   ADD COLUMN membership_id INT,                     -- actor's membership (preserves company context)
   ADD COLUMN session_id INT,
   ADD COLUMN request_id VARCHAR(50),
   ADD COLUMN outcome ENUM('success','denied','error') NOT NULL DEFAULT 'success';
--- NOTE: company_id AND action_category follow nullable → dual-write → backfill → NOT NULL migration.
---   Adding action_category as NOT NULL would fail on existing rows with no value.
+-- NOTE: company_id remains nullable permanently — auth events (login, password reset, MFA)
+--   and platform security events occur before a company is selected.
+--   Use two logical stores sharing the same table:
+--     tenant_audit_log: company_id NOT NULL (enforced by application layer + filtered views)
+--     platform_security_log: company_id NULL (auth events, cross-tenant denials, platform admin actions)
+--   Alternatively, use separate tables if insert-only credentials differ.
+-- NOTE: action_category follows nullable → dual-write → backfill → NOT NULL migration.
 ```
 
 ### Role permissions changes
@@ -671,7 +753,10 @@ ALTER TABLE role_permissions
 -- NOTE: Unique key does NOT include 'effect' — that would allow both an allow
 --   and deny row for the same role/action combination, which is confusing.
 --   effect is the value being configured, not part of the identity.
--- NOTE: 'page' renamed to 'resource', 'action' stays.
+-- NOTE: 'page' must be renamed to 'resource' BEFORE creating the new unique constraint:
+--   1. ALTER TABLE role_permissions CHANGE COLUMN page resource VARCHAR(100) NOT NULL;
+--   2. Then ADD UNIQUE KEY uq_role_permissions_active (company_id, role, resource, action);
+--   3. Update application code to use 'resource' instead of 'page'.
 -- NOTE: company_id follows nullable → dual-write → backfill → NOT NULL migration.
 ```
 
@@ -1130,6 +1215,8 @@ mfa_recovery_codes
 
 Session records `mfa_verified_at` and `authentication_methods`. When switching into a company requiring MFA, require **step-up authentication** before granting access.
 
+**MFA freshness enforcement**: Check `mfa_verified_at` against each company policy's `privileged_session_max_age` for every sensitive action (billing, data export, ownership transfer, API-key creation, MFA changes). A globally `full` session does NOT remain full after `privileged_session_max_age` expires — return `MFA_REQUIRED` when recent authentication has expired. This is per-company, not global.
+
 **MFA required for**: company owners, platform admins, billing changes, ownership transfer, data exports, API-key creation, disabling MFA.
 
 TOTP secrets: envelope-encrypted with key versioning. `last_used_totp_step` prevents replaying the same TOTP code during its validity window. Backup codes: argon2id hashed, single-use.
@@ -1485,7 +1572,7 @@ Clone default templates into company-scoped rows. Each insert sets `company_id`.
 ## 10. Multi-Farm Management
 
 - **Farm CRUD**: admin+ can create/edit/disable; owner can delete (requires zero active animals on farm)
-- **Farm switcher**: dropdown in app shell, "All Farms" option, stored in localStorage (NOT in session/JWT)
+- **Farm switcher**: dropdown in app shell, "All Farms" option, stored in localStorage (NOT in session)
 - **Move animal**: `moveAnimal(ctx, animalPublicId, targetFarmPublicId)` — separate operation, verify both belong to `ctx.companyId`, audit log, transactional
 - **Reporting**: Dashboard/P&L/Income Statement default to all farms with per-farm filter; Feed/Fattening/Breeding require farm selection
 
@@ -1640,17 +1727,19 @@ Each link table uses composite FKs to enforce tenant integrity. An application b
 
 ### Upload pipeline (quarantine-based)
 
-1. Create pending `file_attachments` record (status='pending')
-2. Authorize owning entity (verify `company_id` via link table) and quota
+1. Create pending `file_attachments` record (status='pending') **and** pending link table entry (e.g., `animal_attachments`) in the **same transaction** — this is an immutable upload-intent record that binds the attachment to its target entity
+2. Authorize owning entity (verify `company_id` + `animal_id` via link table composite FK) and quota
 3. Generate short-lived presigned PUT URL → upload to **quarantine** prefix
-4. Upload completes → verify size, magic bytes, checksum (SHA-256), actual decoder validity
-5. Re-encode images to strip metadata and malicious payloads
-6. Scan (ClamAV or cloud scan)
-7. Move to clean storage or mark as `rejected`
-8. Update `file_attachments.status = 'clean'`
-9. Create link table entry (e.g., `animal_attachments`)
+4. **Do not allow the attachment's target entity to change after issuing the upload URL**
+5. Upload completes → verify size, magic bytes, checksum (SHA-256), actual decoder validity
+6. Re-encode images to strip metadata and malicious payloads
+7. Scan (ClamAV or cloud scan)
+8. Move to clean storage or mark as `rejected`
+9. Update `file_attachments.status = 'clean'`
 10. Permit download only for `status='clean'` objects
 11. Delete abandoned pending/multipart uploads (cron job)
+
+**Critical**: The link table entry is created at step 1 (pending), not after scanning. This prevents the authorization gap where a file exists with no entity binding during the quarantine period. The link row's composite FK ensures tenant integrity from the start.
 
 ### Download flow
 
@@ -1904,12 +1993,14 @@ Daily snapshot job → `usage_daily` table. API call counter in Redis (keyed by 
 
 ### Phase 4: Constraint enforcement
 
-1. Add composite foreign keys
+1. Add composite foreign keys (including `farm_id` FKs on historical tables)
 2. Make `companyId` NOT NULL (remove nullable)
-3. Drop old global unique constraints
+3. **Create and validate new tenant-aware unique constraints first** — do NOT drop global constraints until tenant-aware reads and writes are active and verified
 4. Add generated-column unique constraints for soft-delete safety
 5. Add `owner_company_guard` generated column on `company_users`
-6. Add all foreign keys to new architecture tables
+6. Add `current_company_guard` generated column on `company_subscriptions`
+7. Add all foreign keys to new architecture tables
+8. **Drop old global unique constraints only during final cutover** (Phase 7), after tenant-aware reads/writes are active and verified
 
 ### Phase 5: Code migration
 
@@ -1925,7 +2016,7 @@ Daily snapshot job → `usage_daily` table. API call counter in Redis (keyed by 
 
 1. Add email/password auth alongside existing OAuth
 2. Create `user_identities` rows for existing OAuth users (provider='manus')
-3. Create `company_users` rows for existing users (role = current `users.role`, companyId = 1)
+3. Create `company_users` rows for existing users using an **explicit reviewed mapping table** — do NOT copy `users.role` directly, as platform privileges could incorrectly become tenant privileges. Manually inspect privileged users before migration.
 4. Create `sessions` table, migrate to opaque server-side sessions
 5. Existing users get session with `user_auth_version = 1`
 
@@ -1934,7 +2025,7 @@ Daily snapshot job → `usage_daily` table. API call counter in Redis (keyed by 
 1. Verify all counts match (animal count, expense count, etc.)
 2. Enable new-tenant registration
 3. Remove legacy read compatibility code
-4. Drop old global unique indexes
+4. **Drop old global unique indexes** (only now — after tenant-aware constraints are proven in production)
 5. Rehearse rollback and restore
 
 ### Compile-time enforcement
@@ -1998,6 +2089,15 @@ getAnimals(filters: AnimalFilters)                       // ✗ banned by type
 | Backup data persistence | Document retention, crypto-erasure, tombstones, post-restore purge |
 | Multiple owners | `owner_company_guard` generated column UNIQUE at DB level |
 | Email verification drift | Single source: `user_identities.provider_email_verified` via `primary_email_identity_id` |
+| MFA session staleness | Per-company `privileged_session_max_age` checked on every sensitive action |
+| Invitation role escalation | `owner` excluded from invitation role enum at DB level |
+| Duplicate pending invitations | `pending_invitation_guard` generated column UNIQUE per company+email |
+| Outbox dedup NULL gap | `deduplication_key` NOT NULL with `dedup_company_guard` generated column |
+| File upload auth gap | Link table entry created in same transaction as pending attachment |
+| Expense scope/farm inconsistency | DB-level CHECK constraint on `scope_type` + `farm_id` |
+| Platform admin accidental grant | No DEFAULT on `platform_admins.role`, explicit role required |
+| FK cascade data loss | Explicit FK deletion matrix; audit records RESTRICT, not CASCADE |
+| Audit log company_id gap | `company_id` nullable for auth/platform events; separate logical stores |
 
 ### CSRF protection (complete, not just SameSite)
 
@@ -2054,12 +2154,13 @@ getAnimals(filters: AnimalFilters)                       // ✗ banned by type
 - [ ] Sequence generation retry-safe (FOR UPDATE + retry on conflict)
 - [ ] Outbox pattern for all email/notification/billing actions
 - [ ] Outbox: encrypted payload for tokens, erased after sending, worker leasing (locked_by/locked_until)
-- [ ] Outbox: `deduplication_key` has actual UNIQUE constraint `(company_id, event_type, deduplication_key)`
+- [ ] Outbox: `deduplication_key` NOT NULL with `dedup_company_guard` generated column for per-company uniqueness
 - [ ] Webhook inbox with idempotent processing + worker leasing
 - [ ] Identity separation (user_identities + password_credentials, no auto-linking by email)
 - [ ] Registration with existing email enters secure account-link/recovery flow (no auto-link, no duplicate user)
 - [ ] Email verification: single source of truth (`user_identities.provider_email_verified` via `primary_email_identity_id`)
-- [ ] `primary_email_identity_id` uses composite FK ensuring identity belongs to same user
+- [ ] `primary_email_identity_id` composite FK: `users(id, primary_email_identity_id) → user_identities(user_id, id)` with `UNIQUE(user_id, id)` on target
+- [ ] `authentication_tokens` composite FK: `(user_id, user_identity_id) → user_identities(user_id, id)`
 - [ ] Explicit farm access mode (never inferred from absence)
 - [ ] Immutable farm snapshots on historical records (weight, vaccination, lambing, sales, status history)
 - [ ] Historical records have both `(company_id, animal_id)` and `(company_id, farm_id)` composite FKs
@@ -2068,24 +2169,36 @@ getAnimals(filters: AnimalFilters)                       // ✗ banned by type
 - [ ] `current_company_guard` generated column (at most one current subscription per company)
 - [ ] Opaque public IDs (ULID) for all external references
 - [ ] Company deletion state machine (no auto-hard-delete from webhook)
+- [ ] Company deletion purge order defined (dependency-ordered, audit records preserved)
 - [ ] Backup deletion limitations documented (retention, crypto-erasure, tombstones)
 - [ ] Idempotency keys: per-tenant uniqueness, body hash conflict detection, FKs to companies/users
 - [ ] Billing: `trial_ends_at`, `grace_ends_at`, `plan_snapshot`, `is_current`, `currency`, `stripe_price_id`
 - [ ] Role permissions: `effect ENUM('allow','deny')`, UNIQUE without `effect` column
+- [ ] `role_permissions.page` renamed to `resource` before unique constraint creation
 - [ ] Permission cache versioned: `perm:{companyId}:{permissionsVersion}:{role}`
 - [ ] Permission evaluation: layered deny-first (not "first match wins")
 - [ ] Company-wide visibility = regardless of farm assignment, NOT regardless of RBAC
 - [ ] Role hierarchy rules enforced (admin can't manage owners, can't change own role)
-- [ ] All new tables have foreign keys with explicit ON DELETE behavior
+- [ ] All FKs have explicit ON DELETE behavior per FK deletion matrix
 - [ ] Actor columns reference memberships via composite FKs (not global users)
-- [ ] `users.role` deprecated — replaced by `platform_admins` table
+- [ ] `users.role` deprecated — replaced by `platform_admins` table (no DEFAULT on role)
 - [ ] PlatformContext for system jobs and platform admin (separate from TenantContext)
 - [ ] Platform repositories narrowly scoped (no generic cross-tenant query)
 - [ ] WebSocket authorization at subscription/channel level (not only on connect)
 - [ ] WebSocket membership revalidation on room join; revoke on membership change
 - [ ] `sessions.last_selected_company_id` FK to companies ON DELETE SET NULL
-- [ ] `outbox_events.company_id` FK to companies
+- [ ] `outbox_events.company_id` FK to companies (nullable for platform events)
+- [ ] `audit_log.company_id` nullable permanently for auth/platform events (two logical stores)
+- [ ] `company_invitations.role` excludes `owner` (DB-enforced)
+- [ ] `company_invitations` has `pending_invitation_guard` for duplicate prevention
+- [ ] `company_invitations.accepted_by_user_id` has FK to users
+- [ ] `expenses.scope_type` + `farm_id` consistency enforced by DB CHECK constraint
+- [ ] File upload: link table entry created in same transaction as pending attachment
+- [ ] MFA freshness: `privileged_session_max_age` checked per-company on sensitive actions
+- [ ] `users.email_normalized` backfilled, duplicates resolved, then UNIQUE added
 - [ ] Migration: `role_permissions.company_id` and `audit_log.action_category` added nullable first
+- [ ] Migration: global unique constraints dropped only in Phase 7 (after tenant-aware constraints proven)
+- [ ] Migration: `users.role` mapped via explicit reviewed mapping table (not direct copy)
 - [ ] Cross-tenant test matrix passes (100% of endpoints)
 - [ ] Mutation tests pass (remove companyId → CI fails)
 - [ ] Security review passed

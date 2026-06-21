@@ -1,14 +1,44 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
-import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign, Pencil, Syringe } from "lucide-react";
+import {
+  Eye,
+  Leaf,
+  Plus,
+  Search,
+  Trash2,
+  AlertTriangle,
+  DollarSign,
+  Pencil,
+  Syringe,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
@@ -28,18 +58,47 @@ import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useDesign } from "@/contexts/DesignContext";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
+import { SimpleAnimals } from "@/pages/simple/SimpleAnimals";
 
 function StatusBadge({ status }: { status: string }) {
   const lower = status?.toLowerCase() ?? "";
-  if (lower.includes("active") || lower.includes("fattening") || lower.includes("breeding")) {
-    return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{status}</Badge>;
+  if (
+    lower.includes("active") ||
+    lower.includes("fattening") ||
+    lower.includes("breeding")
+  ) {
+    return (
+      <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+        {status}
+      </Badge>
+    );
   }
-  if (lower.includes("sold")) return <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">{status}</Badge>;
-  if (lower.includes("dead") || lower.includes("mort")) return <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{status}</Badge>;
-  if (lower.includes("transport")) return <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">{status}</Badge>;
-  return <Badge variant="outline" className="text-xs">{status}</Badge>;
+  if (lower.includes("sold"))
+    return (
+      <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs">
+        {status}
+      </Badge>
+    );
+  if (lower.includes("dead") || lower.includes("mort"))
+    return (
+      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">
+        {status}
+      </Badge>
+    );
+  if (lower.includes("transport"))
+    return (
+      <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-xs">
+        {status}
+      </Badge>
+    );
+  return (
+    <Badge variant="outline" className="text-xs">
+      {status}
+    </Badge>
+  );
 }
 
 function VaccineDueCell({
@@ -56,15 +115,19 @@ function VaccineDueCell({
   const dueDate = new Date(date);
   dueDate.setHours(0, 0, 0, 0);
   const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
-  const dateClassName = diffDays < 0
-    ? "text-red-600 font-medium"
-    : diffDays <= 7
-      ? "text-amber-600 font-medium"
-      : "text-muted-foreground";
+  const dateClassName =
+    diffDays < 0
+      ? "text-red-600 font-medium"
+      : diffDays <= 7
+        ? "text-amber-600 font-medium"
+        : "text-muted-foreground";
 
   return (
     <div className="flex min-w-max items-center gap-1.5">
-      <Syringe aria-hidden="true" className="h-3.5 w-3.5 text-muted-foreground" />
+      <Syringe
+        aria-hidden="true"
+        className="h-3.5 w-3.5 text-muted-foreground"
+      />
       {name ? <span className="text-muted-foreground">{name}</span> : null}
       <span className={dateClassName}>{dueDate.toLocaleDateString()}</span>
     </div>
@@ -95,16 +158,16 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   const selectedCategoryId = watch("categoryId");
 
   const { data: species } = trpc.config.getSpecies.useQuery();
-  const { data: categories } = trpc.config.getCategories.useQuery(
-    { speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined }
-  );
-  const { data: groups } = trpc.config.getGroups.useQuery(
-    { speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined }
-  );
+  const { data: categories } = trpc.config.getCategories.useQuery({
+    speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined,
+  });
+  const { data: groups } = trpc.config.getGroups.useQuery({
+    speciesId: selectedSpeciesId ? Number(selectedSpeciesId) : undefined,
+  });
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const selectedCategory = (categories ?? []).find(
-    (category: any) => String(category.id) === selectedCategoryId,
+    (category: any) => String(category.id) === selectedCategoryId
   );
 
   const utils = trpc.useUtils();
@@ -119,11 +182,18 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       reset();
       onSuccess();
     },
-    onError: (e) => toast.error(e.message),
+    onError: e => toast.error(e.message),
   });
 
   const onSubmit = (data: any) => {
-    if (!data.speciesId || !data.categoryId || !data.groupId || !data.statusId || !data.sex || !data.acquisitionType) {
+    if (
+      !data.speciesId ||
+      !data.categoryId ||
+      !data.groupId ||
+      !data.statusId ||
+      !data.sex ||
+      !data.acquisitionType
+    ) {
       toast.error(t("common.required"));
       return;
     }
@@ -138,7 +208,10 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       birthDate: data.birthDate,
       purchaseCost: data.purchaseCost || undefined,
       weightAtAcquisition: data.weightAtAcquisition || undefined,
-      ownerId: (data.ownerId && data.ownerId !== "none") ? Number(data.ownerId) : undefined,
+      ownerId:
+        data.ownerId && data.ownerId !== "none"
+          ? Number(data.ownerId)
+          : undefined,
       animalIdNumber: data.animalIdNumber || undefined,
     });
   };
@@ -159,142 +232,232 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>{t("common.species")} *</Label>
-              <Controller name="speciesId" control={control} render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    setValue("categoryId", "");
-                    setValue("groupId", "");
-                  }}
-                >
-                  <SelectTrigger><SelectValue placeholder={t("common.species")} /></SelectTrigger>
-                  <SelectContent>
-                    {(species ?? []).map((s: any) => (
-                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )} />
+              <Controller
+                name="speciesId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={value => {
+                      field.onChange(value);
+                      setValue("categoryId", "");
+                      setValue("groupId", "");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("common.species")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(species ?? []).map((s: any) => (
+                        <SelectItem key={s.id} value={String(s.id)}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("common.category")} *</Label>
-              <Controller name="categoryId" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={!selectedSpeciesId}>
-                  <SelectTrigger><SelectValue placeholder={t("common.category")} /></SelectTrigger>
-                  <SelectContent>
-                    {(categories ?? []).map((c: any) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.name} ({c.idPrefix})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )} />
-            </div>
-            <Controller name="animalIdNumber" control={control} render={({ field }) => (
-              <AnimalIdNumberField
-                inputId="add-animal-id-number"
-                label={t("animals.animalIdNumber")}
-                hint={t("animals.animalIdNumberHint")}
-                placeholder={t("animals.animalIdNumberPlaceholder")}
-                prefix={selectedCategory?.idPrefix ?? ""}
-                value={field.value}
-                onChange={field.onChange}
-                className="sm:col-span-2"
+              <Controller
+                name="categoryId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={!selectedSpeciesId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("common.category")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(categories ?? []).map((c: any) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name} ({c.idPrefix})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
-            )} />
+            </div>
+            <Controller
+              name="animalIdNumber"
+              control={control}
+              render={({ field }) => (
+                <AnimalIdNumberField
+                  inputId="add-animal-id-number"
+                  label={t("animals.animalIdNumber")}
+                  hint={t("animals.animalIdNumberHint")}
+                  placeholder={t("animals.animalIdNumberPlaceholder")}
+                  prefix={selectedCategory?.idPrefix ?? ""}
+                  value={field.value}
+                  onChange={field.onChange}
+                  className="sm:col-span-2"
+                />
+              )}
+            />
             <div className="space-y-1.5">
               <Label>Group / Pen *</Label>
-              <Controller name="groupId" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder={t("common.group")} /></SelectTrigger>
-                  <SelectContent>
-                    {(groups ?? []).map((g: any) => (
-                      <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )} />
+              <Controller
+                name="groupId"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("common.group")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(groups ?? []).map((g: any) => (
+                        <SelectItem key={g.id} value={String(g.id)}>
+                          {g.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("common.status")} *</Label>
-              <Controller name="statusId" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder={t("common.status")} /></SelectTrigger>
-                  <SelectContent>
-                    {(statuses ?? []).map((s: any) => (
-                      <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )} />
+              <Controller
+                name="statusId"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("common.status")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(statuses ?? []).map((s: any) => (
+                        <SelectItem key={s.id} value={String(s.id)}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("common.sex")} *</Label>
-              <Controller name="sex" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder={t("common.sex")} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="male">{t("common.male")}</SelectItem>
-                    <SelectItem value="female">{t("common.female")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              )} />
+              <Controller
+                name="sex"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("common.sex")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">{t("common.male")}</SelectItem>
+                      <SelectItem value="female">
+                        {t("common.female")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("animals.acquisitionType")} *</Label>
-              <Controller name="acquisitionType" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder={t("common.type")} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="purchased">{t("common.purchased")}</SelectItem>
-                    <SelectItem value="born">{t("animals.bornOnFarm")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              )} />
+              <Controller
+                name="acquisitionType"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("common.type")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="purchased">
+                        {t("common.purchased")}
+                      </SelectItem>
+                      <SelectItem value="born">
+                        {t("animals.bornOnFarm")}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("animals.acquisitionDate")} *</Label>
-              <Controller name="acquisitionDate" control={control} render={({ field }) => (
-                <Input type="date" {...field} />
-              )} />
+              <Controller
+                name="acquisitionDate"
+                control={control}
+                render={({ field }) => <Input type="date" {...field} />}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("animals.birthDate")} *</Label>
-              <Controller name="birthDate" control={control} render={({ field }) => (
-                <Input type="date" {...field} />
-              )} />
+              <Controller
+                name="birthDate"
+                control={control}
+                render={({ field }) => <Input type="date" {...field} />}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>{t("animals.purchaseCost")}</Label>
-              <Controller name="purchaseCost" control={control} render={({ field }) => (
-                <Input type="number" placeholder="0.00" {...field} />
-              )} />
+              <Controller
+                name="purchaseCost"
+                control={control}
+                render={({ field }) => (
+                  <Input type="number" placeholder="0.00" {...field} />
+                )}
+              />
             </div>
             <div className="space-y-1.5">
-              <Label>{t("common.weight")} ({t("common.kg")})</Label>
-              <Controller name="weightAtAcquisition" control={control} render={({ field }) => (
-                <Input type="number" placeholder="0.0" {...field} />
-              )} />
+              <Label>
+                {t("common.weight")} ({t("common.kg")})
+              </Label>
+              <Controller
+                name="weightAtAcquisition"
+                control={control}
+                render={({ field }) => (
+                  <Input type="number" placeholder="0.0" {...field} />
+                )}
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label>{t("owners.owner")}</Label>
-              <Controller name="ownerId" control={control} render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger><SelectValue placeholder={t("owners.selectOwner")} /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">{t("owners.noOwner")}</SelectItem>
-                    {(ownersList ?? []).map((o: any) => (
-                      <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )} />
+              <Controller
+                name="ownerId"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("owners.selectOwner")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">
+                        {t("owners.noOwner")}
+                      </SelectItem>
+                      {(ownersList ?? []).map((o: any) => (
+                        <SelectItem key={o.id} value={String(o.id)}>
+                          {o.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
+              {t("common.cancel")}
+            </Button>
             <Button type="submit" disabled={createAnimal.isPending}>
-              {createAnimal.isPending ? "Registering..." : t("animals.addAnimal")}
+              {createAnimal.isPending
+                ? "Registering..."
+                : t("animals.addAnimal")}
             </Button>
           </DialogFooter>
         </form>
@@ -314,7 +477,9 @@ function BulkVaccinationDialogContent({
 }) {
   const { t } = useTranslation();
   const [vaccineId, setVaccineId] = useState("");
-  const [vaccinationDate, setVaccinationDate] = useState(new Date().toISOString().split("T")[0]);
+  const [vaccinationDate, setVaccinationDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [batchNumber, setBatchNumber] = useState("");
   const [veterinarian, setVeterinarian] = useState("");
   const [notes, setNotes] = useState("");
@@ -329,16 +494,17 @@ function BulkVaccinationDialogContent({
       onClose();
       onSuccess();
     },
-    onError: (e) => toast.error(e.message),
+    onError: e => toast.error(e.message),
   });
 
   const handleSubmit = () => {
     if (!vaccineId) return toast.error(t("vaccine.vaccineRequired"));
     if (!vaccinationDate) return toast.error(t("vaccine.dateRequired"));
-    if (selectedAnimals.length === 0) return toast.error(t("vaccine.animalRequired"));
+    if (selectedAnimals.length === 0)
+      return toast.error(t("vaccine.animalRequired"));
 
     bulkApplyMutation.mutate({
-      animalIds: selectedAnimals.map((a) => a.animal.id),
+      animalIds: selectedAnimals.map(a => a.animal.id),
       vaccineId: parseInt(vaccineId),
       vaccinationDate,
       batchNumber: batchNumber || undefined,
@@ -348,41 +514,69 @@ function BulkVaccinationDialogContent({
   };
 
   return (
-    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={true} onOpenChange={open => !open && onClose()}>
       <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{t("vaccine.bulkApply")} ({selectedAnimals.length})</DialogTitle></DialogHeader>
+        <DialogHeader>
+          <DialogTitle>
+            {t("vaccine.bulkApply")} ({selectedAnimals.length})
+          </DialogTitle>
+        </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label>{t("vaccine.selectVaccine")} *</Label>
             <Select value={vaccineId} onValueChange={setVaccineId}>
-              <SelectTrigger><SelectValue placeholder={t("vaccine.selectVaccine")} /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder={t("vaccine.selectVaccine")} />
+              </SelectTrigger>
               <SelectContent>
                 {(vaccines ?? []).map((v: any) => (
-                  <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>
+                  <SelectItem key={v.id} value={String(v.id)}>
+                    {v.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
             <Label>{t("vaccine.vaccinationDate")} *</Label>
-            <Input type="date" value={vaccinationDate} onChange={(e) => setVaccinationDate(e.target.value)} />
+            <Input
+              type="date"
+              value={vaccinationDate}
+              onChange={e => setVaccinationDate(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>{t("vaccine.batchNumber")}</Label>
-            <Input placeholder="e.g. BATCH-2024-001" value={batchNumber} onChange={(e) => setBatchNumber(e.target.value)} />
+            <Input
+              placeholder="e.g. BATCH-2024-001"
+              value={batchNumber}
+              onChange={e => setBatchNumber(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>{t("vaccine.veterinarian")}</Label>
-            <Input placeholder={t("common.none")} value={veterinarian} onChange={(e) => setVeterinarian(e.target.value)} />
+            <Input
+              placeholder={t("common.none")}
+              value={veterinarian}
+              onChange={e => setVeterinarian(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>{t("common.notes")}</Label>
-            <Input placeholder={t("common.optionalNotes")} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Input
+              placeholder={t("common.optionalNotes")}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+            />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button onClick={handleSubmit} disabled={bulkApplyMutation.isPending}>{t("common.apply")}</Button>
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={handleSubmit} disabled={bulkApplyMutation.isPending}>
+            {t("common.apply")}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -423,25 +617,34 @@ function BulkEditDialog({
   // reset when dialog reopens
   React.useEffect(() => {
     if (open) {
-      setGroupId(KEEP); setStatusId(KEEP); setOwnerId(KEEP); setSex(KEEP);
-      setAcquisitionDate(""); setNotes(""); setSetNotesEnabled(false);
-      setExitDate(""); setExitReason(""); setIsActiveChoice(KEEP);
+      setGroupId(KEEP);
+      setStatusId(KEEP);
+      setOwnerId(KEEP);
+      setSex(KEEP);
+      setAcquisitionDate("");
+      setNotes("");
+      setSetNotesEnabled(false);
+      setExitDate("");
+      setExitReason("");
+      setIsActiveChoice(KEEP);
     }
   }, [open]);
 
   const utils = trpc.useUtils();
   const bulkUpdate = trpc.animals.bulkUpdate.useMutation({
     onSuccess: (r: any) => {
-      toast.success(`${r.count} ${t("animals.title").toLowerCase()} — ${t("common.updated")}`);
+      toast.success(
+        `${r.count} ${t("animals.title").toLowerCase()} — ${t("common.updated")}`
+      );
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       onOpenChange(false);
       onSuccess();
     },
-    onError: (e) => toast.error(e.message),
+    onError: e => toast.error(e.message),
   });
 
-  const fieldsChanged = (
+  const fieldsChanged =
     (groupId !== KEEP ? 1 : 0) +
     (statusId !== KEEP ? 1 : 0) +
     (ownerId !== KEEP ? 1 : 0) +
@@ -450,8 +653,7 @@ function BulkEditDialog({
     (setNotesEnabled ? 1 : 0) +
     (exitDate ? 1 : 0) +
     (exitReason ? 1 : 0) +
-    (isActiveChoice !== KEEP ? 1 : 0)
-  );
+    (isActiveChoice !== KEEP ? 1 : 0);
 
   const onSubmit = () => {
     if (fieldsChanged === 0) {
@@ -459,13 +661,23 @@ function BulkEditDialog({
       return;
     }
     bulkUpdate.mutate({
-      animalIds: selectedAnimals.map((a) => a.animal.id),
-      groupId: groupId === KEEP ? undefined : groupId === CLEAR ? null : Number(groupId),
+      animalIds: selectedAnimals.map(a => a.animal.id),
+      groupId:
+        groupId === KEEP
+          ? undefined
+          : groupId === CLEAR
+            ? null
+            : Number(groupId),
       statusId: statusId === KEEP ? undefined : Number(statusId),
-      ownerId: ownerId === KEEP ? undefined : ownerId === CLEAR ? null : Number(ownerId),
+      ownerId:
+        ownerId === KEEP
+          ? undefined
+          : ownerId === CLEAR
+            ? null
+            : Number(ownerId),
       sex: sex === KEEP ? undefined : (sex as "male" | "female"),
       acquisitionDate: acquisitionDate || undefined,
-      notes: setNotesEnabled ? (notes || null) : undefined,
+      notes: setNotesEnabled ? notes || null : undefined,
       exitDate: exitDate || undefined,
       exitReason: exitReason || undefined,
       isActive: isActiveChoice === KEEP ? undefined : isActiveChoice === "true",
@@ -476,7 +688,9 @@ function BulkEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t("animals.bulkEdit")} ({selectedAnimals.length})</DialogTitle>
+          <DialogTitle>
+            {t("animals.bulkEdit")} ({selectedAnimals.length})
+          </DialogTitle>
         </DialogHeader>
 
         <p className="text-sm text-muted-foreground -mt-2">
@@ -487,12 +701,20 @@ function BulkEditDialog({
           <div className="space-y-1.5">
             <Label>{t("common.group")}</Label>
             <Select value={groupId} onValueChange={setGroupId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
-                <SelectItem value={CLEAR}>{t("animals.bulkEditClear")}</SelectItem>
+                <SelectItem value={KEEP}>
+                  {t("animals.bulkEditKeep")}
+                </SelectItem>
+                <SelectItem value={CLEAR}>
+                  {t("animals.bulkEditClear")}
+                </SelectItem>
                 {(groups ?? []).map((g: any) => (
-                  <SelectItem key={g.id} value={String(g.id)}>{g.groupCode} — {g.name}</SelectItem>
+                  <SelectItem key={g.id} value={String(g.id)}>
+                    {g.groupCode} — {g.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -501,11 +723,17 @@ function BulkEditDialog({
           <div className="space-y-1.5">
             <Label>{t("common.status")}</Label>
             <Select value={statusId} onValueChange={setStatusId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                <SelectItem value={KEEP}>
+                  {t("animals.bulkEditKeep")}
+                </SelectItem>
                 {(statuses ?? []).map((s: any) => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  <SelectItem key={s.id} value={String(s.id)}>
+                    {s.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -514,12 +742,20 @@ function BulkEditDialog({
           <div className="space-y-1.5">
             <Label>{t("owners.owner")}</Label>
             <Select value={ownerId} onValueChange={setOwnerId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
-                <SelectItem value={CLEAR}>{t("animals.bulkEditClear")}</SelectItem>
+                <SelectItem value={KEEP}>
+                  {t("animals.bulkEditKeep")}
+                </SelectItem>
+                <SelectItem value={CLEAR}>
+                  {t("animals.bulkEditClear")}
+                </SelectItem>
                 {(ownersList ?? []).map((o: any) => (
-                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
+                  <SelectItem key={o.id} value={String(o.id)}>
+                    {o.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -528,9 +764,13 @@ function BulkEditDialog({
           <div className="space-y-1.5">
             <Label>{t("common.sex")}</Label>
             <Select value={sex} onValueChange={setSex}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                <SelectItem value={KEEP}>
+                  {t("animals.bulkEditKeep")}
+                </SelectItem>
                 <SelectItem value="male">{t("common.male")}</SelectItem>
                 <SelectItem value="female">{t("common.female")}</SelectItem>
               </SelectContent>
@@ -543,17 +783,25 @@ function BulkEditDialog({
               type="date"
               value={acquisitionDate}
               placeholder={t("animals.bulkEditKeep")}
-              onChange={(e) => setAcquisitionDate(e.target.value)}
+              onChange={e => setAcquisitionDate(e.target.value)}
             />
-            {acquisitionDate && <p className="text-xs text-muted-foreground">{t("animals.bulkEditWillApply")}</p>}
+            {acquisitionDate && (
+              <p className="text-xs text-muted-foreground">
+                {t("animals.bulkEditWillApply")}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
             <Label>{t("animals.active")}?</Label>
             <Select value={isActiveChoice} onValueChange={setIsActiveChoice}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value={KEEP}>{t("animals.bulkEditKeep")}</SelectItem>
+                <SelectItem value={KEEP}>
+                  {t("animals.bulkEditKeep")}
+                </SelectItem>
                 <SelectItem value="true">{t("animals.active")}</SelectItem>
                 <SelectItem value="false">{t("animals.inactive")}</SelectItem>
               </SelectContent>
@@ -565,7 +813,7 @@ function BulkEditDialog({
             <Input
               type="date"
               value={exitDate}
-              onChange={(e) => setExitDate(e.target.value)}
+              onChange={e => setExitDate(e.target.value)}
             />
           </div>
 
@@ -573,7 +821,7 @@ function BulkEditDialog({
             <Label>{t("animals.exitReason")}</Label>
             <Input
               value={exitReason}
-              onChange={(e) => setExitReason(e.target.value)}
+              onChange={e => setExitReason(e.target.value)}
               placeholder={t("animals.bulkEditKeep")}
             />
           </div>
@@ -585,14 +833,16 @@ function BulkEditDialog({
               type="checkbox"
               id="setNotesEnabled"
               checked={setNotesEnabled}
-              onChange={(e) => setSetNotesEnabled(e.target.checked)}
+              onChange={e => setSetNotesEnabled(e.target.checked)}
             />
-            <Label htmlFor="setNotesEnabled" className="cursor-pointer">{t("animals.bulkEditSetNotes")}</Label>
+            <Label htmlFor="setNotesEnabled" className="cursor-pointer">
+              {t("animals.bulkEditSetNotes")}
+            </Label>
           </div>
           {setNotesEnabled && (
             <Input
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={e => setNotes(e.target.value)}
               placeholder={t("common.notes")}
             />
           )}
@@ -605,9 +855,20 @@ function BulkEditDialog({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
-          <Button onClick={onSubmit} disabled={bulkUpdate.isPending || fieldsChanged === 0}>
-            {bulkUpdate.isPending ? "..." : `${t("animals.bulkEdit")} (${selectedAnimals.length})`}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            onClick={onSubmit}
+            disabled={bulkUpdate.isPending || fieldsChanged === 0}
+          >
+            {bulkUpdate.isPending
+              ? "..."
+              : `${t("animals.bulkEdit")} (${selectedAnimals.length})`}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -630,18 +891,29 @@ function BulkSellDialog({
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const exitStatuses = (statuses ?? []).filter((s: any) => s.isExitStatus);
 
-  const [exitDate, setExitDate] = useState(new Date().toISOString().split("T")[0]);
+  const [exitDate, setExitDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [exitReason, setExitReason] = useState("");
   const [newStatusId, setNewStatusId] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [saleNotes, setSaleNotes] = useState("");
-  const [perAnimal, setPerAnimal] = useState<Record<number, { salePrice: string; amountPaid: string; weightAtSale: string }>>({});
+  const [perAnimal, setPerAnimal] = useState<
+    Record<
+      number,
+      { salePrice: string; amountPaid: string; weightAtSale: string }
+    >
+  >({});
 
   // initialize per-animal entries when selection changes
   React.useEffect(() => {
     const next: typeof perAnimal = {};
     for (const a of selectedAnimals) {
-      next[a.animal.id] = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
+      next[a.animal.id] = perAnimal[a.animal.id] ?? {
+        salePrice: "",
+        amountPaid: "",
+        weightAtSale: "",
+      };
     }
     setPerAnimal(next);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -650,20 +922,31 @@ function BulkSellDialog({
   const utils = trpc.useUtils();
   const bulkExit = trpc.animals.bulkExit.useMutation({
     onSuccess: (r: any) => {
-      toast.success(`${r.count} ${t("animals.title").toLowerCase()} — ${t("sales.recorded")}`);
+      toast.success(
+        `${r.count} ${t("animals.title").toLowerCase()} — ${t("sales.recorded")}`
+      );
       utils.animals.list.invalidate();
       utils.sales.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       onOpenChange(false);
-      setExitReason(""); setBuyerName(""); setSaleNotes(""); setPerAnimal({});
+      setExitReason("");
+      setBuyerName("");
+      setSaleNotes("");
+      setPerAnimal({});
       onSuccess();
     },
-    onError: (e) => toast.error(e.message),
+    onError: e => toast.error(e.message),
   });
 
   // totals
-  const totalPrice = Object.values(perAnimal).reduce((s, v) => s + (parseFloat(v.salePrice) || 0), 0);
-  const totalPaid = Object.values(perAnimal).reduce((s, v) => s + (parseFloat(v.amountPaid || v.salePrice || "0") || 0), 0);
+  const totalPrice = Object.values(perAnimal).reduce(
+    (s, v) => s + (parseFloat(v.salePrice) || 0),
+    0
+  );
+  const totalPaid = Object.values(perAnimal).reduce(
+    (s, v) => s + (parseFloat(v.amountPaid || v.salePrice || "0") || 0),
+    0
+  );
   const totalOutstanding = totalPrice - totalPaid;
 
   const onSubmit = () => {
@@ -677,7 +960,7 @@ function BulkSellDialog({
       newStatusId: Number(newStatusId),
       buyerName: buyerName || undefined,
       saleNotes: saleNotes || undefined,
-      animals: selectedAnimals.map((a) => ({
+      animals: selectedAnimals.map(a => ({
         id: a.animal.id,
         salePrice: perAnimal[a.animal.id]?.salePrice || undefined,
         amountPaid: perAnimal[a.animal.id]?.amountPaid || undefined,
@@ -700,30 +983,48 @@ function BulkSellDialog({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border rounded-lg p-4 bg-muted/30">
           <div className="space-y-1.5">
             <Label>{t("animals.exitDate")} *</Label>
-            <Input type="date" value={exitDate} onChange={(e) => setExitDate(e.target.value)} />
+            <Input
+              type="date"
+              value={exitDate}
+              onChange={e => setExitDate(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>{t("common.status")} *</Label>
             <Select value={newStatusId} onValueChange={setNewStatusId}>
-              <SelectTrigger><SelectValue placeholder={t("animals.selectExitStatus")} /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder={t("animals.selectExitStatus")} />
+              </SelectTrigger>
               <SelectContent>
                 {exitStatuses.map((s: any) => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
+                  <SelectItem key={s.id} value={String(s.id)}>
+                    {s.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>{t("animals.exitReason")} *</Label>
-            <Input value={exitReason} onChange={(e) => setExitReason(e.target.value)} placeholder={t("animals.exitReasonPlaceholder")} />
+            <Input
+              value={exitReason}
+              onChange={e => setExitReason(e.target.value)}
+              placeholder={t("animals.exitReasonPlaceholder")}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>{t("sales.buyerName")}</Label>
-            <Input value={buyerName} onChange={(e) => setBuyerName(e.target.value)} />
+            <Input
+              value={buyerName}
+              onChange={e => setBuyerName(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>{t("common.notes")}</Label>
-            <Input value={saleNotes} onChange={(e) => setSaleNotes(e.target.value)} />
+            <Input
+              value={saleNotes}
+              onChange={e => setSaleNotes(e.target.value)}
+            />
           </div>
         </div>
 
@@ -741,29 +1042,78 @@ function BulkSellDialog({
             </TableHeader>
             <TableBody>
               {selectedAnimals.map((a: any) => {
-                const row = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
+                const row = perAnimal[a.animal.id] ?? {
+                  salePrice: "",
+                  amountPaid: "",
+                  weightAtSale: "",
+                };
                 const price = parseFloat(row.salePrice) || 0;
-                const paid = parseFloat(row.amountPaid || (row.salePrice || "0")) || 0;
+                const paid =
+                  parseFloat(row.amountPaid || row.salePrice || "0") || 0;
                 const outstanding = price - paid;
                 return (
                   <TableRow key={a.animal.id}>
-                    <TableCell className="font-mono font-semibold text-primary">{a.animal.animalId}</TableCell>
-                    <TableCell>
-                      <Input type="number" placeholder="0" value={row.weightAtSale}
-                        onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, weightAtSale: e.target.value } }))}
-                        className="w-24" />
+                    <TableCell className="font-mono font-semibold text-primary">
+                      {a.animal.animalId}
                     </TableCell>
                     <TableCell>
-                      <Input type="number" placeholder="0.00" value={row.salePrice}
-                        onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, salePrice: e.target.value } }))}
-                        className="w-32" />
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={row.weightAtSale}
+                        onChange={e =>
+                          setPerAnimal(p => ({
+                            ...p,
+                            [a.animal.id]: {
+                              ...row,
+                              weightAtSale: e.target.value,
+                            },
+                          }))
+                        }
+                        className="w-24"
+                      />
                     </TableCell>
                     <TableCell>
-                      <Input type="number" placeholder={row.salePrice || "0.00"} value={row.amountPaid}
-                        onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, amountPaid: e.target.value } }))}
-                        className="w-32" />
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={row.salePrice}
+                        onChange={e =>
+                          setPerAnimal(p => ({
+                            ...p,
+                            [a.animal.id]: {
+                              ...row,
+                              salePrice: e.target.value,
+                            },
+                          }))
+                        }
+                        className="w-32"
+                      />
                     </TableCell>
-                    <TableCell className={outstanding > 0 ? "text-amber-600 font-medium" : "text-muted-foreground"}>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        placeholder={row.salePrice || "0.00"}
+                        value={row.amountPaid}
+                        onChange={e =>
+                          setPerAnimal(p => ({
+                            ...p,
+                            [a.animal.id]: {
+                              ...row,
+                              amountPaid: e.target.value,
+                            },
+                          }))
+                        }
+                        className="w-32"
+                      />
+                    </TableCell>
+                    <TableCell
+                      className={
+                        outstanding > 0
+                          ? "text-amber-600 font-medium"
+                          : "text-muted-foreground"
+                      }
+                    >
                       {outstanding.toFixed(2)}
                     </TableCell>
                   </TableRow>
@@ -775,15 +1125,40 @@ function BulkSellDialog({
 
         {/* Totals */}
         <div className="grid grid-cols-3 gap-3 text-sm border rounded-lg p-3 bg-muted/30">
-          <div><span className="text-muted-foreground">{t("sales.totalPrice")}: </span><strong>{totalPrice.toFixed(2)}</strong></div>
-          <div><span className="text-muted-foreground">{t("sales.totalPaid")}: </span><strong className="text-green-700">{totalPaid.toFixed(2)}</strong></div>
-          <div><span className="text-muted-foreground">{t("sales.totalOutstanding")}: </span><strong className={totalOutstanding > 0 ? "text-amber-600" : ""}>{totalOutstanding.toFixed(2)}</strong></div>
+          <div>
+            <span className="text-muted-foreground">
+              {t("sales.totalPrice")}:{" "}
+            </span>
+            <strong>{totalPrice.toFixed(2)}</strong>
+          </div>
+          <div>
+            <span className="text-muted-foreground">
+              {t("sales.totalPaid")}:{" "}
+            </span>
+            <strong className="text-green-700">{totalPaid.toFixed(2)}</strong>
+          </div>
+          <div>
+            <span className="text-muted-foreground">
+              {t("sales.totalOutstanding")}:{" "}
+            </span>
+            <strong className={totalOutstanding > 0 ? "text-amber-600" : ""}>
+              {totalOutstanding.toFixed(2)}
+            </strong>
+          </div>
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
+            {t("common.cancel")}
+          </Button>
           <Button onClick={onSubmit} disabled={bulkExit.isPending}>
-            {bulkExit.isPending ? "..." : `${t("animals.bulkSell")} (${selectedAnimals.length})`}
+            {bulkExit.isPending
+              ? "..."
+              : `${t("animals.bulkSell")} (${selectedAnimals.length})`}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -793,9 +1168,19 @@ function BulkSellDialog({
 
 export default function Animals() {
   const { t } = useTranslation();
-  const { can, canCreate, canUpdate, canDelete, loading: permissionsLoading } = usePermissions("animals");
-  const canSelect = canUpdate || canDelete ||
-    can("vaccinations", "create") || can("sales", "create");
+  const { designVersion } = useDesign();
+  const {
+    can,
+    canCreate,
+    canUpdate,
+    canDelete,
+    loading: permissionsLoading,
+  } = usePermissions("animals");
+  const canSelect =
+    canUpdate ||
+    canDelete ||
+    can("vaccinations", "create") ||
+    can("sales", "create");
   const [, setLocation] = useLocation();
   const searchStr = useSearch();
   const editIdFromUrl = React.useMemo(() => {
@@ -826,15 +1211,27 @@ export default function Animals() {
     try {
       const raw = sessionStorage.getItem(FILTERS_KEY);
       return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
+    } catch {
+      return {};
+    }
   }, []);
 
   const [search, setSearch] = useState<string>(savedFilters.search ?? "");
-  const [filterSpecies, setFilterSpecies] = useState<string>(savedFilters.filterSpecies ?? "all");
-  const [filterStatus, setFilterStatus] = useState<string>(savedFilters.filterStatus ?? "all");
-  const [filterActive, setFilterActive] = useState<string>(savedFilters.filterActive ?? "active");
-  const [filterOwner, setFilterOwner] = useState<string>(savedFilters.filterOwner ?? "all");
-  const [filterAcquisitionType, setFilterAcquisitionType] = useState<string>(savedFilters.filterAcquisitionType ?? "all");
+  const [filterSpecies, setFilterSpecies] = useState<string>(
+    savedFilters.filterSpecies ?? "all"
+  );
+  const [filterStatus, setFilterStatus] = useState<string>(
+    savedFilters.filterStatus ?? "all"
+  );
+  const [filterActive, setFilterActive] = useState<string>(
+    savedFilters.filterActive ?? "active"
+  );
+  const [filterOwner, setFilterOwner] = useState<string>(
+    savedFilters.filterOwner ?? "all"
+  );
+  const [filterAcquisitionType, setFilterAcquisitionType] = useState<string>(
+    savedFilters.filterAcquisitionType ?? "all"
+  );
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSellOpen, setBulkSellOpen] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -849,15 +1246,25 @@ export default function Animals() {
       utils.feed.getStockStatus.invalidate();
       utils.animals.getAllPnL.invalidate();
     },
-    onError: (e) => toast.error(e.message),
+    onError: e => toast.error(e.message),
   });
 
-  const { data: animals, isLoading, refetch } = trpc.animals.list.useQuery({
-    isActive: filterActive === "active" ? true : filterActive === "inactive" ? false : undefined,
+  const {
+    data: animals,
+    isLoading,
+    refetch,
+  } = trpc.animals.list.useQuery({
+    isActive:
+      filterActive === "active"
+        ? true
+        : filterActive === "inactive"
+          ? false
+          : undefined,
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     statusId: filterStatus !== "all" ? Number(filterStatus) : undefined,
     ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
-    acquisitionType: filterAcquisitionType !== "all" ? filterAcquisitionType : undefined,
+    acquisitionType:
+      filterAcquisitionType !== "all" ? filterAcquisitionType : undefined,
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
@@ -866,7 +1273,11 @@ export default function Animals() {
 
   const filtered = (animals ?? []).filter((a: any) => {
     // Client-side acquisitionType filter — belt-and-suspenders with server filter
-    if (filterAcquisitionType !== "all" && a.animal.acquisitionType !== filterAcquisitionType) return false;
+    if (
+      filterAcquisitionType !== "all" &&
+      a.animal.acquisitionType !== filterAcquisitionType
+    )
+      return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -881,21 +1292,59 @@ export default function Animals() {
   // ── Sorting ──────────────────────────────────────────────────────────────
   // Sortable by ID (animal code), Birth Date, Acquisition Date (default),
   // Age (inverse of birth date), and Cost.
-  type SortKey = "id" | "birthDate" | "acquisitionDate" | "age" | "cost";
-  const [sortBy, setSortBy] = useState<SortKey>(savedFilters.sortBy ?? "acquisitionDate");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">(savedFilters.sortDir ?? "desc");
+  type SortKey =
+    | "id"
+    | "birthDate"
+    | "acquisitionDate"
+    | "age"
+    | "cost"
+    | "category"
+    | "group"
+    | "owner"
+    | "status"
+    | "acquisitionType"
+    | "daysOnFarm"
+    | "latestWeight"
+    | "nextVaccine";
+  const [sortBy, setSortBy] = useState<SortKey>(
+    savedFilters.sortBy ?? "acquisitionDate"
+  );
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(
+    savedFilters.sortDir ?? "desc"
+  );
 
   React.useEffect(() => {
     try {
-      sessionStorage.setItem(FILTERS_KEY, JSON.stringify({
-        search, filterSpecies, filterStatus, filterActive, filterOwner, filterAcquisitionType, sortBy, sortDir,
-      }));
-    } catch { /* ignore quota / disabled storage */ }
-  }, [search, filterSpecies, filterStatus, filterActive, filterOwner, filterAcquisitionType, sortBy, sortDir]);
+      sessionStorage.setItem(
+        FILTERS_KEY,
+        JSON.stringify({
+          search,
+          filterSpecies,
+          filterStatus,
+          filterActive,
+          filterOwner,
+          filterAcquisitionType,
+          sortBy,
+          sortDir,
+        })
+      );
+    } catch {
+      /* ignore quota / disabled storage */
+    }
+  }, [
+    search,
+    filterSpecies,
+    filterStatus,
+    filterActive,
+    filterOwner,
+    filterAcquisitionType,
+    sortBy,
+    sortDir,
+  ]);
 
   const toggleSort = (key: SortKey) => {
     if (sortBy === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      setSortDir(d => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortBy(key);
       // Dates default to newest-first; text defaults to A→Z
@@ -909,21 +1358,116 @@ export default function Animals() {
     arr.sort((a: any, b: any) => {
       switch (sortBy) {
         case "id":
-          return dir * String(a.animal.animalId).localeCompare(String(b.animal.animalId), undefined, { numeric: true });
+          return (
+            dir *
+            String(a.animal.animalId).localeCompare(
+              String(b.animal.animalId),
+              undefined,
+              { numeric: true }
+            )
+          );
         case "birthDate":
-          return dir * (new Date(a.animal.birthDate ?? 0).getTime() - new Date(b.animal.birthDate ?? 0).getTime());
+          return (
+            dir *
+            (new Date(a.animal.birthDate ?? 0).getTime() -
+              new Date(b.animal.birthDate ?? 0).getTime())
+          );
         case "age":
           // Older first when desc — age sorts inversely to birth date
-          return -dir * (new Date(a.animal.birthDate ?? 0).getTime() - new Date(b.animal.birthDate ?? 0).getTime());
+          return (
+            -dir *
+            (new Date(a.animal.birthDate ?? 0).getTime() -
+              new Date(b.animal.birthDate ?? 0).getTime())
+          );
         case "cost":
-          return dir * ((parseFloat(a.animal.purchaseCost ?? "0") || 0) - (parseFloat(b.animal.purchaseCost ?? "0") || 0));
+          return (
+            dir *
+            ((parseFloat(a.animal.purchaseCost ?? "0") || 0) -
+              (parseFloat(b.animal.purchaseCost ?? "0") || 0))
+          );
+        case "category":
+          return (
+            dir *
+            String(a.categoryName ?? "").localeCompare(
+              String(b.categoryName ?? "")
+            )
+          );
+        case "group":
+          return (
+            dir *
+            String(a.groupName ?? "").localeCompare(String(b.groupName ?? ""))
+          );
+        case "owner":
+          return (
+            dir *
+            String(a.ownerName ?? "").localeCompare(String(b.ownerName ?? ""))
+          );
+        case "status":
+          return (
+            dir *
+            String(a.statusName ?? "").localeCompare(String(b.statusName ?? ""))
+          );
+        case "acquisitionType":
+          return (
+            dir *
+            String(a.animal.acquisitionType ?? "").localeCompare(
+              String(b.animal.acquisitionType ?? "")
+            )
+          );
+        case "daysOnFarm":
+          return (
+            -dir *
+            (new Date(a.animal.acquisitionDate ?? 0).getTime() -
+              new Date(b.animal.acquisitionDate ?? 0).getTime())
+          );
+        case "latestWeight":
+          return (
+            dir *
+            ((parseFloat(a.latestWeightKg ?? "0") || 0) -
+              (parseFloat(b.latestWeightKg ?? "0") || 0))
+          );
+        case "nextVaccine":
+          return (
+            dir *
+            (new Date(a.nextVaccineDate ?? 0).getTime() -
+              new Date(b.nextVaccineDate ?? 0).getTime())
+          );
         case "acquisitionDate":
         default:
-          return dir * (new Date(a.animal.acquisitionDate ?? 0).getTime() - new Date(b.animal.acquisitionDate ?? 0).getTime());
+          return (
+            dir *
+            (new Date(a.animal.acquisitionDate ?? 0).getTime() -
+              new Date(b.animal.acquisitionDate ?? 0).getTime())
+          );
       }
     });
     return arr;
   }, [filtered, sortBy, sortDir]);
+
+  const PAGE_SIZE = 25;
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const pageRows = React.useMemo(
+    () => sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE),
+    [page, sorted]
+  );
+
+  React.useEffect(() => {
+    setPage(1);
+  }, [
+    search,
+    filterSpecies,
+    filterStatus,
+    filterActive,
+    filterOwner,
+    filterAcquisitionType,
+    sortBy,
+    sortDir,
+  ]);
+
+  React.useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   /** Human age from birth date: "2y 3m", "7m", or "15d". */
   const formatAge = (birthDate: string | Date | null | undefined): string => {
@@ -931,11 +1475,16 @@ export default function Animals() {
     const b = new Date(birthDate);
     if (isNaN(b.getTime())) return "—";
     const now = new Date();
-    let months = (now.getFullYear() - b.getFullYear()) * 12 + (now.getMonth() - b.getMonth());
+    let months =
+      (now.getFullYear() - b.getFullYear()) * 12 +
+      (now.getMonth() - b.getMonth());
     if (now.getDate() < b.getDate()) months -= 1;
     if (months < 0) return "—";
     if (months === 0) {
-      const days = Math.max(0, Math.floor((now.getTime() - b.getTime()) / 86400000));
+      const days = Math.max(
+        0,
+        Math.floor((now.getTime() - b.getTime()) / 86400000)
+      );
       return `${days}${t("animals.ageDaysSuffix")}`;
     }
     const years = Math.floor(months / 12);
@@ -946,20 +1495,37 @@ export default function Animals() {
       : `${years}${t("animals.ageYearsSuffix")} ${rem}${t("animals.ageMonthsSuffix")}`;
   };
 
-  const SortableHead = ({ k, children, className }: { k: SortKey; children: any; className?: string }) => (
+  const SortableHead = ({
+    k,
+    children,
+    className,
+  }: {
+    k: SortKey;
+    children: any;
+    className?: string;
+  }) => (
     <TableHead
       className={`cursor-pointer select-none hover:text-foreground ${className ?? ""}`}
       onClick={() => toggleSort(k)}
     >
       <span className="inline-flex items-center gap-1">
         {children}
-        {sortBy === k && <span className="text-xs">{sortDir === "asc" ? "▲" : "▼"}</span>}
+        {sortBy === k && (
+          <span className="text-xs">{sortDir === "asc" ? "▲" : "▼"}</span>
+        )}
       </span>
     </TableHead>
   );
 
-  const selectedAnimals = filtered.filter((a: any) => selectedIds.has(a.animal.id));
-  const allSelected = filtered.length > 0 && filtered.every((a: any) => selectedIds.has(a.animal.id));
+  const selectedAnimals = filtered.filter((a: any) =>
+    selectedIds.has(a.animal.id)
+  );
+  const allSelected =
+    filtered.length > 0 &&
+    filtered.every((a: any) => selectedIds.has(a.animal.id));
+  const allPageSelected =
+    pageRows.length > 0 &&
+    pageRows.every((a: any) => selectedIds.has(a.animal.id));
 
   const toggleAll = () => {
     if (allSelected) {
@@ -970,7 +1536,7 @@ export default function Animals() {
   };
 
   const toggleOne = (id: number) => {
-    setSelectedIds((s) => {
+    setSelectedIds(s => {
       const next = new Set(s);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -978,7 +1544,151 @@ export default function Animals() {
     });
   };
 
-  return (
+  const togglePage = () => {
+    setSelectedIds(current => {
+      const next = new Set(current);
+      for (const row of pageRows) {
+        if (allPageSelected) next.delete(row.animal.id);
+        else next.add(row.animal.id);
+      }
+      return next;
+    });
+  };
+
+  const headerAction = canCreate ? (
+    <AddAnimalDialog onSuccess={refetch} />
+  ) : null;
+
+  const bulkActions =
+    canSelect && selectedIds.size > 0 ? (
+      <div className="ms-auto flex flex-wrap gap-2">
+        {canUpdate ? (
+          <Button
+            onClick={() => setBulkEditOpen(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Pencil className="h-4 w-4" />
+            {t("animals.bulkEdit")} ({selectedIds.size})
+          </Button>
+        ) : null}
+        {can("vaccinations", "create") ? (
+          <Button
+            onClick={() => setBulkVaccinationOpen(true)}
+            variant="outline"
+            className="gap-2"
+          >
+            <Syringe className="h-4 w-4" />
+            {t("vaccine.bulkApply")} ({selectedIds.size})
+          </Button>
+        ) : null}
+        {can("sales", "create") ? (
+          <Button
+            onClick={() => setBulkSellOpen(true)}
+            variant="default"
+            className="gap-2"
+          >
+            <DollarSign className="h-4 w-4" />
+            {t("animals.bulkSell")} ({selectedIds.size})
+          </Button>
+        ) : null}
+      </div>
+    ) : null;
+
+  const filterControls = (
+    <>
+      <div className="relative min-w-48 flex-1">
+        <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder={t("animals.searchPlaceholder")}
+          className="ps-9"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+      </div>
+      <Select value={filterActive} onValueChange={setFilterActive}>
+        <SelectTrigger className="w-32">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t("common.all")}</SelectItem>
+          <SelectItem value="active">{t("common.active")}</SelectItem>
+          <SelectItem value="inactive">{t("animals.exited")}</SelectItem>
+        </SelectContent>
+      </Select>
+      <Select value={filterSpecies} onValueChange={setFilterSpecies}>
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder={t("common.species")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t("animals.allSpecies")}</SelectItem>
+          {(species ?? []).map((item: any) => (
+            <SelectItem key={item.id} value={String(item.id)}>
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder={t("common.status")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t("animals.allStatuses")}</SelectItem>
+          {(statuses ?? []).map((item: any) => (
+            <SelectItem key={item.id} value={String(item.id)}>
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={filterOwner} onValueChange={setFilterOwner}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder={t("owners.owner")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
+          {(ownersList ?? []).map((item: any) => (
+            <SelectItem key={item.id} value={String(item.id)}>
+              {item.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={filterAcquisitionType}
+        onValueChange={setFilterAcquisitionType}
+      >
+        <SelectTrigger className="w-36">
+          <SelectValue placeholder={t("animals.acquisitionType")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">{t("animals.allTypes")}</SelectItem>
+          <SelectItem value="purchased">{t("common.purchased")}</SelectItem>
+          <SelectItem value="born">{t("animals.bornOnFarm")}</SelectItem>
+        </SelectContent>
+      </Select>
+    </>
+  );
+
+  const formatDaysOnFarm = (row: any) => {
+    const acquisitionDate = new Date(row.animal.acquisitionDate);
+    const endDate = row.animal.exitDate
+      ? new Date(row.animal.exitDate)
+      : new Date();
+    if (
+      Number.isNaN(acquisitionDate.getTime()) ||
+      Number.isNaN(endDate.getTime())
+    ) {
+      return "—";
+    }
+    return Math.max(
+      0,
+      Math.floor((endDate.getTime() - acquisitionDate.getTime()) / 86_400_000)
+    );
+  };
+
+  const currentContent = (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -991,91 +1701,15 @@ export default function Animals() {
             {filtered.length} animals · All lifecycle stages
           </p>
         </div>
-        {canCreate && <AddAnimalDialog onSuccess={refetch} />}
+        {headerAction}
       </div>
 
       {/* Filters */}
       <Card>
         <CardContent className="pt-4 pb-4">
-          <div className="flex flex-wrap gap-3 items-center">
-            <div className="relative flex-1 min-w-48">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t("animals.searchPlaceholder")}
-                className="pl-9"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <Select value={filterActive} onValueChange={setFilterActive}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="active">{t("common.active")}</SelectItem>
-                <SelectItem value="inactive">{t("animals.exited")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterSpecies} onValueChange={setFilterSpecies}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder={t("common.species")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("animals.allSpecies")}</SelectItem>
-                {(species ?? []).map((s: any) => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder={t("common.status")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("animals.allStatuses")}</SelectItem>
-                {(statuses ?? []).map((s: any) => (
-                  <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterOwner} onValueChange={setFilterOwner}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder={t("owners.owner")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
-                {(ownersList ?? []).map((o: any) => (
-                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterAcquisitionType} onValueChange={setFilterAcquisitionType}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder={t("animals.acquisitionType")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("animals.allTypes")}</SelectItem>
-                <SelectItem value="purchased">{t("common.purchased")}</SelectItem>
-                <SelectItem value="born">{t("animals.bornOnFarm")}</SelectItem>
-              </SelectContent>
-            </Select>
-            {canSelect && selectedIds.size > 0 && (
-              <div className="flex gap-2 ms-auto">
-                {canUpdate && <Button onClick={() => setBulkEditOpen(true)} variant="outline" className="gap-2">
-                  <Pencil className="h-4 w-4" />
-                  {t("animals.bulkEdit")} ({selectedIds.size})
-                </Button>}
-                {can("vaccinations", "create") && <Button onClick={() => setBulkVaccinationOpen(true)} variant="outline" className="gap-2">
-                  <Syringe className="h-4 w-4" />
-                  {t("vaccine.bulkApply")} ({selectedIds.size})
-                </Button>}
-                {can("sales", "create") && <Button onClick={() => setBulkSellOpen(true)} variant="default" className="gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  {t("animals.bulkSell")} ({selectedIds.size})
-                </Button>}
-              </div>
-            )}
+          <div className="flex flex-wrap items-center gap-3">
+            {filterControls}
+            {bulkActions}
           </div>
         </CardContent>
       </Card>
@@ -1085,20 +1719,24 @@ export default function Animals() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-6 space-y-3">
-              {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+              {[...Array(6)].map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    {canSelect && <TableHead className="w-10">
-                      <Checkbox
-                        checked={allSelected}
-                        onCheckedChange={toggleAll}
-                        aria-label="Select all"
-                      />
-                    </TableHead>}
+                    {canSelect && (
+                      <TableHead className="w-10">
+                        <Checkbox
+                          checked={allSelected}
+                          onCheckedChange={toggleAll}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
+                    )}
                     <SortableHead k="id">{t("animals.animalId")}</SortableHead>
                     <TableHead>{t("common.species")}</TableHead>
                     <TableHead>{t("common.category")}</TableHead>
@@ -1107,122 +1745,195 @@ export default function Animals() {
                     <TableHead>{t("common.sex")}</TableHead>
                     <TableHead>{t("common.status")}</TableHead>
                     <TableHead>{t("animals.acquisitionType")}</TableHead>
-                    <SortableHead k="birthDate">{t("animals.birthDate")}</SortableHead>
+                    <SortableHead k="birthDate">
+                      {t("animals.birthDate")}
+                    </SortableHead>
                     <SortableHead k="age">{t("animals.age")}</SortableHead>
-                    <SortableHead k="acquisitionDate">{t("animals.acquisitionDate")}</SortableHead>
-                    <SortableHead k="cost">{t("animals.purchaseCost")}</SortableHead>
+                    <SortableHead k="acquisitionDate">
+                      {t("animals.acquisitionDate")}
+                    </SortableHead>
+                    <SortableHead k="cost">
+                      {t("animals.purchaseCost")}
+                    </SortableHead>
                     <TableHead>{t("vaccine.nextVaccine")}</TableHead>
                     <TableHead>{t("vaccine.boosterDue")}</TableHead>
                     <TableHead>{t("animals.daysOnFarm")}</TableHead>
-                    <TableHead className="text-right">{t("common.actions")}</TableHead>
+                    <TableHead className="text-right">
+                      {t("common.actions")}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sorted.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={17} className="text-center py-12 text-muted-foreground">
+                      <TableCell
+                        colSpan={17}
+                        className="text-center py-12 text-muted-foreground"
+                      >
                         {t("animals.noAnimalsFound")}
                       </TableCell>
                     </TableRow>
                   ) : (
                     sorted.map((a: any) => {
                       const acqDate = new Date(a.animal.acquisitionDate);
-                      const exitDate = a.animal.exitDate ? new Date(a.animal.exitDate) : new Date();
-                      const days = Math.floor((exitDate.getTime() - acqDate.getTime()) / (1000 * 60 * 60 * 24));
+                      const exitDate = a.animal.exitDate
+                        ? new Date(a.animal.exitDate)
+                        : new Date();
+                      const days = Math.floor(
+                        (exitDate.getTime() - acqDate.getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      );
                       const isSelected = selectedIds.has(a.animal.id);
                       return (
-                        <TableRow key={a.animal.id} className={`cursor-pointer hover:bg-muted/40 ${isSelected ? "bg-primary/5" : ""}`} onClick={() => setLocation(`/animals/${a.animal.id}`)}>
-                          {canSelect && <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => toggleOne(a.animal.id)}
-                              aria-label={`Select ${a.animal.animalId}`}
-                            />
-                          </TableCell>}
+                        <TableRow
+                          key={a.animal.id}
+                          className={`cursor-pointer hover:bg-muted/40 ${isSelected ? "bg-primary/5" : ""}`}
+                          onClick={() => setLocation(`/animals/${a.animal.id}`)}
+                        >
+                          {canSelect && (
+                            <TableCell onClick={e => e.stopPropagation()}>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => toggleOne(a.animal.id)}
+                                aria-label={`Select ${a.animal.animalId}`}
+                              />
+                            </TableCell>
+                          )}
                           <TableCell className="font-mono font-semibold text-primary">
                             <span className="inline-flex items-center gap-1.5">
-                              {a.animal.photoUrl && <span title="Has photo" className="text-xs">📷</span>}
+                              {a.animal.photoUrl && (
+                                <span title="Has photo" className="text-xs">
+                                  📷
+                                </span>
+                              )}
                               {a.animal.animalId}
                             </span>
                           </TableCell>
                           <TableCell>{a.speciesName}</TableCell>
                           <TableCell>{a.categoryName}</TableCell>
                           <TableCell>{a.groupName}</TableCell>
-                          <TableCell className="text-sm">{a.ownerName ?? <span className="text-muted-foreground">—</span>}</TableCell>
-                          <TableCell className="capitalize">{a.animal.sex}</TableCell>
-                          <TableCell><StatusBadge status={a.statusName ?? ""} /></TableCell>
-                          <TableCell className="capitalize text-sm">{a.animal.acquisitionType}</TableCell>
+                          <TableCell className="text-sm">
+                            {a.ownerName ?? (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="capitalize">
+                            {a.animal.sex}
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={a.statusName ?? ""} />
+                          </TableCell>
+                          <TableCell className="capitalize text-sm">
+                            {a.animal.acquisitionType}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {a.animal.birthDate ? new Date(a.animal.birthDate).toLocaleDateString() : "—"}
+                            {a.animal.birthDate
+                              ? new Date(
+                                  a.animal.birthDate
+                                ).toLocaleDateString()
+                              : "—"}
                           </TableCell>
-                          <TableCell className="text-sm">{formatAge(a.animal.birthDate)}</TableCell>
+                          <TableCell className="text-sm">
+                            {formatAge(a.animal.birthDate)}
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {new Date(a.animal.acquisitionDate).toLocaleDateString()}
+                            {new Date(
+                              a.animal.acquisitionDate
+                            ).toLocaleDateString()}
                           </TableCell>
                           <TableCell className="text-sm">
-                            {a.animal.purchaseCost && parseFloat(a.animal.purchaseCost) > 0
-                              ? parseFloat(a.animal.purchaseCost).toLocaleString("en-EG", { minimumFractionDigits: 2 })
-                              : <span className="text-muted-foreground">—</span>}
+                            {a.animal.purchaseCost &&
+                            parseFloat(a.animal.purchaseCost) > 0 ? (
+                              parseFloat(a.animal.purchaseCost).toLocaleString(
+                                "en-EG",
+                                { minimumFractionDigits: 2 }
+                              )
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-sm">
-                            <VaccineDueCell date={a.nextVaccineDate} name={a.nextVaccineName} />
+                            <VaccineDueCell
+                              date={a.nextVaccineDate}
+                              name={a.nextVaccineName}
+                            />
                           </TableCell>
                           <TableCell className="text-sm">
-                            <VaccineDueCell date={a.nextBoosterDate} name={a.nextBoosterName} />
+                            <VaccineDueCell
+                              date={a.nextBoosterDate}
+                              name={a.nextBoosterName}
+                            />
                           </TableCell>
                           <TableCell>{days}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
                               {canUpdate && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                title={t("common.edit")}
-                                onClick={(e) => { e.stopPropagation(); setEditAnimalId(a.animal.id); setEditOpen(true); }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title={t("common.edit")}
+                                  onClick={e => {
+                                    e.stopPropagation();
+                                    setEditAnimalId(a.animal.id);
+                                    setEditOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
                               )}
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={(e) => { e.stopPropagation(); setLocation(`/animals/${a.animal.id}`); }}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setLocation(`/animals/${a.animal.id}`);
+                                }}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
                               {canDelete && (
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:bg-destructive/10"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle className="flex items-center gap-2">
-                                      <AlertTriangle className="h-5 w-5 text-destructive" />
-                                      {t("animals.deleteAnimal")}
-                                    </AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Move <strong>{a.animal.animalId}</strong> and all related records to the Recycle Bin? You can restore it anytime.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-destructive hover:bg-destructive/90"
-                                      onClick={(e) => { e.stopPropagation(); deleteAnimalMutation.mutate({ id: a.animal.id }); }}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-destructive hover:bg-destructive/10"
+                                      onClick={e => e.stopPropagation()}
                                     >
-                                      {t("common.moveToBin")}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle className="flex items-center gap-2">
+                                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                                        {t("animals.deleteAnimal")}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Move{" "}
+                                        <strong>{a.animal.animalId}</strong> and
+                                        all related records to the Recycle Bin?
+                                        You can restore it anytime.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>
+                                        {t("common.cancel")}
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        className="bg-destructive hover:bg-destructive/90"
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          deleteAnimalMutation.mutate({
+                                            id: a.animal.id,
+                                          });
+                                        }}
+                                      >
+                                        {t("common.moveToBin")}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </div>
                           </TableCell>
@@ -1236,28 +1947,83 @@ export default function Animals() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
 
+  return (
+    <>
+      {designVersion === "simple" ? (
+        <SimpleAnimals
+          rows={pageRows}
+          loading={isLoading}
+          total={sorted.length}
+          page={page}
+          pageSize={PAGE_SIZE}
+          onPageChange={setPage}
+          sortKey={sortBy}
+          sortDirection={sortDir}
+          onSort={(key, direction) => {
+            setSortBy(key as SortKey);
+            setSortDir(direction);
+          }}
+          filters={filterControls}
+          headerAction={headerAction}
+          bulkActions={bulkActions}
+          canSelect={canSelect}
+          selectedIds={selectedIds}
+          onToggleOne={toggleOne}
+          allPageSelected={allPageSelected}
+          onTogglePage={togglePage}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
+          onView={id => setLocation(`/animals/${id}`)}
+          onEdit={id => {
+            setEditAnimalId(id);
+            setEditOpen(true);
+          }}
+          onDelete={id => deleteAnimalMutation.mutate({ id })}
+          formatAge={formatAge}
+          formatDaysOnFarm={formatDaysOnFarm}
+        />
+      ) : (
+        currentContent
+      )}
       <BulkEditDialog
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
         selectedAnimals={selectedAnimals}
-        onSuccess={() => { setSelectedIds(new Set()); refetch(); }}
+        onSuccess={() => {
+          setSelectedIds(new Set());
+          refetch();
+        }}
       />
 
       <BulkSellDialog
         open={bulkSellOpen}
         onOpenChange={setBulkSellOpen}
         selectedAnimals={selectedAnimals}
-        onSuccess={() => { setSelectedIds(new Set()); refetch(); }}
+        onSuccess={() => {
+          setSelectedIds(new Set());
+          refetch();
+        }}
       />
 
-      {bulkVaccinationOpen && <BulkVaccinationDialogContent selectedAnimals={selectedAnimals} onClose={() => setBulkVaccinationOpen(false)} onSuccess={() => { setSelectedIds(new Set()); refetch(); }} />}
+      {bulkVaccinationOpen && (
+        <BulkVaccinationDialogContent
+          selectedAnimals={selectedAnimals}
+          onClose={() => setBulkVaccinationOpen(false)}
+          onSuccess={() => {
+            setSelectedIds(new Set());
+            refetch();
+          }}
+        />
+      )}
 
       <EditAnimalDialog
         animalId={editAnimalId}
         open={editOpen}
         onOpenChange={handleEditClose}
       />
-    </div>
+    </>
   );
 }

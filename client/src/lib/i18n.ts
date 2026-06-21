@@ -31,13 +31,13 @@ const en = {
       livestock: "Livestock",
       operations: "Operations",
       finance: "Finance",
-      system: "System"
-    }
+      system: "System",
+    },
   },
 
   auth: {
     signIn: "Sign in to continue",
-    signOut: "Sign out"
+    signOut: "Sign out",
   },
 
   farmMap: {
@@ -64,7 +64,7 @@ const en = {
     imageTooLarge: "Image too large (max 8MB)",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
-    resetZoom: "Reset zoom"
+    resetZoom: "Reset zoom",
   },
 
   // Common
@@ -156,7 +156,11 @@ const en = {
     remove: "Remove",
     saving: "Saving...",
     clearSelection: "Clear selection",
-
+    previous: "Previous",
+    next: "Next",
+    pageOf: "Page {{page}} of {{total}}",
+    sortBy: "Sort by {{field}}",
+    columns: "Columns",
   },
 
   // Dashboard
@@ -181,6 +185,9 @@ const en = {
     applyCustomRange: "Apply Custom Range",
     dateRange: "Date Range",
     from: "From",
+    thisMonth: "This Month",
+    thisQuarter: "This Quarter",
+    thisYear: "This Year",
     netPnLForPeriod: "Net P&L for period",
     reorderLevel: "Reorder Level",
     costHeadDay: "Cost / Head / Day",
@@ -189,7 +196,10 @@ const en = {
     headsDays: "{{heads}} heads · {{days}} days",
     outstandingReceivables: "Outstanding Receivables",
     cashReceived: "Cash Received",
-
+    attention: "Attention",
+    quickActions: "Quick actions",
+    noUrgentWork: "No urgent work",
+    noUrgentWorkDescription: "Feed and vaccination checks are currently clear.",
   },
 
   // Animals
@@ -199,8 +209,10 @@ const en = {
     animalId: "Animal ID",
     animalIdNumber: "Animal ID Number (Optional)",
     animalIdNumberPlaceholder: "Example: 00123",
-    animalIdNumberHint: "The selected category prefix is added automatically. Leave blank to use the next sequence number.",
-    animalIdNumberEditHint: "Change the number or category; the category prefix is always applied automatically.",
+    animalIdNumberHint:
+      "The selected category prefix is added automatically. Leave blank to use the next sequence number.",
+    animalIdNumberEditHint:
+      "Change the number or category; the category prefix is always applied automatically.",
     birthDate: "Birth Date",
     acquisitionDate: "Acquisition Date",
     acquisitionType: "Acquisition Type",
@@ -238,7 +250,14 @@ const en = {
     allTypes: "All Types",
     bornOnFarm: "Born on Farm",
     exited: "Exited",
-    noAnimalsFound: "No animals found. Register the first animal to get started.",
+    noAnimalsFound:
+      "No animals found. Register the first animal to get started.",
+    filters: "Animal filters",
+    selectPage: "Select all animals on this page",
+    selectAnimal: "Select animal {{animalId}}",
+    latestWeight: "Latest weight",
+    deleteAnimalDescription:
+      "Move animal {{animalId}} to Recycle Bin? You can restore it later.",
     searchPlaceholder: "Search by ID, category, species...",
     movedToBin: "Animal moved to Recycle Bin",
     bulkSell: "Sell Selected",
@@ -246,7 +265,8 @@ const en = {
     exitReasonPlaceholder: "e.g. Sold to buyer X",
 
     bulkEdit: "Bulk Edit",
-    bulkEditHint: "Only the fields you change are applied. Leave fields untouched to keep their existing values.",
+    bulkEditHint:
+      "Only the fields you change are applied. Leave fields untouched to keep their existing values.",
     bulkEditKeep: "Keep current",
     bulkEditClear: "Clear (remove)",
     bulkEditNoFields: "No fields to change",
@@ -260,7 +280,6 @@ const en = {
     ageDaysSuffix: "d",
     ageMonthsSuffix: "m",
     ageYearsSuffix: "y",
-
   },
 
   // Breeding
@@ -283,13 +302,15 @@ const en = {
     birthMovedToBin: "Birth record moved to Recycle Bin",
     birthRecorded: "Birth recorded successfully",
     sexBirthTypeRequired: "Sex and birth type are required",
-    birthRequiredFields: "Species, lamb category, sex, and birth type are required",
+    birthRequiredFields:
+      "Species, lamb category, sex, and birth type are required",
     lambPromotedAs: "Lamb promoted as {{id}}",
     assignToGroup: "Assign to Group",
     lambCategory: "Lamb Category",
     selectLambCategory: "Select lamb category",
     deleteBirthRecord: "Delete Birth Record",
-    deleteBirthRecordDescription: "Move birth record {{id}} to the Recycle Bin? You can restore it anytime.",
+    deleteBirthRecordDescription:
+      "Move birth record {{id}} to the Recycle Bin? You can restore it anytime.",
     lambingLog: "Lambing Log",
     moveBirthRecord: "Move birth record",
     noBirthRecords: "No birth records yet. Record the first birth above.",
@@ -304,7 +325,7 @@ const en = {
     recordNewBirth: "Record New Birth",
     recording: "Recording…",
     recordsSummary: "{{total}} birth records · {{pending}} pending promotion",
-    valueUsed: "Value (EGP)"
+    valueUsed: "Value (EGP)",
   },
 
   // Fattening
@@ -330,7 +351,7 @@ const en = {
     animalUpdated: "Animal updated",
     weightAutoStaged: "Weight recorded — animal auto-staged to {{id}}",
     movedToBin: "Animal moved to Recycle Bin",
-    selectAnimal: "Select animal"
+    selectAnimal: "Select animal",
   },
 
   // Feed
@@ -339,7 +360,8 @@ const en = {
     rationPlans: "Ration Plans",
     stockLedger: "Stock Ledger",
     priceHistory: "Price History",
-    priceHistoryHint: "All recorded feed prices. Feed cost uses the price effective on each day — fix wrong entries here.",
+    priceHistoryHint:
+      "All recorded feed prices. Feed cost uses the price effective on each day — fix wrong entries here.",
     addPrice: "Add Price",
     editPrice: "Edit Price",
     pricePerUnit: "Price / Unit",
@@ -348,7 +370,8 @@ const en = {
     priceFieldsRequired: "Feed item, price and effective date are required",
     noPrices: "No prices recorded yet.",
     deletePrice: "Delete Price",
-    deletePriceConfirm: "Permanently delete the {{name}} price of EGP {{price}} effective {{date}}? This cannot be undone.",
+    deletePriceConfirm:
+      "Permanently delete the {{name}} price of EGP {{price}} effective {{date}}? This cannot be undone.",
     addPurchase: "Add Purchase",
     addRation: "Add Ration Plan",
     feedItem: "Feed Item",
@@ -375,13 +398,15 @@ const en = {
     lowStockAlerts: "Low Stock Alerts",
     inactive: "Inactive",
     moveRationPlanFor: "Move ration plan for",
-    noFeedItems: "No feed items configured. Add feed items in Configuration first.",
+    noFeedItems:
+      "No feed items configured. Add feed items in Configuration first.",
     noRationPlansConfigured: "No ration plans configured.",
     noStockEntries: "No stock entries yet.",
     qtyHeadDay: "Qty / Head / Day",
     selectFeedItem: "Select feed item",
     supplierName: "Supplier name",
-    catFeedQtyDateRequired: "Category, feed item, quantity and effective date are required",
+    catFeedQtyDateRequired:
+      "Category, feed item, quantity and effective date are required",
     feedItemQtyRequired: "Feed item and quantity are required",
     stockMovedToBin: "Feed stock entry moved to Recycle Bin",
     qtyRequired: "Quantity is required",
@@ -402,12 +427,15 @@ const en = {
     kgRemainingDays: "{{qty}} {{unit}} remaining ({{days}} days)",
     plansSelected: "plans selected",
     updateEffectiveDate: "Update Effective Date",
-    bulkDateHint: "Set a new effective date for {{count}} selected ration plan(s).",
+    bulkDateHint:
+      "Set a new effective date for {{count}} selected ration plan(s).",
     bulkDateUpdated: "{{count}} ration plan(s) updated",
     shrinkage: "Shrinkage",
     shrinkageMonthly: "Shrinkage by month",
-    shrinkageExplain: "Stock lost or wasted: the gap between expected stock (previous count + purchases − ration consumption) and the quantity actually counted.",
-    shrinkageNone: "No shrinkage yet — record a stock count for a feed item (with a prior purchase or earlier count) to measure it.",
+    shrinkageExplain:
+      "Stock lost or wasted: the gap between expected stock (previous count + purchases − ration consumption) and the quantity actually counted.",
+    shrinkageNone:
+      "No shrinkage yet — record a stock count for a feed item (with a prior purchase or earlier count) to measure it.",
     shrinkageDetail: "Detail by stock count",
     shrinkageQty: "Shrinkage (qty)",
     shrinkageValue: "Value (EGP)",
@@ -417,7 +445,6 @@ const en = {
     period: "Period",
     expected: "Expected",
     counted: "Counted",
-
   },
 
   // Expenses
@@ -457,7 +484,6 @@ const en = {
     searchVendor: "Search vendor...",
 
     herd: "Animal-wide (all active heads)",
-
   },
 
   // P&L
@@ -514,9 +540,10 @@ const en = {
     currentAccountValue: "Current Account Value",
     currentAccountValueSub: "Revenue + Capital − Operating Costs",
 
-    feedHintNoPlan: "Feed cost is 0 because this animal's category has no active ration plan. Add one under Feed Management.",
-    feedHintNoPrice: "Feed cost is 0 because one or more feed items in the ration plan have no price set. Set prices under Configuration → Feed Items.",
-
+    feedHintNoPlan:
+      "Feed cost is 0 because this animal's category has no active ration plan. Add one under Feed Management.",
+    feedHintNoPrice:
+      "Feed cost is 0 because one or more feed items in the ration plan have no price set. Set prices under Configuration → Feed Items.",
   },
 
   // Sales
@@ -556,7 +583,6 @@ const en = {
     currentOutstanding: "Current Outstanding",
     newOutstanding: "New Outstanding",
     paymentExceedsOutstanding: "Payment exceeds outstanding balance",
-
   },
 
   // Income Statement
@@ -598,7 +624,6 @@ const en = {
     overMonths: "over {{months}} months",
 
     totalExpenses: "Total Expenses",
-
   },
 
   // Configuration
@@ -642,7 +667,8 @@ const en = {
     statusLabel: "Status",
     statusesLabel: "Statuses",
     unit: "Unit",
-    farmNameHint: "Used in report headers, PDF exports, and the dashboard title.",
+    farmNameHint:
+      "Used in report headers, PDF exports, and the dashboard title.",
     selectTargetCategory: "Select target category",
     editAnimalStatus: "Edit Animal Status",
     editBirthType: "Edit Birth Type",
@@ -652,14 +678,15 @@ const en = {
     editGroupPen: "Edit Group / Pen",
     editSpecies: "Edit Species",
     pricePerUnit: "Price / Unit",
-    priceNeededForFeedCost: "Required so feed cost can be calculated from ration plans.",
+    priceNeededForFeedCost:
+      "Required so feed cost can be calculated from ration plans.",
     noPriceSet: "No price set",
     setPrice: "Set Price",
     priceUpdated: "Price updated",
-    priceEffectiveToday: "Effective from today. Past feed costs use the earliest recorded price.",
+    priceEffectiveToday:
+      "Effective from today. Past feed costs use the earliest recorded price.",
 
     noneDisableAutoStage: "None (disable auto-stage)",
-
   },
 
   // Notifications
@@ -672,7 +699,7 @@ const en = {
     targetWeightReached: "Target Weight Reached",
     negativePnL: "Negative P&L Alert",
     highCostPerDay: "High Cost/Day Alert",
-    newBirth: "New Birth Recorded"
+    newBirth: "New Birth Recorded",
   },
 
   // User Management
@@ -693,12 +720,13 @@ const en = {
     joined: "Joined",
     noUsers: "No users found.",
     roleUpdated: "User role updated",
-    viewerCannotModify: "Viewers cannot modify data"
+    viewerCannotModify: "Viewers cannot modify data",
   },
 
   permissions: {
     title: "Role Permissions",
-    subtitle: "Choose which pages each role can see and which actions it can perform.",
+    subtitle:
+      "Choose which pages each role can see and which actions it can perform.",
     usersTab: "Users",
     rolesTab: "Role Permissions",
     page: "Page",
@@ -709,7 +737,8 @@ const en = {
     resetConfirm: "Reset this role to the default permissions?",
     unsavedConfirm: "Discard unsaved permission changes?",
     accessDenied: "Access denied",
-    accessDeniedDescription: "Your role does not have permission to view this page.",
+    accessDeniedDescription:
+      "Your role does not have permission to view this page.",
     backToDashboard: "Go to an available page",
     actionLabels: {
       view: "View",
@@ -720,7 +749,7 @@ const en = {
       report: "Download report",
       import: "Import",
       restore: "Restore",
-      purge: "Purge"
+      purge: "Purge",
     },
     pages: {
       dashboard: "Dashboard",
@@ -739,8 +768,8 @@ const en = {
       configuration: "Configuration",
       farmMap: "Farm Map",
       data: "Data Management",
-      recycleBin: "Recycle Bin"
-    }
+      recycleBin: "Recycle Bin",
+    },
   },
 
   // Audit Log
@@ -761,22 +790,29 @@ const en = {
     noEntries: "No audit entries yet.",
     noMatch: "No entries match your filters.",
     ipAddress: "IP Address",
-    entriesCount: "{{count}} entries"
+    entriesCount: "{{count}} entries",
   },
 
   // Data Management
   data: {
     title: "Data Management",
-    subtitle: "Import data from Excel, create full backups, or restore from a backup file.",
+    subtitle:
+      "Import data from Excel, create full backups, or restore from a backup file.",
     importTitle: "Import from Excel",
-    importDesc: "Upload an LFMS Excel file and choose whether to append missing records or replace the full system from a canonical export.",
+    importDesc:
+      "Upload an LFMS Excel file and choose whether to append missing records or replace the full system from a canonical export.",
     appendMode: "Append missing records",
-    appendModeDesc: "Keeps current data, inserts missing records, skips identical records, and aborts on conflicts.",
-    appendModeDescExcel: "Canonical Excel inserts missing records and skips identical records. Manual templates append new rows, skip existing animal codes, and may duplicate other prior manual imports.",
+    appendModeDesc:
+      "Keeps current data, inserts missing records, skips identical records, and aborts on conflicts.",
+    appendModeDescExcel:
+      "Canonical Excel inserts missing records and skips identical records. Manual templates append new rows, skip existing animal codes, and may duplicate other prior manual imports.",
     replaceMode: "Replace entire system",
-    replaceModeDesc: "Deletes all current tables and restores the uploaded complete snapshot. Requires canonical Excel or complete JSON.",
-    appendConfirm: "Append missing records from this file? Existing identical records will be skipped and conflicts will abort the import.",
-    replaceConfirm: "DANGER: Replace will delete all current system data and restore the uploaded complete snapshot. Continue?",
+    replaceModeDesc:
+      "Deletes all current tables and restores the uploaded complete snapshot. Requires canonical Excel or complete JSON.",
+    appendConfirm:
+      "Append missing records from this file? Existing identical records will be skipped and conflicts will abort the import.",
+    replaceConfirm:
+      "DANGER: Replace will delete all current system data and restore the uploaded complete snapshot. Continue?",
     chooseExcel: "Choose Excel file",
     importing: "Importing…",
     importResults: "Import results:",
@@ -785,19 +821,22 @@ const en = {
     errors: "errors",
     showErrors: "Show errors",
     backupTitle: "Download Full Backup",
-    backupDesc: "Save a complete versioned JSON snapshot containing every table, field, relationship, user, setting, audit entry, notification, and soft-deleted record.",
+    backupDesc:
+      "Save a complete versioned JSON snapshot containing every table, field, relationship, user, setting, audit entry, notification, and soft-deleted record.",
     recordsExported: "records exported",
     downloadBackup: "Download backup (JSON)",
     generating: "Generating…",
     restoreTitle: "Restore from Backup",
-    restoreDesc: "Upload a complete versioned JSON backup and choose Append or Replace.",
+    restoreDesc:
+      "Upload a complete versioned JSON backup and choose Append or Replace.",
     chooseBackup: "Choose backup file",
     restoring: "Restoring…",
     restoreResults: "Restore results:",
     restored: "restored",
     restoreConfirm: "Restore this backup?",
     exportTitle: "Export to Excel",
-    exportDesc: "Download reports plus versioned canonical sheets containing every database table, field, relationship, and soft-deleted record."
+    exportDesc:
+      "Download reports plus versioned canonical sheets containing every database table, field, relationship, and soft-deleted record.",
   },
   animalProfile: {
     animalDetails: "Animal Details",
@@ -838,13 +877,14 @@ const en = {
 
     weightDeleted: "Weight entry deleted",
     deleteWeightTitle: "Delete weight entry?",
-    deleteWeightConfirm: "Delete the {{weight}} kg entry from {{date}}? This cannot be undone from here.",
-
+    deleteWeightConfirm:
+      "Delete the {{weight}} kg entry from {{date}}? This cannot be undone from here.",
   },
   recycleBin: {
     title: "Recycle Bin",
     empty: "Recycle bin is empty",
-    emptyHint: "Deleted items will appear here and can be restored at any time.",
+    emptyHint:
+      "Deleted items will appear here and can be restored at any time.",
     emptyBin: "Empty Bin",
     emptyRecycleBin: "Empty Recycle Bin",
     restore: "Restore",
@@ -856,7 +896,7 @@ const en = {
     restored: "restored",
     permanentlyDeleted: "permanently deleted",
     emptiedPermanently: "Recycle bin emptied permanently",
-    deleteAllRecords: "permanently delete all {{count}} records"
+    deleteAllRecords: "permanently delete all {{count}} records",
   },
 
   // Vaccines
@@ -873,7 +913,8 @@ const en = {
     addVaccine: "Add Vaccine",
     editVaccine: "Edit Vaccine",
     deleteVaccine: "Delete Vaccine",
-    deleteVaccineConfirm: "Delete vaccine {{name}}? This will affect all vaccination records.",
+    deleteVaccineConfirm:
+      "Delete vaccine {{name}}? This will affect all vaccination records.",
     noVaccines: "No vaccines configured yet.",
     vaccinationDate: "Vaccination Date",
     nextDueDate: "Next Due Date",
@@ -891,7 +932,8 @@ const en = {
     addVaccination: "Add Vaccination",
     editVaccination: "Edit Vaccination",
     deleteVaccination: "Delete Vaccination",
-    deleteVaccinationConfirm: "Delete vaccination record for {{animal}} - {{vaccine}}?",
+    deleteVaccinationConfirm:
+      "Delete vaccination record for {{animal}} - {{vaccine}}?",
     noVaccinations: "No vaccination records found.",
     vaccineSaved: "Vaccine saved",
     vaccineDeleted: "Vaccine deleted",
@@ -909,8 +951,8 @@ const en = {
     notifyBeforeHint: "How many days ahead to alert before the due date.",
 
     boosterIntervalHint: "Days after the dose when the booster is due.",
-    boosterIntervalRequired: "Booster interval (days) is required when booster is required.",
-
+    boosterIntervalRequired:
+      "Booster interval (days) is required when booster is required.",
   },
 
   owners: {
@@ -930,8 +972,8 @@ const en = {
     title: "Page Not Found",
     message: "Sorry, the page you are looking for doesn't exist.",
     hint: "It may have been moved or deleted.",
-    goHome: "Go Home"
-  }
+    goHome: "Go Home",
+  },
 };
 
 const ar = {
@@ -961,13 +1003,13 @@ const ar = {
       livestock: "المواشي",
       operations: "العمليات",
       finance: "المالية",
-      system: "النظام"
-    }
+      system: "النظام",
+    },
   },
 
   auth: {
     signIn: "تسجيل الدخول للمتابعة",
-    signOut: "تسجيل الخروج"
+    signOut: "تسجيل الخروج",
   },
 
   farmMap: {
@@ -994,7 +1036,7 @@ const ar = {
     imageTooLarge: "الصورة كبيرة جدًا (الحد 8 ميجابايت)",
     zoomIn: "تكبير",
     zoomOut: "تصغير",
-    resetZoom: "إعادة ضبط التكبير"
+    resetZoom: "إعادة ضبط التكبير",
   },
 
   common: {
@@ -1085,7 +1127,11 @@ const ar = {
     remove: "إزالة",
     saving: "جارٍ الحفظ...",
     clearSelection: "إلغاء التحديد",
-
+    previous: "السابق",
+    next: "التالي",
+    pageOf: "الصفحة {{page}} من {{total}}",
+    sortBy: "ترتيب حسب {{field}}",
+    columns: "الأعمدة",
   },
 
   dashboard: {
@@ -1109,6 +1155,9 @@ const ar = {
     applyCustomRange: "تطبيق النطاق المخصص",
     dateRange: "النطاق الزمني",
     from: "من",
+    thisMonth: "هذا الشهر",
+    thisQuarter: "هذا الربع",
+    thisYear: "هذه السنة",
     netPnLForPeriod: "صافي الربح/الخسارة للفترة",
     reorderLevel: "حد إعادة الطلب",
     costHeadDay: "التكلفة / رأس / يوم",
@@ -1117,7 +1166,10 @@ const ar = {
     headsDays: "{{heads}} رأس · {{days}} يوم",
     outstandingReceivables: "مستحقات غير محصلة",
     cashReceived: "النقد المُستلم",
-
+    attention: "يتطلب الانتباه",
+    quickActions: "إجراءات سريعة",
+    noUrgentWork: "لا توجد مهام عاجلة",
+    noUrgentWorkDescription: "فحوصات الأعلاف والتحصينات مستقرة حالياً.",
   },
 
   animals: {
@@ -1126,8 +1178,10 @@ const ar = {
     animalId: "رقم الحيوان",
     animalIdNumber: "رقم معرّف الحيوان (اختياري)",
     animalIdNumberPlaceholder: "مثال: 00123",
-    animalIdNumberHint: "تُضاف بادئة الفئة المحددة تلقائيًا. اترك الرقم فارغًا لاستخدام الرقم التسلسلي التالي.",
-    animalIdNumberEditHint: "غيّر الرقم أو الفئة؛ تتم إضافة بادئة الفئة تلقائيًا دائمًا.",
+    animalIdNumberHint:
+      "تُضاف بادئة الفئة المحددة تلقائيًا. اترك الرقم فارغًا لاستخدام الرقم التسلسلي التالي.",
+    animalIdNumberEditHint:
+      "غيّر الرقم أو الفئة؛ تتم إضافة بادئة الفئة تلقائيًا دائمًا.",
     birthDate: "تاريخ الميلاد",
     acquisitionDate: "تاريخ الاستحواذ",
     acquisitionType: "نوع الاستحواذ",
@@ -1166,6 +1220,12 @@ const ar = {
     bornOnFarm: "مولود في المزرعة",
     exited: "خرج",
     noAnimalsFound: "لا توجد حيوانات. سجّل أول حيوان للبدء.",
+    filters: "فلاتر الحيوانات",
+    selectPage: "تحديد جميع الحيوانات في هذه الصفحة",
+    selectAnimal: "تحديد الحيوان {{animalId}}",
+    latestWeight: "أحدث وزن",
+    deleteAnimalDescription:
+      "نقل الحيوان {{animalId}} إلى سلة المحذوفات؟ يمكنك استعادته لاحقاً.",
     searchPlaceholder: "ابحث بالمعرّف أو الفئة أو النوع...",
     movedToBin: "تم نقل الحيوان إلى سلة المحذوفات",
     bulkSell: "بيع المحدد",
@@ -1173,7 +1233,8 @@ const ar = {
     exitReasonPlaceholder: "مثل: بيع للمشتري س",
 
     bulkEdit: "تعديل جماعي",
-    bulkEditHint: "يتم تطبيق الحقول التي تغيّرها فقط. اترك الحقول كما هي للإبقاء على قيمها الحالية.",
+    bulkEditHint:
+      "يتم تطبيق الحقول التي تغيّرها فقط. اترك الحقول كما هي للإبقاء على قيمها الحالية.",
     bulkEditKeep: "إبقاء الحالي",
     bulkEditClear: "مسح (إزالة)",
     bulkEditNoFields: "لا توجد حقول لتغييرها",
@@ -1187,7 +1248,6 @@ const ar = {
     ageDaysSuffix: " يوم",
     ageMonthsSuffix: " شهر",
     ageYearsSuffix: " سنة",
-
   },
 
   breeding: {
@@ -1215,7 +1275,8 @@ const ar = {
     lambCategory: "فئة الحمل",
     selectLambCategory: "اختر فئة الحمل",
     deleteBirthRecord: "حذف سجل الولادة",
-    deleteBirthRecordDescription: "نقل سجل الولادة {{id}} إلى سلة المحذوفات؟ يمكنك استعادته في أي وقت.",
+    deleteBirthRecordDescription:
+      "نقل سجل الولادة {{id}} إلى سلة المحذوفات؟ يمكنك استعادته في أي وقت.",
     lambingLog: "سجل الولادات",
     moveBirthRecord: "نقل سجل الولادة",
     noBirthRecords: "لا توجد سجلات ولادة بعد. سجّل أول ولادة أعلاه.",
@@ -1230,7 +1291,7 @@ const ar = {
     recordNewBirth: "تسجيل ولادة جديدة",
     recording: "جارٍ التسجيل…",
     recordsSummary: "{{total}} سجل ولادة · {{pending}} بانتظار الترقية",
-    valueUsed: "القيمة (جنيه)"
+    valueUsed: "القيمة (جنيه)",
   },
 
   fattening: {
@@ -1253,9 +1314,10 @@ const ar = {
     animal: "الحيوان",
     weightRecorded: "تم تسجيل الوزن",
     animalUpdated: "تم تحديث الحيوان",
-    weightAutoStaged: "تم تسجيل الوزن — تمت الترقية التلقائية للحيوان إلى {{id}}",
+    weightAutoStaged:
+      "تم تسجيل الوزن — تمت الترقية التلقائية للحيوان إلى {{id}}",
     movedToBin: "تم نقل الحيوان إلى سلة المحذوفات",
-    selectAnimal: "اختر الحيوان"
+    selectAnimal: "اختر الحيوان",
   },
 
   feed: {
@@ -1263,7 +1325,8 @@ const ar = {
     rationPlans: "خطط التغذية",
     stockLedger: "دفتر المخزون",
     priceHistory: "سجل الأسعار",
-    priceHistoryHint: "جميع أسعار العلف المسجلة. تُحسب تكلفة العلف بسعر اليوم الساري — صحّح القيود الخاطئة هنا.",
+    priceHistoryHint:
+      "جميع أسعار العلف المسجلة. تُحسب تكلفة العلف بسعر اليوم الساري — صحّح القيود الخاطئة هنا.",
     addPrice: "إضافة سعر",
     editPrice: "تعديل السعر",
     pricePerUnit: "السعر / الوحدة",
@@ -1272,7 +1335,8 @@ const ar = {
     priceFieldsRequired: "صنف العلف والسعر وتاريخ السريان مطلوبة",
     noPrices: "لا توجد أسعار مسجلة بعد.",
     deletePrice: "حذف السعر",
-    deletePriceConfirm: "حذف سعر {{name}} البالغ {{price}} ج.م الساري في {{date}} نهائيًا؟ لا يمكن التراجع.",
+    deletePriceConfirm:
+      "حذف سعر {{name}} البالغ {{price}} ج.م الساري في {{date}} نهائيًا؟ لا يمكن التراجع.",
     addPurchase: "إضافة مشتريات",
     addRation: "إضافة خطة تغذية",
     feedItem: "صنف العلف",
@@ -1330,8 +1394,10 @@ const ar = {
     bulkDateUpdated: "تم تحديث {{count}} خطة تغذية",
     shrinkage: "الهالك",
     shrinkageMonthly: "الهالك حسب الشهر",
-    shrinkageExplain: "المخزون المفقود أو المهدر: الفرق بين المخزون المتوقع (الجرد السابق + المشتريات − استهلاك العليقة) والكمية المجرودة فعليًا.",
-    shrinkageNone: "لا يوجد هالك بعد — سجّل جردًا لصنف العلف (مع شراء سابق أو جرد أقدم) لقياسه.",
+    shrinkageExplain:
+      "المخزون المفقود أو المهدر: الفرق بين المخزون المتوقع (الجرد السابق + المشتريات − استهلاك العليقة) والكمية المجرودة فعليًا.",
+    shrinkageNone:
+      "لا يوجد هالك بعد — سجّل جردًا لصنف العلف (مع شراء سابق أو جرد أقدم) لقياسه.",
     shrinkageDetail: "التفصيل حسب الجرد",
     shrinkageQty: "الهالك (كمية)",
     shrinkageValue: "القيمة (ج.م)",
@@ -1356,7 +1422,8 @@ const ar = {
     addVaccine: "إضافة لقاح",
     editVaccine: "تعديل اللقاح",
     deleteVaccine: "حذف اللقاح",
-    deleteVaccineConfirm: "حذف اللقاح {{name}}؟ سيؤثر هذا على جميع سجلات التطعيم.",
+    deleteVaccineConfirm:
+      "حذف اللقاح {{name}}؟ سيؤثر هذا على جميع سجلات التطعيم.",
     noVaccines: "لم يتم تكوين أي لقاحات بعد.",
     vaccinationDate: "تاريخ التطعيم",
     nextDueDate: "تاريخ الاستحقاق التالي",
@@ -1374,7 +1441,8 @@ const ar = {
     addVaccination: "إضافة تطعيم",
     editVaccination: "تعديل التطعيم",
     deleteVaccination: "حذف التطعيم",
-    deleteVaccinationConfirm: "حذف سجل التطعيم للحيوان {{animal}} - اللقاح {{vaccine}}؟",
+    deleteVaccinationConfirm:
+      "حذف سجل التطعيم للحيوان {{animal}} - اللقاح {{vaccine}}؟",
     noVaccinations: "لم يتم العثور على سجلات تطعيم.",
     vaccineSaved: "تم حفظ اللقاح",
     vaccineDeleted: "تم حذف اللقاح",
@@ -1393,8 +1461,8 @@ const ar = {
     notifyBeforeHint: "عدد الأيام قبل تاريخ الاستحقاق لإرسال التنبيه.",
 
     boosterIntervalHint: "عدد الأيام بعد الجرعة موعد الجرعة المعززة.",
-    boosterIntervalRequired: "فترة الجرعة المعززة (بالأيام) مطلوبة عند تفعيل الجرعة المعززة.",
-
+    boosterIntervalRequired:
+      "فترة الجرعة المعززة (بالأيام) مطلوبة عند تفعيل الجرعة المعززة.",
   },
 
   expenses: {
@@ -1433,7 +1501,6 @@ const ar = {
     searchVendor: "ابحث عن مورد...",
 
     herd: "على مستوى القطيع (كل الرؤوس النشطة)",
-
   },
 
   pnl: {
@@ -1489,9 +1556,10 @@ const ar = {
     currentAccountValue: "قيمة الحساب الجاري",
     currentAccountValueSub: "الإيراد + رأس المال − التكاليف التشغيلية",
 
-    feedHintNoPlan: "تكلفة العلف صفر لأن فئة هذا الحيوان ليس لها خطة تغذية نشطة. أضف واحدة من إدارة الأعلاف.",
-    feedHintNoPrice: "تكلفة العلف صفر لأن أحد أصناف العلف في خطة التغذية ليس له سعر. حدّد الأسعار من الإعدادات ← أصناف العلف.",
-
+    feedHintNoPlan:
+      "تكلفة العلف صفر لأن فئة هذا الحيوان ليس لها خطة تغذية نشطة. أضف واحدة من إدارة الأعلاف.",
+    feedHintNoPrice:
+      "تكلفة العلف صفر لأن أحد أصناف العلف في خطة التغذية ليس له سعر. حدّد الأسعار من الإعدادات ← أصناف العلف.",
   },
 
   sales: {
@@ -1530,7 +1598,6 @@ const ar = {
     currentOutstanding: "المتبقي الحالي",
     newOutstanding: "المتبقي الجديد",
     paymentExceedsOutstanding: "الدفعة تتجاوز المبلغ المتبقي",
-
   },
 
   incomeStatement: {
@@ -1571,7 +1638,6 @@ const ar = {
     overMonths: "خلال {{months}} شهر",
 
     totalExpenses: "إجمالي المصروفات",
-
   },
 
   config: {
@@ -1628,10 +1694,10 @@ const ar = {
     noPriceSet: "لا يوجد سعر",
     setPrice: "تحديد السعر",
     priceUpdated: "تم تحديث السعر",
-    priceEffectiveToday: "ساري من اليوم. تكاليف العلف السابقة تستخدم أقدم سعر مسجل.",
+    priceEffectiveToday:
+      "ساري من اليوم. تكاليف العلف السابقة تستخدم أقدم سعر مسجل.",
 
     noneDisableAutoStage: "بلا (تعطيل الترقية التلقائية)",
-
   },
 
   notifications: {
@@ -1643,7 +1709,7 @@ const ar = {
     targetWeightReached: "تم الوصول للوزن المستهدف",
     negativePnL: "تنبيه خسارة",
     highCostPerDay: "تنبيه ارتفاع التكلفة اليومية",
-    newBirth: "تم تسجيل ولادة جديدة"
+    newBirth: "تم تسجيل ولادة جديدة",
   },
 
   users: {
@@ -1666,12 +1732,12 @@ const ar = {
     viewerDescription: "يمكنه عرض جميع البيانات دون إجراء أي تعديل",
 
     viewerCannotModify: "لا يمكن للمشاهدين تعديل البيانات",
-
   },
 
   permissions: {
     title: "صلاحيات الأدوار",
-    subtitle: "حدد الصفحات التي يمكن لكل دور رؤيتها والإجراءات التي يمكنه تنفيذها.",
+    subtitle:
+      "حدد الصفحات التي يمكن لكل دور رؤيتها والإجراءات التي يمكنه تنفيذها.",
     usersTab: "المستخدمون",
     rolesTab: "صلاحيات الأدوار",
     page: "الصفحة",
@@ -1693,7 +1759,7 @@ const ar = {
       report: "تنزيل تقرير",
       import: "استيراد",
       restore: "استعادة",
-      purge: "حذف نهائي"
+      purge: "حذف نهائي",
     },
     pages: {
       dashboard: "لوحة التحكم",
@@ -1712,8 +1778,8 @@ const ar = {
       configuration: "الإعدادات",
       farmMap: "خريطة المزرعة",
       data: "إدارة البيانات",
-      recycleBin: "سلة المحذوفات"
-    }
+      recycleBin: "سلة المحذوفات",
+    },
   },
 
   audit: {
@@ -1733,22 +1799,29 @@ const ar = {
     noEntries: "لا توجد سجلات تدقيق بعد.",
     noMatch: "لا توجد سجلات مطابقة للمرشحات.",
     ipAddress: "عنوان IP",
-    entriesCount: "{{count}} سجل"
+    entriesCount: "{{count}} سجل",
   },
 
   // Data Management
   data: {
     title: "إدارة البيانات",
-    subtitle: "استيراد البيانات من Excel، أو إنشاء نسخ احتياطية كاملة، أو الاستعادة من ملف نسخة احتياطية.",
+    subtitle:
+      "استيراد البيانات من Excel، أو إنشاء نسخ احتياطية كاملة، أو الاستعادة من ملف نسخة احتياطية.",
     importTitle: "استيراد من Excel",
-    importDesc: "ارفع ملف Excel لنظام LFMS واختر إضافة السجلات الناقصة أو استبدال النظام بالكامل من تصدير أساسي كامل.",
+    importDesc:
+      "ارفع ملف Excel لنظام LFMS واختر إضافة السجلات الناقصة أو استبدال النظام بالكامل من تصدير أساسي كامل.",
     appendMode: "إضافة السجلات الناقصة",
-    appendModeDesc: "يحافظ على البيانات الحالية ويضيف السجلات الناقصة ويتجاوز السجلات المتطابقة ويلغي الاستيراد عند وجود تعارض.",
-    appendModeDescExcel: "يضيف Excel الأساسي السجلات الناقصة ويتجاوز المتطابق. يضيف القالب اليدوي صفوفًا جديدة ويتجاوز أكواد الحيوانات الموجودة وقد يكرر عمليات الاستيراد اليدوية السابقة.",
+    appendModeDesc:
+      "يحافظ على البيانات الحالية ويضيف السجلات الناقصة ويتجاوز السجلات المتطابقة ويلغي الاستيراد عند وجود تعارض.",
+    appendModeDescExcel:
+      "يضيف Excel الأساسي السجلات الناقصة ويتجاوز المتطابق. يضيف القالب اليدوي صفوفًا جديدة ويتجاوز أكواد الحيوانات الموجودة وقد يكرر عمليات الاستيراد اليدوية السابقة.",
     replaceMode: "استبدال النظام بالكامل",
-    replaceModeDesc: "يحذف جميع الجداول الحالية ويستعيد اللقطة الكاملة المرفوعة. يتطلب Excel أساسيًا أو JSON كاملاً.",
-    appendConfirm: "هل تريد إضافة السجلات الناقصة من هذا الملف؟ سيتم تجاوز السجلات المتطابقة وإلغاء الاستيراد عند وجود تعارض.",
-    replaceConfirm: "تحذير: سيحذف الاستبدال جميع بيانات النظام الحالية ويستعيد اللقطة الكاملة المرفوعة. هل تريد المتابعة؟",
+    replaceModeDesc:
+      "يحذف جميع الجداول الحالية ويستعيد اللقطة الكاملة المرفوعة. يتطلب Excel أساسيًا أو JSON كاملاً.",
+    appendConfirm:
+      "هل تريد إضافة السجلات الناقصة من هذا الملف؟ سيتم تجاوز السجلات المتطابقة وإلغاء الاستيراد عند وجود تعارض.",
+    replaceConfirm:
+      "تحذير: سيحذف الاستبدال جميع بيانات النظام الحالية ويستعيد اللقطة الكاملة المرفوعة. هل تريد المتابعة؟",
     chooseExcel: "اختر ملف Excel",
     importing: "جارٍ الاستيراد…",
     importResults: "نتائج الاستيراد:",
@@ -1757,19 +1830,23 @@ const ar = {
     errors: "أخطاء",
     showErrors: "عرض الأخطاء",
     backupTitle: "تنزيل نسخة احتياطية كاملة",
-    backupDesc: "احفظ لقطة JSON كاملة بإصدار معتمد تشمل كل الجداول والحقول والعلاقات والمستخدمين والإعدادات وسجل التدقيق والإشعارات والسجلات المحذوفة منطقيًا.",
+    backupDesc:
+      "احفظ لقطة JSON كاملة بإصدار معتمد تشمل كل الجداول والحقول والعلاقات والمستخدمين والإعدادات وسجل التدقيق والإشعارات والسجلات المحذوفة منطقيًا.",
     recordsExported: "سجل تم تصديره",
     downloadBackup: "تنزيل نسخة احتياطية (JSON)",
     generating: "جارٍ الإنشاء…",
     restoreTitle: "الاستعادة من نسخة احتياطية",
-    restoreDesc: "ارفع نسخة JSON كاملة بإصدار معتمد واختر الإضافة أو الاستبدال.",
+    restoreDesc:
+      "ارفع نسخة JSON كاملة بإصدار معتمد واختر الإضافة أو الاستبدال.",
     chooseBackup: "اختر ملف النسخة الاحتياطية",
     restoring: "جارٍ الاستعادة…",
     restoreResults: "نتائج الاستعادة:",
     restored: "مُستعاد",
-    restoreConfirm: "ستضيف الاستعادة السجلات من هذه النسخة الاحتياطية إلى قاعدة البيانات الحالية. السجلات الموجودة (المطابقة برمز الحيوان) سيتم تجاهلها. هل تريد المتابعة؟",
+    restoreConfirm:
+      "ستضيف الاستعادة السجلات من هذه النسخة الاحتياطية إلى قاعدة البيانات الحالية. السجلات الموجودة (المطابقة برمز الحيوان) سيتم تجاهلها. هل تريد المتابعة؟",
     exportTitle: "تصدير إلى Excel",
-    exportDesc: "نزّل التقارير مع أوراق بيانات أساسية بإصدار معتمد تشمل كل الجداول والحقول والعلاقات والسجلات المحذوفة منطقيًا."
+    exportDesc:
+      "نزّل التقارير مع أوراق بيانات أساسية بإصدار معتمد تشمل كل الجداول والحقول والعلاقات والسجلات المحذوفة منطقيًا.",
   },
   animalProfile: {
     animalDetails: "تفاصيل الحيوان",
@@ -1810,8 +1887,8 @@ const ar = {
 
     weightDeleted: "تم حذف قياس الوزن",
     deleteWeightTitle: "حذف قياس الوزن؟",
-    deleteWeightConfirm: "حذف قياس {{weight}} كجم بتاريخ {{date}}؟ لا يمكن التراجع من هنا.",
-
+    deleteWeightConfirm:
+      "حذف قياس {{weight}} كجم بتاريخ {{date}}؟ لا يمكن التراجع من هنا.",
   },
   recycleBin: {
     title: "سلة المحذوفات",
@@ -1828,7 +1905,7 @@ const ar = {
     restored: "تمت استعادته",
     permanentlyDeleted: "تم حذفه نهائيًا",
     emptiedPermanently: "تم إفراغ سلة المحذوفات نهائيًا",
-    deleteAllRecords: "حذف جميع السجلات نهائيًا ({{count}})"
+    deleteAllRecords: "حذف جميع السجلات نهائيًا ({{count}})",
   },
   owners: {
     owner: "المالك",
@@ -1848,8 +1925,8 @@ const ar = {
     title: "الصفحة غير موجودة",
     message: "عذرًا، الصفحة التي تبحث عنها غير موجودة.",
     hint: "ربما تم نقلها أو حذفها.",
-    goHome: "العودة للرئيسية"
-  }
+    goHome: "العودة للرئيسية",
+  },
 };
 
 i18n
@@ -1858,18 +1935,18 @@ i18n
   .init({
     resources: {
       en: { translation: en },
-      ar: { translation: ar }
+      ar: { translation: ar },
     },
     fallbackLng: "en",
     defaultNS: "translation",
     detection: {
       order: ["localStorage", "navigator"],
       caches: ["localStorage"],
-      lookupLocalStorage: "lfms-lang"
+      lookupLocalStorage: "lfms-lang",
     },
     interpolation: {
-      escapeValue: false
-    }
+      escapeValue: false,
+    },
   });
 
 export default i18n;

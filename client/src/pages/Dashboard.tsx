@@ -3,28 +3,85 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useDesign } from "@/contexts/DesignContext";
+import { SimpleDashboard } from "@/pages/simple/SimpleDashboard";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp, Syringe } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  CalendarDays,
+  Download,
+  Egg,
+  FileText,
+  Leaf,
+  Scale,
+  TrendingUp,
+  Syringe,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
-const COLORS = ["#4ade80", "#86efac", "#bbf7d0", "#d1fae5", "#6ee7b7", "#34d399"];
+const COLORS = [
+  "#4ade80",
+  "#86efac",
+  "#bbf7d0",
+  "#d1fae5",
+  "#6ee7b7",
+  "#34d399",
+];
 
 // ── Date range helpers ────────────────────────────────────────────────────────
 type Preset = "month" | "quarter" | "year" | "custom";
 
-function getPresetRange(preset: Preset, customFrom?: string, customTo?: string): { from: string; to: string } {
+function getPresetRange(
+  preset: Preset,
+  customFrom?: string,
+  customTo?: string
+): { from: string; to: string } {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   const today = fmt(now);
 
   if (preset === "month") {
@@ -46,7 +103,23 @@ function getPresetRange(preset: Preset, customFrom?: string, customTo?: string):
   return { from: customFrom || fmt(fallbackFrom), to: customTo || today };
 }
 
-function KPICard({ title, value, sub, icon: Icon, trend, color = "text-primary", isLoading }: { title: string; value: string | number; sub?: string; icon: any; trend?: "up" | "down" | "neutral"; color?: string; isLoading?: boolean }) {
+function KPICard({
+  title,
+  value,
+  sub,
+  icon: Icon,
+  trend,
+  color = "text-primary",
+  isLoading,
+}: {
+  title: string;
+  value: string | number;
+  sub?: string;
+  icon: any;
+  trend?: "up" | "down" | "neutral";
+  color?: string;
+  isLoading?: boolean;
+}) {
   return (
     <Card className="relative overflow-hidden">
       <CardContent className="pt-5 pb-5">
@@ -58,16 +131,30 @@ function KPICard({ title, value, sub, icon: Icon, trend, color = "text-primary",
         ) : (
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {title}
+              </p>
               <p className={`text-3xl font-bold mt-1 ${color}`}>{value}</p>
-              {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+              {sub && (
+                <p className="text-xs text-muted-foreground mt-1">{sub}</p>
+              )}
             </div>
             <div className="p-2 rounded-lg bg-primary/10">
               <Icon className={`h-5 w-5 ${color}`} />
             </div>
           </div>
         )}
-        {trend && !isLoading && <div className={`flex items-center gap-1 mt-2 text-xs font-medium ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-600" : "text-muted-foreground"}`}>{trend === "up" ? <ArrowUpRight className="h-3 w-3" /> : trend === "down" ? <ArrowDownRight className="h-3 w-3" /> : null}</div>}
+        {trend && !isLoading && (
+          <div
+            className={`flex items-center gap-1 mt-2 text-xs font-medium ${trend === "up" ? "text-green-600" : trend === "down" ? "text-red-600" : "text-muted-foreground"}`}
+          >
+            {trend === "up" ? (
+              <ArrowUpRight className="h-3 w-3" />
+            ) : trend === "down" ? (
+              <ArrowDownRight className="h-3 w-3" />
+            ) : null}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -75,20 +162,35 @@ function KPICard({ title, value, sub, icon: Icon, trend, color = "text-primary",
 
 function StockStatusBadge({ status }: { status: string }) {
   const { t } = useTranslation();
-  if (status === "critical") return <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">{t("dashboard.critical")}</Badge>;
-  if (status === "low") return <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">{t("dashboard.lowStock")}</Badge>;
-  return <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("dashboard.adequate")}</Badge>;
+  if (status === "critical")
+    return (
+      <Badge className="bg-red-100 text-red-800 border-red-200 text-xs">
+        {t("dashboard.critical")}
+      </Badge>
+    );
+  if (status === "low")
+    return (
+      <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
+        {t("dashboard.lowStock")}
+      </Badge>
+    );
+  return (
+    <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+      {t("dashboard.adequate")}
+    </Badge>
+  );
 }
 
-const PRESET_LABELS: Record<Preset, string> = {
-  month: "This Month",
-  quarter: "This Quarter",
-  year: "This Year",
-  custom: "Custom Range"
+const PRESET_LABEL_KEYS: Record<Exclude<Preset, "custom">, string> = {
+  month: "dashboard.thisMonth",
+  quarter: "dashboard.thisQuarter",
+  year: "dashboard.thisYear",
 };
 
 export default function Dashboard() {
   const { t, i18n } = useTranslation();
+  const { designVersion } = useDesign();
+  const { can } = usePermissions();
   const [filterSpecies, setFilterSpecies] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterGroup, setFilterGroup] = useState<string>("all");
@@ -101,29 +203,45 @@ export default function Dashboard() {
   const [pendingFrom, setPendingFrom] = useState<string>("");
   const [pendingTo, setPendingTo] = useState<string>("");
 
-  const dateRange = useMemo(() => getPresetRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
+  const dateRange = useMemo(
+    () => getPresetRange(preset, customFrom, customTo),
+    [preset, customFrom, customTo]
+  );
 
-  const { data: kpis, isLoading: kpisLoading } = trpc.dashboard.getKPIs.useQuery({
-    fromDate: dateRange.from,
-    toDate: dateRange.to,
-    speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
-    categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
-    groupId: filterGroup !== "all" ? Number(filterGroup) : undefined
-  });
+  const { data: kpis, isLoading: kpisLoading } =
+    trpc.dashboard.getKPIs.useQuery({
+      fromDate: dateRange.from,
+      toDate: dateRange.to,
+      speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
+      categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
+      groupId: filterGroup !== "all" ? Number(filterGroup) : undefined,
+    });
 
   // Feed stock - use shared feed.getStockStatus so it updates when Feed page changes stock
+  const canViewFeed = can("feed", "view");
+  const canViewVaccinations = can("vaccinations", "view");
   const { data: feedStock } = trpc.feed.getStockStatus.useQuery();
-  const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
-  const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery({ days: 30 });
+  const { data: headCountByCategory } =
+    trpc.dashboard.getHeadCountByCategory.useQuery(undefined, {
+      enabled: designVersion === "current",
+    });
+  const { data: upcomingVaccinations } =
+    trpc.vaccination.getUpcomingVaccinations.useQuery({ days: 30 });
 
-  const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
-    fromDate: dateRange.from,
-    toDate: dateRange.to
-  });
-  const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery({
-    fromDate: dateRange.from,
-    toDate: dateRange.to
-  });
+  const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery(
+    {
+      fromDate: dateRange.from,
+      toDate: dateRange.to,
+    },
+    { enabled: designVersion === "current" }
+  );
+  const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery(
+    {
+      fromDate: dateRange.from,
+      toDate: dateRange.to,
+    },
+    { enabled: designVersion === "current" }
+  );
 
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
@@ -134,29 +252,46 @@ export default function Dashboard() {
     new Intl.NumberFormat(locale, {
       style: "currency",
       currency: "EGP",
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(v);
 
-  const criticalAlerts = (feedStock ?? []).filter((s: any) => s.status === "critical").length;
-  const lowAlerts = (feedStock ?? []).filter((s: any) => s.status === "low").length;
-  
+  const criticalAlerts = (feedStock ?? []).filter(
+    (s: any) => s.status === "critical"
+  ).length;
+  const lowAlerts = (feedStock ?? []).filter(
+    (s: any) => s.status === "low"
+  ).length;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const overdueVaccinations = (upcomingVaccinations ?? []).filter((v: any) => {
     if (!v.nextDueDate) return false;
-    const dueDate = new Date(v.nextDueDate instanceof Date ? v.nextDueDate.toISOString() : v.nextDueDate);
+    const dueDate = new Date(
+      v.nextDueDate instanceof Date
+        ? v.nextDueDate.toISOString()
+        : v.nextDueDate
+    );
     dueDate.setHours(0, 0, 0, 0);
     return dueDate < today;
   }).length;
   const dueSoonVaccinations = (upcomingVaccinations ?? []).filter((v: any) => {
     if (!v.nextDueDate) return false;
-    const dueDate = new Date(v.nextDueDate instanceof Date ? v.nextDueDate.toISOString() : v.nextDueDate);
+    const dueDate = new Date(
+      v.nextDueDate instanceof Date
+        ? v.nextDueDate.toISOString()
+        : v.nextDueDate
+    );
     dueDate.setHours(0, 0, 0, 0);
-    const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
+    const diffDays = Math.ceil(
+      (dueDate.getTime() - today.getTime()) / 86400000
+    );
     return diffDays >= 0 && diffDays <= 7;
   }).length;
 
-  const presetLabel = preset === "custom" ? `${customFrom || "?"} → ${customTo || "?"}` : PRESET_LABELS[preset];
+  const presetLabel =
+    preset === "custom"
+      ? `${customFrom || "?"} → ${customTo || "?"}`
+      : t(PRESET_LABEL_KEYS[preset]);
 
   function applyCustomRange() {
     if (pendingFrom && pendingTo) {
@@ -167,141 +302,232 @@ export default function Dashboard() {
     }
   }
 
+  const dateLabel = new Date().toLocaleDateString(locale, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const controls = (
+    <>
+      <ExportButton />
+      <PdfReportButton dateRange={dateRange} kpis={kpis} />
+      <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs gap-1.5 bg-background"
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            {presetLabel}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-64 p-3 space-y-3" align="end">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {t("dashboard.dateRange")}
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {(["month", "quarter", "year"] as Exclude<Preset, "custom">[]).map(
+              p => (
+                <Button
+                  key={p}
+                  size="sm"
+                  variant={preset === p ? "default" : "outline"}
+                  className="text-xs h-7"
+                  onClick={() => {
+                    setPreset(p);
+                    setPopoverOpen(false);
+                  }}
+                >
+                  {t(PRESET_LABEL_KEYS[p])}
+                </Button>
+              )
+            )}
+          </div>
+          <div className="border-t pt-2 space-y-2">
+            <p className="text-xs font-medium">{t("dashboard.customRange")}</p>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                {t("dashboard.from")}
+              </Label>
+              <Input
+                type="date"
+                className="h-7 text-xs"
+                value={pendingFrom}
+                onChange={e => setPendingFrom(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs text-muted-foreground">
+                {t("common.to")}
+              </Label>
+              <Input
+                type="date"
+                className="h-7 text-xs"
+                value={pendingTo}
+                onChange={e => setPendingTo(e.target.value)}
+              />
+            </div>
+            <Button
+              size="sm"
+              className="w-full h-7 text-xs"
+              disabled={!pendingFrom || !pendingTo}
+              onClick={applyCustomRange}
+            >
+              {t("dashboard.applyCustomRange")}
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      <Select value={filterSpecies} onValueChange={setFilterSpecies}>
+        <SelectTrigger className="w-32 h-8 text-xs">
+          <SelectValue placeholder={t("common.species")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">
+            {t("common.all")} {t("common.species")}
+          </SelectItem>
+          {(species ?? []).map((s: any) => (
+            <SelectItem key={s.id} value={String(s.id)}>
+              {s.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={filterCategory} onValueChange={setFilterCategory}>
+        <SelectTrigger className="w-36 h-8 text-xs">
+          <SelectValue placeholder={t("common.category")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">
+            {t("common.all")} {t("common.category")}
+          </SelectItem>
+          {(categories ?? []).map((c: any) => (
+            <SelectItem key={c.id} value={String(c.id)}>
+              {c.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={filterGroup} onValueChange={setFilterGroup}>
+        <SelectTrigger className="w-32 h-8 text-xs">
+          <SelectValue placeholder={t("common.group")} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">
+            {t("common.all")} {t("common.group")}
+          </SelectItem>
+          {(groups ?? []).map((g: any) => (
+            <SelectItem key={g.id} value={String(g.id)}>
+              {g.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </>
+  );
+
+  if (designVersion === "simple") {
+    return (
+      <SimpleDashboard
+        dateLabel={dateLabel}
+        controls={controls}
+        kpis={kpis ?? undefined}
+        loading={kpisLoading}
+        formatCurrency={fmt}
+        criticalFeedCount={criticalAlerts}
+        lowFeedCount={lowAlerts}
+        overdueVaccinationCount={overdueVaccinations}
+        dueSoonVaccinationCount={dueSoonVaccinations}
+        canView={{
+          animals: can("animals", "view"),
+          feed: canViewFeed,
+          vaccinations: canViewVaccinations,
+          expenses: can("expenses", "view"),
+          sales: can("sales", "view"),
+        }}
+      />
+    );
+  }
+
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">{t("dashboard.title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {new Date().toLocaleDateString(locale, {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric"
-            })}
-          </p>
+          <h1 className="text-xl sm:text-2xl font-bold">
+            {t("dashboard.title")}
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{dateLabel}</p>
         </div>
         {/* Filters Row */}
-        <div className="flex gap-2 flex-wrap items-center">
-          <ExportButton />
-          <PdfReportButton dateRange={dateRange} kpis={kpis} />
-          {/* Date Range Preset Picker */}
-          <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background">
-                <CalendarDays className="h-3.5 w-3.5" />
-                {presetLabel}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-3 space-y-3" align="end">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t("dashboard.dateRange")}</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {(["month", "quarter", "year"] as Preset[]).map(p => (
-                  <Button
-                    key={p}
-                    size="sm"
-                    variant={preset === p ? "default" : "outline"}
-                    className="text-xs h-7"
-                    onClick={() => {
-                      setPreset(p);
-                      setPopoverOpen(false);
-                    }}
-                  >
-                    {PRESET_LABELS[p]}
-                  </Button>
-                ))}
-              </div>
-              <div className="border-t pt-2 space-y-2">
-                <p className="text-xs font-medium">{t("dashboard.customRange")}</p>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">{t("dashboard.from")}</Label>
-                  <Input type="date" className="h-7 text-xs" value={pendingFrom} onChange={e => setPendingFrom(e.target.value)} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">To</Label>
-                  <Input type="date" className="h-7 text-xs" value={pendingTo} onChange={e => setPendingTo(e.target.value)} />
-                </div>
-                <Button size="sm" className="w-full h-7 text-xs" disabled={!pendingFrom || !pendingTo} onClick={applyCustomRange}>
-                  {t("dashboard.applyCustomRange")}
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Species / Category / Group filters */}
-          <Select value={filterSpecies} onValueChange={setFilterSpecies}>
-            <SelectTrigger className="w-32 h-8 text-xs">
-              <SelectValue placeholder={t("common.species")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t("common.all")} {t("common.species")}
-              </SelectItem>
-              {(species ?? []).map((s: any) => (
-                <SelectItem key={s.id} value={String(s.id)}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-36 h-8 text-xs">
-              <SelectValue placeholder={t("common.category")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t("common.all")} {t("common.category")}
-              </SelectItem>
-              {(categories ?? []).map((c: any) => (
-                <SelectItem key={c.id} value={String(c.id)}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterGroup} onValueChange={setFilterGroup}>
-            <SelectTrigger className="w-32 h-8 text-xs">
-              <SelectValue placeholder={t("common.group")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                {t("common.all")} {t("common.group")}
-              </SelectItem>
-              {(groups ?? []).map((g: any) => (
-                <SelectItem key={g.id} value={String(g.id)}>
-                  {g.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <div className="flex gap-2 flex-wrap items-center">{controls}</div>
       </div>
 
       {/* Alerts Banner */}
-      {(criticalAlerts > 0 || lowAlerts > 0 || overdueVaccinations > 0 || dueSoonVaccinations > 0) && (
-        <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 || overdueVaccinations > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+      {(criticalAlerts > 0 ||
+        lowAlerts > 0 ||
+        overdueVaccinations > 0 ||
+        dueSoonVaccinations > 0) && (
+        <div
+          className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 || overdueVaccinations > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}
+        >
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span className="text-sm font-medium">
-            {criticalAlerts > 0 && `${criticalAlerts} ${t("dashboard.critical").toLowerCase()}. `}
-            {lowAlerts > 0 && `${lowAlerts} ${t("dashboard.lowStock").toLowerCase()}. `}
-            {overdueVaccinations > 0 && `${overdueVaccinations} ${t("vaccine.overdue").toLowerCase()}. `}
-            {dueSoonVaccinations > 0 && `${dueSoonVaccinations} ${t("vaccine.due").toLowerCase()}. `}
+            {criticalAlerts > 0 &&
+              `${criticalAlerts} ${t("dashboard.critical").toLowerCase()}. `}
+            {lowAlerts > 0 &&
+              `${lowAlerts} ${t("dashboard.lowStock").toLowerCase()}. `}
+            {overdueVaccinations > 0 &&
+              `${overdueVaccinations} ${t("vaccine.overdue").toLowerCase()}. `}
+            {dueSoonVaccinations > 0 &&
+              `${dueSoonVaccinations} ${t("vaccine.due").toLowerCase()}. `}
           </span>
         </div>
       )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <KPICard title={t("dashboard.activeAnimals")} value={kpis?.totalActiveHeads ?? 0} sub={`${(kpis?.categoryBreakdown ?? []).length} ${t("common.category").toLowerCase()}`} icon={Leaf} isLoading={kpisLoading} />
-        <KPICard title={t("animals.totalRevenue")} value={fmt(kpis?.totalRevenue ?? 0)} sub={t("common.sold")} icon={TrendingUp} color="text-green-600" isLoading={kpisLoading} />
-        <KPICard title={t("dashboard.totalExpenses")} value={fmt(kpis?.totalExpenses ?? 0)} sub={kpis ? `Feed: ${fmt(kpis.feedExpenses ?? 0)} · Other: ${fmt(kpis.otherExpenses ?? 0)}` : ""} icon={Scale} color="text-red-600" isLoading={kpisLoading} />
+        <KPICard
+          title={t("dashboard.activeAnimals")}
+          value={kpis?.totalActiveHeads ?? 0}
+          sub={`${(kpis?.categoryBreakdown ?? []).length} ${t("common.category").toLowerCase()}`}
+          icon={Leaf}
+          isLoading={kpisLoading}
+        />
+        <KPICard
+          title={t("animals.totalRevenue")}
+          value={fmt(kpis?.totalRevenue ?? 0)}
+          sub={t("common.sold")}
+          icon={TrendingUp}
+          color="text-green-600"
+          isLoading={kpisLoading}
+        />
+        <KPICard
+          title={t("dashboard.totalExpenses")}
+          value={fmt(kpis?.totalExpenses ?? 0)}
+          sub={
+            kpis
+              ? `Feed: ${fmt(kpis.feedExpenses ?? 0)} · Other: ${fmt(kpis.otherExpenses ?? 0)}`
+              : ""
+          }
+          icon={Scale}
+          color="text-red-600"
+          isLoading={kpisLoading}
+        />
         <KPICard
           title={t("dashboard.costHeadDay")}
           value={kpis ? `EGP ${(kpis.costPerHeadPerDay ?? 0).toFixed(2)}` : "—"}
           sub={t("dashboard.headsDays", {
             heads: kpis?.totalActiveHeads ?? 0,
-            days: Math.ceil((new Date(dateRange.to).getTime() - new Date(dateRange.from).getTime()) / 86400000)
+            days: Math.ceil(
+              (new Date(dateRange.to).getTime() -
+                new Date(dateRange.from).getTime()) /
+                86400000
+            ),
           })}
           icon={TrendingUp}
           color="text-amber-600"
@@ -310,20 +536,31 @@ export default function Dashboard() {
       </div>
       {/* Net P&L summary bar */}
       {kpis && (
-        <div className={`rounded-lg border px-4 py-3 flex items-center justify-between text-sm ${(kpis.grossPnL ?? 0) >= 0 ? "border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800" : "border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800"}`}>
-          <span className="text-muted-foreground">{t("dashboard.netPnLForPeriod")}</span>
-          <span className={`text-lg font-bold ${(kpis.grossPnL ?? 0) >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>{fmt(kpis.grossPnL ?? 0)}</span>
+        <div
+          className={`rounded-lg border px-4 py-3 flex items-center justify-between text-sm ${(kpis.grossPnL ?? 0) >= 0 ? "border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-800" : "border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-800"}`}
+        >
+          <span className="text-muted-foreground">
+            {t("dashboard.netPnLForPeriod")}
+          </span>
+          <span
+            className={`text-lg font-bold ${(kpis.grossPnL ?? 0) >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}
+          >
+            {fmt(kpis.grossPnL ?? 0)}
+          </span>
         </div>
       )}
 
       {/* Outstanding receivables banner — accrued revenue not yet collected */}
       {kpis && (kpis as any).outstandingReceivables > 0 && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 px-4 py-3 flex items-center justify-between text-sm">
-          <span className="text-amber-800 dark:text-amber-300">{t("dashboard.outstandingReceivables")}</span>
+          <span className="text-amber-800 dark:text-amber-300">
+            {t("dashboard.outstandingReceivables")}
+          </span>
           <span className="text-lg font-bold text-amber-700 dark:text-amber-400">
             {fmt((kpis as any).outstandingReceivables)}
             <span className="text-xs font-normal text-muted-foreground ms-2">
-              ({t("dashboard.cashReceived")}: {fmt((kpis as any).cashReceived ?? 0)})
+              ({t("dashboard.cashReceived")}:{" "}
+              {fmt((kpis as any).cashReceived ?? 0)})
             </span>
           </span>
         </div>
@@ -334,7 +571,9 @@ export default function Dashboard() {
         {/* Head Count by Category */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">{t("dashboard.headCount")}</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              {t("dashboard.headCount")}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {(headCountByCategory ?? []).length > 0 ? (
@@ -343,7 +582,7 @@ export default function Dashboard() {
                   <Pie
                     data={(headCountByCategory ?? []).map((d: any) => ({
                       name: d.category ?? t("common.noData"),
-                      value: d.count
+                      value: d.count,
                     }))}
                     cx="50%"
                     cy="45%"
@@ -351,12 +590,19 @@ export default function Dashboard() {
                     outerRadius={72}
                     paddingAngle={3}
                     dataKey="value"
-                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) =>
+                      `${(percent * 100).toFixed(0)}%`
+                    }
                     labelLine={false}
                   >
-                    {(headCountByCategory ?? []).map((_: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
+                    {(headCountByCategory ?? []).map(
+                      (_: any, index: number) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
+                      )
+                    )}
                   </Pie>
                   <Tooltip formatter={(v: number, name: string) => [v, name]} />
                   <Legend
@@ -365,14 +611,18 @@ export default function Dashboard() {
                     wrapperStyle={{
                       fontSize: "10px",
                       lineHeight: "16px",
-                      paddingTop: "4px"
+                      paddingTop: "4px",
                     }}
-                    formatter={(value: string) => (value.length > 12 ? value.slice(0, 12) + "…" : value)}
+                    formatter={(value: string) =>
+                      value.length > 12 ? value.slice(0, 12) + "…" : value
+                    }
                   />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">{t("common.noData")}</div>
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+                {t("common.noData")}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -392,27 +642,54 @@ export default function Dashboard() {
                     date: d.month
                       ? new Date(d.month + "-01").toLocaleDateString(locale, {
                           month: "short",
-                          year: "2-digit"
+                          year: "2-digit",
                         })
                       : "—",
-                    amount: parseFloat(String(d.total ?? 0))
+                    amount: parseFloat(String(d.total ?? 0)),
                   }))}
                 >
                   <defs>
-                    <linearGradient id="expenseGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                    <linearGradient
+                      id="expenseGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--primary)"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--primary)"
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(v: number) => [fmt(v), t("dashboard.totalExpenses")]} />
-                  <Area type="monotone" dataKey="amount" stroke="var(--primary)" fill="url(#expenseGradient)" strokeWidth={2} />
+                  <Tooltip
+                    formatter={(v: number) => [
+                      fmt(v),
+                      t("dashboard.totalExpenses"),
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="amount"
+                    stroke="var(--primary)"
+                    fill="url(#expenseGradient)"
+                    strokeWidth={2}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">{t("common.noData")}</div>
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+                {t("common.noData")}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -432,21 +709,32 @@ export default function Dashboard() {
                     date: d.month
                       ? new Date(d.month + "-01").toLocaleDateString(locale, {
                           month: "short",
-                          year: "2-digit"
+                          year: "2-digit",
                         })
                       : "—",
-                    revenue: parseFloat(String(d.revenue ?? 0))
+                    revenue: parseFloat(String(d.revenue ?? 0)),
                   }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(v: number) => [fmt(v), t("incomeStatement.revenue")]} />
-                  <Bar dataKey="revenue" fill="hsl(142, 76%, 36%)" radius={[4, 4, 0, 0]} />
+                  <Tooltip
+                    formatter={(v: number) => [
+                      fmt(v),
+                      t("incomeStatement.revenue"),
+                    ]}
+                  />
+                  <Bar
+                    dataKey="revenue"
+                    fill="hsl(142, 76%, 36%)"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">{t("common.noData")}</div>
+              <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">
+                {t("common.noData")}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -456,7 +744,9 @@ export default function Dashboard() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold">{t("dashboard.feedStock")}</CardTitle>
+            <CardTitle className="text-sm font-semibold">
+              {t("dashboard.feedStock")}
+            </CardTitle>
             <Badge variant="outline" className="text-xs">
               {t("dashboard.feedStockNote")}
             </Badge>
@@ -479,19 +769,43 @@ export default function Dashboard() {
               <TableBody>
                 {(feedStock ?? []).length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       {t("common.noData")}
                     </TableCell>
                   </TableRow>
                 ) : (
                   (feedStock ?? []).map((item: any) => (
-                    <TableRow key={item.feedItemId} className={item.status === "critical" ? "bg-red-50/50" : item.status === "low" ? "bg-amber-50/50" : ""}>
-                      <TableCell className="font-medium">{item.feedItemName}</TableCell>
-                      <TableCell className="font-semibold">{parseFloat(item.stockOnHand).toFixed(1)}</TableCell>
+                    <TableRow
+                      key={item.feedItemId}
+                      className={
+                        item.status === "critical"
+                          ? "bg-red-50/50"
+                          : item.status === "low"
+                            ? "bg-amber-50/50"
+                            : ""
+                      }
+                    >
+                      <TableCell className="font-medium">
+                        {item.feedItemName}
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {parseFloat(item.stockOnHand).toFixed(1)}
+                      </TableCell>
                       <TableCell>{item.unit}</TableCell>
-                      <TableCell>{parseFloat(item.dailyUsage ?? 0).toFixed(2)}</TableCell>
                       <TableCell>
-                        <span className={`font-medium ${item.daysRemaining < 7 ? "text-red-600" : item.daysRemaining < 14 ? "text-amber-600" : "text-green-600"}`}>{item.daysRemaining === 999 ? "∞" : item.daysRemaining}</span>
+                        {parseFloat(item.dailyUsage ?? 0).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`font-medium ${item.daysRemaining < 7 ? "text-red-600" : item.daysRemaining < 14 ? "text-amber-600" : "text-green-600"}`}
+                        >
+                          {item.daysRemaining === 999
+                            ? "∞"
+                            : item.daysRemaining}
+                        </span>
                       </TableCell>
                       <TableCell>{item.reorderLevel ?? "—"}</TableCell>
                       <TableCell>
@@ -505,13 +819,13 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-
     </div>
   );
 }
 
 // ── Export to Excel ──────────────────────────────────────────────────────────
 function ExportButton() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const utils = trpc.useUtils();
   const { can } = usePermissions("dashboard");
@@ -526,7 +840,8 @@ function ExportButton() {
       // Decode base64 → Blob → trigger download
       const byteChars = atob(result.base64);
       const bytes = new Uint8Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+      for (let i = 0; i < byteChars.length; i++)
+        bytes[i] = byteChars.charCodeAt(i);
       const blob = new Blob([bytes], { type: result.mimeType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -545,27 +860,41 @@ function ExportButton() {
   };
 
   return (
-    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background" onClick={handleExport} disabled={loading}>
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 text-xs gap-1.5 bg-background"
+      onClick={handleExport}
+      disabled={loading}
+    >
       <Download className="h-3.5 w-3.5" />
-      {loading ? "Generating…" : "Export Excel"}
+      {loading ? t("common.loading") : t("common.exportExcel")}
     </Button>
   );
 }
 
 // ── PDF Report Button — Farm Summary ────────────────────────────────────────
-function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: string }; kpis: any }) {
+function PdfReportButton({
+  dateRange,
+  kpis,
+}: {
+  dateRange: { from: string; to: string };
+  kpis: any;
+}) {
   const { t } = useTranslation();
   const { canReport } = usePermissions("dashboard");
   const { canView: canViewPnl } = usePermissions("pnl");
   const { data: pnlData } = trpc.animals.getAllPnL.useQuery(
     {},
-    { enabled: canReport && canViewPnl },
+    { enabled: canReport && canViewPnl }
   );
   const { data: settings } = trpc.config.getDisplaySettings.useQuery();
   const { currency } = useCurrency();
   const [generating, setGenerating] = useState(false);
 
-  const farmName = (settings as any[] | undefined)?.find(s => s.settingKey === "farmName")?.settingValue;
+  const farmName = (settings as any[] | undefined)?.find(
+    s => s.settingKey === "farmName"
+  )?.settingValue;
 
   const handleClick = async () => {
     if (!kpis || !pnlData) {
@@ -581,7 +910,7 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
         kpis,
         pnlData,
         currency,
-        farmName
+        farmName,
       });
       toast.success(t("dashboard.pdfDownloaded"));
     } catch (e: any) {
@@ -594,9 +923,15 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
   if (!canReport || !canViewPnl) return null;
 
   return (
-    <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5 bg-background" onClick={handleClick} disabled={generating || !kpis}>
+    <Button
+      variant="outline"
+      size="sm"
+      className="h-8 text-xs gap-1.5 bg-background"
+      onClick={handleClick}
+      disabled={generating || !kpis}
+    >
       <FileText className="h-3.5 w-3.5" />
-      {generating ? "Generating…" : "PDF Report"}
+      {generating ? t("common.loading") : t("common.exportPDF")}
     </Button>
   );
 }

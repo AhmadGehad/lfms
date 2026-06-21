@@ -1,0 +1,2866 @@
+- generic:
+  - generic:
+    - region "Notifications alt+T"
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - button:
+                  - img
+                - generic:
+                  - generic:
+                    - img
+                  - generic:
+                    - paragraph: Azal Farms
+                    - paragraph: مزارع أزَل
+            - generic:
+              - generic:
+                - generic: Overview
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Dashboard
+              - generic:
+                - generic: Livestock
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Animal Registry
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Breeding & Lambing
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Fattening Tracker
+              - generic:
+                - generic: Operations
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Feed Management
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Vaccines
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Expense Log
+              - generic:
+                - generic: Finance
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Animal P&L
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Income Statement
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Sales Records
+              - generic:
+                - generic: System
+                - list:
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Notifications
+                      - generic: "4"
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Audit Log
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: User Management
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Configuration
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Farm Map
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Data Management
+                  - listitem:
+                    - button:
+                      - img
+                      - generic: Recycle Bin
+            - generic:
+              - generic:
+                - button:
+                  - img
+                  - text: عربي
+                - button:
+                  - img
+              - button:
+                - generic:
+                  - generic: A
+                - generic:
+                  - paragraph: Ahmed Gehad
+                  - paragraph: owner
+                - img
+      - main:
+        - main:
+          - generic:
+            - generic:
+              - generic:
+                - heading [level=1]:
+                  - img
+                  - text: Animal Registry
+                - paragraph: 92 animals · All lifecycle stages
+              - button [expanded]:
+                - img
+                - text: Register Animal
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - img
+                    - textbox:
+                      - /placeholder: Search by ID, category, species...
+                  - combobox:
+                    - generic: Active
+                    - img
+                  - combobox:
+                    - generic: All Species
+                    - img
+                  - combobox:
+                    - generic: All Statuses
+                    - img
+                  - combobox:
+                    - generic: All Owners
+                    - img
+                  - combobox:
+                    - generic: All Types
+                    - img
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - table:
+                      - rowgroup:
+                        - row:
+                          - columnheader:
+                            - checkbox
+                          - columnheader:
+                            - generic: Animal ID
+                          - columnheader: Species
+                          - columnheader: Category
+                          - columnheader: Group
+                          - columnheader: Owner
+                          - columnheader: Sex
+                          - columnheader: Status
+                          - columnheader: Acquisition Type
+                          - columnheader:
+                            - generic: Birth Date
+                          - columnheader:
+                            - generic: Age
+                          - columnheader:
+                            - generic:
+                              - text: Acquisition Date
+                              - generic: ▼
+                          - columnheader:
+                            - generic: Purchase Cost
+                          - columnheader: Next Vaccine
+                          - columnheader: Booster Due
+                          - columnheader: Days on Farm
+                          - columnheader: Actions
+                      - rowgroup:
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: EWE84
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: born
+                          - cell: 3/2/2026
+                          - cell: 3m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: FAT0004
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: born
+                          - cell: 3/11/2026
+                          - cell: 3m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: FAT88
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: born
+                          - cell: 2/18/2026
+                          - cell: 4m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: EWE87
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: born
+                          - cell: 4/6/2026
+                          - cell: 2m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: EWE86
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: born
+                          - cell: 4/13/2026
+                          - cell: 2m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: EWE85
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: born
+                          - cell: 3/9/2026
+                          - cell: 3m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: FAT89
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: born
+                          - cell: 2/18/2026
+                          - cell: 4m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: FAT82
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: born
+                          - cell: 2/6/2026
+                          - cell: 4m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: EWE83
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: born
+                          - cell: 2/13/2026
+                          - cell: 4m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: FAT81
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: born
+                          - cell: 2/13/2026
+                          - cell: 4m
+                          - cell: 6/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "2"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic:
+                              - generic: 📷
+                              - text: COW0003
+                          - cell: Cow
+                          - cell: Cow
+                          - cell: Milking Barn
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Cow
+                          - cell: purchased
+                          - cell: 6/1/2023
+                          - cell: 3y
+                          - cell: 6/13/2026
+                          - cell: 80,000.00
+                          - cell:
+                            - generic:
+                              - img
+                              - generic: FMD
+                              - generic: 10/11/2026
+                          - cell:
+                            - generic:
+                              - img
+                              - generic: FMD
+                              - generic: 7/13/2026
+                          - cell: "7"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic:
+                              - generic: 📷
+                              - text: BEE0006
+                          - cell: Cow
+                          - cell: Beef Calf
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 6/1/2026
+                          - cell: 19d
+                          - cell: 6/13/2026
+                          - cell: 26,500.00
+                          - cell: —
+                          - cell: —
+                          - cell: "7"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: BEE0005
+                          - cell: Cow
+                          - cell: Beef Calf
+                          - cell: B1
+                          - cell: —
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 6/1/2026
+                          - cell: 19d
+                          - cell: 6/13/2026
+                          - cell: 26,500.00
+                          - cell: —
+                          - cell: —
+                          - cell: "7"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic:
+                              - generic: 📷
+                              - text: BEE0004
+                          - cell: Cow
+                          - cell: Beef Calf
+                          - cell: Milking Barn
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 6/1/2026
+                          - cell: 19d
+                          - cell: 6/13/2026
+                          - cell: 26,500.00
+                          - cell: —
+                          - cell: —
+                          - cell: "7"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic:
+                              - generic: 📷
+                              - text: BEE0003
+                          - cell: Cow
+                          - cell: Beef Calf
+                          - cell: Milking Barn
+                          - cell: Azal Farms
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 6/10/2026
+                          - cell: 10d
+                          - cell: 6/13/2026
+                          - cell: 26,500.00
+                          - cell: —
+                          - cell: —
+                          - cell: "7"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: BEE0002
+                          - cell: Cow
+                          - cell: Beef Calf
+                          - cell: B1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 5/1/2026
+                          - cell: 1m
+                          - cell: 6/4/2026
+                          - cell: 26,500.00
+                          - cell: —
+                          - cell: —
+                          - cell: "16"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic:
+                              - generic: 📷
+                              - text: BEE0001
+                          - cell: Cow
+                          - cell: Beef Calf
+                          - cell: Milking Barn
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 5/1/2026
+                          - cell: 1m
+                          - cell: 6/4/2026
+                          - cell: 25,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "16"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic:
+                              - generic: 📷
+                              - text: COW0001
+                          - cell: Cow
+                          - cell: Cow
+                          - cell: Milking Barn
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: female
+                          - cell:
+                            - generic: Cow
+                          - cell: purchased
+                          - cell: 6/2/2024
+                          - cell: 2y
+                          - cell: 6/4/2026
+                          - cell: 60,000.00
+                          - cell:
+                            - generic:
+                              - img
+                              - generic: FMD
+                              - generic: 10/11/2026
+                          - cell:
+                            - generic:
+                              - img
+                              - generic: FMD
+                              - generic: 7/13/2026
+                          - cell: "16"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-023
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 4/30/2026
+                          - cell: 1m
+                          - cell: 4/30/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "51"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-022
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 4/13/2026
+                          - cell: 2m
+                          - cell: 4/13/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "68"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-020
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 4/6/2026
+                          - cell: 2m
+                          - cell: 4/6/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "75"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-021
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 4/6/2026
+                          - cell: 2m
+                          - cell: 4/6/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "75"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: R-003
+                          - cell: Sheep
+                          - cell: Ram
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Ram
+                          - cell: purchased
+                          - cell: 8/1/2025
+                          - cell: 10m
+                          - cell: 3/11/2026
+                          - cell: 20,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "101"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-019
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 3/11/2026
+                          - cell: 3m
+                          - cell: 3/11/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "101"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-018
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 3/9/2026
+                          - cell: 3m
+                          - cell: 3/9/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "103"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-017
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 3/2/2026
+                          - cell: 3m
+                          - cell: 3/2/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "110"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-016
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 2/18/2026
+                          - cell: 4m
+                          - cell: 2/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "122"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-015
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 2/18/2026
+                          - cell: 4m
+                          - cell: 2/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "122"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-014
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 2/18/2026
+                          - cell: 4m
+                          - cell: 2/18/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "122"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-013
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 2/13/2026
+                          - cell: 4m
+                          - cell: 2/13/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "127"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-012
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 2/13/2026
+                          - cell: 4m
+                          - cell: 2/13/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "127"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-011
+                          - cell: Sheep
+                          - cell: Lamb
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Lamb
+                          - cell: born
+                          - cell: 2/6/2026
+                          - cell: 4m
+                          - cell: 2/6/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "134"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-006
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-003
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: G-002
+                          - cell: Goat
+                          - cell: Goat
+                          - cell: B2
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: G-003
+                          - cell: Goat
+                          - cell: Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: G-004
+                          - cell: Goat
+                          - cell: Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: G-005
+                          - cell: Goat
+                          - cell: Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: G-006
+                          - cell: Goat
+                          - cell: Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: G-007
+                          - cell: Goat
+                          - cell: Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: T-001
+                          - cell: Goat
+                          - cell: Billy Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Billy Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 17,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-001
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Azal Farms
+                          - cell: male
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-002
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Azal Farms
+                          - cell: male
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: G-001
+                          - cell: Goat
+                          - cell: Goat
+                          - cell: B2
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Goat
+                          - cell: purchased
+                          - cell: 1/1/2024
+                          - cell: 2y 5m
+                          - cell: 1/24/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-004
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-005
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-014
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-007
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-008
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-011
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-012
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: K-013
+                          - cell: Goat
+                          - cell: Baby Goat
+                          - cell: B2
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Baby Goat
+                          - cell: purchased
+                          - cell: 12/15/2025
+                          - cell: 6m
+                          - cell: 1/24/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "147"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: FAT0002
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 1/1/2026
+                          - cell: 5m
+                          - cell: 1/16/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "155"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: FAT0003
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F5
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: born
+                          - cell: 1/10/2026
+                          - cell: 5m
+                          - cell: 1/10/2026
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "161"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: COW0004
+                          - cell: Cow
+                          - cell: Cow
+                          - cell: B1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Cow
+                          - cell: purchased
+                          - cell: 11/1/2023
+                          - cell: 2y 7m
+                          - cell: 1/8/2026
+                          - cell: 70,000.00
+                          - cell:
+                            - generic:
+                              - img
+                              - generic: FMD
+                              - generic: 10/11/2026
+                          - cell:
+                            - generic:
+                              - img
+                              - generic: FMD
+                              - generic: 7/13/2026
+                          - cell: "163"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-071
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Lobna Abdelaziz Ahmed
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2023
+                          - cell: 2y 7m
+                          - cell: 1/8/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "163"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-072
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Lobna Abdelaziz Ahmed
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2023
+                          - cell: 2y 7m
+                          - cell: 1/8/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "163"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: R-002
+                          - cell: Sheep
+                          - cell: Ram
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Ram
+                          - cell: purchased
+                          - cell: 11/4/2023
+                          - cell: 2y 7m
+                          - cell: 1/8/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "163"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-070
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Lobna Abdelaziz Ahmed
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2023
+                          - cell: 2y 7m
+                          - cell: 1/8/2026
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "163"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-010
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Lobna Abdelaziz Ahmed
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 12/1/2025
+                          - cell: 6m
+                          - cell: 12/16/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "186"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: L-009
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Lobna Abdelaziz Ahmed
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 12/1/2025
+                          - cell: 6m
+                          - cell: 12/16/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "186"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: F-0014
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F5
+                          - cell: Azal Farms
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 12/11/2025
+                          - cell: 6m
+                          - cell: 12/16/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "186"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: F-0013
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F5
+                          - cell: Azal Farms
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: purchased
+                          - cell: 12/11/2025
+                          - cell: 6m
+                          - cell: 12/16/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "186"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: F-012
+                          - cell: Sheep
+                          - cell: Fattening
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: male
+                          - cell:
+                            - generic: Fattening
+                          - cell: born
+                          - cell: 12/11/2025
+                          - cell: 6m
+                          - cell: 12/11/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "191"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-042
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-040
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F6
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-050
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-048
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-047
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-046
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-045
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-044
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-021
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F6
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-043
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-022
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-020
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F6
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-041
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-023
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: F1
+                          - cell: Azal Farms
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-039
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-038
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-037
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-030
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-036
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-035
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-034
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-033
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-032
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: E-031
+                          - cell: Sheep
+                          - cell: Ewe
+                          - cell: Milking Barn
+                          - cell: Walid Mohamed Bahgat
+                          - cell: female
+                          - cell:
+                            - generic: Ewe
+                          - cell: purchased
+                          - cell: 11/4/2024
+                          - cell: 1y 7m
+                          - cell: 11/4/2025
+                          - cell: 15,000.00
+                          - cell: —
+                          - cell: —
+                          - cell: "228"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: D-003
+                          - cell: Dog
+                          - cell: Dog
+                          - cell: Zone2
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: female
+                          - cell:
+                            - generic: Dog
+                          - cell: purchased
+                          - cell: 7/1/2025
+                          - cell: 11m
+                          - cell: 11/1/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "231"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: D-002
+                          - cell: Dog
+                          - cell: Dog
+                          - cell: Zone1
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: male
+                          - cell:
+                            - generic: Dog
+                          - cell: purchased
+                          - cell: 7/1/2025
+                          - cell: 11m
+                          - cell: 11/1/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "231"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: D-005
+                          - cell: Dog
+                          - cell: Dog
+                          - cell: Zone3
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: male
+                          - cell:
+                            - generic: Dog
+                          - cell: purchased
+                          - cell: 3/1/2025
+                          - cell: 1y 3m
+                          - cell: 11/1/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "231"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+                        - row:
+                          - cell:
+                            - checkbox
+                          - cell:
+                            - generic: D-004
+                          - cell: Dog
+                          - cell: Dog
+                          - cell: Zone2
+                          - cell: Malak Ashraf Elshakaa
+                          - cell: female
+                          - cell:
+                            - generic: Dog
+                          - cell: purchased
+                          - cell: 3/1/2025
+                          - cell: 1y 3m
+                          - cell: 11/1/2025
+                          - cell: —
+                          - cell: —
+                          - cell: —
+                          - cell: "231"
+                          - cell:
+                            - generic:
+                              - button:
+                                - img
+                              - button:
+                                - img
+                              - button:
+                                - img
+  - dialog "Register New Animal" [ref=e2618]:
+    - heading "Register New Animal" [level=2] [ref=e2620]
+    - generic [ref=e2621]:
+      - generic [ref=e2622]:
+        - generic [ref=e2623]:
+          - generic [ref=e2624]: Species *
+          - combobox [active] [ref=e2625] [cursor=pointer]:
+            - generic: Species
+            - img
+          - combobox [ref=e2626] [cursor=pointer]
+        - generic [ref=e2627]:
+          - generic [ref=e2628]: Category *
+          - combobox [disabled] [ref=e2629]:
+            - generic: Category
+            - img
+          - combobox [disabled] [ref=e2630]
+        - generic [ref=e2631]:
+          - generic [ref=e2632]: Animal ID Number (Optional)
+          - generic [ref=e2633]:
+            - generic [ref=e2634]: —
+            - textbox "Animal ID Number (Optional)" [ref=e2635]:
+              - /placeholder: "Example: 00123"
+          - paragraph [ref=e2636]: The selected category prefix is added automatically. Leave blank to use the next sequence number.
+        - generic [ref=e2637]:
+          - generic [ref=e2638]: Group / Pen *
+          - combobox [ref=e2639] [cursor=pointer]:
+            - generic: Group
+            - img
+          - combobox [ref=e2640] [cursor=pointer]
+        - generic [ref=e2641]:
+          - generic [ref=e2642]: Status *
+          - combobox [ref=e2643] [cursor=pointer]:
+            - generic: Status
+            - img
+          - combobox [ref=e2644] [cursor=pointer]
+        - generic [ref=e2645]:
+          - generic [ref=e2646]: Sex *
+          - combobox [ref=e2647] [cursor=pointer]:
+            - generic: Sex
+            - img
+          - combobox [ref=e2648] [cursor=pointer]
+        - generic [ref=e2649]:
+          - generic [ref=e2650]: Acquisition Type *
+          - combobox [ref=e2651] [cursor=pointer]:
+            - generic: Type
+            - img
+          - combobox [ref=e2652] [cursor=pointer]
+        - generic [ref=e2653]:
+          - generic [ref=e2654]: Acquisition Date *
+          - textbox [ref=e2655]: 2026-06-20
+        - generic [ref=e2656]:
+          - generic [ref=e2657]: Birth Date *
+          - textbox [ref=e2658]: 2026-06-20
+        - generic [ref=e2659]:
+          - generic [ref=e2660]: Purchase Cost
+          - spinbutton [ref=e2661]
+        - generic [ref=e2662]:
+          - generic [ref=e2663]: Weight (kg)
+          - spinbutton [ref=e2664]
+        - generic [ref=e2665]:
+          - generic [ref=e2666]: Owner
+          - combobox [ref=e2667] [cursor=pointer]:
+            - generic: No Owner
+            - img
+          - combobox [ref=e2668] [cursor=pointer]
+      - generic [ref=e2669]:
+        - button "Cancel" [ref=e2670] [cursor=pointer]
+        - button "Register Animal" [ref=e2671] [cursor=pointer]
+    - button "Close" [ref=e2672] [cursor=pointer]:
+      - img
+      - generic [ref=e2673]: Close

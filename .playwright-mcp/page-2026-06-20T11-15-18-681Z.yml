@@ -1,0 +1,2782 @@
+- generic [ref=e2]:
+  - region "Notifications alt+T"
+  - generic [ref=e25]:
+    - generic [ref=e28]:
+      - generic [ref=e30]:
+        - button "Toggle navigation" [ref=e31] [cursor=pointer]:
+          - img [ref=e32]
+        - generic [ref=e34]:
+          - img [ref=e36]
+          - generic [ref=e39]:
+            - paragraph [ref=e40]: Azal Farms
+            - paragraph [ref=e41]: مزارع أزَل
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - generic [ref=e44]: Overview
+          - list [ref=e45]:
+            - listitem [ref=e46]:
+              - button "Dashboard" [ref=e47] [cursor=pointer]:
+                - img [ref=e48]
+                - generic [ref=e50]: Dashboard
+        - generic [ref=e51]:
+          - generic [ref=e52]: Livestock
+          - list [ref=e53]:
+            - listitem [ref=e54]:
+              - button "Animal Registry" [ref=e55] [cursor=pointer]:
+                - img [ref=e56]
+                - generic [ref=e59]: Animal Registry
+            - listitem [ref=e60]:
+              - button "Breeding & Lambing" [ref=e61] [cursor=pointer]:
+                - img [ref=e62]
+                - generic [ref=e64]: Breeding & Lambing
+            - listitem [ref=e65]:
+              - button "Fattening Tracker" [ref=e66] [cursor=pointer]:
+                - img [ref=e67]
+                - generic [ref=e71]: Fattening Tracker
+        - generic [ref=e72]:
+          - generic [ref=e73]: Operations
+          - list [ref=e74]:
+            - listitem [ref=e75]:
+              - button "Feed Management" [ref=e76] [cursor=pointer]:
+                - img [ref=e77]
+                - generic [ref=e86]: Feed Management
+            - listitem [ref=e87]:
+              - button "Vaccines" [ref=e88] [cursor=pointer]:
+                - img [ref=e89]
+                - generic [ref=e96]: Vaccines
+            - listitem [ref=e97]:
+              - button "Expense Log" [ref=e98] [cursor=pointer]:
+                - img [ref=e99]
+                - generic [ref=e101]: Expense Log
+        - generic [ref=e102]:
+          - generic [ref=e103]: Finance
+          - list [ref=e104]:
+            - listitem [ref=e105]:
+              - button "Animal P&L" [ref=e106] [cursor=pointer]:
+                - img [ref=e107]
+                - generic [ref=e109]: Animal P&L
+            - listitem [ref=e110]:
+              - button "Income Statement" [ref=e111] [cursor=pointer]:
+                - img [ref=e112]
+                - generic [ref=e115]: Income Statement
+            - listitem [ref=e116]:
+              - button "Sales Records" [ref=e117] [cursor=pointer]:
+                - img [ref=e118]
+                - generic [ref=e122]: Sales Records
+        - generic [ref=e123]:
+          - generic [ref=e124]: System
+          - list [ref=e125]:
+            - listitem [ref=e126]:
+              - button "Notifications 4" [ref=e127] [cursor=pointer]:
+                - img [ref=e128]
+                - generic [ref=e131]: Notifications
+                - generic [ref=e132]: "4"
+            - listitem [ref=e133]:
+              - button "Audit Log" [ref=e134] [cursor=pointer]:
+                - img [ref=e135]
+                - generic [ref=e137]: Audit Log
+            - listitem [ref=e138]:
+              - button "User Management" [ref=e139] [cursor=pointer]:
+                - img [ref=e140]
+                - generic [ref=e145]: User Management
+            - listitem [ref=e146]:
+              - button "Configuration" [ref=e147] [cursor=pointer]:
+                - img [ref=e148]
+                - generic [ref=e159]: Configuration
+            - listitem [ref=e160]:
+              - button "Farm Map" [ref=e161] [cursor=pointer]:
+                - img [ref=e162]
+                - generic [ref=e166]: Farm Map
+            - listitem [ref=e167]:
+              - button "Data Management" [ref=e168] [cursor=pointer]:
+                - img [ref=e169]
+                - generic [ref=e173]: Data Management
+            - listitem [ref=e174]:
+              - button "Recycle Bin" [ref=e175] [cursor=pointer]:
+                - img [ref=e176]
+                - generic [ref=e179]: Recycle Bin
+      - generic [ref=e180]:
+        - generic [ref=e181]:
+          - button "عربي" [ref=e182] [cursor=pointer]:
+            - img
+            - text: عربي
+          - button "Toggle theme" [ref=e183] [cursor=pointer]:
+            - img [ref=e184]
+        - button "A Ahmed Gehad owner" [ref=e186] [cursor=pointer]:
+          - generic [ref=e188]: A
+          - generic [ref=e189]:
+            - paragraph [ref=e190]: Ahmed Gehad
+            - paragraph [ref=e191]: owner
+          - img [ref=e192]
+    - main [ref=e195]:
+      - main [ref=e196]:
+        - generic [ref=e197]:
+          - generic [ref=e198]:
+            - generic [ref=e199]:
+              - heading "Animal Registry" [level=1] [ref=e200]:
+                - img [ref=e201]
+                - text: Animal Registry
+              - paragraph [ref=e204]: 92 animals · All lifecycle stages
+            - button "Register Animal" [active] [ref=e205] [cursor=pointer]:
+              - img
+              - text: Register Animal
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - img [ref=e210]
+              - textbox "Search by ID, category, species..." [ref=e213]
+            - combobox [ref=e214] [cursor=pointer]:
+              - generic: Active
+              - img
+            - combobox [ref=e215] [cursor=pointer]:
+              - generic: All Species
+              - img
+            - combobox [ref=e216] [cursor=pointer]:
+              - generic: All Statuses
+              - img
+            - combobox [ref=e217] [cursor=pointer]:
+              - generic: All Owners
+              - img
+            - combobox [ref=e218] [cursor=pointer]:
+              - generic: All Types
+              - img
+          - table [ref=e223]:
+            - rowgroup [ref=e224]:
+              - row "Select all Animal ID Species Category Group Owner Sex Status Acquisition Type Birth Date Age Acquisition Date ▼ Purchase Cost Next Vaccine Booster Due Days on Farm Actions" [ref=e225]:
+                - columnheader "Select all" [ref=e226]:
+                  - checkbox "Select all" [ref=e227] [cursor=pointer]
+                - columnheader "Animal ID" [ref=e228] [cursor=pointer]:
+                  - generic [ref=e229]: Animal ID
+                - columnheader "Species" [ref=e230]
+                - columnheader "Category" [ref=e231]
+                - columnheader "Group" [ref=e232]
+                - columnheader "Owner" [ref=e233]
+                - columnheader "Sex" [ref=e234]
+                - columnheader "Status" [ref=e235]
+                - columnheader "Acquisition Type" [ref=e236]
+                - columnheader "Birth Date" [ref=e237] [cursor=pointer]:
+                  - generic [ref=e238]: Birth Date
+                - columnheader "Age" [ref=e239] [cursor=pointer]:
+                  - generic [ref=e240]: Age
+                - columnheader "Acquisition Date ▼" [ref=e241] [cursor=pointer]:
+                  - generic [ref=e242]:
+                    - text: Acquisition Date
+                    - generic [ref=e243]: ▼
+                - columnheader "Purchase Cost" [ref=e244] [cursor=pointer]:
+                  - generic [ref=e245]: Purchase Cost
+                - columnheader "Next Vaccine" [ref=e246]
+                - columnheader "Booster Due" [ref=e247]
+                - columnheader "Days on Farm" [ref=e248]
+                - columnheader "Actions" [ref=e249]
+            - rowgroup [ref=e250]:
+              - row "Select EWE84 EWE84 Sheep Ewe F2 Walid Mohamed Bahgat female Ewe born 3/2/2026 3m 6/18/2026 — — — 2" [ref=e251] [cursor=pointer]:
+                - cell "Select EWE84" [ref=e252]:
+                  - checkbox "Select EWE84" [ref=e253]
+                - cell "EWE84" [ref=e254]:
+                  - generic [ref=e255]: EWE84
+                - cell "Sheep" [ref=e256]
+                - cell "Ewe" [ref=e257]
+                - cell "F2" [ref=e258]
+                - cell "Walid Mohamed Bahgat" [ref=e259]
+                - cell "female" [ref=e260]
+                - cell "Ewe" [ref=e261]:
+                  - generic [ref=e262]: Ewe
+                - cell "born" [ref=e263]
+                - cell "3/2/2026" [ref=e264]
+                - cell "3m" [ref=e265]
+                - cell "6/18/2026" [ref=e266]
+                - cell "—" [ref=e267]
+                - cell "—" [ref=e268]
+                - cell "—" [ref=e269]
+                - cell "2" [ref=e270]
+                - cell [ref=e271]:
+                  - generic [ref=e272]:
+                    - button "Edit" [ref=e273]:
+                      - img
+                    - button [ref=e274]:
+                      - img
+                    - button [ref=e275]:
+                      - img
+              - row "Select FAT0004 FAT0004 Sheep Fattening F2 Walid Mohamed Bahgat male Fattening born 3/11/2026 3m 6/18/2026 — — — 2" [ref=e276] [cursor=pointer]:
+                - cell "Select FAT0004" [ref=e277]:
+                  - checkbox "Select FAT0004" [ref=e278]
+                - cell "FAT0004" [ref=e279]:
+                  - generic [ref=e280]: FAT0004
+                - cell "Sheep" [ref=e281]
+                - cell "Fattening" [ref=e282]
+                - cell "F2" [ref=e283]
+                - cell "Walid Mohamed Bahgat" [ref=e284]
+                - cell "male" [ref=e285]
+                - cell "Fattening" [ref=e286]:
+                  - generic [ref=e287]: Fattening
+                - cell "born" [ref=e288]
+                - cell "3/11/2026" [ref=e289]
+                - cell "3m" [ref=e290]
+                - cell "6/18/2026" [ref=e291]
+                - cell "—" [ref=e292]
+                - cell "—" [ref=e293]
+                - cell "—" [ref=e294]
+                - cell "2" [ref=e295]
+                - cell [ref=e296]:
+                  - generic [ref=e297]:
+                    - button "Edit" [ref=e298]:
+                      - img
+                    - button [ref=e299]:
+                      - img
+                    - button [ref=e300]:
+                      - img
+              - row "Select FAT88 FAT88 Sheep Fattening F2 Walid Mohamed Bahgat male Fattening born 2/18/2026 4m 6/18/2026 — — — 2" [ref=e301] [cursor=pointer]:
+                - cell "Select FAT88" [ref=e302]:
+                  - checkbox "Select FAT88" [ref=e303]
+                - cell "FAT88" [ref=e304]:
+                  - generic [ref=e305]: FAT88
+                - cell "Sheep" [ref=e306]
+                - cell "Fattening" [ref=e307]
+                - cell "F2" [ref=e308]
+                - cell "Walid Mohamed Bahgat" [ref=e309]
+                - cell "male" [ref=e310]
+                - cell "Fattening" [ref=e311]:
+                  - generic [ref=e312]: Fattening
+                - cell "born" [ref=e313]
+                - cell "2/18/2026" [ref=e314]
+                - cell "4m" [ref=e315]
+                - cell "6/18/2026" [ref=e316]
+                - cell "—" [ref=e317]
+                - cell "—" [ref=e318]
+                - cell "—" [ref=e319]
+                - cell "2" [ref=e320]
+                - cell [ref=e321]:
+                  - generic [ref=e322]:
+                    - button "Edit" [ref=e323]:
+                      - img
+                    - button [ref=e324]:
+                      - img
+                    - button [ref=e325]:
+                      - img
+              - row "Select EWE87 EWE87 Sheep Ewe F2 Walid Mohamed Bahgat female Ewe born 4/6/2026 2m 6/18/2026 — — — 2" [ref=e326] [cursor=pointer]:
+                - cell "Select EWE87" [ref=e327]:
+                  - checkbox "Select EWE87" [ref=e328]
+                - cell "EWE87" [ref=e329]:
+                  - generic [ref=e330]: EWE87
+                - cell "Sheep" [ref=e331]
+                - cell "Ewe" [ref=e332]
+                - cell "F2" [ref=e333]
+                - cell "Walid Mohamed Bahgat" [ref=e334]
+                - cell "female" [ref=e335]
+                - cell "Ewe" [ref=e336]:
+                  - generic [ref=e337]: Ewe
+                - cell "born" [ref=e338]
+                - cell "4/6/2026" [ref=e339]
+                - cell "2m" [ref=e340]
+                - cell "6/18/2026" [ref=e341]
+                - cell "—" [ref=e342]
+                - cell "—" [ref=e343]
+                - cell "—" [ref=e344]
+                - cell "2" [ref=e345]
+                - cell [ref=e346]:
+                  - generic [ref=e347]:
+                    - button "Edit" [ref=e348]:
+                      - img
+                    - button [ref=e349]:
+                      - img
+                    - button [ref=e350]:
+                      - img
+              - row "Select EWE86 EWE86 Sheep Ewe F2 Walid Mohamed Bahgat female Ewe born 4/13/2026 2m 6/18/2026 — — — 2" [ref=e351] [cursor=pointer]:
+                - cell "Select EWE86" [ref=e352]:
+                  - checkbox "Select EWE86" [ref=e353]
+                - cell "EWE86" [ref=e354]:
+                  - generic [ref=e355]: EWE86
+                - cell "Sheep" [ref=e356]
+                - cell "Ewe" [ref=e357]
+                - cell "F2" [ref=e358]
+                - cell "Walid Mohamed Bahgat" [ref=e359]
+                - cell "female" [ref=e360]
+                - cell "Ewe" [ref=e361]:
+                  - generic [ref=e362]: Ewe
+                - cell "born" [ref=e363]
+                - cell "4/13/2026" [ref=e364]
+                - cell "2m" [ref=e365]
+                - cell "6/18/2026" [ref=e366]
+                - cell "—" [ref=e367]
+                - cell "—" [ref=e368]
+                - cell "—" [ref=e369]
+                - cell "2" [ref=e370]
+                - cell [ref=e371]:
+                  - generic [ref=e372]:
+                    - button "Edit" [ref=e373]:
+                      - img
+                    - button [ref=e374]:
+                      - img
+                    - button [ref=e375]:
+                      - img
+              - row "Select EWE85 EWE85 Sheep Ewe F2 Walid Mohamed Bahgat female Ewe born 3/9/2026 3m 6/18/2026 — — — 2" [ref=e376] [cursor=pointer]:
+                - cell "Select EWE85" [ref=e377]:
+                  - checkbox "Select EWE85" [ref=e378]
+                - cell "EWE85" [ref=e379]:
+                  - generic [ref=e380]: EWE85
+                - cell "Sheep" [ref=e381]
+                - cell "Ewe" [ref=e382]
+                - cell "F2" [ref=e383]
+                - cell "Walid Mohamed Bahgat" [ref=e384]
+                - cell "female" [ref=e385]
+                - cell "Ewe" [ref=e386]:
+                  - generic [ref=e387]: Ewe
+                - cell "born" [ref=e388]
+                - cell "3/9/2026" [ref=e389]
+                - cell "3m" [ref=e390]
+                - cell "6/18/2026" [ref=e391]
+                - cell "—" [ref=e392]
+                - cell "—" [ref=e393]
+                - cell "—" [ref=e394]
+                - cell "2" [ref=e395]
+                - cell [ref=e396]:
+                  - generic [ref=e397]:
+                    - button "Edit" [ref=e398]:
+                      - img
+                    - button [ref=e399]:
+                      - img
+                    - button [ref=e400]:
+                      - img
+              - row "Select FAT89 FAT89 Sheep Fattening F2 Walid Mohamed Bahgat male Fattening born 2/18/2026 4m 6/18/2026 — — — 2" [ref=e401] [cursor=pointer]:
+                - cell "Select FAT89" [ref=e402]:
+                  - checkbox "Select FAT89" [ref=e403]
+                - cell "FAT89" [ref=e404]:
+                  - generic [ref=e405]: FAT89
+                - cell "Sheep" [ref=e406]
+                - cell "Fattening" [ref=e407]
+                - cell "F2" [ref=e408]
+                - cell "Walid Mohamed Bahgat" [ref=e409]
+                - cell "male" [ref=e410]
+                - cell "Fattening" [ref=e411]:
+                  - generic [ref=e412]: Fattening
+                - cell "born" [ref=e413]
+                - cell "2/18/2026" [ref=e414]
+                - cell "4m" [ref=e415]
+                - cell "6/18/2026" [ref=e416]
+                - cell "—" [ref=e417]
+                - cell "—" [ref=e418]
+                - cell "—" [ref=e419]
+                - cell "2" [ref=e420]
+                - cell [ref=e421]:
+                  - generic [ref=e422]:
+                    - button "Edit" [ref=e423]:
+                      - img
+                    - button [ref=e424]:
+                      - img
+                    - button [ref=e425]:
+                      - img
+              - row "Select FAT82 FAT82 Sheep Fattening F2 Walid Mohamed Bahgat male Fattening born 2/6/2026 4m 6/18/2026 — — — 2" [ref=e426] [cursor=pointer]:
+                - cell "Select FAT82" [ref=e427]:
+                  - checkbox "Select FAT82" [ref=e428]
+                - cell "FAT82" [ref=e429]:
+                  - generic [ref=e430]: FAT82
+                - cell "Sheep" [ref=e431]
+                - cell "Fattening" [ref=e432]
+                - cell "F2" [ref=e433]
+                - cell "Walid Mohamed Bahgat" [ref=e434]
+                - cell "male" [ref=e435]
+                - cell "Fattening" [ref=e436]:
+                  - generic [ref=e437]: Fattening
+                - cell "born" [ref=e438]
+                - cell "2/6/2026" [ref=e439]
+                - cell "4m" [ref=e440]
+                - cell "6/18/2026" [ref=e441]
+                - cell "—" [ref=e442]
+                - cell "—" [ref=e443]
+                - cell "—" [ref=e444]
+                - cell "2" [ref=e445]
+                - cell [ref=e446]:
+                  - generic [ref=e447]:
+                    - button "Edit" [ref=e448]:
+                      - img
+                    - button [ref=e449]:
+                      - img
+                    - button [ref=e450]:
+                      - img
+              - row "Select EWE83 EWE83 Sheep Ewe F2 Walid Mohamed Bahgat female Ewe born 2/13/2026 4m 6/18/2026 — — — 2" [ref=e451] [cursor=pointer]:
+                - cell "Select EWE83" [ref=e452]:
+                  - checkbox "Select EWE83" [ref=e453]
+                - cell "EWE83" [ref=e454]:
+                  - generic [ref=e455]: EWE83
+                - cell "Sheep" [ref=e456]
+                - cell "Ewe" [ref=e457]
+                - cell "F2" [ref=e458]
+                - cell "Walid Mohamed Bahgat" [ref=e459]
+                - cell "female" [ref=e460]
+                - cell "Ewe" [ref=e461]:
+                  - generic [ref=e462]: Ewe
+                - cell "born" [ref=e463]
+                - cell "2/13/2026" [ref=e464]
+                - cell "4m" [ref=e465]
+                - cell "6/18/2026" [ref=e466]
+                - cell "—" [ref=e467]
+                - cell "—" [ref=e468]
+                - cell "—" [ref=e469]
+                - cell "2" [ref=e470]
+                - cell [ref=e471]:
+                  - generic [ref=e472]:
+                    - button "Edit" [ref=e473]:
+                      - img
+                    - button [ref=e474]:
+                      - img
+                    - button [ref=e475]:
+                      - img
+              - row "Select FAT81 FAT81 Sheep Fattening F2 Walid Mohamed Bahgat male Fattening born 2/13/2026 4m 6/18/2026 — — — 2" [ref=e476] [cursor=pointer]:
+                - cell "Select FAT81" [ref=e477]:
+                  - checkbox "Select FAT81" [ref=e478]
+                - cell "FAT81" [ref=e479]:
+                  - generic [ref=e480]: FAT81
+                - cell "Sheep" [ref=e481]
+                - cell "Fattening" [ref=e482]
+                - cell "F2" [ref=e483]
+                - cell "Walid Mohamed Bahgat" [ref=e484]
+                - cell "male" [ref=e485]
+                - cell "Fattening" [ref=e486]:
+                  - generic [ref=e487]: Fattening
+                - cell "born" [ref=e488]
+                - cell "2/13/2026" [ref=e489]
+                - cell "4m" [ref=e490]
+                - cell "6/18/2026" [ref=e491]
+                - cell "—" [ref=e492]
+                - cell "—" [ref=e493]
+                - cell "—" [ref=e494]
+                - cell "2" [ref=e495]
+                - cell [ref=e496]:
+                  - generic [ref=e497]:
+                    - button "Edit" [ref=e498]:
+                      - img
+                    - button [ref=e499]:
+                      - img
+                    - button [ref=e500]:
+                      - img
+              - row "Select COW0003 📷 COW0003 Cow Cow Milking Barn Azal Farms female Cow purchased 6/1/2023 3y 6/13/2026 80,000.00 FMD 10/11/2026 FMD 7/13/2026 7" [ref=e501] [cursor=pointer]:
+                - cell "Select COW0003" [ref=e502]:
+                  - checkbox "Select COW0003" [ref=e503]
+                - cell "📷 COW0003" [ref=e504]:
+                  - generic [ref=e505]:
+                    - generic "Has photo" [ref=e506]: 📷
+                    - text: COW0003
+                - cell "Cow" [ref=e507]
+                - cell "Cow" [ref=e508]
+                - cell "Milking Barn" [ref=e509]
+                - cell "Azal Farms" [ref=e510]
+                - cell "female" [ref=e511]
+                - cell "Cow" [ref=e512]:
+                  - generic [ref=e513]: Cow
+                - cell "purchased" [ref=e514]
+                - cell "6/1/2023" [ref=e515]
+                - cell "3y" [ref=e516]
+                - cell "6/13/2026" [ref=e517]
+                - cell "80,000.00" [ref=e518]
+                - cell "FMD 10/11/2026" [ref=e519]:
+                  - generic [ref=e520]:
+                    - img [ref=e521]
+                    - generic [ref=e528]: FMD
+                    - generic [ref=e529]: 10/11/2026
+                - cell "FMD 7/13/2026" [ref=e530]:
+                  - generic [ref=e531]:
+                    - img [ref=e532]
+                    - generic [ref=e539]: FMD
+                    - generic [ref=e540]: 7/13/2026
+                - cell "7" [ref=e541]
+                - cell [ref=e542]:
+                  - generic [ref=e543]:
+                    - button "Edit" [ref=e544]:
+                      - img
+                    - button [ref=e545]:
+                      - img
+                    - button [ref=e546]:
+                      - img
+              - row "Select BEE0006 📷 BEE0006 Cow Beef Calf Milking Barn Walid Mohamed Bahgat male Fattening purchased 6/1/2026 19d 6/13/2026 26,500.00 — — 7" [ref=e547] [cursor=pointer]:
+                - cell "Select BEE0006" [ref=e548]:
+                  - checkbox "Select BEE0006" [ref=e549]
+                - cell "📷 BEE0006" [ref=e550]:
+                  - generic [ref=e551]:
+                    - generic "Has photo" [ref=e552]: 📷
+                    - text: BEE0006
+                - cell "Cow" [ref=e553]
+                - cell "Beef Calf" [ref=e554]
+                - cell "Milking Barn" [ref=e555]
+                - cell "Walid Mohamed Bahgat" [ref=e556]
+                - cell "male" [ref=e557]
+                - cell "Fattening" [ref=e558]:
+                  - generic [ref=e559]: Fattening
+                - cell "purchased" [ref=e560]
+                - cell "6/1/2026" [ref=e561]
+                - cell "19d" [ref=e562]
+                - cell "6/13/2026" [ref=e563]
+                - cell "26,500.00" [ref=e564]
+                - cell "—" [ref=e565]
+                - cell "—" [ref=e566]
+                - cell "7" [ref=e567]
+                - cell [ref=e568]:
+                  - generic [ref=e569]:
+                    - button "Edit" [ref=e570]:
+                      - img
+                    - button [ref=e571]:
+                      - img
+                    - button [ref=e572]:
+                      - img
+              - row "Select BEE0005 BEE0005 Cow Beef Calf B1 — male Fattening purchased 6/1/2026 19d 6/13/2026 26,500.00 — — 7" [ref=e573] [cursor=pointer]:
+                - cell "Select BEE0005" [ref=e574]:
+                  - checkbox "Select BEE0005" [ref=e575]
+                - cell "BEE0005" [ref=e576]:
+                  - generic [ref=e577]: BEE0005
+                - cell "Cow" [ref=e578]
+                - cell "Beef Calf" [ref=e579]
+                - cell "B1" [ref=e580]
+                - cell "—" [ref=e581]
+                - cell "male" [ref=e582]
+                - cell "Fattening" [ref=e583]:
+                  - generic [ref=e584]: Fattening
+                - cell "purchased" [ref=e585]
+                - cell "6/1/2026" [ref=e586]
+                - cell "19d" [ref=e587]
+                - cell "6/13/2026" [ref=e588]
+                - cell "26,500.00" [ref=e589]
+                - cell "—" [ref=e590]
+                - cell "—" [ref=e591]
+                - cell "7" [ref=e592]
+                - cell [ref=e593]:
+                  - generic [ref=e594]:
+                    - button "Edit" [ref=e595]:
+                      - img
+                    - button [ref=e596]:
+                      - img
+                    - button [ref=e597]:
+                      - img
+              - row "Select BEE0004 📷 BEE0004 Cow Beef Calf Milking Barn Malak Ashraf Elshakaa male Fattening purchased 6/1/2026 19d 6/13/2026 26,500.00 — — 7" [ref=e598] [cursor=pointer]:
+                - cell "Select BEE0004" [ref=e599]:
+                  - checkbox "Select BEE0004" [ref=e600]
+                - cell "📷 BEE0004" [ref=e601]:
+                  - generic [ref=e602]:
+                    - generic "Has photo" [ref=e603]: 📷
+                    - text: BEE0004
+                - cell "Cow" [ref=e604]
+                - cell "Beef Calf" [ref=e605]
+                - cell "Milking Barn" [ref=e606]
+                - cell "Malak Ashraf Elshakaa" [ref=e607]
+                - cell "male" [ref=e608]
+                - cell "Fattening" [ref=e609]:
+                  - generic [ref=e610]: Fattening
+                - cell "purchased" [ref=e611]
+                - cell "6/1/2026" [ref=e612]
+                - cell "19d" [ref=e613]
+                - cell "6/13/2026" [ref=e614]
+                - cell "26,500.00" [ref=e615]
+                - cell "—" [ref=e616]
+                - cell "—" [ref=e617]
+                - cell "7" [ref=e618]
+                - cell [ref=e619]:
+                  - generic [ref=e620]:
+                    - button "Edit" [ref=e621]:
+                      - img
+                    - button [ref=e622]:
+                      - img
+                    - button [ref=e623]:
+                      - img
+              - row "Select BEE0003 📷 BEE0003 Cow Beef Calf Milking Barn Azal Farms male Fattening purchased 6/10/2026 10d 6/13/2026 26,500.00 — — 7" [ref=e624] [cursor=pointer]:
+                - cell "Select BEE0003" [ref=e625]:
+                  - checkbox "Select BEE0003" [ref=e626]
+                - cell "📷 BEE0003" [ref=e627]:
+                  - generic [ref=e628]:
+                    - generic "Has photo" [ref=e629]: 📷
+                    - text: BEE0003
+                - cell "Cow" [ref=e630]
+                - cell "Beef Calf" [ref=e631]
+                - cell "Milking Barn" [ref=e632]
+                - cell "Azal Farms" [ref=e633]
+                - cell "male" [ref=e634]
+                - cell "Fattening" [ref=e635]:
+                  - generic [ref=e636]: Fattening
+                - cell "purchased" [ref=e637]
+                - cell "6/10/2026" [ref=e638]
+                - cell "10d" [ref=e639]
+                - cell "6/13/2026" [ref=e640]
+                - cell "26,500.00" [ref=e641]
+                - cell "—" [ref=e642]
+                - cell "—" [ref=e643]
+                - cell "7" [ref=e644]
+                - cell [ref=e645]:
+                  - generic [ref=e646]:
+                    - button "Edit" [ref=e647]:
+                      - img
+                    - button [ref=e648]:
+                      - img
+                    - button [ref=e649]:
+                      - img
+              - row "Select BEE0002 BEE0002 Cow Beef Calf B1 Walid Mohamed Bahgat male Fattening purchased 5/1/2026 1m 6/4/2026 26,500.00 — — 16" [ref=e650] [cursor=pointer]:
+                - cell "Select BEE0002" [ref=e651]:
+                  - checkbox "Select BEE0002" [ref=e652]
+                - cell "BEE0002" [ref=e653]:
+                  - generic [ref=e654]: BEE0002
+                - cell "Cow" [ref=e655]
+                - cell "Beef Calf" [ref=e656]
+                - cell "B1" [ref=e657]
+                - cell "Walid Mohamed Bahgat" [ref=e658]
+                - cell "male" [ref=e659]
+                - cell "Fattening" [ref=e660]:
+                  - generic [ref=e661]: Fattening
+                - cell "purchased" [ref=e662]
+                - cell "5/1/2026" [ref=e663]
+                - cell "1m" [ref=e664]
+                - cell "6/4/2026" [ref=e665]
+                - cell "26,500.00" [ref=e666]
+                - cell "—" [ref=e667]
+                - cell "—" [ref=e668]
+                - cell "16" [ref=e669]
+                - cell [ref=e670]:
+                  - generic [ref=e671]:
+                    - button "Edit" [ref=e672]:
+                      - img
+                    - button [ref=e673]:
+                      - img
+                    - button [ref=e674]:
+                      - img
+              - row "Select BEE0001 📷 BEE0001 Cow Beef Calf Milking Barn Malak Ashraf Elshakaa male Fattening purchased 5/1/2026 1m 6/4/2026 25,000.00 — — 16" [ref=e675] [cursor=pointer]:
+                - cell "Select BEE0001" [ref=e676]:
+                  - checkbox "Select BEE0001" [ref=e677]
+                - cell "📷 BEE0001" [ref=e678]:
+                  - generic [ref=e679]:
+                    - generic "Has photo" [ref=e680]: 📷
+                    - text: BEE0001
+                - cell "Cow" [ref=e681]
+                - cell "Beef Calf" [ref=e682]
+                - cell "Milking Barn" [ref=e683]
+                - cell "Malak Ashraf Elshakaa" [ref=e684]
+                - cell "male" [ref=e685]
+                - cell "Fattening" [ref=e686]:
+                  - generic [ref=e687]: Fattening
+                - cell "purchased" [ref=e688]
+                - cell "5/1/2026" [ref=e689]
+                - cell "1m" [ref=e690]
+                - cell "6/4/2026" [ref=e691]
+                - cell "25,000.00" [ref=e692]
+                - cell "—" [ref=e693]
+                - cell "—" [ref=e694]
+                - cell "16" [ref=e695]
+                - cell [ref=e696]:
+                  - generic [ref=e697]:
+                    - button "Edit" [ref=e698]:
+                      - img
+                    - button [ref=e699]:
+                      - img
+                    - button [ref=e700]:
+                      - img
+              - row "Select COW0001 📷 COW0001 Cow Cow Milking Barn Malak Ashraf Elshakaa female Cow purchased 6/2/2024 2y 6/4/2026 60,000.00 FMD 10/11/2026 FMD 7/13/2026 16" [ref=e701] [cursor=pointer]:
+                - cell "Select COW0001" [ref=e702]:
+                  - checkbox "Select COW0001" [ref=e703]
+                - cell "📷 COW0001" [ref=e704]:
+                  - generic [ref=e705]:
+                    - generic "Has photo" [ref=e706]: 📷
+                    - text: COW0001
+                - cell "Cow" [ref=e707]
+                - cell "Cow" [ref=e708]
+                - cell "Milking Barn" [ref=e709]
+                - cell "Malak Ashraf Elshakaa" [ref=e710]
+                - cell "female" [ref=e711]
+                - cell "Cow" [ref=e712]:
+                  - generic [ref=e713]: Cow
+                - cell "purchased" [ref=e714]
+                - cell "6/2/2024" [ref=e715]
+                - cell "2y" [ref=e716]
+                - cell "6/4/2026" [ref=e717]
+                - cell "60,000.00" [ref=e718]
+                - cell "FMD 10/11/2026" [ref=e719]:
+                  - generic [ref=e720]:
+                    - img [ref=e721]
+                    - generic [ref=e728]: FMD
+                    - generic [ref=e729]: 10/11/2026
+                - cell "FMD 7/13/2026" [ref=e730]:
+                  - generic [ref=e731]:
+                    - img [ref=e732]
+                    - generic [ref=e739]: FMD
+                    - generic [ref=e740]: 7/13/2026
+                - cell "16" [ref=e741]
+                - cell [ref=e742]:
+                  - generic [ref=e743]:
+                    - button "Edit" [ref=e744]:
+                      - img
+                    - button [ref=e745]:
+                      - img
+                    - button [ref=e746]:
+                      - img
+              - row "Select L-023 L-023 Sheep Lamb F5 Walid Mohamed Bahgat male Lamb born 4/30/2026 1m 4/30/2026 — — — 51" [ref=e747] [cursor=pointer]:
+                - cell "Select L-023" [ref=e748]:
+                  - checkbox "Select L-023" [ref=e749]
+                - cell "L-023" [ref=e750]:
+                  - generic [ref=e751]: L-023
+                - cell "Sheep" [ref=e752]
+                - cell "Lamb" [ref=e753]
+                - cell "F5" [ref=e754]
+                - cell "Walid Mohamed Bahgat" [ref=e755]
+                - cell "male" [ref=e756]
+                - cell "Lamb" [ref=e757]:
+                  - generic [ref=e758]: Lamb
+                - cell "born" [ref=e759]
+                - cell "4/30/2026" [ref=e760]
+                - cell "1m" [ref=e761]
+                - cell "4/30/2026" [ref=e762]
+                - cell "—" [ref=e763]
+                - cell "—" [ref=e764]
+                - cell "—" [ref=e765]
+                - cell "51" [ref=e766]
+                - cell [ref=e767]:
+                  - generic [ref=e768]:
+                    - button "Edit" [ref=e769]:
+                      - img
+                    - button [ref=e770]:
+                      - img
+                    - button [ref=e771]:
+                      - img
+              - row "Select L-022 L-022 Sheep Lamb F5 Walid Mohamed Bahgat female Lamb born 4/13/2026 2m 4/13/2026 — — — 68" [ref=e772] [cursor=pointer]:
+                - cell "Select L-022" [ref=e773]:
+                  - checkbox "Select L-022" [ref=e774]
+                - cell "L-022" [ref=e775]:
+                  - generic [ref=e776]: L-022
+                - cell "Sheep" [ref=e777]
+                - cell "Lamb" [ref=e778]
+                - cell "F5" [ref=e779]
+                - cell "Walid Mohamed Bahgat" [ref=e780]
+                - cell "female" [ref=e781]
+                - cell "Lamb" [ref=e782]:
+                  - generic [ref=e783]: Lamb
+                - cell "born" [ref=e784]
+                - cell "4/13/2026" [ref=e785]
+                - cell "2m" [ref=e786]
+                - cell "4/13/2026" [ref=e787]
+                - cell "—" [ref=e788]
+                - cell "—" [ref=e789]
+                - cell "—" [ref=e790]
+                - cell "68" [ref=e791]
+                - cell [ref=e792]:
+                  - generic [ref=e793]:
+                    - button "Edit" [ref=e794]:
+                      - img
+                    - button [ref=e795]:
+                      - img
+                    - button [ref=e796]:
+                      - img
+              - row "Select L-020 L-020 Sheep Lamb F5 Walid Mohamed Bahgat female Lamb born 4/6/2026 2m 4/6/2026 — — — 75" [ref=e797] [cursor=pointer]:
+                - cell "Select L-020" [ref=e798]:
+                  - checkbox "Select L-020" [ref=e799]
+                - cell "L-020" [ref=e800]:
+                  - generic [ref=e801]: L-020
+                - cell "Sheep" [ref=e802]
+                - cell "Lamb" [ref=e803]
+                - cell "F5" [ref=e804]
+                - cell "Walid Mohamed Bahgat" [ref=e805]
+                - cell "female" [ref=e806]
+                - cell "Lamb" [ref=e807]:
+                  - generic [ref=e808]: Lamb
+                - cell "born" [ref=e809]
+                - cell "4/6/2026" [ref=e810]
+                - cell "2m" [ref=e811]
+                - cell "4/6/2026" [ref=e812]
+                - cell "—" [ref=e813]
+                - cell "—" [ref=e814]
+                - cell "—" [ref=e815]
+                - cell "75" [ref=e816]
+                - cell [ref=e817]:
+                  - generic [ref=e818]:
+                    - button "Edit" [ref=e819]:
+                      - img
+                    - button [ref=e820]:
+                      - img
+                    - button [ref=e821]:
+                      - img
+              - row "Select L-021 L-021 Sheep Lamb F5 Walid Mohamed Bahgat female Lamb born 4/6/2026 2m 4/6/2026 — — — 75" [ref=e822] [cursor=pointer]:
+                - cell "Select L-021" [ref=e823]:
+                  - checkbox "Select L-021" [ref=e824]
+                - cell "L-021" [ref=e825]:
+                  - generic [ref=e826]: L-021
+                - cell "Sheep" [ref=e827]
+                - cell "Lamb" [ref=e828]
+                - cell "F5" [ref=e829]
+                - cell "Walid Mohamed Bahgat" [ref=e830]
+                - cell "female" [ref=e831]
+                - cell "Lamb" [ref=e832]:
+                  - generic [ref=e833]: Lamb
+                - cell "born" [ref=e834]
+                - cell "4/6/2026" [ref=e835]
+                - cell "2m" [ref=e836]
+                - cell "4/6/2026" [ref=e837]
+                - cell "—" [ref=e838]
+                - cell "—" [ref=e839]
+                - cell "—" [ref=e840]
+                - cell "75" [ref=e841]
+                - cell [ref=e842]:
+                  - generic [ref=e843]:
+                    - button "Edit" [ref=e844]:
+                      - img
+                    - button [ref=e845]:
+                      - img
+                    - button [ref=e846]:
+                      - img
+              - row "Select R-003 R-003 Sheep Ram F5 Walid Mohamed Bahgat male Ram purchased 8/1/2025 10m 3/11/2026 20,000.00 — — 101" [ref=e847] [cursor=pointer]:
+                - cell "Select R-003" [ref=e848]:
+                  - checkbox "Select R-003" [ref=e849]
+                - cell "R-003" [ref=e850]:
+                  - generic [ref=e851]: R-003
+                - cell "Sheep" [ref=e852]
+                - cell "Ram" [ref=e853]
+                - cell "F5" [ref=e854]
+                - cell "Walid Mohamed Bahgat" [ref=e855]
+                - cell "male" [ref=e856]
+                - cell "Ram" [ref=e857]:
+                  - generic [ref=e858]: Ram
+                - cell "purchased" [ref=e859]
+                - cell "8/1/2025" [ref=e860]
+                - cell "10m" [ref=e861]
+                - cell "3/11/2026" [ref=e862]
+                - cell "20,000.00" [ref=e863]
+                - cell "—" [ref=e864]
+                - cell "—" [ref=e865]
+                - cell "101" [ref=e866]
+                - cell [ref=e867]:
+                  - generic [ref=e868]:
+                    - button "Edit" [ref=e869]:
+                      - img
+                    - button [ref=e870]:
+                      - img
+                    - button [ref=e871]:
+                      - img
+              - row "Select L-019 L-019 Sheep Lamb F5 Walid Mohamed Bahgat female Lamb born 3/11/2026 3m 3/11/2026 — — — 101" [ref=e872] [cursor=pointer]:
+                - cell "Select L-019" [ref=e873]:
+                  - checkbox "Select L-019" [ref=e874]
+                - cell "L-019" [ref=e875]:
+                  - generic [ref=e876]: L-019
+                - cell "Sheep" [ref=e877]
+                - cell "Lamb" [ref=e878]
+                - cell "F5" [ref=e879]
+                - cell "Walid Mohamed Bahgat" [ref=e880]
+                - cell "female" [ref=e881]
+                - cell "Lamb" [ref=e882]:
+                  - generic [ref=e883]: Lamb
+                - cell "born" [ref=e884]
+                - cell "3/11/2026" [ref=e885]
+                - cell "3m" [ref=e886]
+                - cell "3/11/2026" [ref=e887]
+                - cell "—" [ref=e888]
+                - cell "—" [ref=e889]
+                - cell "—" [ref=e890]
+                - cell "101" [ref=e891]
+                - cell [ref=e892]:
+                  - generic [ref=e893]:
+                    - button "Edit" [ref=e894]:
+                      - img
+                    - button [ref=e895]:
+                      - img
+                    - button [ref=e896]:
+                      - img
+              - row "Select L-018 L-018 Sheep Lamb F5 Walid Mohamed Bahgat female Lamb born 3/9/2026 3m 3/9/2026 — — — 103" [ref=e897] [cursor=pointer]:
+                - cell "Select L-018" [ref=e898]:
+                  - checkbox "Select L-018" [ref=e899]
+                - cell "L-018" [ref=e900]:
+                  - generic [ref=e901]: L-018
+                - cell "Sheep" [ref=e902]
+                - cell "Lamb" [ref=e903]
+                - cell "F5" [ref=e904]
+                - cell "Walid Mohamed Bahgat" [ref=e905]
+                - cell "female" [ref=e906]
+                - cell "Lamb" [ref=e907]:
+                  - generic [ref=e908]: Lamb
+                - cell "born" [ref=e909]
+                - cell "3/9/2026" [ref=e910]
+                - cell "3m" [ref=e911]
+                - cell "3/9/2026" [ref=e912]
+                - cell "—" [ref=e913]
+                - cell "—" [ref=e914]
+                - cell "—" [ref=e915]
+                - cell "103" [ref=e916]
+                - cell [ref=e917]:
+                  - generic [ref=e918]:
+                    - button "Edit" [ref=e919]:
+                      - img
+                    - button [ref=e920]:
+                      - img
+                    - button [ref=e921]:
+                      - img
+              - row "Select L-017 L-017 Sheep Lamb F5 Walid Mohamed Bahgat female Lamb born 3/2/2026 3m 3/2/2026 — — — 110" [ref=e922] [cursor=pointer]:
+                - cell "Select L-017" [ref=e923]:
+                  - checkbox "Select L-017" [ref=e924]
+                - cell "L-017" [ref=e925]:
+                  - generic [ref=e926]: L-017
+                - cell "Sheep" [ref=e927]
+                - cell "Lamb" [ref=e928]
+                - cell "F5" [ref=e929]
+                - cell "Walid Mohamed Bahgat" [ref=e930]
+                - cell "female" [ref=e931]
+                - cell "Lamb" [ref=e932]:
+                  - generic [ref=e933]: Lamb
+                - cell "born" [ref=e934]
+                - cell "3/2/2026" [ref=e935]
+                - cell "3m" [ref=e936]
+                - cell "3/2/2026" [ref=e937]
+                - cell "—" [ref=e938]
+                - cell "—" [ref=e939]
+                - cell "—" [ref=e940]
+                - cell "110" [ref=e941]
+                - cell [ref=e942]:
+                  - generic [ref=e943]:
+                    - button "Edit" [ref=e944]:
+                      - img
+                    - button [ref=e945]:
+                      - img
+                    - button [ref=e946]:
+                      - img
+              - row "Select L-016 L-016 Sheep Lamb F5 Walid Mohamed Bahgat male Lamb born 2/18/2026 4m 2/18/2026 — — — 122" [ref=e947] [cursor=pointer]:
+                - cell "Select L-016" [ref=e948]:
+                  - checkbox "Select L-016" [ref=e949]
+                - cell "L-016" [ref=e950]:
+                  - generic [ref=e951]: L-016
+                - cell "Sheep" [ref=e952]
+                - cell "Lamb" [ref=e953]
+                - cell "F5" [ref=e954]
+                - cell "Walid Mohamed Bahgat" [ref=e955]
+                - cell "male" [ref=e956]
+                - cell "Lamb" [ref=e957]:
+                  - generic [ref=e958]: Lamb
+                - cell "born" [ref=e959]
+                - cell "2/18/2026" [ref=e960]
+                - cell "4m" [ref=e961]
+                - cell "2/18/2026" [ref=e962]
+                - cell "—" [ref=e963]
+                - cell "—" [ref=e964]
+                - cell "—" [ref=e965]
+                - cell "122" [ref=e966]
+                - cell [ref=e967]:
+                  - generic [ref=e968]:
+                    - button "Edit" [ref=e969]:
+                      - img
+                    - button [ref=e970]:
+                      - img
+                    - button [ref=e971]:
+                      - img
+              - row "Select L-015 L-015 Sheep Lamb F5 Walid Mohamed Bahgat female Lamb born 2/18/2026 4m 2/18/2026 — — — 122" [ref=e972] [cursor=pointer]:
+                - cell "Select L-015" [ref=e973]:
+                  - checkbox "Select L-015" [ref=e974]
+                - cell "L-015" [ref=e975]:
+                  - generic [ref=e976]: L-015
+                - cell "Sheep" [ref=e977]
+                - cell "Lamb" [ref=e978]
+                - cell "F5" [ref=e979]
+                - cell "Walid Mohamed Bahgat" [ref=e980]
+                - cell "female" [ref=e981]
+                - cell "Lamb" [ref=e982]:
+                  - generic [ref=e983]: Lamb
+                - cell "born" [ref=e984]
+                - cell "2/18/2026" [ref=e985]
+                - cell "4m" [ref=e986]
+                - cell "2/18/2026" [ref=e987]
+                - cell "—" [ref=e988]
+                - cell "—" [ref=e989]
+                - cell "—" [ref=e990]
+                - cell "122" [ref=e991]
+                - cell [ref=e992]:
+                  - generic [ref=e993]:
+                    - button "Edit" [ref=e994]:
+                      - img
+                    - button [ref=e995]:
+                      - img
+                    - button [ref=e996]:
+                      - img
+              - row "Select L-014 L-014 Sheep Lamb F5 Walid Mohamed Bahgat male Lamb born 2/18/2026 4m 2/18/2026 — — — 122" [ref=e997] [cursor=pointer]:
+                - cell "Select L-014" [ref=e998]:
+                  - checkbox "Select L-014" [ref=e999]
+                - cell "L-014" [ref=e1000]:
+                  - generic [ref=e1001]: L-014
+                - cell "Sheep" [ref=e1002]
+                - cell "Lamb" [ref=e1003]
+                - cell "F5" [ref=e1004]
+                - cell "Walid Mohamed Bahgat" [ref=e1005]
+                - cell "male" [ref=e1006]
+                - cell "Lamb" [ref=e1007]:
+                  - generic [ref=e1008]: Lamb
+                - cell "born" [ref=e1009]
+                - cell "2/18/2026" [ref=e1010]
+                - cell "4m" [ref=e1011]
+                - cell "2/18/2026" [ref=e1012]
+                - cell "—" [ref=e1013]
+                - cell "—" [ref=e1014]
+                - cell "—" [ref=e1015]
+                - cell "122" [ref=e1016]
+                - cell [ref=e1017]:
+                  - generic [ref=e1018]:
+                    - button "Edit" [ref=e1019]:
+                      - img
+                    - button [ref=e1020]:
+                      - img
+                    - button [ref=e1021]:
+                      - img
+              - row "Select L-013 L-013 Sheep Lamb F1 Walid Mohamed Bahgat male Lamb born 2/13/2026 4m 2/13/2026 — — — 127" [ref=e1022] [cursor=pointer]:
+                - cell "Select L-013" [ref=e1023]:
+                  - checkbox "Select L-013" [ref=e1024]
+                - cell "L-013" [ref=e1025]:
+                  - generic [ref=e1026]: L-013
+                - cell "Sheep" [ref=e1027]
+                - cell "Lamb" [ref=e1028]
+                - cell "F1" [ref=e1029]
+                - cell "Walid Mohamed Bahgat" [ref=e1030]
+                - cell "male" [ref=e1031]
+                - cell "Lamb" [ref=e1032]:
+                  - generic [ref=e1033]: Lamb
+                - cell "born" [ref=e1034]
+                - cell "2/13/2026" [ref=e1035]
+                - cell "4m" [ref=e1036]
+                - cell "2/13/2026" [ref=e1037]
+                - cell "—" [ref=e1038]
+                - cell "—" [ref=e1039]
+                - cell "—" [ref=e1040]
+                - cell "127" [ref=e1041]
+                - cell [ref=e1042]:
+                  - generic [ref=e1043]:
+                    - button "Edit" [ref=e1044]:
+                      - img
+                    - button [ref=e1045]:
+                      - img
+                    - button [ref=e1046]:
+                      - img
+              - row "Select L-012 L-012 Sheep Lamb F1 Walid Mohamed Bahgat female Lamb born 2/13/2026 4m 2/13/2026 — — — 127" [ref=e1047] [cursor=pointer]:
+                - cell "Select L-012" [ref=e1048]:
+                  - checkbox "Select L-012" [ref=e1049]
+                - cell "L-012" [ref=e1050]:
+                  - generic [ref=e1051]: L-012
+                - cell "Sheep" [ref=e1052]
+                - cell "Lamb" [ref=e1053]
+                - cell "F1" [ref=e1054]
+                - cell "Walid Mohamed Bahgat" [ref=e1055]
+                - cell "female" [ref=e1056]
+                - cell "Lamb" [ref=e1057]:
+                  - generic [ref=e1058]: Lamb
+                - cell "born" [ref=e1059]
+                - cell "2/13/2026" [ref=e1060]
+                - cell "4m" [ref=e1061]
+                - cell "2/13/2026" [ref=e1062]
+                - cell "—" [ref=e1063]
+                - cell "—" [ref=e1064]
+                - cell "—" [ref=e1065]
+                - cell "127" [ref=e1066]
+                - cell [ref=e1067]:
+                  - generic [ref=e1068]:
+                    - button "Edit" [ref=e1069]:
+                      - img
+                    - button [ref=e1070]:
+                      - img
+                    - button [ref=e1071]:
+                      - img
+              - row "Select L-011 L-011 Sheep Lamb F1 Walid Mohamed Bahgat male Lamb born 2/6/2026 4m 2/6/2026 — — — 134" [ref=e1072] [cursor=pointer]:
+                - cell "Select L-011" [ref=e1073]:
+                  - checkbox "Select L-011" [ref=e1074]
+                - cell "L-011" [ref=e1075]:
+                  - generic [ref=e1076]: L-011
+                - cell "Sheep" [ref=e1077]
+                - cell "Lamb" [ref=e1078]
+                - cell "F1" [ref=e1079]
+                - cell "Walid Mohamed Bahgat" [ref=e1080]
+                - cell "male" [ref=e1081]
+                - cell "Lamb" [ref=e1082]:
+                  - generic [ref=e1083]: Lamb
+                - cell "born" [ref=e1084]
+                - cell "2/6/2026" [ref=e1085]
+                - cell "4m" [ref=e1086]
+                - cell "2/6/2026" [ref=e1087]
+                - cell "—" [ref=e1088]
+                - cell "—" [ref=e1089]
+                - cell "—" [ref=e1090]
+                - cell "134" [ref=e1091]
+                - cell [ref=e1092]:
+                  - generic [ref=e1093]:
+                    - button "Edit" [ref=e1094]:
+                      - img
+                    - button [ref=e1095]:
+                      - img
+                    - button [ref=e1096]:
+                      - img
+              - row "Select K-006 K-006 Goat Baby Goat B2 Walid Mohamed Bahgat male Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1097] [cursor=pointer]:
+                - cell "Select K-006" [ref=e1098]:
+                  - checkbox "Select K-006" [ref=e1099]
+                - cell "K-006" [ref=e1100]:
+                  - generic [ref=e1101]: K-006
+                - cell "Goat" [ref=e1102]
+                - cell "Baby Goat" [ref=e1103]
+                - cell "B2" [ref=e1104]
+                - cell "Walid Mohamed Bahgat" [ref=e1105]
+                - cell "male" [ref=e1106]
+                - cell "Baby Goat" [ref=e1107]:
+                  - generic [ref=e1108]: Baby Goat
+                - cell "purchased" [ref=e1109]
+                - cell "12/15/2025" [ref=e1110]
+                - cell "6m" [ref=e1111]
+                - cell "1/24/2026" [ref=e1112]
+                - cell "—" [ref=e1113]
+                - cell "—" [ref=e1114]
+                - cell "—" [ref=e1115]
+                - cell "147" [ref=e1116]
+                - cell [ref=e1117]:
+                  - generic [ref=e1118]:
+                    - button "Edit" [ref=e1119]:
+                      - img
+                    - button [ref=e1120]:
+                      - img
+                    - button [ref=e1121]:
+                      - img
+              - row "Select K-003 K-003 Goat Baby Goat B2 Walid Mohamed Bahgat female Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1122] [cursor=pointer]:
+                - cell "Select K-003" [ref=e1123]:
+                  - checkbox "Select K-003" [ref=e1124]
+                - cell "K-003" [ref=e1125]:
+                  - generic [ref=e1126]: K-003
+                - cell "Goat" [ref=e1127]
+                - cell "Baby Goat" [ref=e1128]
+                - cell "B2" [ref=e1129]
+                - cell "Walid Mohamed Bahgat" [ref=e1130]
+                - cell "female" [ref=e1131]
+                - cell "Baby Goat" [ref=e1132]:
+                  - generic [ref=e1133]: Baby Goat
+                - cell "purchased" [ref=e1134]
+                - cell "12/15/2025" [ref=e1135]
+                - cell "6m" [ref=e1136]
+                - cell "1/24/2026" [ref=e1137]
+                - cell "—" [ref=e1138]
+                - cell "—" [ref=e1139]
+                - cell "—" [ref=e1140]
+                - cell "147" [ref=e1141]
+                - cell [ref=e1142]:
+                  - generic [ref=e1143]:
+                    - button "Edit" [ref=e1144]:
+                      - img
+                    - button [ref=e1145]:
+                      - img
+                    - button [ref=e1146]:
+                      - img
+              - row "Select G-002 G-002 Goat Goat B2 Azal Farms female Goat purchased 1/1/2024 2y 5m 1/24/2026 15,000.00 — — 147" [ref=e1147] [cursor=pointer]:
+                - cell "Select G-002" [ref=e1148]:
+                  - checkbox "Select G-002" [ref=e1149]
+                - cell "G-002" [ref=e1150]:
+                  - generic [ref=e1151]: G-002
+                - cell "Goat" [ref=e1152]
+                - cell "Goat" [ref=e1153]
+                - cell "B2" [ref=e1154]
+                - cell "Azal Farms" [ref=e1155]
+                - cell "female" [ref=e1156]
+                - cell "Goat" [ref=e1157]:
+                  - generic [ref=e1158]: Goat
+                - cell "purchased" [ref=e1159]
+                - cell "1/1/2024" [ref=e1160]
+                - cell "2y 5m" [ref=e1161]
+                - cell "1/24/2026" [ref=e1162]
+                - cell "15,000.00" [ref=e1163]
+                - cell "—" [ref=e1164]
+                - cell "—" [ref=e1165]
+                - cell "147" [ref=e1166]
+                - cell [ref=e1167]:
+                  - generic [ref=e1168]:
+                    - button "Edit" [ref=e1169]:
+                      - img
+                    - button [ref=e1170]:
+                      - img
+                    - button [ref=e1171]:
+                      - img
+              - row "Select G-003 G-003 Goat Goat B2 Walid Mohamed Bahgat female Goat purchased 1/1/2024 2y 5m 1/24/2026 15,000.00 — — 147" [ref=e1172] [cursor=pointer]:
+                - cell "Select G-003" [ref=e1173]:
+                  - checkbox "Select G-003" [ref=e1174]
+                - cell "G-003" [ref=e1175]:
+                  - generic [ref=e1176]: G-003
+                - cell "Goat" [ref=e1177]
+                - cell "Goat" [ref=e1178]
+                - cell "B2" [ref=e1179]
+                - cell "Walid Mohamed Bahgat" [ref=e1180]
+                - cell "female" [ref=e1181]
+                - cell "Goat" [ref=e1182]:
+                  - generic [ref=e1183]: Goat
+                - cell "purchased" [ref=e1184]
+                - cell "1/1/2024" [ref=e1185]
+                - cell "2y 5m" [ref=e1186]
+                - cell "1/24/2026" [ref=e1187]
+                - cell "15,000.00" [ref=e1188]
+                - cell "—" [ref=e1189]
+                - cell "—" [ref=e1190]
+                - cell "147" [ref=e1191]
+                - cell [ref=e1192]:
+                  - generic [ref=e1193]:
+                    - button "Edit" [ref=e1194]:
+                      - img
+                    - button [ref=e1195]:
+                      - img
+                    - button [ref=e1196]:
+                      - img
+              - row "Select G-004 G-004 Goat Goat B2 Walid Mohamed Bahgat female Goat purchased 1/1/2024 2y 5m 1/24/2026 15,000.00 — — 147" [ref=e1197] [cursor=pointer]:
+                - cell "Select G-004" [ref=e1198]:
+                  - checkbox "Select G-004" [ref=e1199]
+                - cell "G-004" [ref=e1200]:
+                  - generic [ref=e1201]: G-004
+                - cell "Goat" [ref=e1202]
+                - cell "Goat" [ref=e1203]
+                - cell "B2" [ref=e1204]
+                - cell "Walid Mohamed Bahgat" [ref=e1205]
+                - cell "female" [ref=e1206]
+                - cell "Goat" [ref=e1207]:
+                  - generic [ref=e1208]: Goat
+                - cell "purchased" [ref=e1209]
+                - cell "1/1/2024" [ref=e1210]
+                - cell "2y 5m" [ref=e1211]
+                - cell "1/24/2026" [ref=e1212]
+                - cell "15,000.00" [ref=e1213]
+                - cell "—" [ref=e1214]
+                - cell "—" [ref=e1215]
+                - cell "147" [ref=e1216]
+                - cell [ref=e1217]:
+                  - generic [ref=e1218]:
+                    - button "Edit" [ref=e1219]:
+                      - img
+                    - button [ref=e1220]:
+                      - img
+                    - button [ref=e1221]:
+                      - img
+              - row "Select G-005 G-005 Goat Goat B2 Walid Mohamed Bahgat female Goat purchased 1/1/2024 2y 5m 1/24/2026 15,000.00 — — 147" [ref=e1222] [cursor=pointer]:
+                - cell "Select G-005" [ref=e1223]:
+                  - checkbox "Select G-005" [ref=e1224]
+                - cell "G-005" [ref=e1225]:
+                  - generic [ref=e1226]: G-005
+                - cell "Goat" [ref=e1227]
+                - cell "Goat" [ref=e1228]
+                - cell "B2" [ref=e1229]
+                - cell "Walid Mohamed Bahgat" [ref=e1230]
+                - cell "female" [ref=e1231]
+                - cell "Goat" [ref=e1232]:
+                  - generic [ref=e1233]: Goat
+                - cell "purchased" [ref=e1234]
+                - cell "1/1/2024" [ref=e1235]
+                - cell "2y 5m" [ref=e1236]
+                - cell "1/24/2026" [ref=e1237]
+                - cell "15,000.00" [ref=e1238]
+                - cell "—" [ref=e1239]
+                - cell "—" [ref=e1240]
+                - cell "147" [ref=e1241]
+                - cell [ref=e1242]:
+                  - generic [ref=e1243]:
+                    - button "Edit" [ref=e1244]:
+                      - img
+                    - button [ref=e1245]:
+                      - img
+                    - button [ref=e1246]:
+                      - img
+              - row "Select G-006 G-006 Goat Goat B2 Walid Mohamed Bahgat female Goat purchased 1/1/2024 2y 5m 1/24/2026 15,000.00 — — 147" [ref=e1247] [cursor=pointer]:
+                - cell "Select G-006" [ref=e1248]:
+                  - checkbox "Select G-006" [ref=e1249]
+                - cell "G-006" [ref=e1250]:
+                  - generic [ref=e1251]: G-006
+                - cell "Goat" [ref=e1252]
+                - cell "Goat" [ref=e1253]
+                - cell "B2" [ref=e1254]
+                - cell "Walid Mohamed Bahgat" [ref=e1255]
+                - cell "female" [ref=e1256]
+                - cell "Goat" [ref=e1257]:
+                  - generic [ref=e1258]: Goat
+                - cell "purchased" [ref=e1259]
+                - cell "1/1/2024" [ref=e1260]
+                - cell "2y 5m" [ref=e1261]
+                - cell "1/24/2026" [ref=e1262]
+                - cell "15,000.00" [ref=e1263]
+                - cell "—" [ref=e1264]
+                - cell "—" [ref=e1265]
+                - cell "147" [ref=e1266]
+                - cell [ref=e1267]:
+                  - generic [ref=e1268]:
+                    - button "Edit" [ref=e1269]:
+                      - img
+                    - button [ref=e1270]:
+                      - img
+                    - button [ref=e1271]:
+                      - img
+              - row "Select G-007 G-007 Goat Goat B2 Walid Mohamed Bahgat female Goat purchased 1/1/2024 2y 5m 1/24/2026 15,000.00 — — 147" [ref=e1272] [cursor=pointer]:
+                - cell "Select G-007" [ref=e1273]:
+                  - checkbox "Select G-007" [ref=e1274]
+                - cell "G-007" [ref=e1275]:
+                  - generic [ref=e1276]: G-007
+                - cell "Goat" [ref=e1277]
+                - cell "Goat" [ref=e1278]
+                - cell "B2" [ref=e1279]
+                - cell "Walid Mohamed Bahgat" [ref=e1280]
+                - cell "female" [ref=e1281]
+                - cell "Goat" [ref=e1282]:
+                  - generic [ref=e1283]: Goat
+                - cell "purchased" [ref=e1284]
+                - cell "1/1/2024" [ref=e1285]
+                - cell "2y 5m" [ref=e1286]
+                - cell "1/24/2026" [ref=e1287]
+                - cell "15,000.00" [ref=e1288]
+                - cell "—" [ref=e1289]
+                - cell "—" [ref=e1290]
+                - cell "147" [ref=e1291]
+                - cell [ref=e1292]:
+                  - generic [ref=e1293]:
+                    - button "Edit" [ref=e1294]:
+                      - img
+                    - button [ref=e1295]:
+                      - img
+                    - button [ref=e1296]:
+                      - img
+              - row "Select T-001 T-001 Goat Billy Goat B2 Walid Mohamed Bahgat male Billy Goat purchased 1/1/2024 2y 5m 1/24/2026 17,000.00 — — 147" [ref=e1297] [cursor=pointer]:
+                - cell "Select T-001" [ref=e1298]:
+                  - checkbox "Select T-001" [ref=e1299]
+                - cell "T-001" [ref=e1300]:
+                  - generic [ref=e1301]: T-001
+                - cell "Goat" [ref=e1302]
+                - cell "Billy Goat" [ref=e1303]
+                - cell "B2" [ref=e1304]
+                - cell "Walid Mohamed Bahgat" [ref=e1305]
+                - cell "male" [ref=e1306]
+                - cell "Billy Goat" [ref=e1307]:
+                  - generic [ref=e1308]: Billy Goat
+                - cell "purchased" [ref=e1309]
+                - cell "1/1/2024" [ref=e1310]
+                - cell "2y 5m" [ref=e1311]
+                - cell "1/24/2026" [ref=e1312]
+                - cell "17,000.00" [ref=e1313]
+                - cell "—" [ref=e1314]
+                - cell "—" [ref=e1315]
+                - cell "147" [ref=e1316]
+                - cell [ref=e1317]:
+                  - generic [ref=e1318]:
+                    - button "Edit" [ref=e1319]:
+                      - img
+                    - button [ref=e1320]:
+                      - img
+                    - button [ref=e1321]:
+                      - img
+              - row "Select K-001 K-001 Goat Baby Goat B2 Azal Farms male Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1322] [cursor=pointer]:
+                - cell "Select K-001" [ref=e1323]:
+                  - checkbox "Select K-001" [ref=e1324]
+                - cell "K-001" [ref=e1325]:
+                  - generic [ref=e1326]: K-001
+                - cell "Goat" [ref=e1327]
+                - cell "Baby Goat" [ref=e1328]
+                - cell "B2" [ref=e1329]
+                - cell "Azal Farms" [ref=e1330]
+                - cell "male" [ref=e1331]
+                - cell "Baby Goat" [ref=e1332]:
+                  - generic [ref=e1333]: Baby Goat
+                - cell "purchased" [ref=e1334]
+                - cell "12/15/2025" [ref=e1335]
+                - cell "6m" [ref=e1336]
+                - cell "1/24/2026" [ref=e1337]
+                - cell "—" [ref=e1338]
+                - cell "—" [ref=e1339]
+                - cell "—" [ref=e1340]
+                - cell "147" [ref=e1341]
+                - cell [ref=e1342]:
+                  - generic [ref=e1343]:
+                    - button "Edit" [ref=e1344]:
+                      - img
+                    - button [ref=e1345]:
+                      - img
+                    - button [ref=e1346]:
+                      - img
+              - row "Select K-002 K-002 Goat Baby Goat B2 Azal Farms male Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1347] [cursor=pointer]:
+                - cell "Select K-002" [ref=e1348]:
+                  - checkbox "Select K-002" [ref=e1349]
+                - cell "K-002" [ref=e1350]:
+                  - generic [ref=e1351]: K-002
+                - cell "Goat" [ref=e1352]
+                - cell "Baby Goat" [ref=e1353]
+                - cell "B2" [ref=e1354]
+                - cell "Azal Farms" [ref=e1355]
+                - cell "male" [ref=e1356]
+                - cell "Baby Goat" [ref=e1357]:
+                  - generic [ref=e1358]: Baby Goat
+                - cell "purchased" [ref=e1359]
+                - cell "12/15/2025" [ref=e1360]
+                - cell "6m" [ref=e1361]
+                - cell "1/24/2026" [ref=e1362]
+                - cell "—" [ref=e1363]
+                - cell "—" [ref=e1364]
+                - cell "—" [ref=e1365]
+                - cell "147" [ref=e1366]
+                - cell [ref=e1367]:
+                  - generic [ref=e1368]:
+                    - button "Edit" [ref=e1369]:
+                      - img
+                    - button [ref=e1370]:
+                      - img
+                    - button [ref=e1371]:
+                      - img
+              - row "Select G-001 G-001 Goat Goat B2 Azal Farms female Goat purchased 1/1/2024 2y 5m 1/24/2026 15,000.00 — — 147" [ref=e1372] [cursor=pointer]:
+                - cell "Select G-001" [ref=e1373]:
+                  - checkbox "Select G-001" [ref=e1374]
+                - cell "G-001" [ref=e1375]:
+                  - generic [ref=e1376]: G-001
+                - cell "Goat" [ref=e1377]
+                - cell "Goat" [ref=e1378]
+                - cell "B2" [ref=e1379]
+                - cell "Azal Farms" [ref=e1380]
+                - cell "female" [ref=e1381]
+                - cell "Goat" [ref=e1382]:
+                  - generic [ref=e1383]: Goat
+                - cell "purchased" [ref=e1384]
+                - cell "1/1/2024" [ref=e1385]
+                - cell "2y 5m" [ref=e1386]
+                - cell "1/24/2026" [ref=e1387]
+                - cell "15,000.00" [ref=e1388]
+                - cell "—" [ref=e1389]
+                - cell "—" [ref=e1390]
+                - cell "147" [ref=e1391]
+                - cell [ref=e1392]:
+                  - generic [ref=e1393]:
+                    - button "Edit" [ref=e1394]:
+                      - img
+                    - button [ref=e1395]:
+                      - img
+                    - button [ref=e1396]:
+                      - img
+              - row "Select K-004 K-004 Goat Baby Goat B2 Walid Mohamed Bahgat male Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1397] [cursor=pointer]:
+                - cell "Select K-004" [ref=e1398]:
+                  - checkbox "Select K-004" [ref=e1399]
+                - cell "K-004" [ref=e1400]:
+                  - generic [ref=e1401]: K-004
+                - cell "Goat" [ref=e1402]
+                - cell "Baby Goat" [ref=e1403]
+                - cell "B2" [ref=e1404]
+                - cell "Walid Mohamed Bahgat" [ref=e1405]
+                - cell "male" [ref=e1406]
+                - cell "Baby Goat" [ref=e1407]:
+                  - generic [ref=e1408]: Baby Goat
+                - cell "purchased" [ref=e1409]
+                - cell "12/15/2025" [ref=e1410]
+                - cell "6m" [ref=e1411]
+                - cell "1/24/2026" [ref=e1412]
+                - cell "—" [ref=e1413]
+                - cell "—" [ref=e1414]
+                - cell "—" [ref=e1415]
+                - cell "147" [ref=e1416]
+                - cell [ref=e1417]:
+                  - generic [ref=e1418]:
+                    - button "Edit" [ref=e1419]:
+                      - img
+                    - button [ref=e1420]:
+                      - img
+                    - button [ref=e1421]:
+                      - img
+              - row "Select K-005 K-005 Goat Baby Goat B2 Walid Mohamed Bahgat male Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1422] [cursor=pointer]:
+                - cell "Select K-005" [ref=e1423]:
+                  - checkbox "Select K-005" [ref=e1424]
+                - cell "K-005" [ref=e1425]:
+                  - generic [ref=e1426]: K-005
+                - cell "Goat" [ref=e1427]
+                - cell "Baby Goat" [ref=e1428]
+                - cell "B2" [ref=e1429]
+                - cell "Walid Mohamed Bahgat" [ref=e1430]
+                - cell "male" [ref=e1431]
+                - cell "Baby Goat" [ref=e1432]:
+                  - generic [ref=e1433]: Baby Goat
+                - cell "purchased" [ref=e1434]
+                - cell "12/15/2025" [ref=e1435]
+                - cell "6m" [ref=e1436]
+                - cell "1/24/2026" [ref=e1437]
+                - cell "—" [ref=e1438]
+                - cell "—" [ref=e1439]
+                - cell "—" [ref=e1440]
+                - cell "147" [ref=e1441]
+                - cell [ref=e1442]:
+                  - generic [ref=e1443]:
+                    - button "Edit" [ref=e1444]:
+                      - img
+                    - button [ref=e1445]:
+                      - img
+                    - button [ref=e1446]:
+                      - img
+              - row "Select K-014 K-014 Goat Baby Goat B2 Walid Mohamed Bahgat female Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1447] [cursor=pointer]:
+                - cell "Select K-014" [ref=e1448]:
+                  - checkbox "Select K-014" [ref=e1449]
+                - cell "K-014" [ref=e1450]:
+                  - generic [ref=e1451]: K-014
+                - cell "Goat" [ref=e1452]
+                - cell "Baby Goat" [ref=e1453]
+                - cell "B2" [ref=e1454]
+                - cell "Walid Mohamed Bahgat" [ref=e1455]
+                - cell "female" [ref=e1456]
+                - cell "Baby Goat" [ref=e1457]:
+                  - generic [ref=e1458]: Baby Goat
+                - cell "purchased" [ref=e1459]
+                - cell "12/15/2025" [ref=e1460]
+                - cell "6m" [ref=e1461]
+                - cell "1/24/2026" [ref=e1462]
+                - cell "—" [ref=e1463]
+                - cell "—" [ref=e1464]
+                - cell "—" [ref=e1465]
+                - cell "147" [ref=e1466]
+                - cell [ref=e1467]:
+                  - generic [ref=e1468]:
+                    - button "Edit" [ref=e1469]:
+                      - img
+                    - button [ref=e1470]:
+                      - img
+                    - button [ref=e1471]:
+                      - img
+              - row "Select K-007 K-007 Goat Baby Goat B2 Walid Mohamed Bahgat male Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1472] [cursor=pointer]:
+                - cell "Select K-007" [ref=e1473]:
+                  - checkbox "Select K-007" [ref=e1474]
+                - cell "K-007" [ref=e1475]:
+                  - generic [ref=e1476]: K-007
+                - cell "Goat" [ref=e1477]
+                - cell "Baby Goat" [ref=e1478]
+                - cell "B2" [ref=e1479]
+                - cell "Walid Mohamed Bahgat" [ref=e1480]
+                - cell "male" [ref=e1481]
+                - cell "Baby Goat" [ref=e1482]:
+                  - generic [ref=e1483]: Baby Goat
+                - cell "purchased" [ref=e1484]
+                - cell "12/15/2025" [ref=e1485]
+                - cell "6m" [ref=e1486]
+                - cell "1/24/2026" [ref=e1487]
+                - cell "—" [ref=e1488]
+                - cell "—" [ref=e1489]
+                - cell "—" [ref=e1490]
+                - cell "147" [ref=e1491]
+                - cell [ref=e1492]:
+                  - generic [ref=e1493]:
+                    - button "Edit" [ref=e1494]:
+                      - img
+                    - button [ref=e1495]:
+                      - img
+                    - button [ref=e1496]:
+                      - img
+              - row "Select K-008 K-008 Goat Baby Goat B2 Walid Mohamed Bahgat male Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1497] [cursor=pointer]:
+                - cell "Select K-008" [ref=e1498]:
+                  - checkbox "Select K-008" [ref=e1499]
+                - cell "K-008" [ref=e1500]:
+                  - generic [ref=e1501]: K-008
+                - cell "Goat" [ref=e1502]
+                - cell "Baby Goat" [ref=e1503]
+                - cell "B2" [ref=e1504]
+                - cell "Walid Mohamed Bahgat" [ref=e1505]
+                - cell "male" [ref=e1506]
+                - cell "Baby Goat" [ref=e1507]:
+                  - generic [ref=e1508]: Baby Goat
+                - cell "purchased" [ref=e1509]
+                - cell "12/15/2025" [ref=e1510]
+                - cell "6m" [ref=e1511]
+                - cell "1/24/2026" [ref=e1512]
+                - cell "—" [ref=e1513]
+                - cell "—" [ref=e1514]
+                - cell "—" [ref=e1515]
+                - cell "147" [ref=e1516]
+                - cell [ref=e1517]:
+                  - generic [ref=e1518]:
+                    - button "Edit" [ref=e1519]:
+                      - img
+                    - button [ref=e1520]:
+                      - img
+                    - button [ref=e1521]:
+                      - img
+              - row "Select K-011 K-011 Goat Baby Goat B2 Walid Mohamed Bahgat female Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1522] [cursor=pointer]:
+                - cell "Select K-011" [ref=e1523]:
+                  - checkbox "Select K-011" [ref=e1524]
+                - cell "K-011" [ref=e1525]:
+                  - generic [ref=e1526]: K-011
+                - cell "Goat" [ref=e1527]
+                - cell "Baby Goat" [ref=e1528]
+                - cell "B2" [ref=e1529]
+                - cell "Walid Mohamed Bahgat" [ref=e1530]
+                - cell "female" [ref=e1531]
+                - cell "Baby Goat" [ref=e1532]:
+                  - generic [ref=e1533]: Baby Goat
+                - cell "purchased" [ref=e1534]
+                - cell "12/15/2025" [ref=e1535]
+                - cell "6m" [ref=e1536]
+                - cell "1/24/2026" [ref=e1537]
+                - cell "—" [ref=e1538]
+                - cell "—" [ref=e1539]
+                - cell "—" [ref=e1540]
+                - cell "147" [ref=e1541]
+                - cell [ref=e1542]:
+                  - generic [ref=e1543]:
+                    - button "Edit" [ref=e1544]:
+                      - img
+                    - button [ref=e1545]:
+                      - img
+                    - button [ref=e1546]:
+                      - img
+              - row "Select K-012 K-012 Goat Baby Goat B2 Azal Farms female Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1547] [cursor=pointer]:
+                - cell "Select K-012" [ref=e1548]:
+                  - checkbox "Select K-012" [ref=e1549]
+                - cell "K-012" [ref=e1550]:
+                  - generic [ref=e1551]: K-012
+                - cell "Goat" [ref=e1552]
+                - cell "Baby Goat" [ref=e1553]
+                - cell "B2" [ref=e1554]
+                - cell "Azal Farms" [ref=e1555]
+                - cell "female" [ref=e1556]
+                - cell "Baby Goat" [ref=e1557]:
+                  - generic [ref=e1558]: Baby Goat
+                - cell "purchased" [ref=e1559]
+                - cell "12/15/2025" [ref=e1560]
+                - cell "6m" [ref=e1561]
+                - cell "1/24/2026" [ref=e1562]
+                - cell "—" [ref=e1563]
+                - cell "—" [ref=e1564]
+                - cell "—" [ref=e1565]
+                - cell "147" [ref=e1566]
+                - cell [ref=e1567]:
+                  - generic [ref=e1568]:
+                    - button "Edit" [ref=e1569]:
+                      - img
+                    - button [ref=e1570]:
+                      - img
+                    - button [ref=e1571]:
+                      - img
+              - row "Select K-013 K-013 Goat Baby Goat B2 Azal Farms female Baby Goat purchased 12/15/2025 6m 1/24/2026 — — — 147" [ref=e1572] [cursor=pointer]:
+                - cell "Select K-013" [ref=e1573]:
+                  - checkbox "Select K-013" [ref=e1574]
+                - cell "K-013" [ref=e1575]:
+                  - generic [ref=e1576]: K-013
+                - cell "Goat" [ref=e1577]
+                - cell "Baby Goat" [ref=e1578]
+                - cell "B2" [ref=e1579]
+                - cell "Azal Farms" [ref=e1580]
+                - cell "female" [ref=e1581]
+                - cell "Baby Goat" [ref=e1582]:
+                  - generic [ref=e1583]: Baby Goat
+                - cell "purchased" [ref=e1584]
+                - cell "12/15/2025" [ref=e1585]
+                - cell "6m" [ref=e1586]
+                - cell "1/24/2026" [ref=e1587]
+                - cell "—" [ref=e1588]
+                - cell "—" [ref=e1589]
+                - cell "—" [ref=e1590]
+                - cell "147" [ref=e1591]
+                - cell [ref=e1592]:
+                  - generic [ref=e1593]:
+                    - button "Edit" [ref=e1594]:
+                      - img
+                    - button [ref=e1595]:
+                      - img
+                    - button [ref=e1596]:
+                      - img
+              - row "Select FAT0002 FAT0002 Sheep Fattening F5 Walid Mohamed Bahgat male Fattening purchased 1/1/2026 5m 1/16/2026 — — — 155" [ref=e1597] [cursor=pointer]:
+                - cell "Select FAT0002" [ref=e1598]:
+                  - checkbox "Select FAT0002" [ref=e1599]
+                - cell "FAT0002" [ref=e1600]:
+                  - generic [ref=e1601]: FAT0002
+                - cell "Sheep" [ref=e1602]
+                - cell "Fattening" [ref=e1603]
+                - cell "F5" [ref=e1604]
+                - cell "Walid Mohamed Bahgat" [ref=e1605]
+                - cell "male" [ref=e1606]
+                - cell "Fattening" [ref=e1607]:
+                  - generic [ref=e1608]: Fattening
+                - cell "purchased" [ref=e1609]
+                - cell "1/1/2026" [ref=e1610]
+                - cell "5m" [ref=e1611]
+                - cell "1/16/2026" [ref=e1612]
+                - cell "—" [ref=e1613]
+                - cell "—" [ref=e1614]
+                - cell "—" [ref=e1615]
+                - cell "155" [ref=e1616]
+                - cell [ref=e1617]:
+                  - generic [ref=e1618]:
+                    - button "Edit" [ref=e1619]:
+                      - img
+                    - button [ref=e1620]:
+                      - img
+                    - button [ref=e1621]:
+                      - img
+              - row "Select FAT0003 FAT0003 Sheep Fattening F5 Walid Mohamed Bahgat male Fattening born 1/10/2026 5m 1/10/2026 — — — 161" [ref=e1622] [cursor=pointer]:
+                - cell "Select FAT0003" [ref=e1623]:
+                  - checkbox "Select FAT0003" [ref=e1624]
+                - cell "FAT0003" [ref=e1625]:
+                  - generic [ref=e1626]: FAT0003
+                - cell "Sheep" [ref=e1627]
+                - cell "Fattening" [ref=e1628]
+                - cell "F5" [ref=e1629]
+                - cell "Walid Mohamed Bahgat" [ref=e1630]
+                - cell "male" [ref=e1631]
+                - cell "Fattening" [ref=e1632]:
+                  - generic [ref=e1633]: Fattening
+                - cell "born" [ref=e1634]
+                - cell "1/10/2026" [ref=e1635]
+                - cell "5m" [ref=e1636]
+                - cell "1/10/2026" [ref=e1637]
+                - cell "—" [ref=e1638]
+                - cell "—" [ref=e1639]
+                - cell "—" [ref=e1640]
+                - cell "161" [ref=e1641]
+                - cell [ref=e1642]:
+                  - generic [ref=e1643]:
+                    - button "Edit" [ref=e1644]:
+                      - img
+                    - button [ref=e1645]:
+                      - img
+                    - button [ref=e1646]:
+                      - img
+              - row "Select COW0004 COW0004 Cow Cow B1 Walid Mohamed Bahgat female Cow purchased 11/1/2023 2y 7m 1/8/2026 70,000.00 FMD 10/11/2026 FMD 7/13/2026 163" [ref=e1647] [cursor=pointer]:
+                - cell "Select COW0004" [ref=e1648]:
+                  - checkbox "Select COW0004" [ref=e1649]
+                - cell "COW0004" [ref=e1650]:
+                  - generic [ref=e1651]: COW0004
+                - cell "Cow" [ref=e1652]
+                - cell "Cow" [ref=e1653]
+                - cell "B1" [ref=e1654]
+                - cell "Walid Mohamed Bahgat" [ref=e1655]
+                - cell "female" [ref=e1656]
+                - cell "Cow" [ref=e1657]:
+                  - generic [ref=e1658]: Cow
+                - cell "purchased" [ref=e1659]
+                - cell "11/1/2023" [ref=e1660]
+                - cell "2y 7m" [ref=e1661]
+                - cell "1/8/2026" [ref=e1662]
+                - cell "70,000.00" [ref=e1663]
+                - cell "FMD 10/11/2026" [ref=e1664]:
+                  - generic [ref=e1665]:
+                    - img [ref=e1666]
+                    - generic [ref=e1673]: FMD
+                    - generic [ref=e1674]: 10/11/2026
+                - cell "FMD 7/13/2026" [ref=e1675]:
+                  - generic [ref=e1676]:
+                    - img [ref=e1677]
+                    - generic [ref=e1684]: FMD
+                    - generic [ref=e1685]: 7/13/2026
+                - cell "163" [ref=e1686]
+                - cell [ref=e1687]:
+                  - generic [ref=e1688]:
+                    - button "Edit" [ref=e1689]:
+                      - img
+                    - button [ref=e1690]:
+                      - img
+                    - button [ref=e1691]:
+                      - img
+              - row "Select E-071 E-071 Sheep Ewe F1 Lobna Abdelaziz Ahmed female Ewe purchased 11/4/2023 2y 7m 1/8/2026 15,000.00 — — 163" [ref=e1692] [cursor=pointer]:
+                - cell "Select E-071" [ref=e1693]:
+                  - checkbox "Select E-071" [ref=e1694]
+                - cell "E-071" [ref=e1695]:
+                  - generic [ref=e1696]: E-071
+                - cell "Sheep" [ref=e1697]
+                - cell "Ewe" [ref=e1698]
+                - cell "F1" [ref=e1699]
+                - cell "Lobna Abdelaziz Ahmed" [ref=e1700]
+                - cell "female" [ref=e1701]
+                - cell "Ewe" [ref=e1702]:
+                  - generic [ref=e1703]: Ewe
+                - cell "purchased" [ref=e1704]
+                - cell "11/4/2023" [ref=e1705]
+                - cell "2y 7m" [ref=e1706]
+                - cell "1/8/2026" [ref=e1707]
+                - cell "15,000.00" [ref=e1708]
+                - cell "—" [ref=e1709]
+                - cell "—" [ref=e1710]
+                - cell "163" [ref=e1711]
+                - cell [ref=e1712]:
+                  - generic [ref=e1713]:
+                    - button "Edit" [ref=e1714]:
+                      - img
+                    - button [ref=e1715]:
+                      - img
+                    - button [ref=e1716]:
+                      - img
+              - row "Select E-072 E-072 Sheep Ewe F1 Lobna Abdelaziz Ahmed female Ewe purchased 11/4/2023 2y 7m 1/8/2026 15,000.00 — — 163" [ref=e1717] [cursor=pointer]:
+                - cell "Select E-072" [ref=e1718]:
+                  - checkbox "Select E-072" [ref=e1719]
+                - cell "E-072" [ref=e1720]:
+                  - generic [ref=e1721]: E-072
+                - cell "Sheep" [ref=e1722]
+                - cell "Ewe" [ref=e1723]
+                - cell "F1" [ref=e1724]
+                - cell "Lobna Abdelaziz Ahmed" [ref=e1725]
+                - cell "female" [ref=e1726]
+                - cell "Ewe" [ref=e1727]:
+                  - generic [ref=e1728]: Ewe
+                - cell "purchased" [ref=e1729]
+                - cell "11/4/2023" [ref=e1730]
+                - cell "2y 7m" [ref=e1731]
+                - cell "1/8/2026" [ref=e1732]
+                - cell "15,000.00" [ref=e1733]
+                - cell "—" [ref=e1734]
+                - cell "—" [ref=e1735]
+                - cell "163" [ref=e1736]
+                - cell [ref=e1737]:
+                  - generic [ref=e1738]:
+                    - button "Edit" [ref=e1739]:
+                      - img
+                    - button [ref=e1740]:
+                      - img
+                    - button [ref=e1741]:
+                      - img
+              - row "Select R-002 R-002 Sheep Ram F1 Walid Mohamed Bahgat male Ram purchased 11/4/2023 2y 7m 1/8/2026 15,000.00 — — 163" [ref=e1742] [cursor=pointer]:
+                - cell "Select R-002" [ref=e1743]:
+                  - checkbox "Select R-002" [ref=e1744]
+                - cell "R-002" [ref=e1745]:
+                  - generic [ref=e1746]: R-002
+                - cell "Sheep" [ref=e1747]
+                - cell "Ram" [ref=e1748]
+                - cell "F1" [ref=e1749]
+                - cell "Walid Mohamed Bahgat" [ref=e1750]
+                - cell "male" [ref=e1751]
+                - cell "Ram" [ref=e1752]:
+                  - generic [ref=e1753]: Ram
+                - cell "purchased" [ref=e1754]
+                - cell "11/4/2023" [ref=e1755]
+                - cell "2y 7m" [ref=e1756]
+                - cell "1/8/2026" [ref=e1757]
+                - cell "15,000.00" [ref=e1758]
+                - cell "—" [ref=e1759]
+                - cell "—" [ref=e1760]
+                - cell "163" [ref=e1761]
+                - cell [ref=e1762]:
+                  - generic [ref=e1763]:
+                    - button "Edit" [ref=e1764]:
+                      - img
+                    - button [ref=e1765]:
+                      - img
+                    - button [ref=e1766]:
+                      - img
+              - row "Select E-070 E-070 Sheep Ewe F1 Lobna Abdelaziz Ahmed female Ewe purchased 11/4/2023 2y 7m 1/8/2026 15,000.00 — — 163" [ref=e1767] [cursor=pointer]:
+                - cell "Select E-070" [ref=e1768]:
+                  - checkbox "Select E-070" [ref=e1769]
+                - cell "E-070" [ref=e1770]:
+                  - generic [ref=e1771]: E-070
+                - cell "Sheep" [ref=e1772]
+                - cell "Ewe" [ref=e1773]
+                - cell "F1" [ref=e1774]
+                - cell "Lobna Abdelaziz Ahmed" [ref=e1775]
+                - cell "female" [ref=e1776]
+                - cell "Ewe" [ref=e1777]:
+                  - generic [ref=e1778]: Ewe
+                - cell "purchased" [ref=e1779]
+                - cell "11/4/2023" [ref=e1780]
+                - cell "2y 7m" [ref=e1781]
+                - cell "1/8/2026" [ref=e1782]
+                - cell "15,000.00" [ref=e1783]
+                - cell "—" [ref=e1784]
+                - cell "—" [ref=e1785]
+                - cell "163" [ref=e1786]
+                - cell [ref=e1787]:
+                  - generic [ref=e1788]:
+                    - button "Edit" [ref=e1789]:
+                      - img
+                    - button [ref=e1790]:
+                      - img
+                    - button [ref=e1791]:
+                      - img
+              - row "Select L-010 L-010 Sheep Ewe F1 Lobna Abdelaziz Ahmed female Ewe purchased 12/1/2025 6m 12/16/2025 — — — 186" [ref=e1792] [cursor=pointer]:
+                - cell "Select L-010" [ref=e1793]:
+                  - checkbox "Select L-010" [ref=e1794]
+                - cell "L-010" [ref=e1795]:
+                  - generic [ref=e1796]: L-010
+                - cell "Sheep" [ref=e1797]
+                - cell "Ewe" [ref=e1798]
+                - cell "F1" [ref=e1799]
+                - cell "Lobna Abdelaziz Ahmed" [ref=e1800]
+                - cell "female" [ref=e1801]
+                - cell "Ewe" [ref=e1802]:
+                  - generic [ref=e1803]: Ewe
+                - cell "purchased" [ref=e1804]
+                - cell "12/1/2025" [ref=e1805]
+                - cell "6m" [ref=e1806]
+                - cell "12/16/2025" [ref=e1807]
+                - cell "—" [ref=e1808]
+                - cell "—" [ref=e1809]
+                - cell "—" [ref=e1810]
+                - cell "186" [ref=e1811]
+                - cell [ref=e1812]:
+                  - generic [ref=e1813]:
+                    - button "Edit" [ref=e1814]:
+                      - img
+                    - button [ref=e1815]:
+                      - img
+                    - button [ref=e1816]:
+                      - img
+              - row "Select L-009 L-009 Sheep Ewe F1 Lobna Abdelaziz Ahmed female Ewe purchased 12/1/2025 6m 12/16/2025 — — — 186" [ref=e1817] [cursor=pointer]:
+                - cell "Select L-009" [ref=e1818]:
+                  - checkbox "Select L-009" [ref=e1819]
+                - cell "L-009" [ref=e1820]:
+                  - generic [ref=e1821]: L-009
+                - cell "Sheep" [ref=e1822]
+                - cell "Ewe" [ref=e1823]
+                - cell "F1" [ref=e1824]
+                - cell "Lobna Abdelaziz Ahmed" [ref=e1825]
+                - cell "female" [ref=e1826]
+                - cell "Ewe" [ref=e1827]:
+                  - generic [ref=e1828]: Ewe
+                - cell "purchased" [ref=e1829]
+                - cell "12/1/2025" [ref=e1830]
+                - cell "6m" [ref=e1831]
+                - cell "12/16/2025" [ref=e1832]
+                - cell "—" [ref=e1833]
+                - cell "—" [ref=e1834]
+                - cell "—" [ref=e1835]
+                - cell "186" [ref=e1836]
+                - cell [ref=e1837]:
+                  - generic [ref=e1838]:
+                    - button "Edit" [ref=e1839]:
+                      - img
+                    - button [ref=e1840]:
+                      - img
+                    - button [ref=e1841]:
+                      - img
+              - row "Select F-0014 F-0014 Sheep Fattening F5 Azal Farms male Fattening purchased 12/11/2025 6m 12/16/2025 — — — 186" [ref=e1842] [cursor=pointer]:
+                - cell "Select F-0014" [ref=e1843]:
+                  - checkbox "Select F-0014" [ref=e1844]
+                - cell "F-0014" [ref=e1845]:
+                  - generic [ref=e1846]: F-0014
+                - cell "Sheep" [ref=e1847]
+                - cell "Fattening" [ref=e1848]
+                - cell "F5" [ref=e1849]
+                - cell "Azal Farms" [ref=e1850]
+                - cell "male" [ref=e1851]
+                - cell "Fattening" [ref=e1852]:
+                  - generic [ref=e1853]: Fattening
+                - cell "purchased" [ref=e1854]
+                - cell "12/11/2025" [ref=e1855]
+                - cell "6m" [ref=e1856]
+                - cell "12/16/2025" [ref=e1857]
+                - cell "—" [ref=e1858]
+                - cell "—" [ref=e1859]
+                - cell "—" [ref=e1860]
+                - cell "186" [ref=e1861]
+                - cell [ref=e1862]:
+                  - generic [ref=e1863]:
+                    - button "Edit" [ref=e1864]:
+                      - img
+                    - button [ref=e1865]:
+                      - img
+                    - button [ref=e1866]:
+                      - img
+              - row "Select F-0013 F-0013 Sheep Fattening F5 Azal Farms male Fattening purchased 12/11/2025 6m 12/16/2025 — — — 186" [ref=e1867] [cursor=pointer]:
+                - cell "Select F-0013" [ref=e1868]:
+                  - checkbox "Select F-0013" [ref=e1869]
+                - cell "F-0013" [ref=e1870]:
+                  - generic [ref=e1871]: F-0013
+                - cell "Sheep" [ref=e1872]
+                - cell "Fattening" [ref=e1873]
+                - cell "F5" [ref=e1874]
+                - cell "Azal Farms" [ref=e1875]
+                - cell "male" [ref=e1876]
+                - cell "Fattening" [ref=e1877]:
+                  - generic [ref=e1878]: Fattening
+                - cell "purchased" [ref=e1879]
+                - cell "12/11/2025" [ref=e1880]
+                - cell "6m" [ref=e1881]
+                - cell "12/16/2025" [ref=e1882]
+                - cell "—" [ref=e1883]
+                - cell "—" [ref=e1884]
+                - cell "—" [ref=e1885]
+                - cell "186" [ref=e1886]
+                - cell [ref=e1887]:
+                  - generic [ref=e1888]:
+                    - button "Edit" [ref=e1889]:
+                      - img
+                    - button [ref=e1890]:
+                      - img
+                    - button [ref=e1891]:
+                      - img
+              - row "Select F-012 F-012 Sheep Fattening F1 Walid Mohamed Bahgat male Fattening born 12/11/2025 6m 12/11/2025 — — — 191" [ref=e1892] [cursor=pointer]:
+                - cell "Select F-012" [ref=e1893]:
+                  - checkbox "Select F-012" [ref=e1894]
+                - cell "F-012" [ref=e1895]:
+                  - generic [ref=e1896]: F-012
+                - cell "Sheep" [ref=e1897]
+                - cell "Fattening" [ref=e1898]
+                - cell "F1" [ref=e1899]
+                - cell "Walid Mohamed Bahgat" [ref=e1900]
+                - cell "male" [ref=e1901]
+                - cell "Fattening" [ref=e1902]:
+                  - generic [ref=e1903]: Fattening
+                - cell "born" [ref=e1904]
+                - cell "12/11/2025" [ref=e1905]
+                - cell "6m" [ref=e1906]
+                - cell "12/11/2025" [ref=e1907]
+                - cell "—" [ref=e1908]
+                - cell "—" [ref=e1909]
+                - cell "—" [ref=e1910]
+                - cell "191" [ref=e1911]
+                - cell [ref=e1912]:
+                  - generic [ref=e1913]:
+                    - button "Edit" [ref=e1914]:
+                      - img
+                    - button [ref=e1915]:
+                      - img
+                    - button [ref=e1916]:
+                      - img
+              - row "Select E-042 E-042 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e1917] [cursor=pointer]:
+                - cell "Select E-042" [ref=e1918]:
+                  - checkbox "Select E-042" [ref=e1919]
+                - cell "E-042" [ref=e1920]:
+                  - generic [ref=e1921]: E-042
+                - cell "Sheep" [ref=e1922]
+                - cell "Ewe" [ref=e1923]
+                - cell "F1" [ref=e1924]
+                - cell "Walid Mohamed Bahgat" [ref=e1925]
+                - cell "female" [ref=e1926]
+                - cell "Ewe" [ref=e1927]:
+                  - generic [ref=e1928]: Ewe
+                - cell "purchased" [ref=e1929]
+                - cell "11/4/2024" [ref=e1930]
+                - cell "1y 7m" [ref=e1931]
+                - cell "11/4/2025" [ref=e1932]
+                - cell "15,000.00" [ref=e1933]
+                - cell "—" [ref=e1934]
+                - cell "—" [ref=e1935]
+                - cell "228" [ref=e1936]
+                - cell [ref=e1937]:
+                  - generic [ref=e1938]:
+                    - button "Edit" [ref=e1939]:
+                      - img
+                    - button [ref=e1940]:
+                      - img
+                    - button [ref=e1941]:
+                      - img
+              - row "Select E-040 E-040 Sheep Ewe F6 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e1942] [cursor=pointer]:
+                - cell "Select E-040" [ref=e1943]:
+                  - checkbox "Select E-040" [ref=e1944]
+                - cell "E-040" [ref=e1945]:
+                  - generic [ref=e1946]: E-040
+                - cell "Sheep" [ref=e1947]
+                - cell "Ewe" [ref=e1948]
+                - cell "F6" [ref=e1949]
+                - cell "Walid Mohamed Bahgat" [ref=e1950]
+                - cell "female" [ref=e1951]
+                - cell "Ewe" [ref=e1952]:
+                  - generic [ref=e1953]: Ewe
+                - cell "purchased" [ref=e1954]
+                - cell "11/4/2024" [ref=e1955]
+                - cell "1y 7m" [ref=e1956]
+                - cell "11/4/2025" [ref=e1957]
+                - cell "15,000.00" [ref=e1958]
+                - cell "—" [ref=e1959]
+                - cell "—" [ref=e1960]
+                - cell "228" [ref=e1961]
+                - cell [ref=e1962]:
+                  - generic [ref=e1963]:
+                    - button "Edit" [ref=e1964]:
+                      - img
+                    - button [ref=e1965]:
+                      - img
+                    - button [ref=e1966]:
+                      - img
+              - row "Select E-050 E-050 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e1967] [cursor=pointer]:
+                - cell "Select E-050" [ref=e1968]:
+                  - checkbox "Select E-050" [ref=e1969]
+                - cell "E-050" [ref=e1970]:
+                  - generic [ref=e1971]: E-050
+                - cell "Sheep" [ref=e1972]
+                - cell "Ewe" [ref=e1973]
+                - cell "F1" [ref=e1974]
+                - cell "Walid Mohamed Bahgat" [ref=e1975]
+                - cell "female" [ref=e1976]
+                - cell "Ewe" [ref=e1977]:
+                  - generic [ref=e1978]: Ewe
+                - cell "purchased" [ref=e1979]
+                - cell "11/4/2024" [ref=e1980]
+                - cell "1y 7m" [ref=e1981]
+                - cell "11/4/2025" [ref=e1982]
+                - cell "15,000.00" [ref=e1983]
+                - cell "—" [ref=e1984]
+                - cell "—" [ref=e1985]
+                - cell "228" [ref=e1986]
+                - cell [ref=e1987]:
+                  - generic [ref=e1988]:
+                    - button "Edit" [ref=e1989]:
+                      - img
+                    - button [ref=e1990]:
+                      - img
+                    - button [ref=e1991]:
+                      - img
+              - row "Select E-048 E-048 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e1992] [cursor=pointer]:
+                - cell "Select E-048" [ref=e1993]:
+                  - checkbox "Select E-048" [ref=e1994]
+                - cell "E-048" [ref=e1995]:
+                  - generic [ref=e1996]: E-048
+                - cell "Sheep" [ref=e1997]
+                - cell "Ewe" [ref=e1998]
+                - cell "F1" [ref=e1999]
+                - cell "Walid Mohamed Bahgat" [ref=e2000]
+                - cell "female" [ref=e2001]
+                - cell "Ewe" [ref=e2002]:
+                  - generic [ref=e2003]: Ewe
+                - cell "purchased" [ref=e2004]
+                - cell "11/4/2024" [ref=e2005]
+                - cell "1y 7m" [ref=e2006]
+                - cell "11/4/2025" [ref=e2007]
+                - cell "15,000.00" [ref=e2008]
+                - cell "—" [ref=e2009]
+                - cell "—" [ref=e2010]
+                - cell "228" [ref=e2011]
+                - cell [ref=e2012]:
+                  - generic [ref=e2013]:
+                    - button "Edit" [ref=e2014]:
+                      - img
+                    - button [ref=e2015]:
+                      - img
+                    - button [ref=e2016]:
+                      - img
+              - row "Select E-047 E-047 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2017] [cursor=pointer]:
+                - cell "Select E-047" [ref=e2018]:
+                  - checkbox "Select E-047" [ref=e2019]
+                - cell "E-047" [ref=e2020]:
+                  - generic [ref=e2021]: E-047
+                - cell "Sheep" [ref=e2022]
+                - cell "Ewe" [ref=e2023]
+                - cell "F1" [ref=e2024]
+                - cell "Walid Mohamed Bahgat" [ref=e2025]
+                - cell "female" [ref=e2026]
+                - cell "Ewe" [ref=e2027]:
+                  - generic [ref=e2028]: Ewe
+                - cell "purchased" [ref=e2029]
+                - cell "11/4/2024" [ref=e2030]
+                - cell "1y 7m" [ref=e2031]
+                - cell "11/4/2025" [ref=e2032]
+                - cell "15,000.00" [ref=e2033]
+                - cell "—" [ref=e2034]
+                - cell "—" [ref=e2035]
+                - cell "228" [ref=e2036]
+                - cell [ref=e2037]:
+                  - generic [ref=e2038]:
+                    - button "Edit" [ref=e2039]:
+                      - img
+                    - button [ref=e2040]:
+                      - img
+                    - button [ref=e2041]:
+                      - img
+              - row "Select E-046 E-046 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2042] [cursor=pointer]:
+                - cell "Select E-046" [ref=e2043]:
+                  - checkbox "Select E-046" [ref=e2044]
+                - cell "E-046" [ref=e2045]:
+                  - generic [ref=e2046]: E-046
+                - cell "Sheep" [ref=e2047]
+                - cell "Ewe" [ref=e2048]
+                - cell "F1" [ref=e2049]
+                - cell "Walid Mohamed Bahgat" [ref=e2050]
+                - cell "female" [ref=e2051]
+                - cell "Ewe" [ref=e2052]:
+                  - generic [ref=e2053]: Ewe
+                - cell "purchased" [ref=e2054]
+                - cell "11/4/2024" [ref=e2055]
+                - cell "1y 7m" [ref=e2056]
+                - cell "11/4/2025" [ref=e2057]
+                - cell "15,000.00" [ref=e2058]
+                - cell "—" [ref=e2059]
+                - cell "—" [ref=e2060]
+                - cell "228" [ref=e2061]
+                - cell [ref=e2062]:
+                  - generic [ref=e2063]:
+                    - button "Edit" [ref=e2064]:
+                      - img
+                    - button [ref=e2065]:
+                      - img
+                    - button [ref=e2066]:
+                      - img
+              - row "Select E-045 E-045 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2067] [cursor=pointer]:
+                - cell "Select E-045" [ref=e2068]:
+                  - checkbox "Select E-045" [ref=e2069]
+                - cell "E-045" [ref=e2070]:
+                  - generic [ref=e2071]: E-045
+                - cell "Sheep" [ref=e2072]
+                - cell "Ewe" [ref=e2073]
+                - cell "F1" [ref=e2074]
+                - cell "Walid Mohamed Bahgat" [ref=e2075]
+                - cell "female" [ref=e2076]
+                - cell "Ewe" [ref=e2077]:
+                  - generic [ref=e2078]: Ewe
+                - cell "purchased" [ref=e2079]
+                - cell "11/4/2024" [ref=e2080]
+                - cell "1y 7m" [ref=e2081]
+                - cell "11/4/2025" [ref=e2082]
+                - cell "15,000.00" [ref=e2083]
+                - cell "—" [ref=e2084]
+                - cell "—" [ref=e2085]
+                - cell "228" [ref=e2086]
+                - cell [ref=e2087]:
+                  - generic [ref=e2088]:
+                    - button "Edit" [ref=e2089]:
+                      - img
+                    - button [ref=e2090]:
+                      - img
+                    - button [ref=e2091]:
+                      - img
+              - row "Select E-044 E-044 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2092] [cursor=pointer]:
+                - cell "Select E-044" [ref=e2093]:
+                  - checkbox "Select E-044" [ref=e2094]
+                - cell "E-044" [ref=e2095]:
+                  - generic [ref=e2096]: E-044
+                - cell "Sheep" [ref=e2097]
+                - cell "Ewe" [ref=e2098]
+                - cell "F1" [ref=e2099]
+                - cell "Walid Mohamed Bahgat" [ref=e2100]
+                - cell "female" [ref=e2101]
+                - cell "Ewe" [ref=e2102]:
+                  - generic [ref=e2103]: Ewe
+                - cell "purchased" [ref=e2104]
+                - cell "11/4/2024" [ref=e2105]
+                - cell "1y 7m" [ref=e2106]
+                - cell "11/4/2025" [ref=e2107]
+                - cell "15,000.00" [ref=e2108]
+                - cell "—" [ref=e2109]
+                - cell "—" [ref=e2110]
+                - cell "228" [ref=e2111]
+                - cell [ref=e2112]:
+                  - generic [ref=e2113]:
+                    - button "Edit" [ref=e2114]:
+                      - img
+                    - button [ref=e2115]:
+                      - img
+                    - button [ref=e2116]:
+                      - img
+              - row "Select E-021 E-021 Sheep Ewe F6 Azal Farms female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2117] [cursor=pointer]:
+                - cell "Select E-021" [ref=e2118]:
+                  - checkbox "Select E-021" [ref=e2119]
+                - cell "E-021" [ref=e2120]:
+                  - generic [ref=e2121]: E-021
+                - cell "Sheep" [ref=e2122]
+                - cell "Ewe" [ref=e2123]
+                - cell "F6" [ref=e2124]
+                - cell "Azal Farms" [ref=e2125]
+                - cell "female" [ref=e2126]
+                - cell "Ewe" [ref=e2127]:
+                  - generic [ref=e2128]: Ewe
+                - cell "purchased" [ref=e2129]
+                - cell "11/4/2024" [ref=e2130]
+                - cell "1y 7m" [ref=e2131]
+                - cell "11/4/2025" [ref=e2132]
+                - cell "15,000.00" [ref=e2133]
+                - cell "—" [ref=e2134]
+                - cell "—" [ref=e2135]
+                - cell "228" [ref=e2136]
+                - cell [ref=e2137]:
+                  - generic [ref=e2138]:
+                    - button "Edit" [ref=e2139]:
+                      - img
+                    - button [ref=e2140]:
+                      - img
+                    - button [ref=e2141]:
+                      - img
+              - row "Select E-043 E-043 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2142] [cursor=pointer]:
+                - cell "Select E-043" [ref=e2143]:
+                  - checkbox "Select E-043" [ref=e2144]
+                - cell "E-043" [ref=e2145]:
+                  - generic [ref=e2146]: E-043
+                - cell "Sheep" [ref=e2147]
+                - cell "Ewe" [ref=e2148]
+                - cell "F1" [ref=e2149]
+                - cell "Walid Mohamed Bahgat" [ref=e2150]
+                - cell "female" [ref=e2151]
+                - cell "Ewe" [ref=e2152]:
+                  - generic [ref=e2153]: Ewe
+                - cell "purchased" [ref=e2154]
+                - cell "11/4/2024" [ref=e2155]
+                - cell "1y 7m" [ref=e2156]
+                - cell "11/4/2025" [ref=e2157]
+                - cell "15,000.00" [ref=e2158]
+                - cell "—" [ref=e2159]
+                - cell "—" [ref=e2160]
+                - cell "228" [ref=e2161]
+                - cell [ref=e2162]:
+                  - generic [ref=e2163]:
+                    - button "Edit" [ref=e2164]:
+                      - img
+                    - button [ref=e2165]:
+                      - img
+                    - button [ref=e2166]:
+                      - img
+              - row "Select E-022 E-022 Sheep Ewe F1 Azal Farms female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2167] [cursor=pointer]:
+                - cell "Select E-022" [ref=e2168]:
+                  - checkbox "Select E-022" [ref=e2169]
+                - cell "E-022" [ref=e2170]:
+                  - generic [ref=e2171]: E-022
+                - cell "Sheep" [ref=e2172]
+                - cell "Ewe" [ref=e2173]
+                - cell "F1" [ref=e2174]
+                - cell "Azal Farms" [ref=e2175]
+                - cell "female" [ref=e2176]
+                - cell "Ewe" [ref=e2177]:
+                  - generic [ref=e2178]: Ewe
+                - cell "purchased" [ref=e2179]
+                - cell "11/4/2024" [ref=e2180]
+                - cell "1y 7m" [ref=e2181]
+                - cell "11/4/2025" [ref=e2182]
+                - cell "15,000.00" [ref=e2183]
+                - cell "—" [ref=e2184]
+                - cell "—" [ref=e2185]
+                - cell "228" [ref=e2186]
+                - cell [ref=e2187]:
+                  - generic [ref=e2188]:
+                    - button "Edit" [ref=e2189]:
+                      - img
+                    - button [ref=e2190]:
+                      - img
+                    - button [ref=e2191]:
+                      - img
+              - row "Select E-020 E-020 Sheep Ewe F6 Azal Farms female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2192] [cursor=pointer]:
+                - cell "Select E-020" [ref=e2193]:
+                  - checkbox "Select E-020" [ref=e2194]
+                - cell "E-020" [ref=e2195]:
+                  - generic [ref=e2196]: E-020
+                - cell "Sheep" [ref=e2197]
+                - cell "Ewe" [ref=e2198]
+                - cell "F6" [ref=e2199]
+                - cell "Azal Farms" [ref=e2200]
+                - cell "female" [ref=e2201]
+                - cell "Ewe" [ref=e2202]:
+                  - generic [ref=e2203]: Ewe
+                - cell "purchased" [ref=e2204]
+                - cell "11/4/2024" [ref=e2205]
+                - cell "1y 7m" [ref=e2206]
+                - cell "11/4/2025" [ref=e2207]
+                - cell "15,000.00" [ref=e2208]
+                - cell "—" [ref=e2209]
+                - cell "—" [ref=e2210]
+                - cell "228" [ref=e2211]
+                - cell [ref=e2212]:
+                  - generic [ref=e2213]:
+                    - button "Edit" [ref=e2214]:
+                      - img
+                    - button [ref=e2215]:
+                      - img
+                    - button [ref=e2216]:
+                      - img
+              - row "Select E-041 E-041 Sheep Ewe F1 Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2217] [cursor=pointer]:
+                - cell "Select E-041" [ref=e2218]:
+                  - checkbox "Select E-041" [ref=e2219]
+                - cell "E-041" [ref=e2220]:
+                  - generic [ref=e2221]: E-041
+                - cell "Sheep" [ref=e2222]
+                - cell "Ewe" [ref=e2223]
+                - cell "F1" [ref=e2224]
+                - cell "Walid Mohamed Bahgat" [ref=e2225]
+                - cell "female" [ref=e2226]
+                - cell "Ewe" [ref=e2227]:
+                  - generic [ref=e2228]: Ewe
+                - cell "purchased" [ref=e2229]
+                - cell "11/4/2024" [ref=e2230]
+                - cell "1y 7m" [ref=e2231]
+                - cell "11/4/2025" [ref=e2232]
+                - cell "15,000.00" [ref=e2233]
+                - cell "—" [ref=e2234]
+                - cell "—" [ref=e2235]
+                - cell "228" [ref=e2236]
+                - cell [ref=e2237]:
+                  - generic [ref=e2238]:
+                    - button "Edit" [ref=e2239]:
+                      - img
+                    - button [ref=e2240]:
+                      - img
+                    - button [ref=e2241]:
+                      - img
+              - row "Select E-023 E-023 Sheep Ewe F1 Azal Farms female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2242] [cursor=pointer]:
+                - cell "Select E-023" [ref=e2243]:
+                  - checkbox "Select E-023" [ref=e2244]
+                - cell "E-023" [ref=e2245]:
+                  - generic [ref=e2246]: E-023
+                - cell "Sheep" [ref=e2247]
+                - cell "Ewe" [ref=e2248]
+                - cell "F1" [ref=e2249]
+                - cell "Azal Farms" [ref=e2250]
+                - cell "female" [ref=e2251]
+                - cell "Ewe" [ref=e2252]:
+                  - generic [ref=e2253]: Ewe
+                - cell "purchased" [ref=e2254]
+                - cell "11/4/2024" [ref=e2255]
+                - cell "1y 7m" [ref=e2256]
+                - cell "11/4/2025" [ref=e2257]
+                - cell "15,000.00" [ref=e2258]
+                - cell "—" [ref=e2259]
+                - cell "—" [ref=e2260]
+                - cell "228" [ref=e2261]
+                - cell [ref=e2262]:
+                  - generic [ref=e2263]:
+                    - button "Edit" [ref=e2264]:
+                      - img
+                    - button [ref=e2265]:
+                      - img
+                    - button [ref=e2266]:
+                      - img
+              - row "Select E-039 E-039 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2267] [cursor=pointer]:
+                - cell "Select E-039" [ref=e2268]:
+                  - checkbox "Select E-039" [ref=e2269]
+                - cell "E-039" [ref=e2270]:
+                  - generic [ref=e2271]: E-039
+                - cell "Sheep" [ref=e2272]
+                - cell "Ewe" [ref=e2273]
+                - cell "Milking Barn" [ref=e2274]
+                - cell "Walid Mohamed Bahgat" [ref=e2275]
+                - cell "female" [ref=e2276]
+                - cell "Ewe" [ref=e2277]:
+                  - generic [ref=e2278]: Ewe
+                - cell "purchased" [ref=e2279]
+                - cell "11/4/2024" [ref=e2280]
+                - cell "1y 7m" [ref=e2281]
+                - cell "11/4/2025" [ref=e2282]
+                - cell "15,000.00" [ref=e2283]
+                - cell "—" [ref=e2284]
+                - cell "—" [ref=e2285]
+                - cell "228" [ref=e2286]
+                - cell [ref=e2287]:
+                  - generic [ref=e2288]:
+                    - button "Edit" [ref=e2289]:
+                      - img
+                    - button [ref=e2290]:
+                      - img
+                    - button [ref=e2291]:
+                      - img
+              - row "Select E-038 E-038 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2292] [cursor=pointer]:
+                - cell "Select E-038" [ref=e2293]:
+                  - checkbox "Select E-038" [ref=e2294]
+                - cell "E-038" [ref=e2295]:
+                  - generic [ref=e2296]: E-038
+                - cell "Sheep" [ref=e2297]
+                - cell "Ewe" [ref=e2298]
+                - cell "Milking Barn" [ref=e2299]
+                - cell "Walid Mohamed Bahgat" [ref=e2300]
+                - cell "female" [ref=e2301]
+                - cell "Ewe" [ref=e2302]:
+                  - generic [ref=e2303]: Ewe
+                - cell "purchased" [ref=e2304]
+                - cell "11/4/2024" [ref=e2305]
+                - cell "1y 7m" [ref=e2306]
+                - cell "11/4/2025" [ref=e2307]
+                - cell "15,000.00" [ref=e2308]
+                - cell "—" [ref=e2309]
+                - cell "—" [ref=e2310]
+                - cell "228" [ref=e2311]
+                - cell [ref=e2312]:
+                  - generic [ref=e2313]:
+                    - button "Edit" [ref=e2314]:
+                      - img
+                    - button [ref=e2315]:
+                      - img
+                    - button [ref=e2316]:
+                      - img
+              - row "Select E-037 E-037 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2317] [cursor=pointer]:
+                - cell "Select E-037" [ref=e2318]:
+                  - checkbox "Select E-037" [ref=e2319]
+                - cell "E-037" [ref=e2320]:
+                  - generic [ref=e2321]: E-037
+                - cell "Sheep" [ref=e2322]
+                - cell "Ewe" [ref=e2323]
+                - cell "Milking Barn" [ref=e2324]
+                - cell "Walid Mohamed Bahgat" [ref=e2325]
+                - cell "female" [ref=e2326]
+                - cell "Ewe" [ref=e2327]:
+                  - generic [ref=e2328]: Ewe
+                - cell "purchased" [ref=e2329]
+                - cell "11/4/2024" [ref=e2330]
+                - cell "1y 7m" [ref=e2331]
+                - cell "11/4/2025" [ref=e2332]
+                - cell "15,000.00" [ref=e2333]
+                - cell "—" [ref=e2334]
+                - cell "—" [ref=e2335]
+                - cell "228" [ref=e2336]
+                - cell [ref=e2337]:
+                  - generic [ref=e2338]:
+                    - button "Edit" [ref=e2339]:
+                      - img
+                    - button [ref=e2340]:
+                      - img
+                    - button [ref=e2341]:
+                      - img
+              - row "Select E-030 E-030 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2342] [cursor=pointer]:
+                - cell "Select E-030" [ref=e2343]:
+                  - checkbox "Select E-030" [ref=e2344]
+                - cell "E-030" [ref=e2345]:
+                  - generic [ref=e2346]: E-030
+                - cell "Sheep" [ref=e2347]
+                - cell "Ewe" [ref=e2348]
+                - cell "Milking Barn" [ref=e2349]
+                - cell "Walid Mohamed Bahgat" [ref=e2350]
+                - cell "female" [ref=e2351]
+                - cell "Ewe" [ref=e2352]:
+                  - generic [ref=e2353]: Ewe
+                - cell "purchased" [ref=e2354]
+                - cell "11/4/2024" [ref=e2355]
+                - cell "1y 7m" [ref=e2356]
+                - cell "11/4/2025" [ref=e2357]
+                - cell "15,000.00" [ref=e2358]
+                - cell "—" [ref=e2359]
+                - cell "—" [ref=e2360]
+                - cell "228" [ref=e2361]
+                - cell [ref=e2362]:
+                  - generic [ref=e2363]:
+                    - button "Edit" [ref=e2364]:
+                      - img
+                    - button [ref=e2365]:
+                      - img
+                    - button [ref=e2366]:
+                      - img
+              - row "Select E-036 E-036 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2367] [cursor=pointer]:
+                - cell "Select E-036" [ref=e2368]:
+                  - checkbox "Select E-036" [ref=e2369]
+                - cell "E-036" [ref=e2370]:
+                  - generic [ref=e2371]: E-036
+                - cell "Sheep" [ref=e2372]
+                - cell "Ewe" [ref=e2373]
+                - cell "Milking Barn" [ref=e2374]
+                - cell "Walid Mohamed Bahgat" [ref=e2375]
+                - cell "female" [ref=e2376]
+                - cell "Ewe" [ref=e2377]:
+                  - generic [ref=e2378]: Ewe
+                - cell "purchased" [ref=e2379]
+                - cell "11/4/2024" [ref=e2380]
+                - cell "1y 7m" [ref=e2381]
+                - cell "11/4/2025" [ref=e2382]
+                - cell "15,000.00" [ref=e2383]
+                - cell "—" [ref=e2384]
+                - cell "—" [ref=e2385]
+                - cell "228" [ref=e2386]
+                - cell [ref=e2387]:
+                  - generic [ref=e2388]:
+                    - button "Edit" [ref=e2389]:
+                      - img
+                    - button [ref=e2390]:
+                      - img
+                    - button [ref=e2391]:
+                      - img
+              - row "Select E-035 E-035 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2392] [cursor=pointer]:
+                - cell "Select E-035" [ref=e2393]:
+                  - checkbox "Select E-035" [ref=e2394]
+                - cell "E-035" [ref=e2395]:
+                  - generic [ref=e2396]: E-035
+                - cell "Sheep" [ref=e2397]
+                - cell "Ewe" [ref=e2398]
+                - cell "Milking Barn" [ref=e2399]
+                - cell "Walid Mohamed Bahgat" [ref=e2400]
+                - cell "female" [ref=e2401]
+                - cell "Ewe" [ref=e2402]:
+                  - generic [ref=e2403]: Ewe
+                - cell "purchased" [ref=e2404]
+                - cell "11/4/2024" [ref=e2405]
+                - cell "1y 7m" [ref=e2406]
+                - cell "11/4/2025" [ref=e2407]
+                - cell "15,000.00" [ref=e2408]
+                - cell "—" [ref=e2409]
+                - cell "—" [ref=e2410]
+                - cell "228" [ref=e2411]
+                - cell [ref=e2412]:
+                  - generic [ref=e2413]:
+                    - button "Edit" [ref=e2414]:
+                      - img
+                    - button [ref=e2415]:
+                      - img
+                    - button [ref=e2416]:
+                      - img
+              - row "Select E-034 E-034 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2417] [cursor=pointer]:
+                - cell "Select E-034" [ref=e2418]:
+                  - checkbox "Select E-034" [ref=e2419]
+                - cell "E-034" [ref=e2420]:
+                  - generic [ref=e2421]: E-034
+                - cell "Sheep" [ref=e2422]
+                - cell "Ewe" [ref=e2423]
+                - cell "Milking Barn" [ref=e2424]
+                - cell "Walid Mohamed Bahgat" [ref=e2425]
+                - cell "female" [ref=e2426]
+                - cell "Ewe" [ref=e2427]:
+                  - generic [ref=e2428]: Ewe
+                - cell "purchased" [ref=e2429]
+                - cell "11/4/2024" [ref=e2430]
+                - cell "1y 7m" [ref=e2431]
+                - cell "11/4/2025" [ref=e2432]
+                - cell "15,000.00" [ref=e2433]
+                - cell "—" [ref=e2434]
+                - cell "—" [ref=e2435]
+                - cell "228" [ref=e2436]
+                - cell [ref=e2437]:
+                  - generic [ref=e2438]:
+                    - button "Edit" [ref=e2439]:
+                      - img
+                    - button [ref=e2440]:
+                      - img
+                    - button [ref=e2441]:
+                      - img
+              - row "Select E-033 E-033 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2442] [cursor=pointer]:
+                - cell "Select E-033" [ref=e2443]:
+                  - checkbox "Select E-033" [ref=e2444]
+                - cell "E-033" [ref=e2445]:
+                  - generic [ref=e2446]: E-033
+                - cell "Sheep" [ref=e2447]
+                - cell "Ewe" [ref=e2448]
+                - cell "Milking Barn" [ref=e2449]
+                - cell "Walid Mohamed Bahgat" [ref=e2450]
+                - cell "female" [ref=e2451]
+                - cell "Ewe" [ref=e2452]:
+                  - generic [ref=e2453]: Ewe
+                - cell "purchased" [ref=e2454]
+                - cell "11/4/2024" [ref=e2455]
+                - cell "1y 7m" [ref=e2456]
+                - cell "11/4/2025" [ref=e2457]
+                - cell "15,000.00" [ref=e2458]
+                - cell "—" [ref=e2459]
+                - cell "—" [ref=e2460]
+                - cell "228" [ref=e2461]
+                - cell [ref=e2462]:
+                  - generic [ref=e2463]:
+                    - button "Edit" [ref=e2464]:
+                      - img
+                    - button [ref=e2465]:
+                      - img
+                    - button [ref=e2466]:
+                      - img
+              - row "Select E-032 E-032 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2467] [cursor=pointer]:
+                - cell "Select E-032" [ref=e2468]:
+                  - checkbox "Select E-032" [ref=e2469]
+                - cell "E-032" [ref=e2470]:
+                  - generic [ref=e2471]: E-032
+                - cell "Sheep" [ref=e2472]
+                - cell "Ewe" [ref=e2473]
+                - cell "Milking Barn" [ref=e2474]
+                - cell "Walid Mohamed Bahgat" [ref=e2475]
+                - cell "female" [ref=e2476]
+                - cell "Ewe" [ref=e2477]:
+                  - generic [ref=e2478]: Ewe
+                - cell "purchased" [ref=e2479]
+                - cell "11/4/2024" [ref=e2480]
+                - cell "1y 7m" [ref=e2481]
+                - cell "11/4/2025" [ref=e2482]
+                - cell "15,000.00" [ref=e2483]
+                - cell "—" [ref=e2484]
+                - cell "—" [ref=e2485]
+                - cell "228" [ref=e2486]
+                - cell [ref=e2487]:
+                  - generic [ref=e2488]:
+                    - button "Edit" [ref=e2489]:
+                      - img
+                    - button [ref=e2490]:
+                      - img
+                    - button [ref=e2491]:
+                      - img
+              - row "Select E-031 E-031 Sheep Ewe Milking Barn Walid Mohamed Bahgat female Ewe purchased 11/4/2024 1y 7m 11/4/2025 15,000.00 — — 228" [ref=e2492] [cursor=pointer]:
+                - cell "Select E-031" [ref=e2493]:
+                  - checkbox "Select E-031" [ref=e2494]
+                - cell "E-031" [ref=e2495]:
+                  - generic [ref=e2496]: E-031
+                - cell "Sheep" [ref=e2497]
+                - cell "Ewe" [ref=e2498]
+                - cell "Milking Barn" [ref=e2499]
+                - cell "Walid Mohamed Bahgat" [ref=e2500]
+                - cell "female" [ref=e2501]
+                - cell "Ewe" [ref=e2502]:
+                  - generic [ref=e2503]: Ewe
+                - cell "purchased" [ref=e2504]
+                - cell "11/4/2024" [ref=e2505]
+                - cell "1y 7m" [ref=e2506]
+                - cell "11/4/2025" [ref=e2507]
+                - cell "15,000.00" [ref=e2508]
+                - cell "—" [ref=e2509]
+                - cell "—" [ref=e2510]
+                - cell "228" [ref=e2511]
+                - cell [ref=e2512]:
+                  - generic [ref=e2513]:
+                    - button "Edit" [ref=e2514]:
+                      - img
+                    - button [ref=e2515]:
+                      - img
+                    - button [ref=e2516]:
+                      - img
+              - row "Select D-003 D-003 Dog Dog Zone2 Malak Ashraf Elshakaa female Dog purchased 7/1/2025 11m 11/1/2025 — — — 231" [ref=e2517] [cursor=pointer]:
+                - cell "Select D-003" [ref=e2518]:
+                  - checkbox "Select D-003" [ref=e2519]
+                - cell "D-003" [ref=e2520]:
+                  - generic [ref=e2521]: D-003
+                - cell "Dog" [ref=e2522]
+                - cell "Dog" [ref=e2523]
+                - cell "Zone2" [ref=e2524]
+                - cell "Malak Ashraf Elshakaa" [ref=e2525]
+                - cell "female" [ref=e2526]
+                - cell "Dog" [ref=e2527]:
+                  - generic [ref=e2528]: Dog
+                - cell "purchased" [ref=e2529]
+                - cell "7/1/2025" [ref=e2530]
+                - cell "11m" [ref=e2531]
+                - cell "11/1/2025" [ref=e2532]
+                - cell "—" [ref=e2533]
+                - cell "—" [ref=e2534]
+                - cell "—" [ref=e2535]
+                - cell "231" [ref=e2536]
+                - cell [ref=e2537]:
+                  - generic [ref=e2538]:
+                    - button "Edit" [ref=e2539]:
+                      - img
+                    - button [ref=e2540]:
+                      - img
+                    - button [ref=e2541]:
+                      - img
+              - row "Select D-002 D-002 Dog Dog Zone1 Malak Ashraf Elshakaa male Dog purchased 7/1/2025 11m 11/1/2025 — — — 231" [ref=e2542] [cursor=pointer]:
+                - cell "Select D-002" [ref=e2543]:
+                  - checkbox "Select D-002" [ref=e2544]
+                - cell "D-002" [ref=e2545]:
+                  - generic [ref=e2546]: D-002
+                - cell "Dog" [ref=e2547]
+                - cell "Dog" [ref=e2548]
+                - cell "Zone1" [ref=e2549]
+                - cell "Malak Ashraf Elshakaa" [ref=e2550]
+                - cell "male" [ref=e2551]
+                - cell "Dog" [ref=e2552]:
+                  - generic [ref=e2553]: Dog
+                - cell "purchased" [ref=e2554]
+                - cell "7/1/2025" [ref=e2555]
+                - cell "11m" [ref=e2556]
+                - cell "11/1/2025" [ref=e2557]
+                - cell "—" [ref=e2558]
+                - cell "—" [ref=e2559]
+                - cell "—" [ref=e2560]
+                - cell "231" [ref=e2561]
+                - cell [ref=e2562]:
+                  - generic [ref=e2563]:
+                    - button "Edit" [ref=e2564]:
+                      - img
+                    - button [ref=e2565]:
+                      - img
+                    - button [ref=e2566]:
+                      - img
+              - row "Select D-005 D-005 Dog Dog Zone3 Malak Ashraf Elshakaa male Dog purchased 3/1/2025 1y 3m 11/1/2025 — — — 231" [ref=e2567] [cursor=pointer]:
+                - cell "Select D-005" [ref=e2568]:
+                  - checkbox "Select D-005" [ref=e2569]
+                - cell "D-005" [ref=e2570]:
+                  - generic [ref=e2571]: D-005
+                - cell "Dog" [ref=e2572]
+                - cell "Dog" [ref=e2573]
+                - cell "Zone3" [ref=e2574]
+                - cell "Malak Ashraf Elshakaa" [ref=e2575]
+                - cell "male" [ref=e2576]
+                - cell "Dog" [ref=e2577]:
+                  - generic [ref=e2578]: Dog
+                - cell "purchased" [ref=e2579]
+                - cell "3/1/2025" [ref=e2580]
+                - cell "1y 3m" [ref=e2581]
+                - cell "11/1/2025" [ref=e2582]
+                - cell "—" [ref=e2583]
+                - cell "—" [ref=e2584]
+                - cell "—" [ref=e2585]
+                - cell "231" [ref=e2586]
+                - cell [ref=e2587]:
+                  - generic [ref=e2588]:
+                    - button "Edit" [ref=e2589]:
+                      - img
+                    - button [ref=e2590]:
+                      - img
+                    - button [ref=e2591]:
+                      - img
+              - row "Select D-004 D-004 Dog Dog Zone2 Malak Ashraf Elshakaa female Dog purchased 3/1/2025 1y 3m 11/1/2025 — — — 231" [ref=e2592] [cursor=pointer]:
+                - cell "Select D-004" [ref=e2593]:
+                  - checkbox "Select D-004" [ref=e2594]
+                - cell "D-004" [ref=e2595]:
+                  - generic [ref=e2596]: D-004
+                - cell "Dog" [ref=e2597]
+                - cell "Dog" [ref=e2598]
+                - cell "Zone2" [ref=e2599]
+                - cell "Malak Ashraf Elshakaa" [ref=e2600]
+                - cell "female" [ref=e2601]
+                - cell "Dog" [ref=e2602]:
+                  - generic [ref=e2603]: Dog
+                - cell "purchased" [ref=e2604]
+                - cell "3/1/2025" [ref=e2605]
+                - cell "1y 3m" [ref=e2606]
+                - cell "11/1/2025" [ref=e2607]
+                - cell "—" [ref=e2608]
+                - cell "—" [ref=e2609]
+                - cell "—" [ref=e2610]
+                - cell "231" [ref=e2611]
+                - cell [ref=e2612]:
+                  - generic [ref=e2613]:
+                    - button "Edit" [ref=e2614]:
+                      - img
+                    - button [ref=e2615]:
+                      - img
+                    - button [ref=e2616]:
+                      - img
