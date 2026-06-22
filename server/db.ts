@@ -1852,30 +1852,36 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     catExpByCatId.get(catId)!.push({ amount: toMinor(String(e.amount)), date: dateStr });
   }
 
+  // Allocation denominators must be the WHOLE farm, independent of the display
+  // filter (owner/species/category). A category/herd expense is shared by every
+  // animal that overlapped it — not just the filtered subset — otherwise a
+  // single owner's animals would absorb the full expense and the per-animal P&L
+  // would no longer reconcile with the Dashboard / Income Statement.
+  const denomAnimals = await db
+    .select({ categoryId: animals.categoryId, acquisitionDate: animals.acquisitionDate, exitDate: animals.exitDate })
+    .from(animals)
+    .where(isNull(animals.deletedAt));
+  const normAcq = (d: any) => d instanceof Date ? d.toISOString().split("T")[0] : String(d ?? today).split("T")[0];
+  const normExit = (d: any) => d ? (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]) : null;
+
   // Pre-build per-category animal list with acquisition/exit dates so we can
   // allocate each category expense against the head count that overlapped it.
   const animalsByCategory = new Map<number, Array<{ acq: string; exit: string | null }>>();
-  for (const r of allAnimals) {
-    const a = r.animal;
-    const acq = a.acquisitionDate instanceof Date ? a.acquisitionDate.toISOString().split("T")[0] : String(a.acquisitionDate ?? today).split("T")[0];
-    const exit = a.exitDate ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0]) : null;
+  for (const a of denomAnimals) {
+    const acq = normAcq(a.acquisitionDate);
+    const exit = normExit(a.exitDate);
     if (!animalsByCategory.has(a.categoryId)) animalsByCategory.set(a.categoryId, []);
     animalsByCategory.get(a.categoryId)!.push({ acq, exit });
   }
 
   // Herd (animal-wide) expenses: each split equally across all animals alive on
   // its date. Load them once and precompute the per-expense allocation in minor
-  // units using an in-memory herd-count-on-date over allAnimals.
+  // units using an in-memory herd-count-on-date over the WHOLE farm.
   const allHerdExp = await db
     .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
     .from(expenses)
     .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt)));
-  const allAnimalDates = allAnimals.map((r: any) => {
-    const a = r.animal;
-    const acq = a.acquisitionDate instanceof Date ? a.acquisitionDate.toISOString().split("T")[0] : String(a.acquisitionDate ?? today).split("T")[0];
-    const exit = a.exitDate ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0]) : null;
-    return { acq, exit };
-  });
+  const allAnimalDates = denomAnimals.map(a => ({ acq: normAcq(a.acquisitionDate), exit: normExit(a.exitDate) }));
   const herdCountOnDate = (dateStr: string) => Math.max(1, allAnimalDates.filter((a) => a.acq <= dateStr && (a.exit === null || a.exit >= dateStr)).length);
   // Pre-split each herd expense → { date, perHeadMinor } so each animal alive
   // that day picks up the same per-head share.
@@ -2144,6 +2150,136 @@ export async function getOwnerFeedCostMinor(ownerId: number, fromDate: string, t
   return totalMinor;
 }
 
+// ─── OWNER EXPENSE ALLOCATION ─────────────────────────────────────────────────
+// An owner's true share of operating expenses, matching the per-animal P&L:
+//   • head expenses          → counted in full when the head is the owner's
+//   • category expenses       → owner's SHARE = amount × (owner heads in the
+//                               category on the expense date) ÷ (all heads in
+//                               the category on that date)
+//   • herd (animal-wide)      → owner's SHARE = amount × (owner heads alive on
+//                               the expense date) ÷ (all heads alive that date)
+//   • general (overhead)      → EXCLUDED (e.g. electricity — not owner-related)
+// This is the same allocation getAllAnimalsPnL applies per animal, so the
+// Dashboard, Income Statement and P&L always reconcile. Pure for unit testing.
+export function allocateOwnerExpensesPure(params: {
+  ownedAnimalIds: Set<number>;
+  animals: Array<{ id: number; categoryId: number; acq: string; exit: string | null }>;
+  expenses: Array<{ targetType: string; headId: number | null; categoryTarget: number | null; amountMinor: number; date: string; categoryName: string }>;
+}): { byCategory: Map<string, number>; headMinor: number; categoryMinor: number; herdMinor: number } {
+  const { ownedAnimalIds, animals: allAnimals, expenses: exp } = params;
+  const alive = (a: { acq: string; exit: string | null }, d: string) => a.acq <= d && (a.exit === null || a.exit >= d);
+  const byCategory = new Map<string, number>();
+  const add = (name: string, minor: number) => {
+    if (minor === 0) return;
+    byCategory.set(name, (byCategory.get(name) ?? 0) + minor);
+  };
+
+  let headMinor = 0;
+  let categoryMinor = 0;
+  let herdMinor = 0;
+
+  for (const e of exp) {
+    if (e.targetType === "head") {
+      if (e.headId == null || !ownedAnimalIds.has(e.headId)) continue;
+      headMinor += e.amountMinor;
+      add(e.categoryName, e.amountMinor);
+    } else if (e.targetType === "category") {
+      if (e.categoryTarget == null) continue;
+      let total = 0;
+      let ownerHeads = 0;
+      for (const a of allAnimals) {
+        if (a.categoryId !== e.categoryTarget || !alive(a, e.date)) continue;
+        total++;
+        if (ownedAnimalIds.has(a.id)) ownerHeads++;
+      }
+      if (total === 0 || ownerHeads === 0) continue;
+      const share = divMinor(e.amountMinor, total) * ownerHeads;
+      categoryMinor += share;
+      add(e.categoryName, share);
+    } else if (e.targetType === "herd") {
+      let total = 0;
+      let ownerHeads = 0;
+      for (const a of allAnimals) {
+        if (!alive(a, e.date)) continue;
+        total++;
+        if (ownedAnimalIds.has(a.id)) ownerHeads++;
+      }
+      if (total === 0 || ownerHeads === 0) continue;
+      const share = divMinor(e.amountMinor, total) * ownerHeads;
+      herdMinor += share;
+      add(e.categoryName, share);
+    }
+    // general → excluded
+  }
+  return { byCategory, headMinor, categoryMinor, herdMinor };
+}
+
+// DB wrapper for allocateOwnerExpensesPure over the period [fromDate, toDate].
+export async function getOwnerExpenseBreakdownMinor(ownerId: number, fromDate: string, toDate: string): Promise<{
+  byCategory: Array<{ categoryName: string; total: number }>;
+  headMinor: number;
+  categoryMinor: number;
+  herdMinor: number;
+  totalOtherMinor: number;
+}> {
+  const empty = { byCategory: [], headMinor: 0, categoryMinor: 0, herdMinor: 0, totalOtherMinor: 0 };
+  const db = await getDb();
+  if (!db) return empty;
+
+  const norm = (d: Date | string | null): string | null =>
+    d == null ? null : (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]);
+
+  const allAnimals = await db
+    .select({ id: animals.id, categoryId: animals.categoryId, ownerId: animals.ownerId, acquisitionDate: animals.acquisitionDate, exitDate: animals.exitDate })
+    .from(animals)
+    .where(isNull(animals.deletedAt));
+  const ownedAnimalIds = new Set(allAnimals.filter(a => a.ownerId === ownerId).map(a => a.id));
+  if (ownedAnimalIds.size === 0) return empty;
+
+  const animalsForCalc = allAnimals.map(a => ({
+    id: a.id,
+    categoryId: a.categoryId,
+    acq: norm(a.acquisitionDate) ?? fromDate,
+    exit: norm(a.exitDate),
+  }));
+
+  const expRows = await db
+    .select({
+      targetType: expenses.targetType,
+      headId: expenses.headId,
+      categoryTarget: expenses.categoryTarget,
+      amount: expenses.amount,
+      expenseDate: expenses.expenseDate,
+      categoryName: expenseCategories.name,
+    })
+    .from(expenses)
+    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
+
+  const expForCalc = expRows.map(e => ({
+    targetType: e.targetType,
+    headId: e.headId,
+    categoryTarget: e.categoryTarget,
+    amountMinor: toMinor(String(e.amount ?? 0)),
+    date: norm(e.expenseDate) ?? fromDate,
+    categoryName: e.categoryName ?? "Other",
+  }));
+
+  const { byCategory, headMinor, categoryMinor, herdMinor } = allocateOwnerExpensesPure({
+    ownedAnimalIds,
+    animals: animalsForCalc,
+    expenses: expForCalc,
+  });
+
+  return {
+    byCategory: Array.from(byCategory.entries()).map(([categoryName, minor]) => ({ categoryName, total: toMajor(minor) })),
+    headMinor,
+    categoryMinor,
+    herdMinor,
+    totalOtherMinor: headMinor + categoryMinor + herdMinor,
+  };
+}
+
 export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return null;
@@ -2156,27 +2292,19 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
 
   // ── Owner scoping ───────────────────────────────────────────────────────────
   // When scoped to an owner, every number reflects only that owner's animals.
-  // Farm-wide costs that are not attributable to an owner — general overhead
-  // (e.g. electricity), herd-wide expenses, and bulk feed purchases — are
-  // EXCLUDED. Feed is instead modeled per-owner on a consumption basis below.
+  // General overhead (e.g. electricity) and bulk feed PURCHASES are not
+  // attributable to an owner and are excluded. The owner's expense share is
+  // computed by the same allocation as the per-animal P&L (head in full,
+  // category/herd by head count on the expense date); feed is modeled from the
+  // owner's ration-plan consumption.
   const ownerId = filters?.ownerId;
   const ownedAnimalIds: number[] = ownerId
     ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map(r => r.id)
     : [];
-  const ownerCategoryIds: number[] = ownerId
-    ? Array.from(new Set((await db.select({ categoryId: animals.categoryId }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map(r => r.categoryId)))
-    : [];
-  // Expenses "related to" the owner: head expenses on their animals OR category
-  // expenses for a category in which they hold animals. general/herd excluded.
-  const ownerExpenseConds: any[] = [];
-  if (ownedAnimalIds.length > 0) ownerExpenseConds.push(inArray(expenses.headId, ownedAnimalIds));
-  if (ownerCategoryIds.length > 0) ownerExpenseConds.push(inArray(expenses.categoryTarget, ownerCategoryIds));
-  const ownerExpenseCond = ownerId
-    ? (ownerExpenseConds.length > 0 ? or(...ownerExpenseConds) : sql`1 = 0`)
-    : sql`1 = 1`;
   const ownerSalesCond = ownerId
     ? (ownedAnimalIds.length > 0 ? inArray(sales.animalId, ownedAnimalIds) : sql`1 = 0`)
     : sql`1 = 1`;
+  const ownerBreakdown = ownerId ? await getOwnerExpenseBreakdownMinor(ownerId, fromDate, toDate) : null;
 
   // Active head count (exclude soft-deleted)
   const headConditions = [eq(animals.isActive, true), isNull(animals.deletedAt)];
@@ -2190,12 +2318,13 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     .from(animals)
     .where(and(...headConditions));
 
-  // Total other expenses in period (vet, labour, vaccine etc — NOT feed). Under
-  // owner scope only head/category expenses tied to the owner's animals count.
+  // Total other expenses in period (vet, labour, vaccine etc — NOT feed).
+  // Whole-farm = every expense; owner scope = the owner's allocated share
+  // (head + category + herd; general/overhead excluded), via ownerBreakdown.
   const totalOtherExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt), ownerExpenseCond));
+    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
 
   // Feed cost in period. Whole-farm = actual bulk purchases (cash basis).
   // Owner-scoped = modeled consumption of the owner's animals (accrual basis),
@@ -2251,7 +2380,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     .where(and(...headConditions))
     .groupBy(animals.categoryId, animalCategories.name);
 
-  const otherExpensesMinor = toMinor(String(totalOtherExpenses[0]?.total ?? 0));
+  const otherExpensesMinor = ownerBreakdown ? ownerBreakdown.totalOtherMinor : toMinor(String(totalOtherExpenses[0]?.total ?? 0));
   const feedExpensesMinor = ownerId ? ownerFeedMinor : toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
   const totalExpensesMinor = otherExpensesMinor + feedExpensesMinor;
   const revenueMinor = toMinor(String(totalRevenue[0]?.total ?? 0));
@@ -2553,10 +2682,10 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const db = await getDb();
   if (!db) return null;
 
-  // When scoped to an owner, restrict sales + animal purchases + head/category
-  // expenses to that owner's animals. Farm-wide (general) costs and feed are
-  // NOT owner-specific, so they're only included in the unscoped (whole-farm)
-  // statement.
+  // When scoped to an owner: sales, animal purchases and feed are restricted to
+  // that owner's animals; expenses are the owner's ALLOCATED share (head in
+  // full, category/herd split by head count on the expense date — matching the
+  // per-animal P&L). General overhead (e.g. electricity) is excluded.
   const ownerId = filters.ownerId;
   const ownedAnimalIds: number[] = ownerId
     ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.id)
@@ -2586,41 +2715,41 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       ownerId ? eq(animals.ownerId, ownerId) : sql`1 = 1`,
     ));
 
-  // Expenses by category (exclude soft-deleted). When owner-scoped, only
-  // head/category expenses tied to that owner's animals count.
-  const ownerCategoryIds: number[] = ownerId
-    ? Array.from(new Set(
-        (await db.select({ categoryId: animals.categoryId }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.categoryId)
-      ))
-    : [];
-  const ownerExpenseConds: any[] = [];
-  if (ownedAnimalIds.length > 0) ownerExpenseConds.push(inArray(expenses.headId, ownedAnimalIds));
-  if (ownerCategoryIds.length > 0) ownerExpenseConds.push(inArray(expenses.categoryTarget, ownerCategoryIds));
-  const ownerExpenseCond = ownerId
-    ? (ownerExpenseConds.length > 0 ? or(...ownerExpenseConds) : sql`1 = 0`)
-    : sql`1 = 1`;
-  const expensesByCategory = await db
-    .select({
-      categoryName: expenseCategories.name,
-      total: sql<number>`SUM(${expenses.amount})`
-    })
-    .from(expenses)
-    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt), ownerExpenseCond))
-    .groupBy(expenseCategories.name);
-
-  // Expenses split by allocation type, for the running-cost farm-wide vs
-  // animal-wide breakdown. general = farm-wide; head/category/herd = animal-wide.
-  const expensesByTarget = await db
-    .select({
-      targetType: expenses.targetType,
-      total: sql<number>`SUM(${expenses.amount})`,
-    })
-    .from(expenses)
-    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt), ownerExpenseCond))
-    .groupBy(expenses.targetType);
+  // Expenses (exclude soft-deleted). Whole-farm: every expense grouped by
+  // category and by target type. Owner-scoped: the owner's allocated share via
+  // getOwnerExpenseBreakdownMinor (general/overhead excluded).
+  let expensesByCategory: Array<{ categoryName: string | null; total: number }>;
   const expByTarget: Record<string, number> = {};
-  for (const r of expensesByTarget) expByTarget[r.targetType] = toMinor(String(r.total ?? 0));
+  let totalOtherCostMinor: number;
+  if (ownerId) {
+    const bd = await getOwnerExpenseBreakdownMinor(ownerId, filters.fromDate, filters.toDate);
+    expensesByCategory = bd.byCategory;
+    expByTarget.head = bd.headMinor;
+    expByTarget.category = bd.categoryMinor;
+    expByTarget.herd = bd.herdMinor;
+    expByTarget.general = 0;
+    totalOtherCostMinor = bd.totalOtherMinor;
+  } else {
+    expensesByCategory = await db
+      .select({
+        categoryName: expenseCategories.name,
+        total: sql<number>`SUM(${expenses.amount})`
+      })
+      .from(expenses)
+      .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+      .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
+      .groupBy(expenseCategories.name);
+    const expensesByTarget = await db
+      .select({
+        targetType: expenses.targetType,
+        total: sql<number>`SUM(${expenses.amount})`,
+      })
+      .from(expenses)
+      .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
+      .groupBy(expenses.targetType);
+    for (const r of expensesByTarget) expByTarget[r.targetType] = toMinor(String(r.total ?? 0));
+    totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
+  }
 
   // Feed cost in period. Whole-farm = actual bulk purchases from the stock
   // ledger (cash basis). Owner-scoped = modeled consumption of the owner's
@@ -2637,7 +2766,6 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const cashReceivedMinor = toMinor(String(salesData[0]?.paid ?? 0));
   const outstandingMinor = totalRevenueMinor - cashReceivedMinor;
   const totalAnimalCostMinor = toMinor(String(purchaseCosts[0]?.total ?? 0));
-  const totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
   const totalCostMinor = totalAnimalCostMinor + totalFeedCostMinor + totalOtherCostMinor;
   const grossProfitMinor = totalRevenueMinor - totalCostMinor;
 

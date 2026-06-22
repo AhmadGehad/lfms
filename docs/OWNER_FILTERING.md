@@ -36,21 +36,27 @@ Every figure is classified as **owner‑attributable** or **farm‑wide**.
 | Animals, head count, average head | `animals.ownerId` | Only the owner's animals |
 | Sales revenue / receivables | `sales.animalId → animals.ownerId` | Only sales of the owner's animals |
 | Animal purchase cost | `animals.ownerId` | Only the owner's animals |
-| **Head** expenses (`targetType = 'head'`) | `expenses.headId → animals.ownerId` | Included if the head is the owner's |
-| **Category** expenses (`targetType = 'category'`) | `expenses.categoryTarget` ∈ owner's categories | Included if the owner has ≥1 animal in that category |
-| **General** expenses (`targetType = 'general'`, e.g. electricity) | — (farm‑wide) | **Excluded** |
-| **Herd** expenses (`targetType = 'herd'`) | — (farm‑wide) | **Excluded** |
+| **Head** expenses (`targetType = 'head'`) | `expenses.headId → animals.ownerId` | Counted **in full** when the head is the owner's |
+| **Category** expenses (`targetType = 'category'`) | allocated by head count | Owner's **share** = amount × ownerHeadsInCat(date) ÷ totalHeadsInCat(date) |
+| **Herd** expenses (`targetType = 'herd'`) | allocated by head count | Owner's **share** = amount × ownerHeadsAlive(date) ÷ totalHeadsAlive(date) |
+| **General** expenses (`targetType = 'general'`, e.g. electricity) | — (farm‑wide overhead) | **Excluded** |
 | **Feed purchases** (`feed_stock_ledger`) | — (not tagged by owner) | **Excluded**; replaced by modelled consumption (see §4) |
 | Feed **stock** levels (Feed page) | — (farm‑wide inventory) | Shown as‑is (inventory is physical, not per‑owner) |
 | Vaccination records | `vaccination_records.animalId → animals.ownerId` | Only the owner's animals |
 | Lambing / breeding records | dam → `animals.ownerId` | Lambs attributed to the dam's owner |
 | Fattening (weight log) | `animals.ownerId` | Only the owner's animals |
 
-> **The electricity rule, precisely:** an expense is "related to" an owner only
-> when it is a **head** expense on one of their animals, or a **category**
-> expense for a category in which they hold at least one animal. `general` and
-> `herd` expenses are farm‑wide and are dropped entirely from owner‑scoped
-> figures.
+> **The electricity rule, precisely:** only `general` overhead (electricity,
+> rent, etc.) is *farm‑wide* and dropped from owner figures. `head` expenses on
+> the owner's animals are charged in full; `category` and `herd` expenses are
+> **allocated to the owner's share** by the number of their animals present on
+> the expense date — exactly how the per‑animal P&L allocates them, so the
+> Dashboard, Income Statement and P&L always reconcile. (Earlier drafts counted
+> category expenses in full and dropped herd; this allocation supersedes that.)
+
+The shared allocator is `allocateOwnerExpensesPure` (pure, unit‑tested in
+`server/ownerExpenseAllocation.test.ts`), wrapped for the DB by
+`getOwnerExpenseBreakdownMinor(ownerId, from, to)`.
 
 ## 4. Feed under owner scope (the key modelling decision)
 
@@ -100,7 +106,8 @@ activeHeads        = COUNT(animals where isActive, [owner])
 averageHeads       = totalHeadDays / periodDays
 totalHeadDays      = Σ_owner overlapDays(animal, [from,to])
 
-otherExpenses      = Σ_owner expense.amount            -- head + category only when scoped
+otherExpenses      = ownerScoped ? (head + categoryShare + herdShare)   -- allocated, no general
+                                  : Σ all expense.amount
 feedExpenses       = ownerScoped ? ownerFeedCost(owner, from, to)
                                   : Σ feedPurchases(from, to)
 totalExpenses      = otherExpenses + feedExpenses
@@ -113,6 +120,16 @@ grossPnL           = totalRevenue − totalExpenses
 costPerHeadPerDay  = totalExpenses / totalHeadDays
 ```
 
+where, from `getOwnerExpenseBreakdownMinor`:
+
+```
+head          = Σ head expenses on the owner's animals (in full)
+categoryShare = Σ_E∈categoryExpenses  E.amount × ownerHeadsInCat(E.cat, E.date)
+                                               ÷ totalHeadsInCat(E.cat, E.date)
+herdShare     = Σ_E∈herdExpenses      E.amount × ownerHeadsAlive(E.date)
+                                               ÷ totalHeadsAlive(E.date)
+```
+
 Category breakdown, expense trend and sales trend charts use the same
 owner‑attribution filters.
 
@@ -121,7 +138,8 @@ owner‑attribution filters.
 ```
 revenue.total      = Σ_owner sales.salePrice
 costs.animalPurch. = Σ_owner animals.purchaseCost  (acquired in period)
-costs.byCategory   = Σ_owner expense.amount grouped by expense category
+costs.byCategory   = ownerScoped ? allocated share grouped by expense category
+                                  : Σ all expense.amount grouped by category
 costs.feed         = ownerScoped ? ownerFeedCost(owner, from, to)
                                   : Σ feedPurchases(from, to)
 costs.total        = animalPurchases + feed + Σ byCategory
@@ -129,18 +147,23 @@ grossProfit        = revenue.total − costs.total
 profitMargin       = grossProfit / revenue.total
 
 runningCostPerMonth:
-  farmWide   = ownerScoped ? 0 : Σ general expenses               -- per month
-  animalWide = feed + head + category + herd(=0 when scoped)      -- per month
+  farmWide   = ownerScoped ? 0 : Σ general expenses                  -- per month
+  animalWide = feed + head + categoryShare + herdShare               -- per month
   total      = farmWide + animalWide
   (period operating total ÷ months, months = periodDays / 30.4375)
 ```
 
-> Under owner scope `farmWide` running cost is **0** by definition — overhead is
-> not the owner's — and `herd` contributes 0 because herd expenses are excluded.
+> Under owner scope `farmWide` running cost is **0** by definition (general
+> overhead is not the owner's). `animalWide` now includes the owner's **allocated
+> herd share**, so it reconciles with the sum of their P&L rows.
 
 ### 5.3 P&L per animal (`getAllAnimalsPnL`)
 
-Unchanged maths; the owner filter simply restricts the animal set. Per animal:
+The owner filter restricts which animal **rows** are returned, but the
+category/herd **allocation denominators are always the whole farm's head count**
+on the expense date — not the filtered subset. (Previously the denominator
+shrank with the filter, so a filtered view inflated each animal's cost and no
+longer reconciled with the Dashboard / Income Statement. Fixed.) Per animal:
 
 ```
 operatingCost = feedCost + directExpense + categoryAllocation + herdAllocation
@@ -159,32 +182,53 @@ owner is selected, since that overhead is not attributable to one owner.
 - **Feed** — stock levels are physical farm inventory and remain farm‑wide; the
   owner filter does not subset them.
 
-## 6. Worked example
+## 6. Exports
+
+The owner filter flows into every export:
+
+- **Income Statement → PDF / Excel** — built from the owner‑scoped statement;
+  already reflects the owner (header and figures), filename tagged with owner.
+- **Dashboard → PDF Report** — KPIs **and** the P&L table are fetched with the
+  owner; the report is titled "Owner Report (name)" with a scope note.
+- **Dashboard → Export Excel** (`export.full`) — accepts `ownerId`. With an
+  owner selected it produces an **owner report workbook**: Animals, Sales,
+  Lambing, Weight Log, Expenses, P&L, Income Statement and Dashboard sheets are
+  all scoped to the owner, the README states the scope, and the canonical
+  round‑trip "Data ‑" backup sheets are **omitted** (a scoped report is not a
+  whole‑farm backup). With **All Owners**, it remains the full backup workbook.
+  Filename: `lfms-owner-<id>-report-<date>.xlsx` vs `lfms-export-<date>.xlsx`.
+
+## 7. Worked example
 
 Farm has 10 head; Owner A owns 4 of them. In June:
 
 - Electricity (general): EGP 2,000 → **excluded** for Owner A.
-- Vet visit billed to Owner A's animal #A‑12 (head): EGP 500 → **included**.
+- Vet visit billed to Owner A's animal #A‑12 (head): EGP 500 → **included in full**.
 - Category "Fattening" dewormer (category): EGP 1,000, Owner A has 4 of 8 head
-  in that category → P&L allocates each head its share; the Income Statement /
-  Dashboard count the **full** category expense once it matches the owner's
-  category (attribution test is "owner has an animal in the category").
+  in that category on the expense date → Owner A is charged **1,000 × 4/8 = 500**
+  (the same share the P&L gives those 4 animals).
+- Herd water delivery: EGP 500, Owner A has 4 of 10 head alive that day →
+  Owner A is charged **500 × 4/10 = 200**.
 - Feed: no per‑owner purchase exists; Owner A's 4 animals' ration plans over
   June model EGP 3,200 of consumption → **that** is Owner A's feed cost.
 - Owner A sold animal #A‑09 for EGP 9,000 → revenue 9,000.
 
-Owner A's June numbers exclude the 2,000 electricity entirely, and feed shows
-3,200 (modelled), not a slice of the farm's bulk feed invoices.
+Owner A's June other‑expenses = 500 (head) + 500 (category share) + 200 (herd
+share) = **1,200**; feed = **3,200**; the 2,000 electricity is excluded. These
+figures match the sum of Owner A's four P&L rows.
 
-## 7. Implementation map
+## 8. Implementation map
 
 | Layer | File | Change |
 |---|---|---|
-| Feed model | `server/db.ts` → `getOwnerFeedCostMinor` | New consumption‑based owner feed cost |
-| Dashboard | `server/db.ts` → `getDashboardKPIs` | `ownerId` scoping for heads, expenses, feed, revenue |
-| Income Statement | `server/db.ts` → `getIncomeStatement` | Owner feed now modelled instead of 0 |
+| Feed model | `server/db.ts` → `getOwnerFeedCostMinor` | Consumption‑based owner feed cost |
+| Expense allocation | `server/db.ts` → `allocateOwnerExpensesPure` / `getOwnerExpenseBreakdownMinor` | Owner's allocated head/category/herd share (matches P&L) |
+| Dashboard | `server/db.ts` → `getDashboardKPIs` | `ownerId` scoping for heads, allocated expenses, feed, revenue |
+| Income Statement | `server/db.ts` → `getIncomeStatement` | Allocated owner expenses + modelled feed |
 | Operational | `server/db.ts` → `getVaccinationRecords`, `getLambingLog` | `ownerId` filter |
-| Routers | `server/routers/{dashboard,animals,vaccination,breeding}.ts` | Accept `ownerId` |
+| Exports | `server/routers/export.ts`, `client/src/lib/pdfReports.ts` | Owner‑scoped report workbook + owner‑labelled PDF |
+| Routers | `server/routers/{dashboard,animals,vaccination,breeding,export}.ts` | Accept `ownerId` |
 | Global filter | `client/src/contexts/OwnerFilterContext.tsx` | Persisted owner selection |
 | Control | `client/src/components/OwnerFilterSelect.tsx` + `DashboardLayout.tsx` | Owner selector on every page |
-| Pages | Dashboard, Animals, PnL, IncomeStatement, Expenses, Sales, Fattening, Breeding, AnimalVaccinations | Read global owner, drop redundant local owner dropdowns |
+| Pages | Dashboard, Animals, PnL, IncomeStatement, Expenses, Sales, Fattening, Breeding, AnimalVaccinations | Read global owner; redundant local owner dropdowns removed |
+| Tests | `server/ownerExpenseAllocation.test.ts` | Unit tests for the allocation math |

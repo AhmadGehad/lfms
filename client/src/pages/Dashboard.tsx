@@ -521,6 +521,7 @@ function ExportButton() {
   const [loading, setLoading] = useState(false);
   const utils = trpc.useUtils();
   const { can } = usePermissions("dashboard");
+  const { ownerParam } = useOwnerFilter();
   const canExport = can("data", "export");
 
   if (!canExport) return null;
@@ -528,7 +529,7 @@ function ExportButton() {
   const handleExport = async () => {
     try {
       setLoading(true);
-      const result = await utils.client.export.full.query();
+      const result = await utils.client.export.full.query({ ownerId: ownerParam });
       // Decode base64 → Blob → trigger download
       const byteChars = atob(result.base64);
       const bytes = new Uint8Array(byteChars.length);
@@ -563,15 +564,18 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
   const { t } = useTranslation();
   const { canReport } = usePermissions("dashboard");
   const { canView: canViewPnl } = usePermissions("pnl");
+  const { ownerParam } = useOwnerFilter();
   const { data: pnlData } = trpc.animals.getAllPnL.useQuery(
-    {},
+    { ownerId: ownerParam },
     { enabled: canReport && canViewPnl },
   );
   const { data: settings } = trpc.config.getDisplaySettings.useQuery();
+  const { data: ownerOptions } = trpc.config.getOwnerOptions.useQuery(undefined, { enabled: ownerParam != null });
   const { currency } = useCurrency();
   const [generating, setGenerating] = useState(false);
 
   const farmName = (settings as any[] | undefined)?.find(s => s.settingKey === "farmName")?.settingValue;
+  const ownerName = ownerParam != null ? ((ownerOptions ?? []).find((o: any) => o.id === ownerParam)?.name ?? null) : null;
 
   const handleClick = async () => {
     if (!kpis || !pnlData) {
@@ -587,7 +591,8 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
         kpis,
         pnlData,
         currency,
-        farmName
+        farmName,
+        ownerName
       });
       toast.success(t("dashboard.pdfDownloaded"));
     } catch (e: any) {
