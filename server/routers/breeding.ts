@@ -35,7 +35,7 @@ import {
 export const breedingRouter = router({
   // ─── LIST LAMBING RECORDS ───────────────────────────────────────────────────
   listLambing: permissionProcedure("breeding", "view")
-    .input(z.object({ isPromoted: z.boolean().optional() }).optional())
+    .input(z.object({ isPromoted: z.boolean().optional(), ownerId: z.number().optional() }).optional())
     .query(({ input }) => getLambingLog(input)),
 
   summary: permissionProcedure("breeding", "view")

@@ -25,6 +25,7 @@ import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 
 // ─── Record Weight Dialog ────────────────────────────────────────────────────
 function RecordWeightDialog({
@@ -199,8 +200,9 @@ export default function Fattening() {
   const canUpdateAnimal = can("animals", "update");
   const canDeleteAnimal = can("animals", "delete");
   const [, setLocation] = useLocation();
+  const { ownerParam } = useOwnerFilter();
 
-  const { data: animals, isLoading } = trpc.animals.listFattening.useQuery();
+  const { data: animals, isLoading } = trpc.animals.listFattening.useQuery({ ownerId: ownerParam });
   const { data: groups } = trpc.config.getGroups.useQuery();
   const utils = trpc.useUtils();
 

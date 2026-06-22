@@ -25,6 +25,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 
 function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
@@ -348,15 +349,14 @@ function RecordPaymentDialog({ saleId, animalCode, outstanding, onSuccess }: { s
 export default function Sales() {
   const { t } = useTranslation();
   const { canCreate, canUpdate, canDelete } = usePermissions("sales");
-  const [filterOwner, setFilterOwner] = useState<string>("all");
+  const { ownerParam } = useOwnerFilter();
   const [filterBuyer, setFilterBuyer] = useState<string>("");
   const [outstandingOnly, setOutstandingOnly] = useState<boolean>(false);
   const { data: sales, isLoading, refetch } = trpc.sales.list.useQuery({
-    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    ownerId: ownerParam,
     buyer: filterBuyer || undefined,
     outstandingOnly: outstandingOnly || undefined,
   });
-  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const utils = trpc.useUtils();
 
   const deleteSale = trpc.recycleBin.deleteSale.useMutation({
@@ -410,17 +410,6 @@ export default function Sales() {
       <Card>
         <CardContent className="pt-4 pb-4">
           <div className="flex flex-wrap gap-3 items-center">
-            <Select value={filterOwner} onValueChange={setFilterOwner}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder={t("owners.owner")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
-                {(ownersList ?? []).map((o: any) => (
-                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Input
               type="text"
               placeholder={t("sales.searchBuyer")}

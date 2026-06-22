@@ -5,6 +5,7 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import DashboardLayout from "./components/DashboardLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { OwnerFilterProvider } from "./contexts/OwnerFilterContext";
 
 // Pages
 import Dashboard from "./pages/Dashboard";
@@ -75,10 +76,12 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
-        <TooltipProvider>
-          <Toaster richColors position="top-right" />
-          <Router />
-        </TooltipProvider>
+        <OwnerFilterProvider>
+          <TooltipProvider>
+            <Toaster richColors position="top-right" />
+            <Router />
+          </TooltipProvider>
+        </OwnerFilterProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

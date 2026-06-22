@@ -24,6 +24,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 
 function VaccinationStatusBadge({ record }: { record: any }) {
   const { t } = useTranslation();
@@ -414,7 +415,8 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
 export default function AnimalVaccinations() {
   const { t } = useTranslation();
   const { canCreate, canUpdate, canDelete } = usePermissions("vaccinations");
-  const { data: records, isLoading } = trpc.vaccination.getVaccinationRecords.useQuery();
+  const { ownerParam } = useOwnerFilter();
+  const { data: records, isLoading } = trpc.vaccination.getVaccinationRecords.useQuery({ ownerId: ownerParam });
   const utils = trpc.useUtils();
 
   const deleteMutation = trpc.vaccination.deleteVaccinationRecord.useMutation({

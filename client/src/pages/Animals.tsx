@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { useForm, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
 
@@ -833,7 +834,7 @@ export default function Animals() {
   const [filterSpecies, setFilterSpecies] = useState<string>(savedFilters.filterSpecies ?? "all");
   const [filterStatus, setFilterStatus] = useState<string>(savedFilters.filterStatus ?? "all");
   const [filterActive, setFilterActive] = useState<string>(savedFilters.filterActive ?? "active");
-  const [filterOwner, setFilterOwner] = useState<string>(savedFilters.filterOwner ?? "all");
+  const { ownerParam } = useOwnerFilter();
   const [filterAcquisitionType, setFilterAcquisitionType] = useState<string>(savedFilters.filterAcquisitionType ?? "all");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkSellOpen, setBulkSellOpen] = useState(false);
@@ -856,13 +857,12 @@ export default function Animals() {
     isActive: filterActive === "active" ? true : filterActive === "inactive" ? false : undefined,
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     statusId: filterStatus !== "all" ? Number(filterStatus) : undefined,
-    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    ownerId: ownerParam,
     acquisitionType: filterAcquisitionType !== "all" ? filterAcquisitionType : undefined,
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: statuses } = trpc.config.getStatuses.useQuery();
-  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
 
   const filtered = (animals ?? []).filter((a: any) => {
     // Client-side acquisitionType filter — belt-and-suspenders with server filter
@@ -888,10 +888,10 @@ export default function Animals() {
   React.useEffect(() => {
     try {
       sessionStorage.setItem(FILTERS_KEY, JSON.stringify({
-        search, filterSpecies, filterStatus, filterActive, filterOwner, filterAcquisitionType, sortBy, sortDir,
+        search, filterSpecies, filterStatus, filterActive, filterAcquisitionType, sortBy, sortDir,
       }));
     } catch { /* ignore quota / disabled storage */ }
-  }, [search, filterSpecies, filterStatus, filterActive, filterOwner, filterAcquisitionType, sortBy, sortDir]);
+  }, [search, filterSpecies, filterStatus, filterActive, filterAcquisitionType, sortBy, sortDir]);
 
   const toggleSort = (key: SortKey) => {
     if (sortBy === key) {
@@ -1036,17 +1036,6 @@ export default function Animals() {
                 <SelectItem value="all">{t("animals.allStatuses")}</SelectItem>
                 {(statuses ?? []).map((s: any) => (
                   <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={filterOwner} onValueChange={setFilterOwner}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder={t("owners.owner")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
-                {(ownersList ?? []).map((o: any) => (
-                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

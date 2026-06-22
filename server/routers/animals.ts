@@ -140,8 +140,9 @@ export const animalsRouter = router({
     }),
 
   listFattening: permissionProcedure("fattening", "view")
-    .query(async () => {
-      const rows = await getAnimals({ isActive: true });
+    .input(z.object({ ownerId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const rows = await getAnimals({ isActive: true, ownerId: input?.ownerId });
       return rows.map(row => ({
         animal: {
           id: row.animal.id,

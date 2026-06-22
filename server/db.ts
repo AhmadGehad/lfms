@@ -1029,7 +1029,7 @@ export async function updateSale(
 }
 // ─── LAMBING LOG ──────────────────────────────────────────────────────────────
 
-export async function getLambingLog(filters?: { isPromoted?: boolean }) {
+export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: number }) {
   const db = await getDb();
   if (!db) return [];
   const query = db
@@ -1074,6 +1074,10 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
     .leftJoin(animalCategories, eq(lambingLog.categoryId, animalCategories.id));
   const lambingConditions = [isNull(lambingLog.deletedAt)];
   if (filters?.isPromoted !== undefined) lambingConditions.push(eq(lambingLog.isPromoted, filters.isPromoted) as any);
+  // Owner scope: lambs are attributed to the dam's owner.
+  if (filters?.ownerId) {
+    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM animals WHERE ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
+  }
   return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
 }
 
@@ -2084,7 +2088,63 @@ export async function checkAndStageAnimal(
     : sharedDb.transaction(stageWithin);
 }
 
-export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number }) {
+// ─── OWNER-SCOPED COST HELPERS ────────────────────────────────────────────────
+// Feed purchases (feed_stock_ledger) are recorded farm-wide and are NOT tagged
+// by owner. To still answer "what did THIS owner's animals cost to feed?", we
+// model feed on a CONSUMPTION basis: for each of the owner's animals we apply
+// its category ration plan × the feed price in force, over the days the animal
+// was on the farm within [fromDate, toDate]. This mirrors the per-animal feed
+// math used by the P&L (segmentedFeedCostPure), so the owner's feed number is
+// always consistent with that animal's P&L row.
+export async function getOwnerFeedCostMinor(ownerId: number, fromDate: string, toDate: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const norm = (d: Date | string | null): string | null => {
+    if (d == null) return null;
+    return d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0];
+  };
+
+  const owned = await db
+    .select({
+      categoryId: animals.categoryId,
+      acquisitionDate: animals.acquisitionDate,
+      exitDate: animals.exitDate,
+    })
+    .from(animals)
+    .where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)));
+  if (!owned.length) return 0;
+
+  const allPlans = await db.select().from(rationPlans).where(isNull(rationPlans.deletedAt));
+  const plansByCategory = new Map<number, typeof allPlans>();
+  for (const p of allPlans) {
+    if (!plansByCategory.has(p.categoryId)) plansByCategory.set(p.categoryId, []);
+    plansByCategory.get(p.categoryId)!.push(p);
+  }
+  const allPriceRows = await db.select().from(feedItemPriceHistory);
+  const pricesByItem = buildPricesByItem(allPriceRows);
+
+  let totalMinor = 0;
+  for (const a of owned) {
+    const acq = norm(a.acquisitionDate) ?? fromDate;
+    const exit = norm(a.exitDate) ?? toDate;
+    // Clamp the animal's time on farm to the requested period.
+    const start = acq > fromDate ? acq : fromDate;
+    const end = exit < toDate ? exit : toDate;
+    if (end <= start) continue;
+    const plans = (plansByCategory.get(a.categoryId) ?? []).map(p => ({
+      feedItemId: p.feedItemId,
+      qtyPerHeadPerDay: p.qtyPerHeadPerDay,
+      effectiveDate: p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0],
+      endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
+      isActive: p.isActive,
+    }));
+    totalMinor += toMinor(String(segmentedFeedCostPure(plans, pricesByItem, start, end)));
+  }
+  return totalMinor;
+}
+
+export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return null;
 
@@ -2094,28 +2154,57 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const fromDate = filters?.fromDate ?? twelveMonthsAgo.toISOString().split("T")[0];
   const toDate = filters?.toDate ?? today;
 
+  // ── Owner scoping ───────────────────────────────────────────────────────────
+  // When scoped to an owner, every number reflects only that owner's animals.
+  // Farm-wide costs that are not attributable to an owner — general overhead
+  // (e.g. electricity), herd-wide expenses, and bulk feed purchases — are
+  // EXCLUDED. Feed is instead modeled per-owner on a consumption basis below.
+  const ownerId = filters?.ownerId;
+  const ownedAnimalIds: number[] = ownerId
+    ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map(r => r.id)
+    : [];
+  const ownerCategoryIds: number[] = ownerId
+    ? Array.from(new Set((await db.select({ categoryId: animals.categoryId }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map(r => r.categoryId)))
+    : [];
+  // Expenses "related to" the owner: head expenses on their animals OR category
+  // expenses for a category in which they hold animals. general/herd excluded.
+  const ownerExpenseConds: any[] = [];
+  if (ownedAnimalIds.length > 0) ownerExpenseConds.push(inArray(expenses.headId, ownedAnimalIds));
+  if (ownerCategoryIds.length > 0) ownerExpenseConds.push(inArray(expenses.categoryTarget, ownerCategoryIds));
+  const ownerExpenseCond = ownerId
+    ? (ownerExpenseConds.length > 0 ? or(...ownerExpenseConds) : sql`1 = 0`)
+    : sql`1 = 1`;
+  const ownerSalesCond = ownerId
+    ? (ownedAnimalIds.length > 0 ? inArray(sales.animalId, ownedAnimalIds) : sql`1 = 0`)
+    : sql`1 = 1`;
+
   // Active head count (exclude soft-deleted)
   const headConditions = [eq(animals.isActive, true), isNull(animals.deletedAt)];
   if (filters?.speciesId) headConditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) headConditions.push(eq(animals.categoryId, filters.categoryId));
   if (filters?.groupId) headConditions.push(eq(animals.groupId, filters.groupId));
+  if (ownerId) headConditions.push(eq(animals.ownerId, ownerId));
 
   const headCount = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(animals)
     .where(and(...headConditions));
 
-  // Total other expenses in period (vet, labour, vaccine etc — NOT feed)
+  // Total other expenses in period (vet, labour, vaccine etc — NOT feed). Under
+  // owner scope only head/category expenses tied to the owner's animals count.
   const totalOtherExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
+    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt), ownerExpenseCond));
 
-  // Feed purchases in period (from feed_stock_ledger, matching Income Statement logic)
+  // Feed cost in period. Whole-farm = actual bulk purchases (cash basis).
+  // Owner-scoped = modeled consumption of the owner's animals (accrual basis),
+  // because purchases aren't tagged by owner.
   const feedPurchasesInPeriod = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
     .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${fromDate}`, sql`${feedStockLedger.transactionDate} <= ${toDate}`, isNull(feedStockLedger.deletedAt)));
+  const ownerFeedMinor = ownerId ? await getOwnerFeedCostMinor(ownerId, fromDate, toDate) : 0;
 
   // Total sales revenue in period — F9: track BOTH accrued (salePrice) and
   // cash actually received (amountPaid) so the dashboard can show outstanding.
@@ -2125,7 +2214,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
       paid: sql<number>`SUM(amountPaid)`,
     })
     .from(sales)
-    .where(and(sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt)));
+    .where(and(sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt), ownerSalesCond));
 
   // B3: AVERAGE head count over the period (not today's count). An animal
   // contributes the fraction of the period it was actually on the farm:
@@ -2145,6 +2234,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
       isNull(animals.deletedAt),
       sql`${animals.acquisitionDate} <= ${toDate}`,
       sql`(${animals.exitDate} IS NULL OR ${animals.exitDate} >= ${fromDate})`,
+      ownerId ? eq(animals.ownerId, ownerId) : sql`1 = 1`,
     ));
   const totalHeadDays = Number(avgHeadRows[0]?.totalHeadDays ?? 0);
   const avgHeads = totalHeadDays / periodDaysForAvg;
@@ -2162,7 +2252,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     .groupBy(animals.categoryId, animalCategories.name);
 
   const otherExpensesMinor = toMinor(String(totalOtherExpenses[0]?.total ?? 0));
-  const feedExpensesMinor = toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
+  const feedExpensesMinor = ownerId ? ownerFeedMinor : toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
   const totalExpensesMinor = otherExpensesMinor + feedExpensesMinor;
   const revenueMinor = toMinor(String(totalRevenue[0]?.total ?? 0));
   const cashReceivedMinor = toMinor(String(totalRevenue[0]?.paid ?? 0));
@@ -2191,6 +2281,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     grossPnL: toMajor(revenueMinor - totalExpensesMinor),
     costPerHeadPerDay,
     categoryBreakdown,
+    ownerId: ownerId ?? null,
     period: { fromDate, toDate }
   };
 }
@@ -2531,12 +2622,17 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const expByTarget: Record<string, number> = {};
   for (const r of expensesByTarget) expByTarget[r.targetType] = toMinor(String(r.total ?? 0));
 
-  // Feed stock purchases in period (exclude soft-deleted). Feed is farm-wide.
+  // Feed cost in period. Whole-farm = actual bulk purchases from the stock
+  // ledger (cash basis). Owner-scoped = modeled consumption of the owner's
+  // animals via their ration plans (accrual basis), because feed purchases are
+  // not tagged by owner — so a 0 here would understate the owner's true cost.
   const feedPurchases = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
     .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
-  const totalFeedCostMinor = ownerId ? 0 : toMinor(String(feedPurchases[0]?.total ?? 0));
+  const totalFeedCostMinor = ownerId
+    ? await getOwnerFeedCostMinor(ownerId, filters.fromDate, filters.toDate)
+    : toMinor(String(feedPurchases[0]?.total ?? 0));
   const totalRevenueMinor = toMinor(String(salesData[0]?.total ?? 0));
   const cashReceivedMinor = toMinor(String(salesData[0]?.paid ?? 0));
   const outstandingMinor = totalRevenueMinor - cashReceivedMinor;
@@ -2667,12 +2763,16 @@ export async function deleteVaccine(id: number) {
   await db.update(vaccines).set({ deletedAt: new Date() }).where(eq(vaccines.id, id));
 }
 
-export async function getVaccinationRecords(animalId?: number) {
+export async function getVaccinationRecords(animalId?: number, ownerId?: number) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [isNull(vaccinationRecords.deletedAt)];
   if (animalId) {
     conditions.push(eq(vaccinationRecords.animalId, animalId));
+  }
+  // Owner scope: only records for animals owned by this owner.
+  if (ownerId) {
+    conditions.push(eq(animals.ownerId, ownerId));
   }
 
   return await db

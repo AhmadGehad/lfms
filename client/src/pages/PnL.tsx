@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { Activity, BarChart3, Search, TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -18,16 +19,15 @@ export default function PnL() {
   const [filterSpecies, setFilterSpecies] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [filterOwner, setFilterOwner] = useState("all");
+  const { ownerParam } = useOwnerFilter();
 
   const { data: pnlData, isLoading } = trpc.animals.getAllPnL.useQuery({
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
-    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    ownerId: ownerParam,
   });
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
-  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("en-EG", { style: "currency", currency: "EGP", maximumFractionDigits: 0 }).format(v);
@@ -153,13 +153,17 @@ export default function PnL() {
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalOperatingCostSub")}</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs text-muted-foreground">{t("pnl.farmOperatingCost")}</p>
-              <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(generalExpensesTotal ?? 0)}</p>
-              <p className="text-xs text-muted-foreground mt-1">{t("pnl.farmOperatingCostSub")}</p>
-            </CardContent>
-          </Card>
+          {/* Farm-wide overhead is not attributable to a single owner, so hide
+              it when the view is scoped to one owner. */}
+          {ownerParam == null && (
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-xs text-muted-foreground">{t("pnl.farmOperatingCost")}</p>
+                <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(generalExpensesTotal ?? 0)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("pnl.farmOperatingCostSub")}</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -200,15 +204,6 @@ export default function PnL() {
             <SelectItem value="all">{t("pnl.allStatus")}</SelectItem>
             {allStatuses.map((s) => (
               <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={filterOwner} onValueChange={setFilterOwner}>
-          <SelectTrigger className="w-40"><SelectValue placeholder={t("owners.owner")} /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
-            {(ownersList ?? []).map((o: any) => (
-              <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

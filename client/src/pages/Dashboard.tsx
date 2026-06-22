@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp, Syringe } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -101,6 +102,8 @@ export default function Dashboard() {
   const [pendingFrom, setPendingFrom] = useState<string>("");
   const [pendingTo, setPendingTo] = useState<string>("");
 
+  const { ownerParam } = useOwnerFilter();
+
   const dateRange = useMemo(() => getPresetRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
   const { data: kpis, isLoading: kpisLoading } = trpc.dashboard.getKPIs.useQuery({
@@ -108,21 +111,24 @@ export default function Dashboard() {
     toDate: dateRange.to,
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
-    groupId: filterGroup !== "all" ? Number(filterGroup) : undefined
+    groupId: filterGroup !== "all" ? Number(filterGroup) : undefined,
+    ownerId: ownerParam
   });
 
   // Feed stock - use shared feed.getStockStatus so it updates when Feed page changes stock
   const { data: feedStock } = trpc.feed.getStockStatus.useQuery();
-  const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
+  const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery({ ownerId: ownerParam });
   const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery({ days: 30 });
 
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
     fromDate: dateRange.from,
-    toDate: dateRange.to
+    toDate: dateRange.to,
+    ownerId: ownerParam
   });
   const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery({
     fromDate: dateRange.from,
-    toDate: dateRange.to
+    toDate: dateRange.to,
+    ownerId: ownerParam
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
