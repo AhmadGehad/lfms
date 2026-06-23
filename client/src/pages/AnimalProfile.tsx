@@ -516,6 +516,140 @@ function LineageTree({ animalId }: { animalId: number }) {
   );
 }
 
+// ── In-profile Add Expense (stays on the animal profile) ─────────────────────
+function ProfileAddExpenseDialog({ animal }: { animal: any }) {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ expenseDate: new Date().toISOString().slice(0, 10), categoryId: "", amount: "", vendorName: "", notes: "" });
+  const { data: categories } = trpc.config.getExpenseCategories.useQuery();
+  const create = trpc.expenses.create.useMutation({
+    onSuccess: () => {
+      toast.success(t("expenses.recorded"));
+      utils.animals.getExpenseHistory.invalidate({ animalId: animal.animal.id });
+      utils.animals.getPnL.invalidate({ animalId: animal.animal.id });
+      utils.animals.getAllPnL.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      setOpen(false);
+      setForm(f => ({ ...f, amount: "", vendorName: "", notes: "" }));
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const submit = () => {
+    if (!form.categoryId || !form.amount) { toast.error(t("expenses.categoryAmountRequired")); return; }
+    create.mutate({
+      expenseDate: form.expenseDate,
+      categoryId: Number(form.categoryId),
+      amount: form.amount,
+      targetType: "head",
+      headId: animal.animal.id,
+      vendorName: form.vendorName || undefined,
+      notes: form.notes || undefined,
+    });
+  };
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-2"><DollarSign className="h-3.5 w-3.5" />{t("expenses.addExpense")}</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto">
+        <DialogHeader><DialogTitle>{t("expenses.recordExpense")} — {animal.animal.animalId}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5"><Label>{t("common.date") || "Date"} *</Label><Input type="date" value={form.expenseDate} onChange={(e) => setForm(f => ({ ...f, expenseDate: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>{t("expenses.amount") || "Amount"} *</Label><Input type="number" placeholder="0.00" value={form.amount} onChange={(e) => setForm(f => ({ ...f, amount: e.target.value }))} /></div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("common.category")} *</Label>
+            <Select value={form.categoryId} onValueChange={(v) => setForm(f => ({ ...f, categoryId: v }))}>
+              <SelectTrigger><SelectValue placeholder={t("common.category")} /></SelectTrigger>
+              <SelectContent>{(categories ?? []).map((c: any) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5"><Label>{t("expenses.vendor") || "Vendor"}</Label><Input value={form.vendorName} onChange={(e) => setForm(f => ({ ...f, vendorName: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("common.notes") || "Notes"}</Label><Input value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+        </div>
+        <DialogFooter><Button onClick={submit} disabled={create.isPending}>{t("common.save")}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── In-profile Record Sale (stays on the animal profile) ─────────────────────
+function ProfileRecordSaleDialog({ animal }: { animal: any }) {
+  const { t } = useTranslation();
+  const utils = trpc.useUtils();
+  const [open, setOpen] = useState(false);
+  const { data: statuses } = trpc.config.getStatuses.useQuery();
+  const exitStatuses = (statuses ?? []).filter((s: any) => s.isExitStatus);
+  const [form, setForm] = useState({ saleDate: new Date().toISOString().slice(0, 10), salePrice: "", amountPaid: "", statusId: "", weightAtSale: "", buyerName: "", notes: "" });
+  React.useEffect(() => {
+    if (!form.statusId && exitStatuses.length > 0) setForm(f => ({ ...f, statusId: String(exitStatuses[0].id) }));
+  }, [exitStatuses, form.statusId]);
+  const exitAnimal = trpc.animals.exit.useMutation({
+    onSuccess: () => {
+      toast.success(t("sales.recorded"));
+      utils.animals.getById.invalidate({ id: animal.animal.id });
+      utils.animals.getAnimalSales.invalidate({ animalId: animal.animal.id });
+      utils.animals.getStatusHistory.invalidate({ animalId: animal.animal.id });
+      utils.animals.getPnL.invalidate({ animalId: animal.animal.id });
+      utils.animals.getAllPnL.invalidate();
+      utils.dashboard.getKPIs.invalidate();
+      setOpen(false);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const priceNum = parseFloat(form.salePrice) || 0;
+  const paidNum = form.amountPaid === "" ? priceNum : (parseFloat(form.amountPaid) || 0);
+  const submit = () => {
+    if (!form.salePrice) { toast.error(t("sales.animalPriceRequired")); return; }
+    if (!form.statusId) { toast.error(t("animals.selectExitStatus")); return; }
+    if (paidNum > priceNum) { toast.error(t("sales.paymentExceedsOutstanding")); return; }
+    exitAnimal.mutate({
+      id: animal.animal.id,
+      exitDate: form.saleDate,
+      exitReason: "sold",
+      newStatusId: Number(form.statusId),
+      salePrice: form.salePrice,
+      amountPaid: form.amountPaid === "" ? undefined : form.amountPaid,
+      weightAtSale: form.weightAtSale || undefined,
+      buyerName: form.buyerName || undefined,
+      saleNotes: form.notes || undefined,
+    });
+  };
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="gap-2"><ShoppingCart className="h-3.5 w-3.5" />{t("sales.recordSale")}</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{t("sales.recordAnimalSale")} — {animal.animal.animalId}</DialogTitle></DialogHeader>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5"><Label>{t("common.date") || "Date"} *</Label><Input type="date" value={form.saleDate} onChange={(e) => setForm(f => ({ ...f, saleDate: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>{t("pnl.salePrice") || "Sale price"} *</Label><Input type="number" placeholder="0.00" value={form.salePrice} onChange={(e) => setForm(f => ({ ...f, salePrice: e.target.value }))} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5"><Label>{t("sales.paid") || "Paid"}</Label><Input type="number" placeholder={form.salePrice || "0.00"} value={form.amountPaid} onChange={(e) => setForm(f => ({ ...f, amountPaid: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>{t("common.status")} *</Label>
+              <Select value={form.statusId} onValueChange={(v) => setForm(f => ({ ...f, statusId: v }))}>
+                <SelectTrigger><SelectValue placeholder={t("common.status")} /></SelectTrigger>
+                <SelectContent>{exitStatuses.map((s: any) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5"><Label>{t("pnl.weightAtSale") || "Weight at sale"}</Label><Input type="number" placeholder="0.0" value={form.weightAtSale} onChange={(e) => setForm(f => ({ ...f, weightAtSale: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>{t("common.buyer") || "Buyer"}</Label><Input value={form.buyerName} onChange={(e) => setForm(f => ({ ...f, buyerName: e.target.value }))} /></div>
+          </div>
+          <div className="space-y-1.5"><Label>{t("common.notes") || "Notes"}</Label><Input value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} /></div>
+        </div>
+        <DialogFooter><Button onClick={submit} disabled={exitAnimal.isPending}>{t("common.save")}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function PregnancyTab({ animalId }: { animalId: number }) {
   const { t } = useTranslation();
   const { canCreate, canUpdate } = usePermissions("pregnancy");
@@ -871,16 +1005,8 @@ export default function AnimalProfile() {
         </div>
         {/* Quick Actions */}
         <div className="flex items-center gap-2 flex-wrap">
-          {permissions.can("expenses", "create") && <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/expenses?headId=${animal.animal.id}`)}>
-            <DollarSign className="h-3.5 w-3.5" />
-            {t("expenses.addExpense")}
-          </Button>}
-          {permissions.can("sales", "create") && animal.animal.isActive && (
-            <Button size="sm" variant="outline" className="gap-2" onClick={() => setLocation(`/sales?animalId=${animal.animal.id}`)}>
-              <ShoppingCart className="h-3.5 w-3.5" />
-              {t("sales.recordSale")}
-            </Button>
-          )}
+          {permissions.can("expenses", "create") && <ProfileAddExpenseDialog animal={animal} />}
+          {permissions.can("sales", "create") && animal.animal.isActive && <ProfileRecordSaleDialog animal={animal} />}
           {permissions.canUpdate && <Button size="sm" variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
             <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
             {t("common.edit")}
