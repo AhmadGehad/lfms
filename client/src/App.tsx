@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Animals from "./pages/Animals";
 import AnimalProfile from "./pages/AnimalProfile";
 import Breeding from "./pages/Breeding";
+import Pregnancy from "./pages/Pregnancy";
 import Fattening from "./pages/Fattening";
 import Feed from "./pages/Feed";
 import FarmMap from "./pages/FarmMap";
@@ -51,6 +52,7 @@ function Router() {
         <Route path="/animals"><PermissionGate page="animals"><Animals /></PermissionGate></Route>
         <Route path="/animals/:id"><PermissionGate page="animals"><AnimalProfile /></PermissionGate></Route>
         <Route path="/breeding"><PermissionGate page="breeding"><Breeding /></PermissionGate></Route>
+        <Route path="/pregnancy"><PermissionGate page="pregnancy"><Pregnancy /></PermissionGate></Route>
         <Route path="/fattening"><PermissionGate page="fattening"><Fattening /></PermissionGate></Route>
         <Route path="/farm-map"><PermissionGate page="farmMap"><FarmMap /></PermissionGate></Route>
         <Route path="/feed"><PermissionGate page="feed"><Feed /></PermissionGate></Route>

@@ -28,6 +28,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
+  Baby,
   BarChart3,
   Bell,
   BookOpen,
@@ -179,6 +180,7 @@ function DashboardLayoutContent({
       items: [
         { icon: Leaf, label: t("nav.animals"), path: "/animals", page: "animals" as PermissionPage },
         { icon: Egg, label: t("nav.breeding"), path: "/breeding", page: "breeding" as PermissionPage },
+        { icon: Baby, label: t("nav.pregnancy"), path: "/pregnancy", page: "pregnancy" as PermissionPage },
         { icon: Scale, label: t("nav.fattening"), path: "/fattening", page: "fattening" as PermissionPage },
       ],
     },

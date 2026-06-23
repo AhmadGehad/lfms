@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { toMinor, toMajor, divMinor } from "./_core/money";
-import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, rationPlans, sales, species, systemSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
+import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, pregnancyRecords, rationPlans, sales, species, systemSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -96,14 +96,14 @@ export async function getAllSpecies() {
   return db.select().from(species).where(isNull(species.deletedAt)).orderBy(species.name);
 }
 
-export async function createSpecies(data: { name: string; description?: string }) {
+export async function createSpecies(data: { name: string; description?: string; gestationDays?: number }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(species).values(data);
   return result;
 }
 
-export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean; gestationDays: number }>) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(species).set(data).where(eq(species.id, id));
@@ -1549,6 +1549,237 @@ export async function deleteExpense(id: number, deletedBy?: number) {
     .update(expenses)
     .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null })
     .where(eq(expenses.id, id));
+}
+
+// ─── PREGNANCY TRACKING ───────────────────────────────────────────────────────
+
+/** Expected delivery date = confirmation date + gestation days. Pure. */
+export function calculatePregnancyDueDate(confirmationDate: string, gestationDays: number): string {
+  const date = new Date(confirmationDate);
+  date.setDate(date.getDate() + gestationDays);
+  return date.toISOString().split("T")[0];
+}
+
+const startOfDay = (d: Date | string): Date => {
+  const dt = d instanceof Date ? new Date(d.getTime()) : new Date(String(d).split("T")[0]);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+};
+
+/** Derived, never-stored pregnancy progress fields shown in the UI. */
+export function pregnancyProgress(confirmationDate: Date | string, expectedDueDate: Date | string, gestationDays: number, status: string) {
+  const today = startOfDay(new Date());
+  const conf = startOfDay(confirmationDate);
+  const due = startOfDay(expectedDueDate);
+  const daysPregnant = Math.max(0, Math.floor((today.getTime() - conf.getTime()) / 86400000));
+  const daysRemaining = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  const progressPct = gestationDays > 0 ? Math.min(100, Math.max(0, Math.round((daysPregnant / gestationDays) * 100))) : 0;
+  let displayStatus = status;
+  if (status === "active") displayStatus = daysRemaining < 0 ? "overdue" : daysRemaining <= 7 ? "due" : "active";
+  return { daysPregnant, daysRemaining, progressPct, displayStatus };
+}
+
+export async function createPregnancyRecord(data: {
+  animalId: number;
+  confirmationDate: string;
+  sireId?: number | null;
+  notifyBeforeDue?: number;
+  checkupDate?: string | null;
+  notifyBeforeCheckup?: number;
+  notes?: string;
+  createdBy?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  const [animal] = await db
+    .select({ id: animals.id, sex: animals.sex, isActive: animals.isActive, deletedAt: animals.deletedAt, speciesId: animals.speciesId })
+    .from(animals)
+    .where(eq(animals.id, data.animalId))
+    .limit(1);
+  if (!animal || animal.deletedAt) throw new Error("Animal not found");
+  if (animal.sex !== "female") throw new Error("Only female animals can have a pregnancy record");
+
+  const existingActive = await db
+    .select({ id: pregnancyRecords.id })
+    .from(pregnancyRecords)
+    .where(and(eq(pregnancyRecords.animalId, data.animalId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)))
+    .limit(1);
+  if (existingActive.length) throw new Error("This animal already has an active pregnancy");
+
+  const [sp] = await db.select({ gestationDays: species.gestationDays }).from(species).where(eq(species.id, animal.speciesId)).limit(1);
+  const gestationDays = sp?.gestationDays ?? 150;
+  const expectedDueDate = calculatePregnancyDueDate(data.confirmationDate, gestationDays);
+
+  const [result] = await db.insert(pregnancyRecords).values({
+    animalId: data.animalId,
+    sireId: data.sireId ?? null,
+    confirmationDate: new Date(data.confirmationDate),
+    gestationDays,
+    expectedDueDate: new Date(expectedDueDate),
+    notifyBeforeDue: data.notifyBeforeDue ?? 7,
+    checkupDate: data.checkupDate ? new Date(data.checkupDate) : null,
+    notifyBeforeCheckup: data.notifyBeforeCheckup ?? 3,
+    notes: data.notes,
+    createdBy: data.createdBy,
+  });
+  return result;
+}
+
+export async function updatePregnancyRecord(id: number, data: {
+  confirmationDate?: string;
+  sireId?: number | null;
+  notifyBeforeDue?: number;
+  checkupDate?: string | null;
+  notifyBeforeCheckup?: number;
+  status?: "active" | "delivered" | "aborted" | "lost";
+  completedDate?: string | null;
+  notes?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const updateData: any = { ...data };
+  if (data.confirmationDate !== undefined) {
+    const [rec] = await db.select({ gestationDays: pregnancyRecords.gestationDays }).from(pregnancyRecords).where(eq(pregnancyRecords.id, id)).limit(1);
+    if (rec) {
+      updateData.confirmationDate = new Date(data.confirmationDate);
+      updateData.expectedDueDate = new Date(calculatePregnancyDueDate(data.confirmationDate, rec.gestationDays));
+    }
+  }
+  if (data.checkupDate !== undefined) updateData.checkupDate = data.checkupDate ? new Date(data.checkupDate) : null;
+  if (data.completedDate !== undefined) updateData.completedDate = data.completedDate ? new Date(data.completedDate) : null;
+  await db.update(pregnancyRecords).set(updateData).where(eq(pregnancyRecords.id, id));
+}
+
+export async function deletePregnancyRecord(id: number, deletedBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(pregnancyRecords).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(pregnancyRecords.id, id));
+}
+
+export async function restorePregnancyRecord(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(pregnancyRecords).set({ deletedAt: null, deletedBy: null }).where(eq(pregnancyRecords.id, id));
+}
+
+export async function getPregnancies(filters?: { animalId?: number; status?: string; ownerId?: number; dueWithinDays?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [isNull(pregnancyRecords.deletedAt)];
+  if (filters?.animalId) conditions.push(eq(pregnancyRecords.animalId, filters.animalId));
+  if (filters?.status) conditions.push(eq(pregnancyRecords.status, filters.status as any));
+  if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
+  if (filters?.dueWithinDays != null) {
+    const target = new Date();
+    target.setDate(target.getDate() + filters.dueWithinDays);
+    const targetStr = target.toISOString().split("T")[0];
+    conditions.push(eq(pregnancyRecords.status, "active"));
+    conditions.push(sql`${pregnancyRecords.expectedDueDate} <= ${targetStr}`);
+  }
+  const rows = await db
+    .select({
+      record: pregnancyRecords,
+      animalCode: animals.animalId,
+      speciesName: species.name,
+      ownerId: animals.ownerId,
+      ownerName: owners.name,
+    })
+    .from(pregnancyRecords)
+    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
+    .leftJoin(species, eq(animals.speciesId, species.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id))
+    .where(and(...conditions))
+    .orderBy(pregnancyRecords.expectedDueDate);
+  return rows.map(r => ({
+    ...r,
+    ...pregnancyProgress(r.record.confirmationDate, r.record.expectedDueDate, r.record.gestationDays, r.record.status),
+  }));
+}
+
+export async function getActivePregnancyByAnimal(animalId: number) {
+  const rows = await getPregnancies({ animalId });
+  return rows.find(r => r.record.status === "active") ?? null;
+}
+
+/** Close the dam's active pregnancy when a birth/animal is registered against her. */
+export async function closePregnancyOnBirth(damId: number, lambingLogId: number | null, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return;
+  const today = new Date(new Date().toISOString().split("T")[0]);
+  await db
+    .update(pregnancyRecords)
+    .set({ status: "delivered", outcomeLambingLogId: lambingLogId ?? null, completedDate: today })
+    .where(and(eq(pregnancyRecords.animalId, damId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)));
+}
+
+export async function getUpcomingPregnancyDueDates(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const target = new Date();
+  target.setDate(target.getDate() + days);
+  const targetStr = target.toISOString().split("T")[0];
+  return db
+    .select({
+      id: pregnancyRecords.id,
+      animalId: pregnancyRecords.animalId,
+      animalIdStr: animals.animalId,
+      expectedDueDate: pregnancyRecords.expectedDueDate,
+      notifyBeforeDue: pregnancyRecords.notifyBeforeDue,
+    })
+    .from(pregnancyRecords)
+    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
+    .where(and(eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), sql`${pregnancyRecords.expectedDueDate} <= ${targetStr}`))
+    .orderBy(pregnancyRecords.expectedDueDate);
+}
+
+export async function getUpcomingPregnancyCheckups(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const target = new Date();
+  target.setDate(target.getDate() + days);
+  const targetStr = target.toISOString().split("T")[0];
+  return db
+    .select({
+      id: pregnancyRecords.id,
+      animalId: pregnancyRecords.animalId,
+      animalIdStr: animals.animalId,
+      checkupDate: pregnancyRecords.checkupDate,
+      notifyBeforeCheckup: pregnancyRecords.notifyBeforeCheckup,
+    })
+    .from(pregnancyRecords)
+    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
+    .where(and(eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), isNotNull(pregnancyRecords.checkupDate), sql`${pregnancyRecords.checkupDate} <= ${targetStr}`))
+    .orderBy(pregnancyRecords.checkupDate);
+}
+
+export async function getPregnancySummary(ownerId?: number) {
+  const active = await getPregnancies({ status: "active", ownerId });
+  const delivered = await getPregnancies({ status: "delivered", ownerId });
+  return {
+    active: active.length,
+    dueSoon: active.filter(p => p.displayStatus === "due").length,
+    overdue: active.filter(p => p.displayStatus === "overdue").length,
+    delivered: delivered.length,
+  };
+}
+
+export async function getReproductiveHistory(animalId: number) {
+  const all = await getPregnancies({ animalId });
+  const completed = all.filter(p => p.record.completedDate);
+  const lastDelivery = completed
+    .map(p => p.record.completedDate)
+    .filter(Boolean)
+    .sort()
+    .pop() ?? null;
+  return {
+    totalPregnancies: all.length,
+    delivered: all.filter(p => p.record.status === "delivered").length,
+    aborted: all.filter(p => p.record.status === "aborted").length,
+    lost: all.filter(p => p.record.status === "lost").length,
+    active: all.filter(p => p.record.status === "active").length,
+    lastDeliveryDate: lastDelivery,
+  };
 }
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────

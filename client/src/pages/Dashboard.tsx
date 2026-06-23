@@ -119,6 +119,7 @@ export default function Dashboard() {
   const { data: feedStock } = trpc.feed.getStockStatus.useQuery();
   const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery({ ownerId: ownerParam });
   const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery({ days: 30 });
+  const { data: pregnancyAlerts } = trpc.pregnancy.getUpcoming.useQuery({ days: 30 });
 
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
     fromDate: dateRange.from,
@@ -160,6 +161,15 @@ export default function Dashboard() {
     dueDate.setHours(0, 0, 0, 0);
     const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
     return diffDays >= 0 && diffDays <= 7;
+  }).length;
+  const overduePregnancies = (pregnancyAlerts?.due ?? []).filter((p: any) => {
+    const d = new Date(p.expectedDueDate); d.setHours(0, 0, 0, 0);
+    return d.getTime() < today.getTime();
+  }).length;
+  const dueSoonPregnancies = (pregnancyAlerts?.due ?? []).filter((p: any) => {
+    const d = new Date(p.expectedDueDate); d.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((d.getTime() - today.getTime()) / 86400000);
+    return diff >= 0 && diff <= 7;
   }).length;
 
   const presetLabel = preset === "custom" ? `${customFrom || "?"} → ${customTo || "?"}` : PRESET_LABELS[preset];
@@ -285,14 +295,16 @@ export default function Dashboard() {
       </div>
 
       {/* Alerts Banner */}
-      {(criticalAlerts > 0 || lowAlerts > 0 || overdueVaccinations > 0 || dueSoonVaccinations > 0) && (
-        <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 || overdueVaccinations > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+      {(criticalAlerts > 0 || lowAlerts > 0 || overdueVaccinations > 0 || dueSoonVaccinations > 0 || overduePregnancies > 0 || dueSoonPregnancies > 0) && (
+        <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 || overdueVaccinations > 0 || overduePregnancies > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span className="text-sm font-medium">
             {criticalAlerts > 0 && `${criticalAlerts} ${t("dashboard.critical").toLowerCase()}. `}
             {lowAlerts > 0 && `${lowAlerts} ${t("dashboard.lowStock").toLowerCase()}. `}
             {overdueVaccinations > 0 && `${overdueVaccinations} ${t("vaccine.overdue").toLowerCase()}. `}
             {dueSoonVaccinations > 0 && `${dueSoonVaccinations} ${t("vaccine.due").toLowerCase()}. `}
+            {overduePregnancies > 0 && `${overduePregnancies} ${t("pregnancy.dashOverdue")}. `}
+            {dueSoonPregnancies > 0 && `${dueSoonPregnancies} ${t("pregnancy.dashDueSoon")}. `}
           </span>
         </div>
       )}

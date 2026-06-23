@@ -52,6 +52,9 @@ export const species = mysqlTable("species", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   description: text("description"),
+  // Average gestation length in days for this species, used to compute a
+  // pregnancy's expected delivery date (confirmationDate + gestationDays).
+  gestationDays: int("gestationDays").default(150).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -387,6 +390,33 @@ export const expenses = mysqlTable("expenses", {
   deletedBy: int("deletedBy"),
 });
 
+// ─── PREGNANCY TRACKING ───────────────────────────────────────────────────────
+// One record per pregnancy of a female animal. The user records a confirmation
+// date; the system treats it as gestation day 0 and computes the expected
+// delivery date as confirmationDate + gestationDays (snapshotted from the
+// animal's species at creation, so historical records stay stable). Closed
+// automatically when a birth is registered against the dam.
+export const pregnancyRecords = mysqlTable("pregnancy_records", {
+  id: int("id").autoincrement().primaryKey(),
+  animalId: int("animalId").notNull(),
+  sireId: int("sireId"),
+  confirmationDate: date("confirmationDate").notNull(),
+  gestationDays: int("gestationDays").notNull(),
+  expectedDueDate: date("expectedDueDate").notNull(),
+  notifyBeforeDue: int("notifyBeforeDue").default(7).notNull(),
+  checkupDate: date("checkupDate"),
+  notifyBeforeCheckup: int("notifyBeforeCheckup").default(3).notNull(),
+  status: mysqlEnum("status", ["active", "delivered", "aborted", "lost"]).default("active").notNull(),
+  outcomeLambingLogId: int("outcomeLambingLogId"),
+  completedDate: date("completedDate"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
+});
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 export const notifications = mysqlTable("notifications", {
@@ -439,5 +469,7 @@ export type WeightLog = typeof weightLog.$inferSelect;
 export type RationPlan = typeof rationPlans.$inferSelect;
 export type FeedStockLedger = typeof feedStockLedger.$inferSelect;
 export type Expense = typeof expenses.$inferSelect;
+export type PregnancyRecord = typeof pregnancyRecords.$inferSelect;
+export type InsertPregnancyRecord = typeof pregnancyRecords.$inferInsert;
 export type Notification = typeof notifications.$inferSelect;
 export type AuditLog = typeof auditLog.$inferSelect;

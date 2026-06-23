@@ -30,6 +30,7 @@ import {
   getRawOwnerById,
   updateLambingRecord,
   recordStatusChange,
+  closePregnancyOnBirth,
 } from "../db";
 
 export const breedingRouter = router({
@@ -174,6 +175,11 @@ export const breedingRouter = router({
             entityId: results[0]?.lambId ?? "unknown",
             newValues: input as any,
           }, tx);
+
+          // Registering a birth against the dam closes her active pregnancy.
+          if (input.damId) {
+            await closePregnancyOnBirth(input.damId, Number((results[0] as any)?.insertId) || null, tx);
+          }
 
           return results;
         });

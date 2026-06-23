@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { z } from "zod";
 import { permissionProcedure, router } from "../_core/trpc";
-import { getDb, getAllSpecies, getAllCategories, getAllStatuses, getAllGroups, getAllFeedItems, getAllExpenseCategories, getAllOwners, getAnimals, getSales, getLambingLog, getFeedStockLedger, getFeedStockStatus, getExpenses, getAllAnimalsPnL, getIncomeStatement, getDashboardKPIs, getActiveHeadCountByCategory, getFeedPriceOnDate } from "../db";
+import { getDb, getAllSpecies, getAllCategories, getAllStatuses, getAllGroups, getAllFeedItems, getAllExpenseCategories, getAllOwners, getAnimals, getSales, getLambingLog, getFeedStockLedger, getFeedStockStatus, getExpenses, getAllAnimalsPnL, getIncomeStatement, getDashboardKPIs, getActiveHeadCountByCategory, getFeedPriceOnDate, getPregnancies } from "../db";
 import { readAllCanonicalTables } from "../canonicalTransfer";
 import { addCanonicalSheets } from "../excelDataContract";
 
@@ -905,6 +905,40 @@ async function buildWorkbook(ownerId?: number): Promise<Buffer> {
     wsKpi.getCell(`B${bRow}`).value = count;
     wsKpi.getCell(`B${bRow}`).numFmt = "0";
   });
+
+  // ─── 15. PREGNANCIES ──────────────────────────────────────────────────────
+  const pregnancies = await getPregnancies(ownerId ? { ownerId } : undefined);
+  const wsPreg = wb.addWorksheet("Pregnancy", { properties: { tabColor: { argb: "FFB5179E" } } });
+  wsPreg.columns = [
+    { header: "animal (code)", key: "animalCode", width: 14 },
+    { header: "species", key: "speciesName", width: 12 },
+    { header: "owner", key: "ownerName", width: 16 },
+    { header: "confirmationDate", key: "confirmationDate", width: 16, style: { numFmt: "yyyy-mm-dd" } },
+    { header: "expectedDueDate", key: "expectedDueDate", width: 16, style: { numFmt: "yyyy-mm-dd" } },
+    { header: "daysPregnant", key: "daysPregnant", width: 13 },
+    { header: "daysRemaining", key: "daysRemaining", width: 13 },
+    { header: "progress %", key: "progressPct", width: 11, style: { numFmt: "0\"%\"" } },
+    { header: "status", key: "status", width: 12 },
+    { header: "checkupDate", key: "checkupDate", width: 14, style: { numFmt: "yyyy-mm-dd" } },
+    { header: "notes", key: "notes", width: 30 },
+  ];
+  headerRow(wsPreg, 1);
+  pregnancies.forEach((p: any) =>
+    wsPreg.addRow({
+      animalCode: p.animalCode,
+      speciesName: p.speciesName ?? "",
+      ownerName: p.ownerName ?? "",
+      confirmationDate: fmtDate(p.record.confirmationDate),
+      expectedDueDate: fmtDate(p.record.expectedDueDate),
+      daysPregnant: p.daysPregnant,
+      daysRemaining: p.daysRemaining,
+      progressPct: p.progressPct,
+      status: p.displayStatus,
+      checkupDate: fmtDate(p.record.checkupDate),
+      notes: p.record.notes,
+    }),
+  );
+  wsPreg.views = [{ state: "frozen", ySplit: 1 }];
 
   // ─── Canonical round-trip data ───────────────────────────────────────────
   // Only for the whole-farm export — an owner-scoped report is not a backup.

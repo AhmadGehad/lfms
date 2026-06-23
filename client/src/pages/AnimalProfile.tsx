@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FarmMapPreview } from "@/components/FarmMapPreview";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
@@ -515,6 +516,78 @@ function LineageTree({ animalId }: { animalId: number }) {
   );
 }
 
+function PregnancyTab({ animalId }: { animalId: number }) {
+  const { t } = useTranslation();
+  const { canCreate, canUpdate } = usePermissions("pregnancy");
+  const { data: records } = trpc.pregnancy.byAnimal.useQuery({ animalId });
+  const { data: history } = trpc.pregnancy.reproductiveHistory.useQuery({ animalId });
+  const utils = trpc.useUtils();
+  const [confirmationDate, setConfirmationDate] = useState(new Date().toISOString().slice(0, 10));
+
+  const invalidate = () => {
+    utils.pregnancy.byAnimal.invalidate({ animalId });
+    utils.pregnancy.reproductiveHistory.invalidate({ animalId });
+  };
+  const create = trpc.pregnancy.create.useMutation({
+    onSuccess: () => { toast.success(t("pregnancy.recorded")); invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const update = trpc.pregnancy.update.useMutation({
+    onSuccess: () => { toast.success(t("pregnancy.updated")); invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const active = (records ?? []).find((p: any) => p.record.status === "active");
+
+  return (
+    <div className="space-y-4">
+      {/* Reproductive history summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{t("pregnancy.totalPregnancies")}</p><p className="text-lg font-bold">{history?.totalPregnancies ?? 0}</p></div>
+        <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{t("pregnancy.delivered")}</p><p className="text-lg font-bold text-green-600">{history?.delivered ?? 0}</p></div>
+        <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{t("pregnancy.lastDelivery")}</p><p className="text-sm font-medium">{history?.lastDeliveryDate ? String(history.lastDeliveryDate).slice(0, 10) : "—"}</p></div>
+        <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{t("pregnancy.status")}</p><p className="text-sm font-medium">{active ? t("pregnancy.active") : t("pregnancy.noActive")}</p></div>
+      </div>
+
+      {active ? (
+        <Card>
+          <CardContent className="pt-5 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">{t("pregnancy.dueDate")}</span>
+              <span className="font-semibold">{String(active.record.expectedDueDate).slice(0, 10)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Progress value={active.progressPct} className="h-2.5" />
+              <span className="text-xs text-muted-foreground w-9 tabular-nums">{active.progressPct}%</span>
+            </div>
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>{t("pregnancy.daysPregnant")}: {active.daysPregnant}</span>
+              <span>{active.daysRemaining < 0 ? t("pregnancy.overdueBy", { days: Math.abs(active.daysRemaining) }) : t("pregnancy.dueIn", { days: active.daysRemaining })}</span>
+            </div>
+            {canUpdate && (
+              <Button size="sm" variant="outline" className="gap-2" onClick={() => update.mutate({ id: active.record.id, status: "delivered", completedDate: new Date().toISOString().slice(0, 10) })}>
+                {t("pregnancy.markDelivered")}
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : canCreate ? (
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border p-4">
+          <div className="space-y-1.5">
+            <Label>{t("pregnancy.confirmationDate")}</Label>
+            <Input type="date" className="w-44" value={confirmationDate} onChange={(e) => setConfirmationDate(e.target.value)} />
+          </div>
+          <Button className="gap-2" disabled={!confirmationDate || create.isPending} onClick={() => create.mutate({ animalId, confirmationDate })}>
+            <Plus className="h-4 w-4" />{t("pregnancy.record")}
+          </Button>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("pregnancy.noActive")}</p>
+      )}
+    </div>
+  );
+}
+
 function FeedHistoryTab({ animalId }: { animalId: number }) {
   const { t } = useTranslation();
   const { data: plans } = trpc.animals.getFeedHistory.useQuery({ animalId });
@@ -931,6 +1004,7 @@ export default function AnimalProfile() {
               <TabsTrigger value="weights">{t("animalProfile.weightLog")}</TabsTrigger>
               <TabsTrigger value="feed">{t("animals.feedHistory")}</TabsTrigger>
               <TabsTrigger value="vaccinations">{t("vaccine.title")}</TabsTrigger>
+              {animal?.animal?.sex === "female" && <TabsTrigger value="pregnancy">{t("nav.pregnancy")}</TabsTrigger>}
               <TabsTrigger value="expenses">{t("nav.expenses")}</TabsTrigger>
               <TabsTrigger value="sales">{t("nav.sales")}</TabsTrigger>
               <TabsTrigger value="status">{t("animals.statusHistory")}</TabsTrigger>
@@ -944,6 +1018,11 @@ export default function AnimalProfile() {
             <TabsContent value="vaccinations">
               <VaccinationHistoryTab animalId={animalId} />
             </TabsContent>
+            {animal?.animal?.sex === "female" && (
+              <TabsContent value="pregnancy">
+                <PregnancyTab animalId={animalId} />
+              </TabsContent>
+            )}
             <TabsContent value="expenses">
               <ExpenseHistoryTab animalId={animalId} />
             </TabsContent>
