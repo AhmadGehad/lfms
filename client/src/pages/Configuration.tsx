@@ -93,12 +93,13 @@ function SpeciesTab() {
       )}
 
       <Table>
-        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
+        <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("pregnancy.gestationDays")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
           {(species ?? []).map((s: any) => (
             <TableRow key={s.id}>
               <TableCell className="font-medium">{s.name}</TableCell>
               <TableCell className="text-muted-foreground text-sm">{s.description ?? "—"}</TableCell>
+              <TableCell className="tabular-nums">{s.gestationDays ?? "—"}</TableCell>
               <TableCell><Badge className="bg-green-100 text-green-800 border-green-200 text-xs">{t("common.active")}</Badge></TableCell>
               <TableCell>{canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(s)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
