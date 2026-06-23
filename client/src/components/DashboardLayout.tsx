@@ -28,6 +28,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import {
   Activity,
+  Baby,
   BarChart3,
   Bell,
   BookOpen,
@@ -54,6 +55,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { OwnerFilterSelect } from "./OwnerFilterSelect";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -178,6 +180,7 @@ function DashboardLayoutContent({
       items: [
         { icon: Leaf, label: t("nav.animals"), path: "/animals", page: "animals" as PermissionPage },
         { icon: Egg, label: t("nav.breeding"), path: "/breeding", page: "breeding" as PermissionPage },
+        { icon: Baby, label: t("nav.pregnancy"), path: "/pregnancy", page: "pregnancy" as PermissionPage },
         { icon: Scale, label: t("nav.fattening"), path: "/fattening", page: "fattening" as PermissionPage },
       ],
     },
@@ -481,6 +484,7 @@ function DashboardLayoutContent({
               <span className="font-semibold text-sm">{activeLabel}</span>
             </div>
             <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
+              <OwnerFilterSelect className="w-32" />
               <LanguageSwitcher />
               <button onClick={() => setLocation("/notifications")} className="relative p-2 rounded-lg hover:bg-muted">
                 <Bell className="h-5 w-5" />
@@ -488,6 +492,18 @@ function DashboardLayoutContent({
                   <span className={`absolute top-1 ${isAr ? "left-1" : "right-1"} h-2 w-2 rounded-full bg-red-500`} />
                 )}
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop top bar — carries the global owner filter so every page can
+            be scoped to a single owner from one consistent control. */}
+        {!isMobile && (
+          <div className={`flex border-b h-12 items-center justify-between bg-background/95 px-4 md:px-6 backdrop-blur sticky top-0 z-40 ${isAr ? "flex-row-reverse" : ""}`}>
+            <span className="font-semibold text-sm text-muted-foreground">{activeLabel}</span>
+            <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
+              <span className="text-xs text-muted-foreground hidden lg:inline">{t("owners.filterByOwner")}</span>
+              <OwnerFilterSelect />
             </div>
           </div>
         )}

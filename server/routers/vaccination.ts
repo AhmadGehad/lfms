@@ -17,8 +17,8 @@ export const vaccinationRouter = router({
     ["vaccinations", "view"],
     ["animals", "view"],
   ])
-    .input(z.object({ animalId: z.number().optional() }).optional())
-    .query(({ input }) => getVaccinationRecords(input?.animalId)),
+    .input(z.object({ animalId: z.number().optional(), ownerId: z.number().optional() }).optional())
+    .query(({ input }) => getVaccinationRecords(input?.animalId, input?.ownerId)),
 
   addVaccinationRecord: permissionProcedure("vaccinations", "create")
     .input(z.object({

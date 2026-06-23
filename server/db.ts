@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { toMinor, toMajor, divMinor } from "./_core/money";
-import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, rationPlans, sales, species, systemSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
+import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, pregnancyRecords, rationPlans, sales, species, systemSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -96,14 +96,14 @@ export async function getAllSpecies() {
   return db.select().from(species).where(isNull(species.deletedAt)).orderBy(species.name);
 }
 
-export async function createSpecies(data: { name: string; description?: string }) {
+export async function createSpecies(data: { name: string; description?: string; gestationDays?: number }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(species).values(data);
   return result;
 }
 
-export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean; gestationDays: number }>) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(species).set(data).where(eq(species.id, id));
@@ -1029,7 +1029,7 @@ export async function updateSale(
 }
 // ─── LAMBING LOG ──────────────────────────────────────────────────────────────
 
-export async function getLambingLog(filters?: { isPromoted?: boolean }) {
+export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: number }) {
   const db = await getDb();
   if (!db) return [];
   const query = db
@@ -1074,6 +1074,10 @@ export async function getLambingLog(filters?: { isPromoted?: boolean }) {
     .leftJoin(animalCategories, eq(lambingLog.categoryId, animalCategories.id));
   const lambingConditions = [isNull(lambingLog.deletedAt)];
   if (filters?.isPromoted !== undefined) lambingConditions.push(eq(lambingLog.isPromoted, filters.isPromoted) as any);
+  // Owner scope: lambs are attributed to the dam's owner.
+  if (filters?.ownerId) {
+    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM animals WHERE ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
+  }
   return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
 }
 
@@ -1547,6 +1551,237 @@ export async function deleteExpense(id: number, deletedBy?: number) {
     .where(eq(expenses.id, id));
 }
 
+// ─── PREGNANCY TRACKING ───────────────────────────────────────────────────────
+
+/** Expected delivery date = confirmation date + gestation days. Pure. */
+export function calculatePregnancyDueDate(confirmationDate: string, gestationDays: number): string {
+  const date = new Date(confirmationDate);
+  date.setDate(date.getDate() + gestationDays);
+  return date.toISOString().split("T")[0];
+}
+
+const startOfDay = (d: Date | string): Date => {
+  const dt = d instanceof Date ? new Date(d.getTime()) : new Date(String(d).split("T")[0]);
+  dt.setHours(0, 0, 0, 0);
+  return dt;
+};
+
+/** Derived, never-stored pregnancy progress fields shown in the UI. */
+export function pregnancyProgress(confirmationDate: Date | string, expectedDueDate: Date | string, gestationDays: number, status: string) {
+  const today = startOfDay(new Date());
+  const conf = startOfDay(confirmationDate);
+  const due = startOfDay(expectedDueDate);
+  const daysPregnant = Math.max(0, Math.floor((today.getTime() - conf.getTime()) / 86400000));
+  const daysRemaining = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  const progressPct = gestationDays > 0 ? Math.min(100, Math.max(0, Math.round((daysPregnant / gestationDays) * 100))) : 0;
+  let displayStatus = status;
+  if (status === "active") displayStatus = daysRemaining < 0 ? "overdue" : daysRemaining <= 7 ? "due" : "active";
+  return { daysPregnant, daysRemaining, progressPct, displayStatus };
+}
+
+export async function createPregnancyRecord(data: {
+  animalId: number;
+  confirmationDate: string;
+  sireId?: number | null;
+  notifyBeforeDue?: number;
+  checkupDate?: string | null;
+  notifyBeforeCheckup?: number;
+  notes?: string;
+  createdBy?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+
+  const [animal] = await db
+    .select({ id: animals.id, sex: animals.sex, isActive: animals.isActive, deletedAt: animals.deletedAt, speciesId: animals.speciesId })
+    .from(animals)
+    .where(eq(animals.id, data.animalId))
+    .limit(1);
+  if (!animal || animal.deletedAt) throw new Error("Animal not found");
+  if (animal.sex !== "female") throw new Error("Only female animals can have a pregnancy record");
+
+  const existingActive = await db
+    .select({ id: pregnancyRecords.id })
+    .from(pregnancyRecords)
+    .where(and(eq(pregnancyRecords.animalId, data.animalId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)))
+    .limit(1);
+  if (existingActive.length) throw new Error("This animal already has an active pregnancy");
+
+  const [sp] = await db.select({ gestationDays: species.gestationDays }).from(species).where(eq(species.id, animal.speciesId)).limit(1);
+  const gestationDays = sp?.gestationDays ?? 150;
+  const expectedDueDate = calculatePregnancyDueDate(data.confirmationDate, gestationDays);
+
+  const [result] = await db.insert(pregnancyRecords).values({
+    animalId: data.animalId,
+    sireId: data.sireId ?? null,
+    confirmationDate: new Date(data.confirmationDate),
+    gestationDays,
+    expectedDueDate: new Date(expectedDueDate),
+    notifyBeforeDue: data.notifyBeforeDue ?? 7,
+    checkupDate: data.checkupDate ? new Date(data.checkupDate) : null,
+    notifyBeforeCheckup: data.notifyBeforeCheckup ?? 3,
+    notes: data.notes,
+    createdBy: data.createdBy,
+  });
+  return result;
+}
+
+export async function updatePregnancyRecord(id: number, data: {
+  confirmationDate?: string;
+  sireId?: number | null;
+  notifyBeforeDue?: number;
+  checkupDate?: string | null;
+  notifyBeforeCheckup?: number;
+  status?: "active" | "delivered" | "aborted" | "lost";
+  completedDate?: string | null;
+  notes?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const updateData: any = { ...data };
+  if (data.confirmationDate !== undefined) {
+    const [rec] = await db.select({ gestationDays: pregnancyRecords.gestationDays }).from(pregnancyRecords).where(eq(pregnancyRecords.id, id)).limit(1);
+    if (rec) {
+      updateData.confirmationDate = new Date(data.confirmationDate);
+      updateData.expectedDueDate = new Date(calculatePregnancyDueDate(data.confirmationDate, rec.gestationDays));
+    }
+  }
+  if (data.checkupDate !== undefined) updateData.checkupDate = data.checkupDate ? new Date(data.checkupDate) : null;
+  if (data.completedDate !== undefined) updateData.completedDate = data.completedDate ? new Date(data.completedDate) : null;
+  await db.update(pregnancyRecords).set(updateData).where(eq(pregnancyRecords.id, id));
+}
+
+export async function deletePregnancyRecord(id: number, deletedBy?: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(pregnancyRecords).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(pregnancyRecords.id, id));
+}
+
+export async function restorePregnancyRecord(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(pregnancyRecords).set({ deletedAt: null, deletedBy: null }).where(eq(pregnancyRecords.id, id));
+}
+
+export async function getPregnancies(filters?: { animalId?: number; status?: string; ownerId?: number; dueWithinDays?: number }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [isNull(pregnancyRecords.deletedAt)];
+  if (filters?.animalId) conditions.push(eq(pregnancyRecords.animalId, filters.animalId));
+  if (filters?.status) conditions.push(eq(pregnancyRecords.status, filters.status as any));
+  if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
+  if (filters?.dueWithinDays != null) {
+    const target = new Date();
+    target.setDate(target.getDate() + filters.dueWithinDays);
+    const targetStr = target.toISOString().split("T")[0];
+    conditions.push(eq(pregnancyRecords.status, "active"));
+    conditions.push(sql`${pregnancyRecords.expectedDueDate} <= ${targetStr}`);
+  }
+  const rows = await db
+    .select({
+      record: pregnancyRecords,
+      animalCode: animals.animalId,
+      speciesName: species.name,
+      ownerId: animals.ownerId,
+      ownerName: owners.name,
+    })
+    .from(pregnancyRecords)
+    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
+    .leftJoin(species, eq(animals.speciesId, species.id))
+    .leftJoin(owners, eq(animals.ownerId, owners.id))
+    .where(and(...conditions))
+    .orderBy(pregnancyRecords.expectedDueDate);
+  return rows.map(r => ({
+    ...r,
+    ...pregnancyProgress(r.record.confirmationDate, r.record.expectedDueDate, r.record.gestationDays, r.record.status),
+  }));
+}
+
+export async function getActivePregnancyByAnimal(animalId: number) {
+  const rows = await getPregnancies({ animalId });
+  return rows.find(r => r.record.status === "active") ?? null;
+}
+
+/** Close the dam's active pregnancy when a birth/animal is registered against her. */
+export async function closePregnancyOnBirth(damId: number, lambingLogId: number | null, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
+  if (!db) return;
+  const today = new Date(new Date().toISOString().split("T")[0]);
+  await db
+    .update(pregnancyRecords)
+    .set({ status: "delivered", outcomeLambingLogId: lambingLogId ?? null, completedDate: today })
+    .where(and(eq(pregnancyRecords.animalId, damId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)));
+}
+
+export async function getUpcomingPregnancyDueDates(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const target = new Date();
+  target.setDate(target.getDate() + days);
+  const targetStr = target.toISOString().split("T")[0];
+  return db
+    .select({
+      id: pregnancyRecords.id,
+      animalId: pregnancyRecords.animalId,
+      animalIdStr: animals.animalId,
+      expectedDueDate: pregnancyRecords.expectedDueDate,
+      notifyBeforeDue: pregnancyRecords.notifyBeforeDue,
+    })
+    .from(pregnancyRecords)
+    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
+    .where(and(eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), sql`${pregnancyRecords.expectedDueDate} <= ${targetStr}`))
+    .orderBy(pregnancyRecords.expectedDueDate);
+}
+
+export async function getUpcomingPregnancyCheckups(days = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const target = new Date();
+  target.setDate(target.getDate() + days);
+  const targetStr = target.toISOString().split("T")[0];
+  return db
+    .select({
+      id: pregnancyRecords.id,
+      animalId: pregnancyRecords.animalId,
+      animalIdStr: animals.animalId,
+      checkupDate: pregnancyRecords.checkupDate,
+      notifyBeforeCheckup: pregnancyRecords.notifyBeforeCheckup,
+    })
+    .from(pregnancyRecords)
+    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
+    .where(and(eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), isNotNull(pregnancyRecords.checkupDate), sql`${pregnancyRecords.checkupDate} <= ${targetStr}`))
+    .orderBy(pregnancyRecords.checkupDate);
+}
+
+export async function getPregnancySummary(ownerId?: number) {
+  const active = await getPregnancies({ status: "active", ownerId });
+  const delivered = await getPregnancies({ status: "delivered", ownerId });
+  return {
+    active: active.length,
+    dueSoon: active.filter(p => p.displayStatus === "due").length,
+    overdue: active.filter(p => p.displayStatus === "overdue").length,
+    delivered: delivered.length,
+  };
+}
+
+export async function getReproductiveHistory(animalId: number) {
+  const all = await getPregnancies({ animalId });
+  const completed = all.filter(p => p.record.completedDate);
+  const lastDelivery = completed
+    .map(p => p.record.completedDate)
+    .filter(Boolean)
+    .sort()
+    .pop() ?? null;
+  return {
+    totalPregnancies: all.length,
+    delivered: all.filter(p => p.record.status === "delivered").length,
+    aborted: all.filter(p => p.record.status === "aborted").length,
+    lost: all.filter(p => p.record.status === "lost").length,
+    active: all.filter(p => p.record.status === "active").length,
+    lastDeliveryDate: lastDelivery,
+  };
+}
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 export async function getNotifications(userId?: number, unreadOnly?: boolean) {
@@ -1848,30 +2083,36 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     catExpByCatId.get(catId)!.push({ amount: toMinor(String(e.amount)), date: dateStr });
   }
 
+  // Allocation denominators must be the WHOLE farm, independent of the display
+  // filter (owner/species/category). A category/herd expense is shared by every
+  // animal that overlapped it — not just the filtered subset — otherwise a
+  // single owner's animals would absorb the full expense and the per-animal P&L
+  // would no longer reconcile with the Dashboard / Income Statement.
+  const denomAnimals = await db
+    .select({ categoryId: animals.categoryId, acquisitionDate: animals.acquisitionDate, exitDate: animals.exitDate })
+    .from(animals)
+    .where(isNull(animals.deletedAt));
+  const normAcq = (d: any) => d instanceof Date ? d.toISOString().split("T")[0] : String(d ?? today).split("T")[0];
+  const normExit = (d: any) => d ? (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]) : null;
+
   // Pre-build per-category animal list with acquisition/exit dates so we can
   // allocate each category expense against the head count that overlapped it.
   const animalsByCategory = new Map<number, Array<{ acq: string; exit: string | null }>>();
-  for (const r of allAnimals) {
-    const a = r.animal;
-    const acq = a.acquisitionDate instanceof Date ? a.acquisitionDate.toISOString().split("T")[0] : String(a.acquisitionDate ?? today).split("T")[0];
-    const exit = a.exitDate ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0]) : null;
+  for (const a of denomAnimals) {
+    const acq = normAcq(a.acquisitionDate);
+    const exit = normExit(a.exitDate);
     if (!animalsByCategory.has(a.categoryId)) animalsByCategory.set(a.categoryId, []);
     animalsByCategory.get(a.categoryId)!.push({ acq, exit });
   }
 
   // Herd (animal-wide) expenses: each split equally across all animals alive on
   // its date. Load them once and precompute the per-expense allocation in minor
-  // units using an in-memory herd-count-on-date over allAnimals.
+  // units using an in-memory herd-count-on-date over the WHOLE farm.
   const allHerdExp = await db
     .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
     .from(expenses)
     .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt)));
-  const allAnimalDates = allAnimals.map((r: any) => {
-    const a = r.animal;
-    const acq = a.acquisitionDate instanceof Date ? a.acquisitionDate.toISOString().split("T")[0] : String(a.acquisitionDate ?? today).split("T")[0];
-    const exit = a.exitDate ? (a.exitDate instanceof Date ? a.exitDate.toISOString().split("T")[0] : String(a.exitDate).split("T")[0]) : null;
-    return { acq, exit };
-  });
+  const allAnimalDates = denomAnimals.map(a => ({ acq: normAcq(a.acquisitionDate), exit: normExit(a.exitDate) }));
   const herdCountOnDate = (dateStr: string) => Math.max(1, allAnimalDates.filter((a) => a.acq <= dateStr && (a.exit === null || a.exit >= dateStr)).length);
   // Pre-split each herd expense → { date, perHeadMinor } so each animal alive
   // that day picks up the same per-head share.
@@ -2084,7 +2325,193 @@ export async function checkAndStageAnimal(
     : sharedDb.transaction(stageWithin);
 }
 
-export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number }) {
+// ─── OWNER-SCOPED COST HELPERS ────────────────────────────────────────────────
+// Feed purchases (feed_stock_ledger) are recorded farm-wide and are NOT tagged
+// by owner. To still answer "what did THIS owner's animals cost to feed?", we
+// model feed on a CONSUMPTION basis: for each of the owner's animals we apply
+// its category ration plan × the feed price in force, over the days the animal
+// was on the farm within [fromDate, toDate]. This mirrors the per-animal feed
+// math used by the P&L (segmentedFeedCostPure), so the owner's feed number is
+// always consistent with that animal's P&L row.
+export async function getOwnerFeedCostMinor(ownerId: number, fromDate: string, toDate: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+
+  const norm = (d: Date | string | null): string | null => {
+    if (d == null) return null;
+    return d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0];
+  };
+
+  const owned = await db
+    .select({
+      categoryId: animals.categoryId,
+      acquisitionDate: animals.acquisitionDate,
+      exitDate: animals.exitDate,
+    })
+    .from(animals)
+    .where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)));
+  if (!owned.length) return 0;
+
+  const allPlans = await db.select().from(rationPlans).where(isNull(rationPlans.deletedAt));
+  const plansByCategory = new Map<number, typeof allPlans>();
+  for (const p of allPlans) {
+    if (!plansByCategory.has(p.categoryId)) plansByCategory.set(p.categoryId, []);
+    plansByCategory.get(p.categoryId)!.push(p);
+  }
+  const allPriceRows = await db.select().from(feedItemPriceHistory);
+  const pricesByItem = buildPricesByItem(allPriceRows);
+
+  let totalMinor = 0;
+  for (const a of owned) {
+    const acq = norm(a.acquisitionDate) ?? fromDate;
+    const exit = norm(a.exitDate) ?? toDate;
+    // Clamp the animal's time on farm to the requested period.
+    const start = acq > fromDate ? acq : fromDate;
+    const end = exit < toDate ? exit : toDate;
+    if (end <= start) continue;
+    const plans = (plansByCategory.get(a.categoryId) ?? []).map(p => ({
+      feedItemId: p.feedItemId,
+      qtyPerHeadPerDay: p.qtyPerHeadPerDay,
+      effectiveDate: p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0],
+      endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
+      isActive: p.isActive,
+    }));
+    totalMinor += toMinor(String(segmentedFeedCostPure(plans, pricesByItem, start, end)));
+  }
+  return totalMinor;
+}
+
+// ─── OWNER EXPENSE ALLOCATION ─────────────────────────────────────────────────
+// An owner's true share of operating expenses, matching the per-animal P&L:
+//   • head expenses          → counted in full when the head is the owner's
+//   • category expenses       → owner's SHARE = amount × (owner heads in the
+//                               category on the expense date) ÷ (all heads in
+//                               the category on that date)
+//   • herd (animal-wide)      → owner's SHARE = amount × (owner heads alive on
+//                               the expense date) ÷ (all heads alive that date)
+//   • general (overhead)      → EXCLUDED (e.g. electricity — not owner-related)
+// This is the same allocation getAllAnimalsPnL applies per animal, so the
+// Dashboard, Income Statement and P&L always reconcile. Pure for unit testing.
+export function allocateOwnerExpensesPure(params: {
+  ownedAnimalIds: Set<number>;
+  animals: Array<{ id: number; categoryId: number; acq: string; exit: string | null }>;
+  expenses: Array<{ targetType: string; headId: number | null; categoryTarget: number | null; amountMinor: number; date: string; categoryName: string }>;
+}): { byCategory: Map<string, number>; headMinor: number; categoryMinor: number; herdMinor: number } {
+  const { ownedAnimalIds, animals: allAnimals, expenses: exp } = params;
+  const alive = (a: { acq: string; exit: string | null }, d: string) => a.acq <= d && (a.exit === null || a.exit >= d);
+  const byCategory = new Map<string, number>();
+  const add = (name: string, minor: number) => {
+    if (minor === 0) return;
+    byCategory.set(name, (byCategory.get(name) ?? 0) + minor);
+  };
+
+  let headMinor = 0;
+  let categoryMinor = 0;
+  let herdMinor = 0;
+
+  for (const e of exp) {
+    if (e.targetType === "head") {
+      if (e.headId == null || !ownedAnimalIds.has(e.headId)) continue;
+      headMinor += e.amountMinor;
+      add(e.categoryName, e.amountMinor);
+    } else if (e.targetType === "category") {
+      if (e.categoryTarget == null) continue;
+      let total = 0;
+      let ownerHeads = 0;
+      for (const a of allAnimals) {
+        if (a.categoryId !== e.categoryTarget || !alive(a, e.date)) continue;
+        total++;
+        if (ownedAnimalIds.has(a.id)) ownerHeads++;
+      }
+      if (total === 0 || ownerHeads === 0) continue;
+      const share = divMinor(e.amountMinor, total) * ownerHeads;
+      categoryMinor += share;
+      add(e.categoryName, share);
+    } else if (e.targetType === "herd") {
+      let total = 0;
+      let ownerHeads = 0;
+      for (const a of allAnimals) {
+        if (!alive(a, e.date)) continue;
+        total++;
+        if (ownedAnimalIds.has(a.id)) ownerHeads++;
+      }
+      if (total === 0 || ownerHeads === 0) continue;
+      const share = divMinor(e.amountMinor, total) * ownerHeads;
+      herdMinor += share;
+      add(e.categoryName, share);
+    }
+    // general → excluded
+  }
+  return { byCategory, headMinor, categoryMinor, herdMinor };
+}
+
+// DB wrapper for allocateOwnerExpensesPure over the period [fromDate, toDate].
+export async function getOwnerExpenseBreakdownMinor(ownerId: number, fromDate: string, toDate: string): Promise<{
+  byCategory: Array<{ categoryName: string; total: number }>;
+  headMinor: number;
+  categoryMinor: number;
+  herdMinor: number;
+  totalOtherMinor: number;
+}> {
+  const empty = { byCategory: [], headMinor: 0, categoryMinor: 0, herdMinor: 0, totalOtherMinor: 0 };
+  const db = await getDb();
+  if (!db) return empty;
+
+  const norm = (d: Date | string | null): string | null =>
+    d == null ? null : (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]);
+
+  const allAnimals = await db
+    .select({ id: animals.id, categoryId: animals.categoryId, ownerId: animals.ownerId, acquisitionDate: animals.acquisitionDate, exitDate: animals.exitDate })
+    .from(animals)
+    .where(isNull(animals.deletedAt));
+  const ownedAnimalIds = new Set(allAnimals.filter(a => a.ownerId === ownerId).map(a => a.id));
+  if (ownedAnimalIds.size === 0) return empty;
+
+  const animalsForCalc = allAnimals.map(a => ({
+    id: a.id,
+    categoryId: a.categoryId,
+    acq: norm(a.acquisitionDate) ?? fromDate,
+    exit: norm(a.exitDate),
+  }));
+
+  const expRows = await db
+    .select({
+      targetType: expenses.targetType,
+      headId: expenses.headId,
+      categoryTarget: expenses.categoryTarget,
+      amount: expenses.amount,
+      expenseDate: expenses.expenseDate,
+      categoryName: expenseCategories.name,
+    })
+    .from(expenses)
+    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
+
+  const expForCalc = expRows.map(e => ({
+    targetType: e.targetType,
+    headId: e.headId,
+    categoryTarget: e.categoryTarget,
+    amountMinor: toMinor(String(e.amount ?? 0)),
+    date: norm(e.expenseDate) ?? fromDate,
+    categoryName: e.categoryName ?? "Other",
+  }));
+
+  const { byCategory, headMinor, categoryMinor, herdMinor } = allocateOwnerExpensesPure({
+    ownedAnimalIds,
+    animals: animalsForCalc,
+    expenses: expForCalc,
+  });
+
+  return {
+    byCategory: Array.from(byCategory.entries()).map(([categoryName, minor]) => ({ categoryName, total: toMajor(minor) })),
+    headMinor,
+    categoryMinor,
+    herdMinor,
+    totalOtherMinor: headMinor + categoryMinor + herdMinor,
+  };
+}
+
+export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return null;
 
@@ -2094,28 +2521,50 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const fromDate = filters?.fromDate ?? twelveMonthsAgo.toISOString().split("T")[0];
   const toDate = filters?.toDate ?? today;
 
+  // ── Owner scoping ───────────────────────────────────────────────────────────
+  // When scoped to an owner, every number reflects only that owner's animals.
+  // General overhead (e.g. electricity) and bulk feed PURCHASES are not
+  // attributable to an owner and are excluded. The owner's expense share is
+  // computed by the same allocation as the per-animal P&L (head in full,
+  // category/herd by head count on the expense date); feed is modeled from the
+  // owner's ration-plan consumption.
+  const ownerId = filters?.ownerId;
+  const ownedAnimalIds: number[] = ownerId
+    ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map(r => r.id)
+    : [];
+  const ownerSalesCond = ownerId
+    ? (ownedAnimalIds.length > 0 ? inArray(sales.animalId, ownedAnimalIds) : sql`1 = 0`)
+    : sql`1 = 1`;
+  const ownerBreakdown = ownerId ? await getOwnerExpenseBreakdownMinor(ownerId, fromDate, toDate) : null;
+
   // Active head count (exclude soft-deleted)
   const headConditions = [eq(animals.isActive, true), isNull(animals.deletedAt)];
   if (filters?.speciesId) headConditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) headConditions.push(eq(animals.categoryId, filters.categoryId));
   if (filters?.groupId) headConditions.push(eq(animals.groupId, filters.groupId));
+  if (ownerId) headConditions.push(eq(animals.ownerId, ownerId));
 
   const headCount = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(animals)
     .where(and(...headConditions));
 
-  // Total other expenses in period (vet, labour, vaccine etc — NOT feed)
+  // Total other expenses in period (vet, labour, vaccine etc — NOT feed).
+  // Whole-farm = every expense; owner scope = the owner's allocated share
+  // (head + category + herd; general/overhead excluded), via ownerBreakdown.
   const totalOtherExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
     .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
 
-  // Feed purchases in period (from feed_stock_ledger, matching Income Statement logic)
+  // Feed cost in period. Whole-farm = actual bulk purchases (cash basis).
+  // Owner-scoped = modeled consumption of the owner's animals (accrual basis),
+  // because purchases aren't tagged by owner.
   const feedPurchasesInPeriod = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
     .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${fromDate}`, sql`${feedStockLedger.transactionDate} <= ${toDate}`, isNull(feedStockLedger.deletedAt)));
+  const ownerFeedMinor = ownerId ? await getOwnerFeedCostMinor(ownerId, fromDate, toDate) : 0;
 
   // Total sales revenue in period — F9: track BOTH accrued (salePrice) and
   // cash actually received (amountPaid) so the dashboard can show outstanding.
@@ -2125,7 +2574,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
       paid: sql<number>`SUM(amountPaid)`,
     })
     .from(sales)
-    .where(and(sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt)));
+    .where(and(sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt), ownerSalesCond));
 
   // B3: AVERAGE head count over the period (not today's count). An animal
   // contributes the fraction of the period it was actually on the farm:
@@ -2145,6 +2594,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
       isNull(animals.deletedAt),
       sql`${animals.acquisitionDate} <= ${toDate}`,
       sql`(${animals.exitDate} IS NULL OR ${animals.exitDate} >= ${fromDate})`,
+      ownerId ? eq(animals.ownerId, ownerId) : sql`1 = 1`,
     ));
   const totalHeadDays = Number(avgHeadRows[0]?.totalHeadDays ?? 0);
   const avgHeads = totalHeadDays / periodDaysForAvg;
@@ -2161,8 +2611,8 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     .where(and(...headConditions))
     .groupBy(animals.categoryId, animalCategories.name);
 
-  const otherExpensesMinor = toMinor(String(totalOtherExpenses[0]?.total ?? 0));
-  const feedExpensesMinor = toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
+  const otherExpensesMinor = ownerBreakdown ? ownerBreakdown.totalOtherMinor : toMinor(String(totalOtherExpenses[0]?.total ?? 0));
+  const feedExpensesMinor = ownerId ? ownerFeedMinor : toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
   const totalExpensesMinor = otherExpensesMinor + feedExpensesMinor;
   const revenueMinor = toMinor(String(totalRevenue[0]?.total ?? 0));
   const cashReceivedMinor = toMinor(String(totalRevenue[0]?.paid ?? 0));
@@ -2191,6 +2641,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     grossPnL: toMajor(revenueMinor - totalExpensesMinor),
     costPerHeadPerDay,
     categoryBreakdown,
+    ownerId: ownerId ?? null,
     period: { fromDate, toDate }
   };
 }
@@ -2462,10 +2913,10 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const db = await getDb();
   if (!db) return null;
 
-  // When scoped to an owner, restrict sales + animal purchases + head/category
-  // expenses to that owner's animals. Farm-wide (general) costs and feed are
-  // NOT owner-specific, so they're only included in the unscoped (whole-farm)
-  // statement.
+  // When scoped to an owner: sales, animal purchases and feed are restricted to
+  // that owner's animals; expenses are the owner's ALLOCATED share (head in
+  // full, category/herd split by head count on the expense date — matching the
+  // per-animal P&L). General overhead (e.g. electricity) is excluded.
   const ownerId = filters.ownerId;
   const ownedAnimalIds: number[] = ownerId
     ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.id)
@@ -2495,53 +2946,57 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       ownerId ? eq(animals.ownerId, ownerId) : sql`1 = 1`,
     ));
 
-  // Expenses by category (exclude soft-deleted). When owner-scoped, only
-  // head/category expenses tied to that owner's animals count.
-  const ownerCategoryIds: number[] = ownerId
-    ? Array.from(new Set(
-        (await db.select({ categoryId: animals.categoryId }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.categoryId)
-      ))
-    : [];
-  const ownerExpenseConds: any[] = [];
-  if (ownedAnimalIds.length > 0) ownerExpenseConds.push(inArray(expenses.headId, ownedAnimalIds));
-  if (ownerCategoryIds.length > 0) ownerExpenseConds.push(inArray(expenses.categoryTarget, ownerCategoryIds));
-  const ownerExpenseCond = ownerId
-    ? (ownerExpenseConds.length > 0 ? or(...ownerExpenseConds) : sql`1 = 0`)
-    : sql`1 = 1`;
-  const expensesByCategory = await db
-    .select({
-      categoryName: expenseCategories.name,
-      total: sql<number>`SUM(${expenses.amount})`
-    })
-    .from(expenses)
-    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt), ownerExpenseCond))
-    .groupBy(expenseCategories.name);
-
-  // Expenses split by allocation type, for the running-cost farm-wide vs
-  // animal-wide breakdown. general = farm-wide; head/category/herd = animal-wide.
-  const expensesByTarget = await db
-    .select({
-      targetType: expenses.targetType,
-      total: sql<number>`SUM(${expenses.amount})`,
-    })
-    .from(expenses)
-    .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt), ownerExpenseCond))
-    .groupBy(expenses.targetType);
+  // Expenses (exclude soft-deleted). Whole-farm: every expense grouped by
+  // category and by target type. Owner-scoped: the owner's allocated share via
+  // getOwnerExpenseBreakdownMinor (general/overhead excluded).
+  let expensesByCategory: Array<{ categoryName: string | null; total: number }>;
   const expByTarget: Record<string, number> = {};
-  for (const r of expensesByTarget) expByTarget[r.targetType] = toMinor(String(r.total ?? 0));
+  let totalOtherCostMinor: number;
+  if (ownerId) {
+    const bd = await getOwnerExpenseBreakdownMinor(ownerId, filters.fromDate, filters.toDate);
+    expensesByCategory = bd.byCategory;
+    expByTarget.head = bd.headMinor;
+    expByTarget.category = bd.categoryMinor;
+    expByTarget.herd = bd.herdMinor;
+    expByTarget.general = 0;
+    totalOtherCostMinor = bd.totalOtherMinor;
+  } else {
+    expensesByCategory = await db
+      .select({
+        categoryName: expenseCategories.name,
+        total: sql<number>`SUM(${expenses.amount})`
+      })
+      .from(expenses)
+      .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+      .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
+      .groupBy(expenseCategories.name);
+    const expensesByTarget = await db
+      .select({
+        targetType: expenses.targetType,
+        total: sql<number>`SUM(${expenses.amount})`,
+      })
+      .from(expenses)
+      .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
+      .groupBy(expenses.targetType);
+    for (const r of expensesByTarget) expByTarget[r.targetType] = toMinor(String(r.total ?? 0));
+    totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
+  }
 
-  // Feed stock purchases in period (exclude soft-deleted). Feed is farm-wide.
+  // Feed cost in period. Whole-farm = actual bulk purchases from the stock
+  // ledger (cash basis). Owner-scoped = modeled consumption of the owner's
+  // animals via their ration plans (accrual basis), because feed purchases are
+  // not tagged by owner — so a 0 here would understate the owner's true cost.
   const feedPurchases = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
     .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
-  const totalFeedCostMinor = ownerId ? 0 : toMinor(String(feedPurchases[0]?.total ?? 0));
+  const totalFeedCostMinor = ownerId
+    ? await getOwnerFeedCostMinor(ownerId, filters.fromDate, filters.toDate)
+    : toMinor(String(feedPurchases[0]?.total ?? 0));
   const totalRevenueMinor = toMinor(String(salesData[0]?.total ?? 0));
   const cashReceivedMinor = toMinor(String(salesData[0]?.paid ?? 0));
   const outstandingMinor = totalRevenueMinor - cashReceivedMinor;
   const totalAnimalCostMinor = toMinor(String(purchaseCosts[0]?.total ?? 0));
-  const totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
   const totalCostMinor = totalAnimalCostMinor + totalFeedCostMinor + totalOtherCostMinor;
   const grossProfitMinor = totalRevenueMinor - totalCostMinor;
 
@@ -2667,12 +3122,16 @@ export async function deleteVaccine(id: number) {
   await db.update(vaccines).set({ deletedAt: new Date() }).where(eq(vaccines.id, id));
 }
 
-export async function getVaccinationRecords(animalId?: number) {
+export async function getVaccinationRecords(animalId?: number, ownerId?: number) {
   const db = await getDb();
   if (!db) return [];
   const conditions = [isNull(vaccinationRecords.deletedAt)];
   if (animalId) {
     conditions.push(eq(vaccinationRecords.animalId, animalId));
+  }
+  // Owner scope: only records for animals owned by this owner.
+  if (ownerId) {
+    conditions.push(eq(animals.ownerId, ownerId));
   }
 
   return await db

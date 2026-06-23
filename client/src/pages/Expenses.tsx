@@ -23,6 +23,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 
 function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
@@ -345,18 +346,17 @@ export default function Expenses() {
     return d.toISOString().split("T")[0];
   });
   const [toDate] = useState(new Date().toISOString().split("T")[0]);
-  const [filterOwner, setFilterOwner] = useState<string>("all");
+  const { ownerParam } = useOwnerFilter();
   const [filterVendor, setFilterVendor] = useState<string>("");
   const [filterTargetType, setFilterTargetType] = useState<string>("all");
 
   const { data: expenses, isLoading, refetch } = trpc.expenses.list.useQuery({
     fromDate,
     toDate,
-    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    ownerId: ownerParam,
     vendor: filterVendor || undefined,
     targetType: filterTargetType !== "all" ? (filterTargetType as "general" | "category" | "head") : undefined,
   });
-  const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const utils = trpc.useUtils();
 
   const deleteExpense = trpc.recycleBin.deleteExpense.useMutation({
@@ -407,17 +407,6 @@ export default function Expenses() {
                 <SelectItem value="herd">{t("expenses.herd")}</SelectItem>
                 <SelectItem value="category">{t("expenses.category")}</SelectItem>
                 <SelectItem value="head">{t("expenses.head")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={filterOwner} onValueChange={setFilterOwner}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder={t("owners.owner")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
-                {(ownersList ?? []).map((o: any) => (
-                  <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
-                ))}
               </SelectContent>
             </Select>
             <Input

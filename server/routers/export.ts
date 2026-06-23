@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
+import { z } from "zod";
 import { permissionProcedure, router } from "../_core/trpc";
-import { getDb, getAllSpecies, getAllCategories, getAllStatuses, getAllGroups, getAllFeedItems, getAllExpenseCategories, getAnimals, getSales, getLambingLog, getFeedStockLedger, getFeedStockStatus, getExpenses, getAllAnimalsPnL, getIncomeStatement, getDashboardKPIs, getActiveHeadCountByCategory, getFeedPriceOnDate } from "../db";
+import { getDb, getAllSpecies, getAllCategories, getAllStatuses, getAllGroups, getAllFeedItems, getAllExpenseCategories, getAllOwners, getAnimals, getSales, getLambingLog, getFeedStockLedger, getFeedStockStatus, getExpenses, getAllAnimalsPnL, getIncomeStatement, getDashboardKPIs, getActiveHeadCountByCategory, getFeedPriceOnDate, getPregnancies } from "../db";
 import { readAllCanonicalTables } from "../canonicalTransfer";
 import { addCanonicalSheets } from "../excelDataContract";
 
@@ -30,7 +31,10 @@ function fmtDate(d: any): Date | null {
 }
 
 // ── main export function ─────────────────────────────────────────────────────
-async function buildWorkbook(): Promise<Buffer> {
+// When ownerId is given, the per-animal/financial report sheets are scoped to
+// that owner and the canonical round-trip "Data -" sheets are omitted — a
+// scoped owner report is not a whole-farm backup.
+async function buildWorkbook(ownerId?: number): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "LFMS Export";
   wb.created = new Date();
@@ -38,15 +42,26 @@ async function buildWorkbook(): Promise<Buffer> {
   if (!db) throw new Error("DB not available");
   const canonicalRows = await db.transaction(tx => readAllCanonicalTables(tx));
 
+  let ownerName: string | null = null;
+  if (ownerId) {
+    const allOwners = await getAllOwners(false);
+    ownerName = allOwners.find((o: any) => o.id === ownerId)?.name ?? `#${ownerId}`;
+  }
+
   // ─── 1. README ────────────────────────────────────────────────────────────
   const readme = wb.addWorksheet("README", {
     properties: { tabColor: { argb: "FF0F6E56" } }
   });
   readme.columns = [{ width: 100 }];
-  titleRow(readme, 1, "Azal Farms — LFMS Full Export", 1);
+  titleRow(readme, 1, ownerId ? `Azal Farms — Owner Report: ${ownerName}` : "Azal Farms — LFMS Full Export", 1);
   readme.getCell("A2").value = `Generated: ${new Date().toLocaleString()}`;
-  readme.getCell("A4").value = "This workbook contains human-facing reports plus complete canonical Data - sheets for lossless import.";
-  readme.getCell("A5").value = "Only LFMS Manifest and Data - sheets are the round-trip contract. Report formulas are informational.";
+  if (ownerId) {
+    readme.getCell("A4").value = `Scoped to owner: ${ownerName}. All report numbers reflect only this owner's animals; farm-wide overhead (e.g. electricity), herd-wide costs and bulk feed purchases are excluded (feed is modelled from this owner's ration-plan consumption).`;
+    readme.getCell("A5").value = "This is an OWNER REPORT, not a full backup — the canonical Data - round-trip sheets are omitted. Export with 'All Owners' selected for the complete backup.";
+  } else {
+    readme.getCell("A4").value = "This workbook contains human-facing reports plus complete canonical Data - sheets for lossless import.";
+    readme.getCell("A5").value = "Only LFMS Manifest and Data - sheets are the round-trip contract. Report formulas are informational.";
+  }
   readme.getCell("A7").value = "Sheet guide:";
   const guide = ["  • Animals          — full animal registry (97 records)", "  • Sales            — exit / sale records with revenue", "  • Lambing          — birth log with dam, sire, promotion status", "  • Weight Log       — every weight session per animal", "  • Feed Items       — feed items with current price", "  • Ration Plans     — qty per head per day per category", "  • Feed Stock       — full ledger (counts, purchases, adjustments)", "  • Stock Status     — live formulas: stockOnHand, daysRemaining", "  • Expenses         — all expenses with GENERAL/CATEGORY/HEAD targeting", "  • P&L              — per-animal P&L with cost components", "  • Income Statement — period summary: revenue, cost, profit", "  • Dashboard        — KPIs: heads, expenses, cost/head/day", "  • Config           — convenient configuration report", "  • LFMS Manifest    — versioned import contract", "  • Data - ...       — every table, field, relationship, and soft-deleted record"];
   guide.forEach((g, i) => (readme.getCell(`A${9 + i}`).value = g));
@@ -103,9 +118,13 @@ async function buildWorkbook(): Promise<Buffer> {
   cfg.columns.forEach(col => (col.width = 20));
 
   // ─── 3. ANIMALS ───────────────────────────────────────────────────────────
-  const animals = await getAnimals();
+  // Resolve codes from the full registry (so cross-owner dam/sire references
+  // still render) but scope the visible rows to the owner when requested.
+  const allAnimalsForCodes = await getAnimals();
+  const animals = ownerId ? await getAnimals({ ownerId }) : allAnimalsForCodes;
+  const ownedAnimalIds = new Set<number>(animals.map((a: any) => a.animal.id));
   const animalCodeById = new Map<number, string>();
-  animals.forEach((a: any) => animalCodeById.set(a.animal.id, a.animal.animalId));
+  allAnimalsForCodes.forEach((a: any) => animalCodeById.set(a.animal.id, a.animal.animalId));
   const ws = wb.addWorksheet("Animals", {
     properties: { tabColor: { argb: "FF378ADD" } }
   });
@@ -233,7 +252,7 @@ async function buildWorkbook(): Promise<Buffer> {
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 24 } };
 
   // ─── 4. SALES ─────────────────────────────────────────────────────────────
-  const sales = await getSales();
+  const sales = await getSales(ownerId ? { ownerId } : undefined);
   const wsSale = wb.addWorksheet("Sales", {
     properties: { tabColor: { argb: "FF3B6D11" } }
   });
@@ -298,7 +317,7 @@ async function buildWorkbook(): Promise<Buffer> {
   wsSale.views = [{ state: "frozen", ySplit: 1 }];
 
   // ─── 5. LAMBING LOG ───────────────────────────────────────────────────────
-  const lambing = await getLambingLog();
+  const lambing = await getLambingLog(ownerId ? { ownerId } : undefined);
   const wsLamb = wb.addWorksheet("Lambing", {
     properties: { tabColor: { argb: "FFBA7517" } }
   });
@@ -360,7 +379,8 @@ async function buildWorkbook(): Promise<Buffer> {
   wsLamb.views = [{ state: "frozen", ySplit: 1 }];
 
   // ─── 6. WEIGHT LOG ────────────────────────────────────────────────────────
-  const weights = canonicalRows.get("weight_log") ?? [];
+  const weights = (canonicalRows.get("weight_log") ?? [])
+    .filter((w: any) => !ownerId || ownedAnimalIds.has(w.animalId));
   const wsWeight = wb.addWorksheet("Weight Log", {
     properties: { tabColor: { argb: "FF378ADD" } }
   });
@@ -605,7 +625,10 @@ async function buildWorkbook(): Promise<Buffer> {
   wsStock.views = [{ state: "frozen", ySplit: 1 }];
 
   // ─── 11. EXPENSES ─────────────────────────────────────────────────────────
-  const expenses = await getExpenses();
+  // Owner scope: only expenses attributable to the owner (head on their
+  // animals, or a category they hold animals in). Amounts here are the raw
+  // expense rows; the P&L / Income Statement sheets show the allocated share.
+  const expenses = await getExpenses(ownerId ? { ownerId } : undefined);
   // Build category name lookup
   const catNameById = new Map<number, string>();
   categories.forEach((c: any) => catNameById.set(c.id, c.name));
@@ -659,7 +682,7 @@ async function buildWorkbook(): Promise<Buffer> {
   wsExp.views = [{ state: "frozen", ySplit: 1 }];
 
   // ─── 12. P&L (per animal) ─────────────────────────────────────────────────
-  const pnl = await getAllAnimalsPnL();
+  const pnl = await getAllAnimalsPnL(ownerId ? { ownerId } : undefined);
   const wsPnL = wb.addWorksheet("P&L", {
     properties: { tabColor: { argb: "FF993C1D" } }
   });
@@ -766,13 +789,13 @@ async function buildWorkbook(): Promise<Buffer> {
   // ─── 13. INCOME STATEMENT ─────────────────────────────────────────────────
   const fromDate = new Date(new Date().getFullYear(), 0, 1).toISOString().split("T")[0];
   const toDate = new Date().toISOString().split("T")[0];
-  const isData: any = await getIncomeStatement({ fromDate, toDate });
+  const isData: any = await getIncomeStatement({ fromDate, toDate, ownerId });
 
   const wsIS = wb.addWorksheet("Income Statement", {
     properties: { tabColor: { argb: "FF3B6D11" } }
   });
   wsIS.columns = [{ width: 30 }, { width: 18, style: { numFmt: "#,##0.00" } }];
-  titleRow(wsIS, 1, `Income Statement: ${fromDate} → ${toDate}`, 2);
+  titleRow(wsIS, 1, `Income Statement${ownerName ? ` — ${ownerName}` : ""}: ${fromDate} → ${toDate}`, 2);
   wsIS.getCell("A3").value = "REVENUE";
   wsIS.getCell("A3").font = { bold: true, color: { argb: "FF3B6D11" } };
   wsIS.getCell("A4").value = "  Animal sales";
@@ -821,7 +844,7 @@ async function buildWorkbook(): Promise<Buffer> {
   wsIS.getCell(`B${row}`).numFmt = "0.00%";
 
   // ─── 14. DASHBOARD KPIs ───────────────────────────────────────────────────
-  const kpisRaw = await getDashboardKPIs({ fromDate, toDate });
+  const kpisRaw = await getDashboardKPIs({ fromDate, toDate, ownerId });
   const kpis: any = kpisRaw ?? {
     totalActiveHeads: 0,
     totalRevenue: 0,
@@ -836,7 +859,7 @@ async function buildWorkbook(): Promise<Buffer> {
     properties: { tabColor: { argb: "FF0F6E56" } }
   });
   wsKpi.columns = [{ width: 30 }, { width: 20, style: { numFmt: "#,##0.00" } }];
-  titleRow(wsKpi, 1, `Dashboard KPIs: ${fromDate} → ${toDate}`, 2);
+  titleRow(wsKpi, 1, `Dashboard KPIs${ownerName ? ` — ${ownerName}` : ""}: ${fromDate} → ${toDate}`, 2);
   const kpiRows = [
     ["Total Active Heads", kpis.totalActiveHeads],
     ["Total Revenue (period)", kpis.totalRevenue],
@@ -883,8 +906,45 @@ async function buildWorkbook(): Promise<Buffer> {
     wsKpi.getCell(`B${bRow}`).numFmt = "0";
   });
 
+  // ─── 15. PREGNANCIES ──────────────────────────────────────────────────────
+  const pregnancies = await getPregnancies(ownerId ? { ownerId } : undefined);
+  const wsPreg = wb.addWorksheet("Pregnancy", { properties: { tabColor: { argb: "FFB5179E" } } });
+  wsPreg.columns = [
+    { header: "animal (code)", key: "animalCode", width: 14 },
+    { header: "species", key: "speciesName", width: 12 },
+    { header: "owner", key: "ownerName", width: 16 },
+    { header: "confirmationDate", key: "confirmationDate", width: 16, style: { numFmt: "yyyy-mm-dd" } },
+    { header: "expectedDueDate", key: "expectedDueDate", width: 16, style: { numFmt: "yyyy-mm-dd" } },
+    { header: "daysPregnant", key: "daysPregnant", width: 13 },
+    { header: "daysRemaining", key: "daysRemaining", width: 13 },
+    { header: "progress %", key: "progressPct", width: 11, style: { numFmt: "0\"%\"" } },
+    { header: "status", key: "status", width: 12 },
+    { header: "checkupDate", key: "checkupDate", width: 14, style: { numFmt: "yyyy-mm-dd" } },
+    { header: "notes", key: "notes", width: 30 },
+  ];
+  headerRow(wsPreg, 1);
+  pregnancies.forEach((p: any) =>
+    wsPreg.addRow({
+      animalCode: p.animalCode,
+      speciesName: p.speciesName ?? "",
+      ownerName: p.ownerName ?? "",
+      confirmationDate: fmtDate(p.record.confirmationDate),
+      expectedDueDate: fmtDate(p.record.expectedDueDate),
+      daysPregnant: p.daysPregnant,
+      daysRemaining: p.daysRemaining,
+      progressPct: p.progressPct,
+      status: p.displayStatus,
+      checkupDate: fmtDate(p.record.checkupDate),
+      notes: p.record.notes,
+    }),
+  );
+  wsPreg.views = [{ state: "frozen", ySplit: 1 }];
+
   // ─── Canonical round-trip data ───────────────────────────────────────────
-  addCanonicalSheets(wb, canonicalRows, wb.created);
+  // Only for the whole-farm export — an owner-scoped report is not a backup.
+  if (!ownerId) {
+    addCanonicalSheets(wb, canonicalRows, wb.created);
+  }
 
   // ─── Output ──────────────────────────────────────────────────────────────
   const buf = await wb.xlsx.writeBuffer();
@@ -892,13 +952,21 @@ async function buildWorkbook(): Promise<Buffer> {
 }
 
 export const exportRouter = router({
-  /** Generate the full workbook and return as base64. */
-  full: permissionProcedure("data", "export").query(async () => {
-    const buf = await buildWorkbook();
-    return {
-      filename: `lfms-export-${new Date().toISOString().split("T")[0]}.xlsx`,
-      mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      base64: buf.toString("base64")
-    };
-  })
+  /**
+   * Generate the workbook and return as base64. With ownerId, produces an
+   * owner-scoped report (no canonical backup sheets); without it, the full
+   * whole-farm backup workbook.
+   */
+  full: permissionProcedure("data", "export")
+    .input(z.object({ ownerId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+      const ownerId = input?.ownerId;
+      const buf = await buildWorkbook(ownerId);
+      const date = new Date().toISOString().split("T")[0];
+      return {
+        filename: ownerId ? `lfms-owner-${ownerId}-report-${date}.xlsx` : `lfms-export-${date}.xlsx`,
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        base64: buf.toString("base64")
+      };
+    })
 });

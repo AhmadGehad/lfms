@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp, Syringe } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -101,6 +102,8 @@ export default function Dashboard() {
   const [pendingFrom, setPendingFrom] = useState<string>("");
   const [pendingTo, setPendingTo] = useState<string>("");
 
+  const { ownerParam } = useOwnerFilter();
+
   const dateRange = useMemo(() => getPresetRange(preset, customFrom, customTo), [preset, customFrom, customTo]);
 
   const { data: kpis, isLoading: kpisLoading } = trpc.dashboard.getKPIs.useQuery({
@@ -108,21 +111,25 @@ export default function Dashboard() {
     toDate: dateRange.to,
     speciesId: filterSpecies !== "all" ? Number(filterSpecies) : undefined,
     categoryId: filterCategory !== "all" ? Number(filterCategory) : undefined,
-    groupId: filterGroup !== "all" ? Number(filterGroup) : undefined
+    groupId: filterGroup !== "all" ? Number(filterGroup) : undefined,
+    ownerId: ownerParam
   });
 
   // Feed stock - use shared feed.getStockStatus so it updates when Feed page changes stock
   const { data: feedStock } = trpc.feed.getStockStatus.useQuery();
-  const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery();
+  const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery({ ownerId: ownerParam });
   const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery({ days: 30 });
+  const { data: pregnancyAlerts } = trpc.pregnancy.getUpcoming.useQuery({ days: 30 });
 
   const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery({
     fromDate: dateRange.from,
-    toDate: dateRange.to
+    toDate: dateRange.to,
+    ownerId: ownerParam
   });
   const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery({
     fromDate: dateRange.from,
-    toDate: dateRange.to
+    toDate: dateRange.to,
+    ownerId: ownerParam
   });
 
   const { data: species } = trpc.config.getSpecies.useQuery();
@@ -154,6 +161,15 @@ export default function Dashboard() {
     dueDate.setHours(0, 0, 0, 0);
     const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
     return diffDays >= 0 && diffDays <= 7;
+  }).length;
+  const overduePregnancies = (pregnancyAlerts?.due ?? []).filter((p: any) => {
+    const d = new Date(p.expectedDueDate); d.setHours(0, 0, 0, 0);
+    return d.getTime() < today.getTime();
+  }).length;
+  const dueSoonPregnancies = (pregnancyAlerts?.due ?? []).filter((p: any) => {
+    const d = new Date(p.expectedDueDate); d.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((d.getTime() - today.getTime()) / 86400000);
+    return diff >= 0 && diff <= 7;
   }).length;
 
   const presetLabel = preset === "custom" ? `${customFrom || "?"} → ${customTo || "?"}` : PRESET_LABELS[preset];
@@ -279,14 +295,16 @@ export default function Dashboard() {
       </div>
 
       {/* Alerts Banner */}
-      {(criticalAlerts > 0 || lowAlerts > 0 || overdueVaccinations > 0 || dueSoonVaccinations > 0) && (
-        <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 || overdueVaccinations > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
+      {(criticalAlerts > 0 || lowAlerts > 0 || overdueVaccinations > 0 || dueSoonVaccinations > 0 || overduePregnancies > 0 || dueSoonPregnancies > 0) && (
+        <div className={`flex items-center gap-3 p-3 rounded-lg border ${criticalAlerts > 0 || overdueVaccinations > 0 || overduePregnancies > 0 ? "bg-red-50 border-red-200 text-red-800" : "bg-amber-50 border-amber-200 text-amber-800"}`}>
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span className="text-sm font-medium">
             {criticalAlerts > 0 && `${criticalAlerts} ${t("dashboard.critical").toLowerCase()}. `}
             {lowAlerts > 0 && `${lowAlerts} ${t("dashboard.lowStock").toLowerCase()}. `}
             {overdueVaccinations > 0 && `${overdueVaccinations} ${t("vaccine.overdue").toLowerCase()}. `}
             {dueSoonVaccinations > 0 && `${dueSoonVaccinations} ${t("vaccine.due").toLowerCase()}. `}
+            {overduePregnancies > 0 && `${overduePregnancies} ${t("pregnancy.dashOverdue")}. `}
+            {dueSoonPregnancies > 0 && `${dueSoonPregnancies} ${t("pregnancy.dashDueSoon")}. `}
           </span>
         </div>
       )}
@@ -515,6 +533,7 @@ function ExportButton() {
   const [loading, setLoading] = useState(false);
   const utils = trpc.useUtils();
   const { can } = usePermissions("dashboard");
+  const { ownerParam } = useOwnerFilter();
   const canExport = can("data", "export");
 
   if (!canExport) return null;
@@ -522,7 +541,7 @@ function ExportButton() {
   const handleExport = async () => {
     try {
       setLoading(true);
-      const result = await utils.client.export.full.query();
+      const result = await utils.client.export.full.query({ ownerId: ownerParam });
       // Decode base64 → Blob → trigger download
       const byteChars = atob(result.base64);
       const bytes = new Uint8Array(byteChars.length);
@@ -557,15 +576,18 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
   const { t } = useTranslation();
   const { canReport } = usePermissions("dashboard");
   const { canView: canViewPnl } = usePermissions("pnl");
+  const { ownerParam } = useOwnerFilter();
   const { data: pnlData } = trpc.animals.getAllPnL.useQuery(
-    {},
+    { ownerId: ownerParam },
     { enabled: canReport && canViewPnl },
   );
   const { data: settings } = trpc.config.getDisplaySettings.useQuery();
+  const { data: ownerOptions } = trpc.config.getOwnerOptions.useQuery(undefined, { enabled: ownerParam != null });
   const { currency } = useCurrency();
   const [generating, setGenerating] = useState(false);
 
   const farmName = (settings as any[] | undefined)?.find(s => s.settingKey === "farmName")?.settingValue;
+  const ownerName = ownerParam != null ? ((ownerOptions ?? []).find((o: any) => o.id === ownerParam)?.name ?? null) : null;
 
   const handleClick = async () => {
     if (!kpis || !pnlData) {
@@ -581,7 +603,8 @@ function PdfReportButton({ dateRange, kpis }: { dateRange: { from: string; to: s
         kpis,
         pnlData,
         currency,
-        farmName
+        farmName,
+        ownerName
       });
       toast.success(t("dashboard.pdfDownloaded"));
     } catch (e: any) {

@@ -8,6 +8,7 @@ import {
   auditLog,
   birthTypes,
   expenseCategories,
+  pregnancyRecords,
   expenseSubCategories,
   expenses,
   feedItemPriceHistory,
@@ -28,8 +29,8 @@ import {
   weightLog,
 } from "../drizzle/schema";
 
-export const EXCEL_DATA_FORMAT_VERSION = 4;
-export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4] as const;
+export const EXCEL_DATA_FORMAT_VERSION = 5;
+export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5] as const;
 export const EXCEL_MANIFEST_SHEET = "LFMS Manifest";
 const VERSION_3_MISSING_COLUMNS = new Set([
   "animal_categories.lambIdSequence",
@@ -40,6 +41,13 @@ const VERSION_3_MISSING_COLUMNS = new Set([
   "vaccination_records.notifyBeforeNext",
   "vaccination_records.notifyBeforeBooster",
 ]);
+// Columns introduced in v5 — tolerated as missing when importing an older
+// (v3/v4) workbook that predates them.
+const VERSION_4_MISSING_COLUMNS = new Set([
+  "species.gestationDays",
+]);
+// Whole tables introduced in v5 — their sheet/array may be absent in v3/v4 files.
+const NEW_IN_VERSION_5_TABLES = new Set(["pregnancy_records"]);
 
 export type CanonicalTableSpec = {
   key: string;
@@ -117,6 +125,11 @@ export const CANONICAL_TABLES: CanonicalTableSpec[] = [
     sheetName: "Data - Vaccination Records",
     table: vaccinationRecords,
   },
+  {
+    key: "pregnancy_records",
+    sheetName: "Data - Pregnancies",
+    table: pregnancyRecords,
+  },
 ];
 
 export type CanonicalWorkbookData = Map<string, Record<string, unknown>[]>;
@@ -127,8 +140,16 @@ function isLegacyMissingColumnAllowed(
   tableKey: string,
   columnName: string,
 ) {
-  return version === 3 &&
-    VERSION_3_MISSING_COLUMNS.has(`${tableKey}.${columnName}`);
+  if (version <= 3 && VERSION_3_MISSING_COLUMNS.has(`${tableKey}.${columnName}`)) return true;
+  // Anything new in v5 (a new column, or any column of a new table) is allowed
+  // to be missing when importing a pre-v5 (v3/v4) file.
+  if (version <= 4 && (VERSION_4_MISSING_COLUMNS.has(`${tableKey}.${columnName}`) || NEW_IN_VERSION_5_TABLES.has(tableKey))) return true;
+  return false;
+}
+
+// A whole sheet/table introduced in v5 may be absent in a pre-v5 file.
+function isLegacyMissingTableAllowed(version: number, tableKey: string) {
+  return version <= 4 && NEW_IN_VERSION_5_TABLES.has(tableKey);
 }
 
 function dateOnly(value: unknown): string | null {
@@ -320,7 +341,7 @@ export function isCanonicalWorkbook(workbook: ExcelJS.Workbook): boolean {
   const version = manifest
     ? Number(rawCellValue(manifest.getCell("B1")))
     : NaN;
-  return SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4);
+  return SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5);
 }
 
 export function readCanonicalWorkbook(
@@ -328,7 +349,7 @@ export function readCanonicalWorkbook(
 ): CanonicalWorkbookData {
   const manifest = workbook.getWorksheet(EXCEL_MANIFEST_SHEET);
   const version = manifest ? Number(rawCellValue(manifest.getCell("B1"))) : NaN;
-  if (!SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4)) {
+  if (!SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5)) {
     throw new Error(
       `Unsupported or missing LFMS Excel data format version. Supported versions: ${SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.join(", ")}.`
     );
@@ -340,6 +361,10 @@ export function readCanonicalWorkbook(
   for (const spec of CANONICAL_TABLES) {
     const sheet = workbook.getWorksheet(spec.sheetName);
     if (!sheet) {
+      if (isLegacyMissingTableAllowed(version, spec.key)) {
+        result.set(spec.key, []);
+        continue;
+      }
       errors.push(`Missing required canonical sheet: ${spec.sheetName}`);
       continue;
     }
@@ -412,6 +437,10 @@ export function validateCanonicalDataObject(
   for (const spec of CANONICAL_TABLES) {
     const rawRows = source[spec.key];
     if (!Array.isArray(rawRows)) {
+      if (isLegacyMissingTableAllowed(sourceVersion, spec.key)) {
+        result.set(spec.key, []);
+        continue;
+      }
       errors.push(`Missing required table array: ${spec.key}`);
       continue;
     }

@@ -13,6 +13,7 @@ import { exportRouter } from "./routers/export";
 import { importRouter } from "./routers/import";
 import { backupRouter } from "./routers/backup";
 import { vaccinationRouter } from "./routers/vaccination";
+import { pregnancyRouter } from "./routers/pregnancy";
 import { permissionsRouter } from "./routers/permissions";
 
 export const appRouter = router({
@@ -42,6 +43,7 @@ export const appRouter = router({
   import: importRouter,
   backup: backupRouter,
   vaccination: vaccinationRouter,
+  pregnancy: pregnancyRouter,
   permissions: permissionsRouter,
 });
 

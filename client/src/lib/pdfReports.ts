@@ -146,8 +146,9 @@ export function generateFarmSummaryPdf(opts: {
   pnlData: any[];
   currency: string;
   farmName?: string;
+  ownerName?: string | null;
 }) {
-  const { fromDate, toDate, kpis, pnlData, currency, farmName } = opts;
+  const { fromDate, toDate, kpis, pnlData, currency, farmName, ownerName } = opts;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const margin = 40;
   let y = margin;
@@ -158,8 +159,14 @@ export function generateFarmSummaryPdf(opts: {
   y += 22;
   doc.setFontSize(13);
   doc.setTextColor(0);
-  doc.text(`Farm Summary: ${fromDate} → ${toDate}`, margin, y);
+  doc.text(`${ownerName ? `Owner Report (${ownerName})` : "Farm Summary"}: ${fromDate} → ${toDate}`, margin, y);
   y += 18;
+  if (ownerName) {
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text("Scoped to this owner — farm-wide overhead and bulk feed purchases excluded.", margin, y);
+    y += 14;
+  }
   doc.setFontSize(9);
   doc.setTextColor(120);
   doc.text(`Generated: ${new Date().toLocaleString()}`, margin, y);

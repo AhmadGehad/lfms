@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { startLowStockScheduler } from "../lowStockCheck";
 import { startVaccineScheduler } from "../vaccineCheck";
+import { startPregnancyScheduler } from "../pregnancyCheck";
 import { ENV } from "./env";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -70,6 +71,7 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
     startLowStockScheduler();
     startVaccineScheduler();
+    startPregnancyScheduler();
   });
 }
 

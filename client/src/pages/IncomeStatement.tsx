@@ -11,6 +11,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 
 export default function IncomeStatement() {
   const { t } = useTranslation();
@@ -18,13 +19,17 @@ export default function IncomeStatement() {
   const now = new Date();
   const [fromDate, setFromDate] = useState(new Date(now.getFullYear(), 0, 1).toISOString().split("T")[0]);
   const [toDate, setToDate] = useState(now.toISOString().split("T")[0]);
-  const [filterOwner, setFilterOwner] = useState("all");
+  // Owner scope comes from the global header filter so it stays consistent
+  // across pages. `filterOwner` keeps the legacy "all" | id-string shape used
+  // by the export label helpers below.
+  const { ownerParam } = useOwnerFilter();
+  const filterOwner = ownerParam == null ? "all" : String(ownerParam);
 
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
   const { data: statement, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({
     fromDate,
     toDate,
-    ownerId: filterOwner !== "all" ? Number(filterOwner) : undefined,
+    ownerId: ownerParam,
   });
 
   const fmt = (v: number) =>
@@ -246,18 +251,14 @@ export default function IncomeStatement() {
           <Label>{t("incomeStatement.toDate")}</Label>
           <Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="w-36" />
         </div>
-        <div className="space-y-1.5">
-          <Label>{t("owners.owner")}</Label>
-          <Select value={filterOwner} onValueChange={setFilterOwner}>
-            <SelectTrigger className="w-44"><SelectValue placeholder={t("owners.allOwners")} /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("owners.allOwners")}</SelectItem>
-              {(ownersList ?? []).map((o: any) => (
-                <SelectItem key={o.id} value={String(o.id)}>{o.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {filterOwner !== "all" && (
+          <div className="space-y-1.5">
+            <Label>{t("owners.owner")}</Label>
+            <div className="h-9 flex items-center px-3 rounded-md border border-primary text-primary text-sm font-medium">
+              {(ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? t("owners.owner")}
+            </div>
+          </div>
+        )}
       </div>
 
       <Card className="w-full max-w-2xl print:shadow-none print:border-0">

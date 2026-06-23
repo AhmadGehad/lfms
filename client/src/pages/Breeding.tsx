@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { Controller, useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
 import { extractAnimalIdNumber } from "@shared/animalIds";
 
@@ -575,9 +576,11 @@ export default function Breeding() {
   const [lambingFilter, setLambingFilter] = useState<LambingFilter>(
     () => focusedRecordId ? "all" : "pending",
   );
-  const listInput = lambingFilter === "all"
-    ? undefined
-    : { isPromoted: lambingFilter === "promoted" };
+  const { ownerParam } = useOwnerFilter();
+  const listInput = {
+    ...(lambingFilter === "all" ? {} : { isPromoted: lambingFilter === "promoted" }),
+    ownerId: ownerParam,
+  };
   const { data: lambingLog, isLoading } = trpc.breeding.listLambing.useQuery(listInput);
   const { data: lambingSummary } = trpc.breeding.summary.useQuery();
   const utils = trpc.useUtils();

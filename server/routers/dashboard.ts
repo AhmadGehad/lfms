@@ -34,6 +34,7 @@ export const dashboardRouter = router({
         speciesId: z.number().optional(),
         categoryId: z.number().optional(),
         groupId: z.number().optional(),
+        ownerId: z.number().optional(),
       }).optional()
     )
     .query(({ input }) => getDashboardKPIs(input ?? {})),
@@ -63,10 +64,11 @@ export const dashboardRouter = router({
         speciesId: z.number().optional(),
         categoryId: z.number().optional(),
         groupId: z.number().optional(),
+        ownerId: z.number().optional(),
       })
     )
     .query(async ({ input }) => {
-      const expenses = await getExpenses({ fromDate: input.fromDate, toDate: input.toDate });
+      const expenses = await getExpenses({ fromDate: input.fromDate, toDate: input.toDate, ownerId: input.ownerId });
       // Group by month
       const byMonth: Record<string, number> = {};
       for (const e of expenses) {
@@ -80,9 +82,9 @@ export const dashboardRouter = router({
 
   // ─── SALES TREND ────────────────────────────────────────────────────────────
   getSalesTrend: permissionProcedure("dashboard", "view")
-    .input(z.object({ fromDate: z.string(), toDate: z.string() }))
+    .input(z.object({ fromDate: z.string(), toDate: z.string(), ownerId: z.number().optional() }))
     .query(async ({ input }) => {
-      const salesData = await getSales({ fromDate: input.fromDate, toDate: input.toDate });
+      const salesData = await getSales({ fromDate: input.fromDate, toDate: input.toDate, ownerId: input.ownerId });
       const byMonth: Record<string, { revenue: number; count: number }> = {};
       for (const s of salesData) {
         const month = String(s.sale.saleDate).substring(0, 7);
@@ -96,8 +98,10 @@ export const dashboardRouter = router({
     }),
 
   // ─── HEAD COUNT HISTORY ─────────────────────────────────────────────────────
-  getHeadCountByCategory: permissionProcedure("dashboard", "view").query(async () => {
-    const animals = await getAnimals({ isActive: true });
+  getHeadCountByCategory: permissionProcedure("dashboard", "view")
+    .input(z.object({ ownerId: z.number().optional() }).optional())
+    .query(async ({ input }) => {
+    const animals = await getAnimals({ isActive: true, ownerId: input?.ownerId });
     const byCategory: Record<string, number> = {};
     for (const a of animals) {
       const key = a.categoryName ?? "Unknown";

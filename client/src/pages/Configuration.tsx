@@ -46,10 +46,11 @@ function SpeciesTab() {
   const [editItem, setEditItem] = useState<any>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [gestationDays, setGestationDays] = useState("150");
   const utils = trpc.useUtils();
 
   const create = trpc.config.createSpecies.useMutation({
-    onSuccess: () => { toast.success(`${t("config.species")} ${t("common.created")}`); utils.config.getSpecies.invalidate(); setOpen(false); setName(""); setDescription(""); },
+    onSuccess: () => { toast.success(`${t("config.species")} ${t("common.created")}`); utils.config.getSpecies.invalidate(); setOpen(false); setName(""); setDescription(""); setGestationDays("150"); },
     onError: (e: any) => toast.error(e.message),
   });
   const update = trpc.config.updateSpecies.useMutation({
@@ -72,10 +73,11 @@ function SpeciesTab() {
             <div className="space-y-4">
               <div className="space-y-1.5"><Label>Name *</Label><Input placeholder="e.g. Sheep" value={name} onChange={(e) => setName(e.target.value)} /></div>
               <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input placeholder={t("common.none")} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+              <div className="space-y-1.5"><Label>{t("pregnancy.gestationDays")}</Label><Input type="number" min={1} placeholder="e.g. 147 sheep · 150 goat · 283 cattle" value={gestationDays} onChange={(e) => setGestationDays(e.target.value)} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-              <Button onClick={() => create.mutate({ name, description: description || undefined })} disabled={!name || create.isPending}>{t("common.save")}</Button>
+              <Button onClick={() => create.mutate({ name, description: description || undefined, gestationDays: gestationDays ? Number(gestationDays) : undefined })} disabled={!name || create.isPending}>{t("common.save")}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -83,9 +85,10 @@ function SpeciesTab() {
 
       {editItem && (
         <EditDialog title={t("config.editSpecies")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description })}>
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description, gestationDays: editItem.gestationDays != null ? Number(editItem.gestationDays) : undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
+          <div className="space-y-1.5"><Label>{t("pregnancy.gestationDays")}</Label><Input type="number" min={1} value={editItem.gestationDays ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, gestationDays: e.target.value }))} /></div>
         </EditDialog>
       )}
 

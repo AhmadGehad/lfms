@@ -32,6 +32,7 @@ const REFERENCE_VIEW_PERMISSIONS = [
   ["dashboard", "view"],
   ["animals", "view"],
   ["breeding", "view"],
+  ["pregnancy", "view"],
   ["fattening", "view"],
   ["feed", "view"],
   ["vaccinations", "view"],
@@ -44,6 +45,7 @@ const REFERENCE_VIEW_PERMISSIONS = [
 ] as const;
 const OWNER_VIEW_PERMISSIONS = [
   ["animals", "view"],
+  ["pregnancy", "view"],
   ["expenses", "view"],
   ["pnl", "view"],
   ["incomeStatement", "view"],
@@ -77,7 +79,7 @@ export const configRouter = router({
   getSpecies: anyPermissionProcedure(REFERENCE_VIEW_PERMISSIONS).query(() => getAllSpecies()),
 
   createSpecies: permissionProcedure("configuration", "create")
-    .input(z.object({ name: z.string().min(1), description: z.string().optional() }))
+    .input(z.object({ name: z.string().min(1), description: z.string().optional(), gestationDays: z.number().int().min(1).max(1000).optional() }))
     .mutation(async ({ input, ctx }) => {
       const result = await createSpecies(input);
       await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String((result as any).insertId), action: "create", newValues: input, ipAddress: getClientIp(ctx) });
@@ -85,7 +87,7 @@ export const configRouter = router({
     }),
 
   updateSpecies: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional(), gestationDays: z.number().int().min(1).max(1000).optional() }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
       const result = await updateSpecies(id, data);
       await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
