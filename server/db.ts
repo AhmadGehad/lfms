@@ -1556,7 +1556,8 @@ export async function deleteExpense(id: number, deletedBy?: number) {
 /** Expected delivery date = confirmation date + gestation days. Pure. */
 export function calculatePregnancyDueDate(confirmationDate: string, gestationDays: number): string {
   const date = new Date(confirmationDate);
-  date.setDate(date.getDate() + gestationDays);
+  // Confirmation date is day 0, so add gestationDays + 1 for the due date
+  date.setDate(date.getDate() + gestationDays + 1);
   return date.toISOString().split("T")[0];
 }
 
