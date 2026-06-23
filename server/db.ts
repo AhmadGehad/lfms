@@ -877,6 +877,20 @@ export async function createAnimal(data: typeof animals.$inferInsert, tx?: DbOrT
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   const [result] = await db.insert(animals).values(data);
+  // Mirror the acquisition weight into the weight history so it appears in the
+  // weight log / charts and feeds the latest-weight logic, instead of living
+  // only on the animal row.
+  const newId = (result as any)?.insertId;
+  const acqWeight = data.weightAtAcquisition != null ? parseFloat(String(data.weightAtAcquisition)) : 0;
+  if (newId && acqWeight > 0 && data.acquisitionDate) {
+    await db.insert(weightLog).values({
+      animalId: Number(newId),
+      weighDate: data.acquisitionDate as any,
+      weightKg: String(data.weightAtAcquisition),
+      notes: "Acquisition weight",
+      createdBy: data.createdBy ?? null,
+    });
+  }
   return result;
 }
 

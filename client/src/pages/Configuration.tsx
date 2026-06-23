@@ -85,7 +85,7 @@ function SpeciesTab() {
 
       {editItem && (
         <EditDialog title={t("config.editSpecies")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description, gestationDays: editItem.gestationDays != null ? Number(editItem.gestationDays) : undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined, gestationDays: (editItem.gestationDays != null && editItem.gestationDays !== "") ? Number(editItem.gestationDays) : undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("pregnancy.gestationDays")}</Label><Input type="number" min={1} value={editItem.gestationDays ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, gestationDays: e.target.value }))} /></div>
