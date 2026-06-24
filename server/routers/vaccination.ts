@@ -4,7 +4,7 @@ import { getClientIp } from "../_core/audit";
 import {
   getVaccinationRecords, addVaccinationRecord, updateVaccinationRecord, deleteVaccinationRecord,
   getUpcomingVaccinations, getVaccinationCompliance, getVaccinationStatus,
-  createAuditEntry, getAnimalById, getDb,
+  createAuditEntry, getAnimalById, getDb, captureChangedOldValues,
 } from "../db";
 import { createNotification } from "../db";
 import { notifyOwner } from "../_core/notification";
@@ -67,8 +67,9 @@ export const vaccinationRouter = router({
       isCompleted: z.boolean().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const oldValues = await captureChangedOldValues("vaccinationRecord", id, data);
       await updateVaccinationRecord(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String(id), action: "update", newValues: data, ipAddress: getClientIp(ctx) });
+      await createAuditEntry({ userId: ctx.user.id, entityType: "vaccinationRecord", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return { id };
     }),
 

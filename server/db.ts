@@ -1855,6 +1855,52 @@ export async function createAuditEntry(data: typeof auditLog.$inferInsert, tx?: 
   await db.insert(auditLog).values(data);
 }
 
+// entityType (as written to the audit log) → table, for capturing the
+// prior values an action overwrote so it can be reverted. Mirrors the
+// registry in server/revert.ts.
+const AUDIT_TABLES: Record<string, any> = {
+  species, category: animalCategories, status: animalStatuses, group: groups,
+  birthType: birthTypes, feedItem: feedItems, expenseCategory: expenseCategories,
+  expenseSubCategory: expenseSubCategories, owner: owners, vaccine: vaccines,
+  vaccinationRecord: vaccinationRecords, rationPlan: rationPlans,
+  feedStock: feedStockLedger, feedItemPrice: feedItemPriceHistory,
+  expense: expenses, sale: sales, weightLog: weightLog,
+  pregnancyRecord: pregnancyRecords, lambingLog: lambingLog, animal: animals,
+};
+
+/** Prior values of exactly the fields being changed, for a revertable update.
+ * Best-effort: never throws — capturing audit context must not break the
+ * mutation it accompanies. */
+export async function captureChangedOldValues(entityType: string, id: number, data: Record<string, unknown>) {
+  try {
+    const table = AUDIT_TABLES[entityType];
+    if (!table) return undefined;
+    const db = await getDb();
+    if (!db) return undefined;
+    const [row] = await db.select().from(table).where(eq(table.id, id)).limit(1);
+    if (!row) return undefined;
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(data)) if (k in (row as any)) out[k] = (row as any)[k];
+    return out;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Full row snapshot, for re-inserting after a hard delete. Best-effort. */
+export async function captureRowSnapshot(entityType: string, id: number) {
+  try {
+    const table = AUDIT_TABLES[entityType];
+    if (!table) return undefined;
+    const db = await getDb();
+    if (!db) return undefined;
+    const [row] = await db.select().from(table).where(eq(table.id, id)).limit(1);
+    return row ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getAuditLog(entityType?: string, entityId?: string) {
   const db = await getDb();
   if (!db) return [];

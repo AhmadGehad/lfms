@@ -662,8 +662,9 @@ export const animalsRouter = router({
             notes: input.exitReason,
           }, tx);
 
+          let bulkSaleId: number | undefined;
           if (p.salePrice) {
-            await createSale({
+            const saleResult = await createSale({
               animalId: p.id,
               saleDate: input.exitDate as any,
               salePrice: p.salePrice,
@@ -676,6 +677,7 @@ export const animalsRouter = router({
               notes: input.saleNotes,
               createdBy: ctx.user?.id,
             }, tx);
+            bulkSaleId = (saleResult as any)?.insertId;
           }
 
           await createAuditEntry({
@@ -684,12 +686,14 @@ export const animalsRouter = router({
             ipAddress: getClientIp(ctx),
             entityType: "animal",
             entityId: String(p.id),
+            oldValues: { isActive: true, statusId: p.existing.animal.statusId, exitDate: null, exitReason: null } as any,
             newValues: {
               bulkExit: true,
               exitDate: input.exitDate,
               exitReason: input.exitReason,
               salePrice: p.salePrice,
               amountPaid: p.amountPaid,
+              saleId: bulkSaleId,
             } as any,
           }, tx);
         }
@@ -878,15 +882,6 @@ export const animalsRouter = router({
             createdBy: ctx.user?.id,
           }, tx);
 
-          await createAuditEntry({
-            userId: ctx.user?.id,
-            action: "create",
-            ipAddress: getClientIp(ctx),
-            entityType: "weightLog",
-            entityId: String((created as any).insertId),
-            newValues: input as any,
-          }, tx);
-
           const staged = canAutoStage
             ? await checkAndStageAnimal(
                 input.animalId,
@@ -895,6 +890,23 @@ export const animalsRouter = router({
                 tx,
               )
             : { staged: false };
+
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "create",
+            ipAddress: getClientIp(ctx),
+            entityType: "weightLog",
+            entityId: String((created as any).insertId),
+            // When this weight auto-stages the animal to a new category, record the
+            // prior category/code so the revert can undo the stage as well.
+            newValues: {
+              ...input,
+              ...(staged.staged
+                ? { autoStage: { animalId: input.animalId, previousCategoryId: lockedAnimal.categoryId, previousAnimalCode: lockedAnimal.animalId } }
+                : {}),
+            } as any,
+          }, tx);
+
           return { result: created, stageResult: staged };
         }));
       } catch (error) {

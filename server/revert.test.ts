@@ -54,6 +54,16 @@ describe("getRevertPlan", () => {
     expect(getRevertPlan(entry({ entityType: "lambing_log", action: "create" }))).toEqual({ revertable: true, kind: "record_birth" });
   });
 
+  it("covers the entities added for full coverage (vaccine, sub-category, setting, weight)", () => {
+    expect(getRevertPlan(entry({ entityType: "vaccine", action: "create" }))).toEqual({ revertable: true, kind: "soft_create" });
+    expect(getRevertPlan(entry({ entityType: "expenseSubCategory", action: "create" }))).toEqual({ revertable: true, kind: "hard_create" });
+    expect(getRevertPlan(entry({ entityType: "weightLog", action: "create" }))).toEqual({ revertable: true, kind: "weight_create" });
+    expect(getRevertPlan(entry({ entityType: "setting", action: "update", entityId: "farmMapImageKey", oldValues: { settingValue: "x" } })))
+      .toEqual({ revertable: true, kind: "setting_update" });
+    expect(getRevertPlan(entry({ entityType: "setting", action: "update", oldValues: null })))
+      .toEqual({ revertable: false, reason: "no_old_values" });
+  });
+
   it("hard-deleted entities need a snapshot to revert a delete", () => {
     expect(getRevertPlan(entry({ entityType: "feedItemPrice", action: "delete", oldValues: { feedItemId: 1, pricePerUnit: "2" } })))
       .toEqual({ revertable: true, kind: "hard_delete" });

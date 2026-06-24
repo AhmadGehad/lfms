@@ -158,6 +158,8 @@ vi.mock("./db", () => ({
   }),
   createSale: vi.fn().mockResolvedValue({ id: 1, animalId: 1, salePrice: "1200.00" }),
   createAuditEntry: vi.fn().mockResolvedValue(undefined),
+  captureChangedOldValues: vi.fn().mockResolvedValue(undefined),
+  captureRowSnapshot: vi.fn().mockResolvedValue(undefined),
   createNotification: vi.fn().mockResolvedValue({ id: 1, title: "Test", message: "Test msg" }),
   incrementCategorySequence: vi.fn().mockResolvedValue(1),
   incrementCategoryLambSequence: vi.fn().mockResolvedValue(1),

@@ -32,6 +32,10 @@ import {
   expenseCategories,
   owners,
   feedItemPriceHistory,
+  expenseSubCategories,
+  vaccines,
+  systemSettings,
+  animalStatusHistory,
   users,
   type AuditLog,
 } from "../drizzle/schema";
@@ -59,17 +63,22 @@ const SOFT_TABLES: Record<string, any> = {
   feedItem: feedItems,
   expenseCategory: expenseCategories,
   owner: owners,
+  vaccine: vaccines,
 };
 
 // Entities whose soft-delete also flips isActive (so revert must flip it back).
 const ACTIVE_TOGGLE = new Set([
   "species", "category", "group", "status", "birthType", "feedItem",
-  "expenseCategory", "rationPlan",
+  "expenseCategory", "rationPlan", "vaccine",
 ]);
+
+// Entities whose soft-delete also flips isActive (so revert must flip it back).
+// (vaccine added below joins the toggle set.)
 
 // Hard-deleted entities (no deletedAt) — create-revert hard-deletes, delete-revert re-inserts.
 const HARD_TABLES: Record<string, any> = {
   feedItemPrice: feedItemPriceHistory,
+  expenseSubCategory: expenseSubCategories,
 };
 
 // Update-only entities (no delete path) — only their update is revertable.
@@ -108,11 +117,15 @@ export function getRevertPlan(entry: AuditLog): RevertPlan {
   const hard = HARD_TABLES[entry.entityType];
   const updateOnly = UPDATE_ONLY[entry.entityType];
 
-  // Compound actions first.
+  // Compound / special actions first.
   if (entry.entityType === "animal" && action === "exit") return { revertable: true, kind: "animal_exit" };
   if (entry.entityType === "animal" && action === "promote") return { revertable: true, kind: "animal_promote" };
   if ((entry.entityType === "lambing_log" || entry.entityType === "lambingLog") && action === "create") {
     return { revertable: true, kind: "record_birth" };
+  }
+  if (entry.entityType === "weightLog" && action === "create") return { revertable: true, kind: "weight_create" };
+  if (entry.entityType === "setting" && action === "update") {
+    return hasOldValues(entry) ? { revertable: true, kind: "setting_update" } : { revertable: false, reason: "no_old_values" };
   }
 
   if (soft) {
@@ -248,6 +261,8 @@ async function applyRevert(tx: DbOrTx, entry: AuditLog, kind: string, userId: nu
     case "animal_exit": return animalExitRevert(tx, entry);
     case "animal_promote": return animalPromoteRevert(tx, entry);
     case "record_birth": return recordBirthRevert(tx, entry);
+    case "weight_create": return weightCreateRevert(tx, entry);
+    case "setting_update": return settingUpdateRevert(tx, entry);
     default: throw new TRPCError({ code: "BAD_REQUEST", message: "This action can't be reverted." });
   }
 }
@@ -404,4 +419,38 @@ async function recordBirthRevert(tx: DbOrTx, entry: AuditLog) {
       .set({ status: "active", outcomeLambingLogId: null, completedDate: null })
       .where(eq(pregnancyRecords.id, Number(nv.closedPregnancyId)));
   }
+}
+
+// weight create → soft-delete the entry; if it auto-staged the animal to a new
+// category, restore the animal's previous category/status/code and drop the
+// status-history row that the auto-stage added.
+async function weightCreateRevert(tx: DbOrTx, entry: AuditLog) {
+  const id = resolveRowId(entry);
+  if (id == null) throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot resolve the weight entry." });
+  const row = await requireRow(tx, weightLog, id);
+  if ((row as any).deletedAt) throw new TRPCError({ code: "CONFLICT", message: "Weight entry already deleted." });
+  await tx.update(weightLog).set({ deletedAt: new Date() }).where(eq(weightLog.id, id));
+
+  const auto = (entry.newValues as any)?.autoStage;
+  if (auto && auto.animalId != null) {
+    const set: any = { updatedAt: new Date() };
+    if (auto.previousCategoryId != null) set.categoryId = Number(auto.previousCategoryId);
+    if (auto.previousStatusId != null) set.statusId = Number(auto.previousStatusId);
+    if (auto.previousAnimalCode != null) set.animalId = auto.previousAnimalCode;
+    await tx.update(animals).set(set).where(eq(animals.id, Number(auto.animalId)));
+    if (auto.statusHistoryId != null) {
+      await tx.delete(animalStatusHistory).where(eq(animalStatusHistory.id, Number(auto.statusHistoryId)));
+    }
+  }
+}
+
+// setting update → restore the previous value, keyed by settingKey (entityId).
+async function settingUpdateRevert(tx: DbOrTx, entry: AuditLog) {
+  const key = entry.entityId;
+  const ov = (entry.oldValues ?? {}) as any;
+  const prior = ov.settingValue ?? ov.value;
+  if (!key || prior === undefined) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot revert this setting — previous value not recorded." });
+  }
+  await tx.update(systemSettings).set({ settingValue: String(prior) }).where(eq(systemSettings.settingKey, key));
 }

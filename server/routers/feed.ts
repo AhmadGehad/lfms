@@ -4,6 +4,7 @@ import { anyPermissionProcedure, permissionProcedure, router } from "../_core/tr
 import { qtyString, rationRateString, optionalMoneyString, isoDate } from "../_core/validators";
 import {
   createAuditEntry,
+  captureChangedOldValues,
   createFeedStockEntry,
   createNotification,
   createRationPlan,
@@ -65,6 +66,7 @@ export const feedRouter = router({
       })
     )
     .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const oldValues = await captureChangedOldValues("rationPlan", id, data);
       const result = await updateRationPlan(id, {
         ...data,
         effectiveDate: data.effectiveDate as any,
@@ -76,6 +78,7 @@ export const feedRouter = router({
         ipAddress: getClientIp(ctx),
         entityType: "rationPlan",
         entityId: String(id),
+        oldValues: oldValues as any,
         newValues: data as any,
       });
       return result;
@@ -185,6 +188,7 @@ export const feedRouter = router({
       })
     )
     .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const oldValues = await captureChangedOldValues("feedStock", id, data);
       const result = await updateFeedStockEntry(id, data);
       await createAuditEntry({
         userId: ctx.user?.id,
@@ -192,6 +196,7 @@ export const feedRouter = router({
         ipAddress: getClientIp(ctx),
         entityType: "feedStock",
         entityId: String(id),
+        oldValues: oldValues as any,
         newValues: data as any,
       });
       return result;
