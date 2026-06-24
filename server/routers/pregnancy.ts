@@ -4,6 +4,7 @@ import { getClientIp } from "../_core/audit";
 import {
   getPregnancies,
   getActivePregnancyByAnimal,
+  getPregnancyRecordById,
   getReproductiveHistory,
   getPregnancySummary,
   getUpcomingPregnancyDueDates,
@@ -122,12 +123,15 @@ export const pregnancyRouter = router({
       }),
     )
     .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const before = await getPregnancyRecordById(id);
       await updatePregnancyRecord(id, data);
       await createAuditEntry({
         userId: ctx.user.id,
         entityType: "pregnancyRecord",
         entityId: String(id),
         action: "update",
+        // Prior values of the changed fields, so the action can be reverted.
+        oldValues: before ? Object.fromEntries(Object.keys(data).map((k) => [k, (before as any)[k]])) as any : undefined,
         newValues: data as any,
         ipAddress: getClientIp(ctx),
       });

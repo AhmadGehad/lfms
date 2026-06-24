@@ -444,6 +444,11 @@ export const auditLog = mysqlTable("audit_log", {
   newValues: json("newValues"),
   ipAddress: varchar("ipAddress", { length: 45 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  // Revert tracking: when this action was undone, by whom, and (on a "revert"
+  // entry) which original audit row it undoes.
+  revertedAt: timestamp("revertedAt"),
+  revertedByUserId: int("revertedByUserId"),
+  revertOfAuditId: int("revertOfAuditId"),
 });
 
 // ─── TYPE EXPORTS ─────────────────────────────────────────────────────────────

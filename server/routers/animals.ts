@@ -266,7 +266,8 @@ export const animalsRouter = router({
             ipAddress: getClientIp(ctx),
             entityType: "animal",
             entityId: animalId,
-            newValues: { ...input, animalId } as any,
+            // animalDbId is the numeric row id the revert engine soft-deletes.
+            newValues: { ...input, animalId, animalDbId: (result as any).insertId } as any,
           }, tx);
 
           return { ...result, animalId };
@@ -536,8 +537,9 @@ export const animalsRouter = router({
           notes: input.exitReason,
         }, tx);
 
+        let saleId: number | undefined;
         if (input.salePrice) {
-          await createSale({
+          const saleResult = await createSale({
             animalId: input.id,
             saleDate: input.exitDate as any,
             salePrice: input.salePrice,
@@ -550,6 +552,7 @@ export const animalsRouter = router({
             notes: input.saleNotes,
             createdBy: ctx.user?.id,
           }, tx);
+          saleId = (saleResult as any)?.insertId;
         }
 
         await createAuditEntry({
@@ -558,7 +561,9 @@ export const animalsRouter = router({
           ipAddress: getClientIp(ctx),
           entityType: "animal",
           entityId: String(input.id),
-          newValues: { exitDate: input.exitDate, exitReason: input.exitReason } as any,
+          // Prior state so the revert can reactivate the animal exactly.
+          oldValues: { isActive: true, statusId: existing.animal.statusId, exitDate: null, exitReason: null } as any,
+          newValues: { exitDate: input.exitDate, exitReason: input.exitReason, saleId } as any,
         }, tx);
       });
 

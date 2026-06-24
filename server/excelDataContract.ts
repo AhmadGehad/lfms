@@ -29,8 +29,8 @@ import {
   weightLog,
 } from "../drizzle/schema";
 
-export const EXCEL_DATA_FORMAT_VERSION = 5;
-export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5] as const;
+export const EXCEL_DATA_FORMAT_VERSION = 6;
+export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5, 6] as const;
 export const EXCEL_MANIFEST_SHEET = "LFMS Manifest";
 const VERSION_3_MISSING_COLUMNS = new Set([
   "animal_categories.lambIdSequence",
@@ -48,6 +48,12 @@ const VERSION_4_MISSING_COLUMNS = new Set([
 ]);
 // Whole tables introduced in v5 — their sheet/array may be absent in v3/v4 files.
 const NEW_IN_VERSION_5_TABLES = new Set(["pregnancy_records"]);
+// Columns introduced in v6 — tolerated as missing when importing a pre-v6 file.
+const VERSION_5_MISSING_COLUMNS = new Set([
+  "audit_log.revertedAt",
+  "audit_log.revertedByUserId",
+  "audit_log.revertOfAuditId",
+]);
 
 export type CanonicalTableSpec = {
   key: string;
@@ -144,6 +150,8 @@ function isLegacyMissingColumnAllowed(
   // Anything new in v5 (a new column, or any column of a new table) is allowed
   // to be missing when importing a pre-v5 (v3/v4) file.
   if (version <= 4 && (VERSION_4_MISSING_COLUMNS.has(`${tableKey}.${columnName}`) || NEW_IN_VERSION_5_TABLES.has(tableKey))) return true;
+  // Columns new in v6, missing in any pre-v6 file.
+  if (version <= 5 && VERSION_5_MISSING_COLUMNS.has(`${tableKey}.${columnName}`)) return true;
   return false;
 }
 
@@ -341,7 +349,7 @@ export function isCanonicalWorkbook(workbook: ExcelJS.Workbook): boolean {
   const version = manifest
     ? Number(rawCellValue(manifest.getCell("B1")))
     : NaN;
-  return SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5);
+  return SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5 | 6);
 }
 
 export function readCanonicalWorkbook(
@@ -349,7 +357,7 @@ export function readCanonicalWorkbook(
 ): CanonicalWorkbookData {
   const manifest = workbook.getWorksheet(EXCEL_MANIFEST_SHEET);
   const version = manifest ? Number(rawCellValue(manifest.getCell("B1"))) : NaN;
-  if (!SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5)) {
+  if (!SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5 | 6)) {
     throw new Error(
       `Unsupported or missing LFMS Excel data format version. Supported versions: ${SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.join(", ")}.`
     );

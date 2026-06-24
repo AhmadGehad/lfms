@@ -1,11 +1,18 @@
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
-import { ClipboardList, Search } from "lucide-react";
+import { usePermissions } from "@/hooks/usePermissions";
+import { ClipboardList, Search, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
 const ACTION_COLORS: Record<string, string> = {
@@ -19,7 +26,18 @@ const ACTION_COLORS: Record<string, string> = {
 
 export default function AuditLog() {
   const { t } = useTranslation();
+  const { role } = usePermissions();
+  const canRevert = role === "admin" || role === "owner";
   const { data: entries, isLoading } = trpc.audit.list.useQuery();
+  const utils = trpc.useUtils();
+  const revert = trpc.audit.revert.useMutation({
+    onSuccess: () => {
+      toast.success(t("audit.reverted"));
+      // Refresh the log and every data view the revert may have touched.
+      utils.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
   const [entityFilter, setEntityFilter] = useState("all");
@@ -98,14 +116,15 @@ export default function AuditLog() {
                   <TableHead>{t("audit.user")}</TableHead>
                   <TableHead>{t("audit.changes") ?? "Changes"}</TableHead>
                   <TableHead>{t("audit.ipAddress") ?? "IP"}</TableHead>
+                  {canRevert && <TableHead className="text-right">{t("audit.revertColumn")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8">{t("common.loading")}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={canRevert ? 8 : 7} className="text-center py-8">{t("common.loading")}</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-12 text-muted-foreground">
+                    <TableCell colSpan={canRevert ? 8 : 7} className="text-center py-12 text-muted-foreground">
                       {(entries ?? []).length === 0 ? t("audit.noEntries") : t("audit.noMatch")}
                     </TableCell>
                   </TableRow>
@@ -136,6 +155,37 @@ export default function AuditLog() {
                         ) : (e.notes ?? "—")}
                       </TableCell>
                       <TableCell className="font-mono text-xs text-muted-foreground">{e.ipAddress ?? "—"}</TableCell>
+                      {canRevert && (
+                        <TableCell className="text-right">
+                          {e.revertedAt ? (
+                            <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">{t("audit.revertedBadge")}</Badge>
+                          ) : e.revertable ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="outline" className="h-7 gap-1 text-xs">
+                                  <Undo2 className="h-3.5 w-3.5" />{t("audit.revertColumn")}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t("audit.revertConfirmTitle")}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t("audit.revertConfirmBody", { action: e.action?.replace(/_/g, " "), entity: e.entityType, id: e.entityId })}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => revert.mutate({ auditId: e.id })}>
+                                    {t("audit.revertColumn")}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 )}

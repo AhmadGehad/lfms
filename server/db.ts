@@ -1717,6 +1717,13 @@ export async function getActivePregnancyByAnimal(animalId: number) {
   return rows.find(r => r.record.status === "active") ?? null;
 }
 
+export async function getPregnancyRecordById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(pregnancyRecords).where(eq(pregnancyRecords.id, id)).limit(1);
+  return row ?? null;
+}
+
 /** Close the dam's active pregnancy when a birth/animal is registered against her. */
 export async function closePregnancyOnBirth(damId: number, lambingLogId: number | null, tx?: DbOrTx) {
   const db = tx ?? (await getDb());

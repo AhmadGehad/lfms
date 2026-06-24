@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { lambingLog } from "../../drizzle/schema";
+import { and, eq, isNull } from "drizzle-orm";
+import { lambingLog, pregnancyRecords } from "../../drizzle/schema";
 import { getClientIp } from "../_core/audit";
 import { composeAnimalIdOrThrow, sequenceValueFromAnimalIdNumber } from "../_core/animalIds";
 import { isDuplicateEntryError } from "../_core/databaseErrors";
@@ -167,19 +168,34 @@ export const breedingRouter = router({
             results.push({ ...record, lambId });
           }
 
+          const lambingIds = results.map(r => Number((r as any)?.insertId)).filter(Boolean);
+
+          // Registering a birth against the dam closes her active pregnancy.
+          let closedPregnancyId: number | null = null;
+          if (input.damId) {
+            const [activePreg] = await tx
+              .select({ id: pregnancyRecords.id })
+              .from(pregnancyRecords)
+              .where(and(
+                eq(pregnancyRecords.animalId, input.damId),
+                eq(pregnancyRecords.status, "active"),
+                isNull(pregnancyRecords.deletedAt),
+              ))
+              .limit(1);
+            closedPregnancyId = activePreg?.id ?? null;
+            await closePregnancyOnBirth(input.damId, lambingIds[0] ?? null, tx);
+          }
+
           await createAuditEntry({
             userId: ctx.user?.id,
             action: "create",
             ipAddress: getClientIp(ctx),
             entityType: "lambing_log",
             entityId: results[0]?.lambId ?? "unknown",
-            newValues: input as any,
+            // lambingIds + closedPregnancyId let the revert delete the lambs and
+            // re-open the dam's pregnancy.
+            newValues: { ...input, lambingIds, closedPregnancyId } as any,
           }, tx);
-
-          // Registering a birth against the dam closes her active pregnancy.
-          if (input.damId) {
-            await closePregnancyOnBirth(input.damId, Number((results[0] as any)?.insertId) || null, tx);
-          }
 
           return results;
         });
@@ -372,6 +388,7 @@ export const breedingRouter = router({
             entityId: animalId,
             newValues: {
               lambingLogId: input.lambingLogId,
+              createdAnimalId: insertId,
               animalId,
               categoryId: input.categoryId,
               speciesId: input.speciesId,

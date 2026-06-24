@@ -814,7 +814,12 @@ const en = {
     noEntries: "No audit entries yet.",
     noMatch: "No entries match your filters.",
     ipAddress: "IP Address",
-    entriesCount: "{{count}} entries"
+    entriesCount: "{{count}} entries",
+    revertColumn: "Revert",
+    reverted: "Action reverted",
+    revertedBadge: "Reverted",
+    revertConfirmTitle: "Revert this action?",
+    revertConfirmBody: "This will undo the {{action}} on {{entity}} #{{id}} and restore the previous state. The revert is itself recorded in the audit log."
   },
 
   // Data Management
@@ -1840,7 +1845,12 @@ const ar = {
     noEntries: "لا توجد سجلات تدقيق بعد.",
     noMatch: "لا توجد سجلات مطابقة للمرشحات.",
     ipAddress: "عنوان IP",
-    entriesCount: "{{count}} سجل"
+    entriesCount: "{{count}} سجل",
+    revertColumn: "تراجع",
+    reverted: "تم التراجع عن الإجراء",
+    revertedBadge: "تم التراجع",
+    revertConfirmTitle: "التراجع عن هذا الإجراء؟",
+    revertConfirmBody: "سيؤدي هذا إلى التراجع عن {{action}} على {{entity}} رقم {{id}} واستعادة الحالة السابقة. يتم تسجيل التراجع نفسه في سجل التدقيق."
   },
 
   // Data Management

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { permissionProcedure, privilegedProcedure, router } from "../_core/trpc";
+import { adminProcedure, permissionProcedure, privilegedProcedure, router } from "../_core/trpc";
+import { getRevertPlan, revertAuditEntry } from "../revert";
 import {
   createAuditEntry,
   getDashboardKPIs,
@@ -162,6 +163,7 @@ export const salesRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
+      const before = await getSaleById(id);
       const result = await updateSale(id, data);
       await createAuditEntry({
         userId: ctx.user?.id,
@@ -169,6 +171,8 @@ export const salesRouter = router({
         ipAddress: getClientIp(ctx),
         entityType: "sale",
         entityId: String(id),
+        // Prior values of the changed fields, so the action can be reverted.
+        oldValues: before ? Object.fromEntries(Object.keys(data).map((k) => [k, (before as any)[k]])) as any : undefined,
         newValues: data as any,
       });
       return result;
@@ -210,7 +214,32 @@ export const auditRouter = router({
         entityId: z.string().optional(),
       }).optional()
     )
-    .query(({ input }) => getAuditLog(input?.entityType, input?.entityId)),
+    .query(async ({ input }) => {
+      const rows = await getAuditLog(input?.entityType, input?.entityId);
+      // Newest non-reverted, non-"revert" entry per entity in this window — only
+      // the newest change to a record may be reverted (guarded UI hint).
+      const newestByEntity = new Map<string, number>();
+      for (const r of rows as any[]) {
+        if (r.action === "revert" || r.revertedAt) continue;
+        const key = `${r.entityType}:${r.entityId}`;
+        const cur = newestByEntity.get(key);
+        if (cur == null || r.id > cur) newestByEntity.set(key, r.id);
+      }
+      return (rows as any[]).map((r) => {
+        const plan = getRevertPlan(r);
+        const isNewest = newestByEntity.get(`${r.entityType}:${r.entityId}`) === r.id;
+        return {
+          ...r,
+          revertable: plan.revertable && isNewest,
+          revertReason: plan.revertable ? (isNewest ? null : "not_newest") : (plan as any).reason,
+        };
+      });
+    }),
+
+  // Undo a single audited action. Admin & Owner only; guarded server-side.
+  revert: adminProcedure
+    .input(z.object({ auditId: z.number() }))
+    .mutation(({ input, ctx }) => revertAuditEntry(input.auditId, ctx.user.id)),
 });
 
 export const userManagementRouter = router({
