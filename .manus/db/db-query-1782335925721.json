@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `audit_log` ADD COLUMN `revertedAt` timestamp NULL;\nALTER TABLE `audit_log` ADD COLUMN `revertedByUserId` int NULL;\nALTER TABLE `audit_log` ADD COLUMN `revertOfAuditId` int NULL;\nCREATE INDEX `audit_log_entity_idx` ON `audit_log` (`entityType`, `entityId`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute ALTER TABLE `audit_log` ADD COLUMN `revertedAt` timestamp NULL;\nALTER TABLE `audit_log` ADD COLUMN `revertedByUserId` int NULL;\nALTER TABLE `audit_log` ADD COLUMN `revertOfAuditId` int NULL;\nCREATE INDEX `audit_log_entity_idx` ON `audit_log` (`entityType`, `entityId`);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3222
+}
