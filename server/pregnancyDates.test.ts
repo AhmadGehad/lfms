@@ -24,7 +24,7 @@ describe("pregnancyProgress", () => {
 
     const p = pregnancyProgress(confStr, due, 283, "active");
     expect(p.daysPregnant).toBe(120);
-    expect(p.daysRemaining).toBe(164); // 283 + 1 (inclusive) - 120 = 164
+    expect(p.daysRemaining).toBe(163); // 283 - 120 = 163
     expect(p.progressPct).toBe(42);
     expect(p.displayStatus).toBe("active");
   });
