@@ -121,3 +121,6 @@ client/public/__manus__/version.json
 .config/kilo/
 skills-lock.json
 
+
+graphify-out/
+ux-audit/
