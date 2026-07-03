@@ -16,6 +16,16 @@ import {
   updateRationPlan,
 } from "../db";
 
+function timingHeaderValue(timings: Record<string, number>) {
+  return JSON.stringify(timings);
+}
+
+function serverTimingValue(timings: Record<string, number>) {
+  return Object.entries(timings)
+    .map(([key, value]) => `${key.replace(/[^a-zA-Z0-9_-]/g, "_")};dur=${value}`)
+    .join(", ");
+}
+
 export const feedRouter = router({
   // ─── RATION PLANS ───────────────────────────────────────────────────────────
   getRationPlans: anyPermissionProcedure([
@@ -206,7 +216,24 @@ export const feedRouter = router({
   getStockStatus: anyPermissionProcedure([
     ["feed", "view"],
     ["dashboard", "view"],
-  ]).query(() => getFeedStockStatus()),
+  ]).query(async ({ ctx }) => {
+    const started = Date.now();
+    const timings = ctx.timings ?? {};
+    const stockStatus = await getFeedStockStatus(timings);
+    timings["feed.getStockStatus.routeMs"] = Date.now() - started;
+
+    const timingSnapshot = { ...timings };
+    if (stockStatus[0]) {
+      (stockStatus[0] as any)._debugTimings = timingSnapshot;
+    }
+    if (typeof ctx.res.setHeader === "function") {
+      ctx.res.setHeader("x-lfms-timings", timingHeaderValue(timingSnapshot));
+      ctx.res.setHeader("server-timing", serverTimingValue(timingSnapshot));
+    }
+    console.info("[Timing] feed.getStockStatus", timingSnapshot);
+
+    return stockStatus;
+  }),
 
   getShrinkage: permissionProcedure("feed", "view").query(() => getFeedShrinkage()),
 });

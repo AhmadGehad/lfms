@@ -2754,122 +2754,152 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   };
 }
 
-export async function getFeedStockStatus() {
+export async function getFeedStockStatus(timings?: Record<string, number>) {
+  const started = Date.now();
   const db = await getDb();
   if (!db) return [];
 
-  const [allFeedItems, headCounts] = await Promise.all([
-    db
-      .select({ id: feedItems.id, name: feedItems.name, unit: feedItems.unit })
-      .from(feedItems)
-      .where(isNull(feedItems.deletedAt))
-      .orderBy(feedItems.name),
-    getActiveHeadCountByCategory(),
-  ]);
-  if (allFeedItems.length === 0) return [];
-  const feedItemIds = allFeedItems.map(i => i.id);
   const today = new Date().toISOString().split("T")[0];
 
-  // ── Bulk fetch all data in parallel (5 queries, no waiting on each other) ─
+  type FeedStockStatusRow = {
+    feedItemId: number;
+    feedItemName: string;
+    unit: string;
+    lastCountQty: string | number | null;
+    lastCountDate: string | Date | null;
+    purchasedQty: string | number | null;
+    adjustmentQty: string | number | null;
+    categoryId: number | null;
+    planQty: string | number | null;
+    heads: string | number | null;
+  };
 
-  const [allCounts, allTx, allPlans] = await Promise.all([
-    // 1. Last stock count per feed item (single query, pick latest in JS)
-    db
-      .select({
-        feedItemId: feedStockLedger.feedItemId,
-        qty: feedStockLedger.qty,
-        transactionDate: feedStockLedger.transactionDate,
-      })
-      .from(feedStockLedger)
-      .where(and(
-        inArray(feedStockLedger.feedItemId, feedItemIds),
-        eq(feedStockLedger.transactionType, "stock_count"),
-        isNull(feedStockLedger.deletedAt),
-      ))
-      .orderBy(desc(feedStockLedger.transactionDate)),
+  const queryStarted = Date.now();
+  const [rows] = await db.execute(sql`
+    WITH latest_counts AS (
+      SELECT feedItemId, qty, transactionDate
+      FROM (
+        SELECT
+          feedItemId,
+          qty,
+          transactionDate,
+          ROW_NUMBER() OVER (
+            PARTITION BY feedItemId
+            ORDER BY transactionDate DESC, id DESC
+          ) AS rn
+        FROM feed_stock_ledger
+        WHERE transactionType = 'stock_count'
+          AND deletedAt IS NULL
+      ) ranked_counts
+      WHERE rn = 1
+    ),
+    tx_sums AS (
+      SELECT
+        l.feedItemId,
+        SUM(CASE WHEN l.transactionType = 'purchase' THEN l.qty ELSE 0 END) AS purchasedQty,
+        SUM(CASE WHEN l.transactionType = 'adjustment' THEN l.qty ELSE 0 END) AS adjustmentQty
+      FROM feed_stock_ledger l
+      LEFT JOIN latest_counts lc ON lc.feedItemId = l.feedItemId
+      WHERE l.transactionType IN ('purchase', 'adjustment')
+        AND l.deletedAt IS NULL
+        AND l.transactionDate >= COALESCE(lc.transactionDate, '2020-01-01')
+      GROUP BY l.feedItemId
+    ),
+    head_counts AS (
+      SELECT categoryId, COUNT(*) AS heads
+      FROM animals
+      WHERE isActive = TRUE
+        AND deletedAt IS NULL
+      GROUP BY categoryId
+    )
+    SELECT
+      fi.id AS feedItemId,
+      fi.name AS feedItemName,
+      fi.unit AS unit,
+      lc.qty AS lastCountQty,
+      lc.transactionDate AS lastCountDate,
+      COALESCE(tx.purchasedQty, 0) AS purchasedQty,
+      COALESCE(tx.adjustmentQty, 0) AS adjustmentQty,
+      rp.categoryId AS categoryId,
+      rp.qtyPerHeadPerDay AS planQty,
+      COALESCE(hc.heads, 0) AS heads
+    FROM feed_items fi
+    LEFT JOIN latest_counts lc ON lc.feedItemId = fi.id
+    LEFT JOIN tx_sums tx ON tx.feedItemId = fi.id
+    LEFT JOIN ration_plans rp
+      ON rp.feedItemId = fi.id
+      AND rp.isActive = TRUE
+      AND rp.deletedAt IS NULL
+    LEFT JOIN head_counts hc ON hc.categoryId = rp.categoryId
+    WHERE fi.deletedAt IS NULL
+    ORDER BY fi.name
+  `) as unknown as [FeedStockStatusRow[], unknown];
+  timings && (timings["feedStock.sqlMs"] = Date.now() - queryStarted);
 
-    // 2. All purchases + adjustments (single query, sum in JS grouped by item+type)
-    db
-      .select({
-        feedItemId: feedStockLedger.feedItemId,
-        transactionType: feedStockLedger.transactionType,
-        qty: feedStockLedger.qty,
-        transactionDate: feedStockLedger.transactionDate,
-      })
-      .from(feedStockLedger)
-      .where(and(
-        inArray(feedStockLedger.feedItemId, feedItemIds),
-        inArray(feedStockLedger.transactionType, ["purchase", "adjustment"]),
-        isNull(feedStockLedger.deletedAt),
-      )),
+  const shapeStarted = Date.now();
+  const toDateString = (value: string | Date | null | undefined) => {
+    if (!value) return null;
+    return value instanceof Date
+      ? value.toISOString().split("T")[0]
+      : String(value).split("T")[0];
+  };
 
-    // 3. All active ration plans for these feed items (single query)
-    db
-      .select({
-        feedItemId: rationPlans.feedItemId,
-        qty: rationPlans.qtyPerHeadPerDay,
-        categoryId: rationPlans.categoryId,
-      })
-      .from(rationPlans)
-      .where(and(
-        inArray(rationPlans.feedItemId, feedItemIds),
-        eq(rationPlans.isActive, true),
-        isNull(rationPlans.deletedAt),
-      )),
-  ]);
-
-  // Build last-count map (first occurrence = latest due to ORDER BY)
-  const lastCountByItem = new Map<number, { qty: string; date: string }>();
-  for (const c of allCounts) {
-    if (lastCountByItem.has(c.feedItemId)) continue;
-    const dateStr = c.transactionDate instanceof Date
-      ? c.transactionDate.toISOString().split("T")[0]
-      : String(c.transactionDate).split("T")[0];
-    lastCountByItem.set(c.feedItemId, { qty: String(c.qty), date: dateStr });
-  }
-
-  // ── Compute per item in JS ──────────────────────────────────────────────
-  const result = [];
-
-  for (const item of allFeedItems) {
-    const lastCount = lastCountByItem.get(item.id);
-    const lastCountDateStr = lastCount?.date ?? "2020-01-01";
-    const lastCountQty = parseFloat(lastCount?.qty ?? "0");
-
-    // Sum purchases + adjustments since last count date
-    let purchasedQty = 0;
-    let adjustmentQty = 0;
-    for (const tx of allTx) {
-      if (tx.feedItemId !== item.id) continue;
-      const txDate = tx.transactionDate instanceof Date
-        ? tx.transactionDate.toISOString().split("T")[0]
-        : String(tx.transactionDate).split("T")[0];
-      if (txDate < lastCountDateStr) continue;
-      const qty = parseFloat(String(tx.qty));
-      if (tx.transactionType === "purchase") purchasedQty += qty;
-      else if (tx.transactionType === "adjustment") adjustmentQty += qty;
-    }
-
-    // Daily consumption from ration plans (using fresh head counts)
-    let dailyConsumption = 0;
-    const consumptionByCategory: Array<{
+  const byItem = new Map<number, {
+    feedItemId: number;
+    feedItemName: string;
+    unit: string;
+    lastCountDateStr: string;
+    lastCountQty: number;
+    purchasedQty: number;
+    adjustmentQty: number;
+    dailyConsumption: number;
+    consumptionByCategory: Array<{
       categoryId: number;
       categoryDailyKg: number;
       heads: number;
-    }> = [];
-    for (const plan of allPlans) {
-      if (plan.feedItemId !== item.id) continue;
-      const heads = headCounts[plan.categoryId] ?? 0;
-      const categoryDailyKg = parseFloat(plan.qty) * heads;
-      dailyConsumption += categoryDailyKg;
+    }>;
+  }>();
+
+  for (const row of rows) {
+    let item = byItem.get(row.feedItemId);
+    if (!item) {
+      item = {
+        feedItemId: row.feedItemId,
+        feedItemName: row.feedItemName,
+        unit: row.unit,
+        lastCountDateStr: toDateString(row.lastCountDate) ?? "2020-01-01",
+        lastCountQty: parseFloat(String(row.lastCountQty ?? "0")),
+        purchasedQty: parseFloat(String(row.purchasedQty ?? "0")),
+        adjustmentQty: parseFloat(String(row.adjustmentQty ?? "0")),
+        dailyConsumption: 0,
+        consumptionByCategory: [],
+      };
+      byItem.set(row.feedItemId, item);
+    }
+
+    if (row.categoryId != null) {
+      const heads = Number(row.heads ?? 0);
+      const categoryDailyKg = parseFloat(String(row.planQty ?? "0")) * heads;
+      item.dailyConsumption += categoryDailyKg;
       if (heads > 0) {
-        consumptionByCategory.push({
-          categoryId: plan.categoryId,
+        item.consumptionByCategory.push({
+          categoryId: row.categoryId,
           categoryDailyKg,
-          heads
+          heads,
         });
       }
     }
+  }
+
+  const result = [];
+
+  for (const item of Array.from(byItem.values())) {
+    const lastCountDateStr = item.lastCountDateStr;
+    const lastCountQty = item.lastCountQty;
+    const purchasedQty = item.purchasedQty;
+    const adjustmentQty = item.adjustmentQty;
+    const dailyConsumption = item.dailyConsumption;
+    const consumptionByCategory = item.consumptionByCategory;
 
     // Excel formula: StockToday = LastCountQty + PurchSinceCount + Adjustments - (DailyUse × daysSinceCount)
     const daysSinceCount = Math.max(0, Math.floor((new Date(today).getTime() - new Date(lastCountDateStr).getTime()) / 86400000));
@@ -2880,8 +2910,8 @@ export async function getFeedStockStatus() {
     const runOutDate = dailyConsumption > 0 ? new Date(Date.now() + daysRemaining * 86400000).toISOString().split("T")[0] : null;
 
     result.push({
-      feedItemId: item.id,
-      feedItemName: item.name,
+      feedItemId: item.feedItemId,
+      feedItemName: item.feedItemName,
       unit: item.unit,
       stockOnHand,
       consumedSinceCount: Math.round(consumedSinceCount * 100) / 100,
@@ -2894,6 +2924,9 @@ export async function getFeedStockStatus() {
       status: daysRemaining <= 3 ? "critical" : daysRemaining <= 7 ? "low" : "ok"
     });
   }
+
+  timings && (timings["feedStock.shapeMs"] = Date.now() - shapeStarted);
+  timings && (timings["feedStock.totalMs"] = Date.now() - started);
 
   return result;
 }
