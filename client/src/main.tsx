@@ -50,7 +50,7 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     splitLink({
-      condition: (op) => op.path.startsWith("feed."),
+      condition: (op) => op.path.startsWith("feed.") || op.path === "config.getFeedItems",
       true: httpLink({
         url: "/api/trpc",
         transformer: superjson,
