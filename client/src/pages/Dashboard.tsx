@@ -47,6 +47,21 @@ function getPresetRange(preset: Preset, customFrom?: string, customTo?: string):
   return { from: customFrom || fmt(fallbackFrom), to: customTo || today };
 }
 
+function getVaccinationDueDate(record: any): Date | null {
+  const dates = [record?.nextDueDate, record?.boosterDueDate]
+    .map((value) => {
+      if (!value) return null;
+      const date = new Date(value instanceof Date ? value.toISOString() : value);
+      if (Number.isNaN(date.getTime())) return null;
+      date.setHours(0, 0, 0, 0);
+      return date;
+    })
+    .filter((date): date is Date => Boolean(date));
+
+  if (dates.length === 0) return null;
+  return dates.reduce((earliest, date) => date < earliest ? date : earliest);
+}
+
 function KPICard({ title, value, sub, icon: Icon, trend, color = "text-primary", isLoading }: { title: string; value: string | number; sub?: string; icon: any; trend?: "up" | "down" | "neutral"; color?: string; isLoading?: boolean }) {
   return (
     <Card className="relative overflow-hidden">
@@ -150,15 +165,13 @@ export default function Dashboard() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const overdueVaccinations = (upcomingVaccinations ?? []).filter((v: any) => {
-    if (!v.nextDueDate) return false;
-    const dueDate = new Date(v.nextDueDate instanceof Date ? v.nextDueDate.toISOString() : v.nextDueDate);
-    dueDate.setHours(0, 0, 0, 0);
+    const dueDate = getVaccinationDueDate(v);
+    if (!dueDate) return false;
     return dueDate < today;
   }).length;
   const dueSoonVaccinations = (upcomingVaccinations ?? []).filter((v: any) => {
-    if (!v.nextDueDate) return false;
-    const dueDate = new Date(v.nextDueDate instanceof Date ? v.nextDueDate.toISOString() : v.nextDueDate);
-    dueDate.setHours(0, 0, 0, 0);
+    const dueDate = getVaccinationDueDate(v);
+    if (!dueDate) return false;
     const diffDays = Math.ceil((dueDate.getTime() - today.getTime()) / 86400000);
     return diffDays >= 0 && diffDays <= 7;
   }).length;

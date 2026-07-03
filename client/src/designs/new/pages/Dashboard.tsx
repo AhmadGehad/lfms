@@ -82,6 +82,16 @@ function dayDiff(date: unknown): number | null {
   return Math.ceil((d.getTime() - t.getTime()) / MS_DAY);
 }
 
+function vaccinationDueTarget(record: any): { kind: "next" | "booster"; diff: number } | null {
+  const candidates = [
+    { kind: "next" as const, diff: dayDiff(record?.nextDueDate) },
+    { kind: "booster" as const, diff: dayDiff(record?.boosterDueDate) },
+  ].filter((item): item is { kind: "next" | "booster"; diff: number } => item.diff != null);
+
+  if (candidates.length === 0) return null;
+  return candidates.reduce((earliest, item) => item.diff < earliest.diff ? item : earliest);
+}
+
 function fmtShortDate(d: unknown) {
   if (!d) return "--";
   const x = new Date(d as string);
@@ -355,16 +365,22 @@ export default function NewDashboard() {
   const vaccinationItems: QueueItem[] = useMemo(
     () =>
       ((upcomingVaccinations as any[]) ?? [])
-        .map(v => ({ v, d: dayDiff(v.nextDueDate) }))
-        .filter(({ d }) => d != null && d <= 7)
-        .sort((a, b) => (a.d ?? 999) - (b.d ?? 999))
-        .map(({ v, d }) => ({
-          id: `${v.animalId}-${v.vaccineId ?? v.vaccineName}`,
-          title: `${v.animalCode ?? v.animalId} · ${v.vaccineName ?? ""}`,
-          meta: d == null ? "--" : d < 0 ? `${t("dashboard.overdue", "Overdue")} ${-d}d` : `${t("dashboard.dueIn", "Due in")} ${d}d`,
-          href: "/vaccinations",
-          action: d != null && d < 0 ? <StatusBadge tone="danger">{t("dashboard.overdue", "Overdue")}</StatusBadge> : undefined,
-        })),
+        .map(v => ({ v, due: vaccinationDueTarget(v) }))
+        .filter(({ due }) => due != null && due.diff <= 7)
+        .sort((a, b) => (a.due?.diff ?? 999) - (b.due?.diff ?? 999))
+        .map(({ v, due }) => {
+          const d = due?.diff ?? null;
+          const doseLabel = due?.kind === "booster"
+            ? t("vaccine.booster", "Booster")
+            : t("vaccine.nextDue", "Next due");
+          return {
+            id: `${v.animalId}-${v.vaccineId ?? v.vaccineName}-${due?.kind ?? "due"}`,
+            title: `${v.animalCode ?? v.animalId} · ${v.vaccineName ?? ""}`,
+            meta: d == null ? "--" : `${doseLabel} · ${d < 0 ? `${t("dashboard.overdue", "Overdue")} ${-d}d` : `${t("dashboard.dueIn", "Due in")} ${d}d`}`,
+            href: "/vaccinations",
+            action: d != null && d < 0 ? <StatusBadge tone="danger">{t("dashboard.overdue", "Overdue")}</StatusBadge> : undefined,
+          };
+        }),
     [upcomingVaccinations, t]
   );
 

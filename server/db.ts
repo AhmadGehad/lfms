@@ -3479,6 +3479,7 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
       nextDueDate: vaccinationRecords.nextDueDate,
       boosterDueDate: vaccinationRecords.boosterDueDate,
       notifyBeforeNext: vaccinationRecords.notifyBeforeNext,
+      notifyBeforeBooster: vaccinationRecords.notifyBeforeBooster,
       isCompleted: vaccinationRecords.isCompleted,
     })
     .from(vaccinationRecords)
@@ -3488,10 +3489,16 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
       and(
         isNull(vaccinationRecords.deletedAt),
         eq(vaccinationRecords.isCompleted, false),
-        sql`${vaccinationRecords.nextDueDate} <= ${cutoff.toISOString().split("T")[0]}`
+        or(
+          sql`${vaccinationRecords.nextDueDate} <= ${cutoff.toISOString().split("T")[0]}`,
+          sql`${vaccinationRecords.boosterDueDate} IS NOT NULL AND ${vaccinationRecords.boosterDueDate} <= ${cutoff.toISOString().split("T")[0]}`
+        )
       )
     )
-    .orderBy(vaccinationRecords.nextDueDate);
+    .orderBy(sql`LEAST(
+      COALESCE(${vaccinationRecords.nextDueDate}, '9999-12-31'),
+      COALESCE(${vaccinationRecords.boosterDueDate}, '9999-12-31')
+    )`);
 }
 
 export async function getUpcomingBoosterVaccinations(input?: { days?: number } | number) {
