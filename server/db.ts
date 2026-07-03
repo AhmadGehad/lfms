@@ -2764,67 +2764,71 @@ export async function getFeedStockStatus() {
   const db = await getDb();
   if (!db) return [];
 
-  const allFeedItems = await getAllFeedItems();
+  const [allFeedItems, headCounts] = await Promise.all([
+    getAllFeedItems(),
+    getActiveHeadCountByCategory(),
+  ]);
   if (allFeedItems.length === 0) return [];
-
-  const headCounts = await getActiveHeadCountByCategory();
   const feedItemIds = allFeedItems.map(i => i.id);
   const today = new Date().toISOString().split("T")[0];
 
-  // ── Bulk fetch all data in 4 queries instead of 4N ──────────────────────
+  // ── Bulk fetch all data in parallel (5 queries, no waiting on each other) ─
 
-  // 1. Last stock count per feed item (single query, pick latest in JS)
-  const allCounts = await db
-    .select({
-      feedItemId: feedStockLedger.feedItemId,
-      qty: feedStockLedger.qty,
-      transactionDate: feedStockLedger.transactionDate,
-    })
-    .from(feedStockLedger)
-    .where(and(
-      inArray(feedStockLedger.feedItemId, feedItemIds),
-      eq(feedStockLedger.transactionType, "stock_count"),
-      isNull(feedStockLedger.deletedAt),
-    ))
-    .orderBy(desc(feedStockLedger.transactionDate));
+  const [allCounts, allTx, allPlans] = await Promise.all([
+    // 1. Last stock count per feed item (single query, pick latest in JS)
+    db
+      .select({
+        feedItemId: feedStockLedger.feedItemId,
+        qty: feedStockLedger.qty,
+        transactionDate: feedStockLedger.transactionDate,
+      })
+      .from(feedStockLedger)
+      .where(and(
+        inArray(feedStockLedger.feedItemId, feedItemIds),
+        eq(feedStockLedger.transactionType, "stock_count"),
+        isNull(feedStockLedger.deletedAt),
+      ))
+      .orderBy(desc(feedStockLedger.transactionDate)),
 
+    // 2. All purchases + adjustments (single query, sum in JS grouped by item+type)
+    db
+      .select({
+        feedItemId: feedStockLedger.feedItemId,
+        transactionType: feedStockLedger.transactionType,
+        qty: feedStockLedger.qty,
+        transactionDate: feedStockLedger.transactionDate,
+      })
+      .from(feedStockLedger)
+      .where(and(
+        inArray(feedStockLedger.feedItemId, feedItemIds),
+        inArray(feedStockLedger.transactionType, ["purchase", "adjustment"]),
+        isNull(feedStockLedger.deletedAt),
+      )),
+
+    // 3. All active ration plans for these feed items (single query)
+    db
+      .select({
+        feedItemId: rationPlans.feedItemId,
+        qty: rationPlans.qtyPerHeadPerDay,
+        categoryId: rationPlans.categoryId,
+      })
+      .from(rationPlans)
+      .where(and(
+        inArray(rationPlans.feedItemId, feedItemIds),
+        eq(rationPlans.isActive, true),
+        isNull(rationPlans.deletedAt),
+      )),
+  ]);
+
+  // Build last-count map (first occurrence = latest due to ORDER BY)
   const lastCountByItem = new Map<number, { qty: string; date: string }>();
   for (const c of allCounts) {
-    if (lastCountByItem.has(c.feedItemId)) continue; // first = latest due to ORDER BY
+    if (lastCountByItem.has(c.feedItemId)) continue;
     const dateStr = c.transactionDate instanceof Date
       ? c.transactionDate.toISOString().split("T")[0]
       : String(c.transactionDate).split("T")[0];
     lastCountByItem.set(c.feedItemId, { qty: String(c.qty), date: dateStr });
   }
-
-  // 2. All purchases + adjustments (single query, sum in JS grouped by item+type)
-  const allTx = await db
-    .select({
-      feedItemId: feedStockLedger.feedItemId,
-      transactionType: feedStockLedger.transactionType,
-      qty: feedStockLedger.qty,
-      transactionDate: feedStockLedger.transactionDate,
-    })
-    .from(feedStockLedger)
-    .where(and(
-      inArray(feedStockLedger.feedItemId, feedItemIds),
-      inArray(feedStockLedger.transactionType, ["purchase", "adjustment"]),
-      isNull(feedStockLedger.deletedAt),
-    ));
-
-  // 3. All active ration plans for these feed items (single query)
-  const allPlans = await db
-    .select({
-      feedItemId: rationPlans.feedItemId,
-      qty: rationPlans.qtyPerHeadPerDay,
-      categoryId: rationPlans.categoryId,
-    })
-    .from(rationPlans)
-    .where(and(
-      inArray(rationPlans.feedItemId, feedItemIds),
-      eq(rationPlans.isActive, true),
-      isNull(rationPlans.deletedAt),
-    ));
 
   // ── Compute per item in JS ──────────────────────────────────────────────
   const result = [];
