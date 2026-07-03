@@ -2765,54 +2765,98 @@ export async function getFeedStockStatus() {
   if (!db) return [];
 
   const allFeedItems = await getAllFeedItems();
+  if (allFeedItems.length === 0) return [];
+
   const headCounts = await getActiveHeadCountByCategory();
+  const feedItemIds = allFeedItems.map(i => i.id);
+  const today = new Date().toISOString().split("T")[0];
+
+  // ── Bulk fetch all data in 4 queries instead of 4N ──────────────────────
+
+  // 1. Last stock count per feed item (single query, pick latest in JS)
+  const allCounts = await db
+    .select({
+      feedItemId: feedStockLedger.feedItemId,
+      qty: feedStockLedger.qty,
+      transactionDate: feedStockLedger.transactionDate,
+    })
+    .from(feedStockLedger)
+    .where(and(
+      inArray(feedStockLedger.feedItemId, feedItemIds),
+      eq(feedStockLedger.transactionType, "stock_count"),
+      isNull(feedStockLedger.deletedAt),
+    ))
+    .orderBy(desc(feedStockLedger.transactionDate));
+
+  const lastCountByItem = new Map<number, { qty: string; date: string }>();
+  for (const c of allCounts) {
+    if (lastCountByItem.has(c.feedItemId)) continue; // first = latest due to ORDER BY
+    const dateStr = c.transactionDate instanceof Date
+      ? c.transactionDate.toISOString().split("T")[0]
+      : String(c.transactionDate).split("T")[0];
+    lastCountByItem.set(c.feedItemId, { qty: String(c.qty), date: dateStr });
+  }
+
+  // 2. All purchases + adjustments (single query, sum in JS grouped by item+type)
+  const allTx = await db
+    .select({
+      feedItemId: feedStockLedger.feedItemId,
+      transactionType: feedStockLedger.transactionType,
+      qty: feedStockLedger.qty,
+      transactionDate: feedStockLedger.transactionDate,
+    })
+    .from(feedStockLedger)
+    .where(and(
+      inArray(feedStockLedger.feedItemId, feedItemIds),
+      inArray(feedStockLedger.transactionType, ["purchase", "adjustment"]),
+      isNull(feedStockLedger.deletedAt),
+    ));
+
+  // 3. All active ration plans for these feed items (single query)
+  const allPlans = await db
+    .select({
+      feedItemId: rationPlans.feedItemId,
+      qty: rationPlans.qtyPerHeadPerDay,
+      categoryId: rationPlans.categoryId,
+    })
+    .from(rationPlans)
+    .where(and(
+      inArray(rationPlans.feedItemId, feedItemIds),
+      eq(rationPlans.isActive, true),
+      isNull(rationPlans.deletedAt),
+    ));
+
+  // ── Compute per item in JS ──────────────────────────────────────────────
   const result = [];
 
   for (const item of allFeedItems) {
-    // Last stock count
-    const lastCount = await db
-      .select({
-        qty: feedStockLedger.qty,
-        transactionDate: feedStockLedger.transactionDate
-      })
-      .from(feedStockLedger)
-      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "stock_count"), isNull(feedStockLedger.deletedAt)))
-      .orderBy(desc(feedStockLedger.transactionDate))
-      .limit(1);
+    const lastCount = lastCountByItem.get(item.id);
+    const lastCountDateStr = lastCount?.date ?? "2020-01-01";
+    const lastCountQty = parseFloat(lastCount?.qty ?? "0");
 
-    const lastCountDate = lastCount[0]?.transactionDate ?? "2020-01-01";
-    const lastCountQty = parseFloat(lastCount[0]?.qty ?? "0");
-
-    // Purchases since last count (excluding soft-deleted)
-    const purchases = await db
-      .select({ total: sql<number>`SUM(qty)` })
-      .from(feedStockLedger)
-      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "purchase"), isNull(feedStockLedger.deletedAt), sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`));
-    const purchasedQty = parseFloat(String(purchases[0]?.total ?? 0));
-
-    // Adjustments since last count
-    const adjustments = await db
-      .select({ total: sql<number>`SUM(qty)` })
-      .from(feedStockLedger)
-      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "adjustment"), isNull(feedStockLedger.deletedAt), sql`${feedStockLedger.transactionDate} >= ${lastCountDate}`));
-    const adjustmentQty = parseFloat(String(adjustments[0]?.total ?? 0));
+    // Sum purchases + adjustments since last count date
+    let purchasedQty = 0;
+    let adjustmentQty = 0;
+    for (const tx of allTx) {
+      if (tx.feedItemId !== item.id) continue;
+      const txDate = tx.transactionDate instanceof Date
+        ? tx.transactionDate.toISOString().split("T")[0]
+        : String(tx.transactionDate).split("T")[0];
+      if (txDate < lastCountDateStr) continue;
+      const qty = parseFloat(String(tx.qty));
+      if (tx.transactionType === "purchase") purchasedQty += qty;
+      else if (tx.transactionType === "adjustment") adjustmentQty += qty;
+    }
 
     // Daily consumption from ration plans (using fresh head counts)
-    const plans = await db
-      .select({
-        qty: rationPlans.qtyPerHeadPerDay,
-        categoryId: rationPlans.categoryId
-      })
-      .from(rationPlans)
-      .where(and(eq(rationPlans.feedItemId, item.id), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
-
     let dailyConsumption = 0;
     const consumptionByCategory: Array<{
       categoryId: number;
       categoryDailyKg: number;
       heads: number;
     }> = [];
-    for (const plan of plans) {
+    for (const plan of allPlans) {
+      if (plan.feedItemId !== item.id) continue;
       const heads = headCounts[plan.categoryId] ?? 0;
       const categoryDailyKg = parseFloat(plan.qty) * heads;
       dailyConsumption += categoryDailyKg;
@@ -2826,8 +2870,6 @@ export async function getFeedStockStatus() {
     }
 
     // Excel formula: StockToday = LastCountQty + PurchSinceCount + Adjustments - (DailyUse × daysSinceCount)
-    const lastCountDateStr = lastCount[0]?.transactionDate ? (lastCount[0].transactionDate instanceof Date ? lastCount[0].transactionDate.toISOString().split("T")[0] : String(lastCount[0].transactionDate).split("T")[0]) : "2020-01-01";
-    const today = new Date().toISOString().split("T")[0];
     const daysSinceCount = Math.max(0, Math.floor((new Date(today).getTime() - new Date(lastCountDateStr).getTime()) / 86400000));
     const consumedSinceCount = dailyConsumption * daysSinceCount;
 
