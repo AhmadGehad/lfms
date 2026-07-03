@@ -32,6 +32,7 @@ import {
   Menu,
   Monitor,
   Moon,
+  PanelLeft,
   Search,
   Settings2,
   ShoppingCart,
@@ -49,7 +50,6 @@ import { OwnerFilterSelect } from "@/components/OwnerFilterSelect";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
 import { DesignSwitch } from "@/components/DesignSwitch";
 import { Button } from "@/components/ui/button";
-import { ThemeMenu } from "./components/ThemeMenu";
 import { CommandPalette } from "./components/CommandPalette";
 import { QuickAdd } from "./components/QuickAdd";
 import { useTheme, type ThemePreference } from "@/contexts/ThemeContext";
@@ -311,6 +311,12 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
   const [, setLocation] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => localStorage.getItem("lfms-new-sidebar") !== "closed");
+  const toggleSidebar = () =>
+    setSidebarOpen(open => {
+      localStorage.setItem("lfms-new-sidebar", open ? "closed" : "open");
+      return !open;
+    });
   const perms = usePermissions();
 
   useEffect(() => {
@@ -350,7 +356,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop sidebar */}
-      {!isMobile && (
+      {!isMobile && sidebarOpen && (
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-sidebar bg-gradient-to-b from-sidebar to-sidebar-2 text-sidebar-foreground md:flex">
           <SidebarBrand />
           <div className="border-b border-sidebar-border px-3 py-3">
@@ -365,7 +371,18 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
         <header className="sticky top-0 z-40 flex h-[60px] items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur md:px-6">
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            {!isMobile && (
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="hidden h-9 w-9 shrink-0 place-items-center rounded-lg text-foreground/70 hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring md:grid"
+                aria-label={t("nav.toggleSidebar", "Toggle sidebar")}
+                aria-expanded={sidebarOpen}
+              >
+                <PanelLeft className={`h-[18px] w-[18px] ${isAr ? "rotate-180" : ""}`} />
+              </button>
+            )}
             {isMobile && (
               <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
                 <SheetTrigger asChild>
@@ -386,7 +403,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
             <FarmSwitcherSlot />
             <button
               type="button"
-              className="flex h-11 min-w-11 shrink-0 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-ring sm:h-9 sm:w-72 sm:min-w-0 lg:w-96"
+              className="flex h-11 min-w-11 shrink-0 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-ring sm:h-9 sm:min-w-0 sm:flex-1 sm:shrink sm:max-w-72 lg:max-w-96"
               aria-label={t("search.open", "Search")}
               onClick={() => setCmdOpen(true)}
             >
@@ -396,7 +413,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5">
             <DesignSwitch className="hidden sm:inline-flex" />
             <QuickAdd className="hidden sm:flex" />
             {perms.can("notifications", "view") && (
@@ -413,9 +430,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
                 )}
               </button>
             )}
-            <ThemeMenu />
             <DisplayMenu />
-            <LanguageSwitcher />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-lg p-1 hover:bg-surface sm:min-h-9 sm:min-w-9" aria-label={user?.name ?? "Account"}>
