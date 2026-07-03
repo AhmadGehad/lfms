@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE `user_settings` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`companyId` int,\n\t`settingKey` varchar(100) NOT NULL,\n\t`settingValue` text NOT NULL,\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `user_settings_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `user_settings_user_key_unique` UNIQUE(`userId`,`settingKey`)\n);\nCREATE INDEX `user_settings_user_idx` ON `user_settings` (`userId`);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute CREATE TABLE `user_settings` (\n\t`id` int AUTO_INCREMENT NOT NULL,\n\t`userId` int NOT NULL,\n\t`companyId` int,\n\t`settingKey` varchar(100) NOT NULL,\n\t`settingValue` text NOT NULL,\n\t`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,\n\tCONSTRAINT `user_settings_id` PRIMARY KEY(`id`),\n\tCONSTRAINT `user_settings_user_key_unique` UNIQUE(`userId`,`settingKey`)\n);\nCREATE INDEX `user_settings_user_idx` ON `user_settings` (`userId`);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2363
+}
