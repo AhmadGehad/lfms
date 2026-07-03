@@ -2765,7 +2765,11 @@ export async function getFeedStockStatus() {
   if (!db) return [];
 
   const [allFeedItems, headCounts] = await Promise.all([
-    getAllFeedItems(),
+    db
+      .select({ id: feedItems.id, name: feedItems.name, unit: feedItems.unit })
+      .from(feedItems)
+      .where(isNull(feedItems.deletedAt))
+      .orderBy(feedItems.name),
     getActiveHeadCountByCategory(),
   ]);
   if (allFeedItems.length === 0) return [];
