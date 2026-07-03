@@ -174,11 +174,23 @@ export default function NewFeed() {
   const canDelete = perms.can("feed", "delete");
   const utils = trpc.useUtils();
 
-  const { data: stock, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery();
-  const { data: rations, isLoading: rationsLoading } = trpc.feed.getRationPlans.useQuery();
-  const { data: ledger, isLoading: ledgerLoading } = trpc.feed.getStockLedger.useQuery();
-  const { data: shrinkage } = trpc.feed.getShrinkage.useQuery();
-  const { data: prices, isLoading: pricesLoading } = trpc.config.getAllFeedItemPrices.useQuery();
+  const [activeTab, setActiveTab] = useState<string>("stock");
+
+  const { data: stock, isLoading: stockLoading } = trpc.feed.getStockStatus.useQuery(undefined, {
+    enabled: activeTab === "stock",
+  });
+  const { data: rations, isLoading: rationsLoading } = trpc.feed.getRationPlans.useQuery(undefined, {
+    enabled: activeTab === "rations",
+  });
+  const { data: ledger, isLoading: ledgerLoading } = trpc.feed.getStockLedger.useQuery(undefined, {
+    enabled: activeTab === "ledger",
+  });
+  const { data: shrinkage } = trpc.feed.getShrinkage.useQuery(undefined, {
+    enabled: activeTab === "shrinkage",
+  });
+  const { data: prices, isLoading: pricesLoading } = trpc.config.getAllFeedItemPrices.useQuery(undefined, {
+    enabled: activeTab === "prices",
+  });
 
   // ── Stock entries (add / edit / delete) ──────────────────────────────────
   const [stockOpen, setStockOpen] = useState(false);
@@ -459,7 +471,7 @@ export default function NewFeed() {
         crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("nav.feed", "Feed") }]}
       />
 
-      <Tabs defaultValue="stock">
+      <Tabs defaultValue="stock" onValueChange={setActiveTab}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="stock">{t("feed.stock", "Stock")}</TabsTrigger>
           <TabsTrigger value="ledger">{t("feed.ledger", "Ledger")}</TabsTrigger>
