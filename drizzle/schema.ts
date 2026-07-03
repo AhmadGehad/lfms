@@ -9,6 +9,7 @@ import {
   varchar,
   date,
   json,
+  index,
   uniqueIndex,
 } from "drizzle-orm/mysql-core";
 
@@ -173,7 +174,9 @@ export const feedItems = mysqlTable("feed_items", {
   createdBy: int("createdBy"),
   deletedAt: timestamp("deletedAt"),
   deletedBy: int("deletedBy"),
-});
+}, table => ({
+  deletedNameIdx: index("feed_items_deleted_name_idx").on(table.deletedAt, table.name),
+}));
 
 export const feedItemPriceHistory = mysqlTable("feed_item_price_history", {
   id: int("id").autoincrement().primaryKey(),
@@ -183,7 +186,9 @@ export const feedItemPriceHistory = mysqlTable("feed_item_price_history", {
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   createdBy: int("createdBy"),
-});
+}, table => ({
+  itemDateIdIdx: index("feed_item_price_history_item_date_id_idx").on(table.feedItemId, table.effectiveDate, table.id),
+}));
 
 export const vaccines = mysqlTable("vaccines", {
   id: int("id").autoincrement().primaryKey(),

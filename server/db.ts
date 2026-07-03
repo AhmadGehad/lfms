@@ -521,34 +521,28 @@ export async function updateBirthType(id: number, data: Partial<{ name: string; 
 export async function getAllFeedItems() {
   const db = await getDb();
   if (!db) return [];
-  const items = await db.select().from(feedItems).where(isNull(feedItems.deletedAt)).orderBy(feedItems.name);
-  if (items.length === 0) return [];
-
-  // Latest price per feed item — fetch all price rows once, reduce to the
-  // newest per item in JS (robust, no fragile correlated subquery).
-  const allPrices = await db
+  return db
     .select({
-      feedItemId: feedItemPriceHistory.feedItemId,
-      pricePerUnit: feedItemPriceHistory.pricePerUnit,
-      effectiveDate: feedItemPriceHistory.effectiveDate,
-      id: feedItemPriceHistory.id,
+      id: feedItems.id,
+      name: feedItems.name,
+      unit: feedItems.unit,
+      isActive: feedItems.isActive,
+      createdAt: feedItems.createdAt,
+      updatedAt: feedItems.updatedAt,
+      createdBy: feedItems.createdBy,
+      deletedAt: feedItems.deletedAt,
+      deletedBy: feedItems.deletedBy,
+      currentPrice: sql<string | null>`(
+        SELECT ph.pricePerUnit
+        FROM feed_item_price_history ph
+        WHERE ph.feedItemId = ${sql.raw("`feed_items`.`id`")}
+        ORDER BY ph.effectiveDate DESC, ph.id DESC
+        LIMIT 1
+      )`.as("currentPrice"),
     })
-    .from(feedItemPriceHistory);
-
-  const latestByItem = new Map<number, { price: string; eff: string; id: number }>();
-  for (const p of allPrices) {
-    const eff = p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0];
-    const cur = latestByItem.get(p.feedItemId);
-    // newest by effective date, then by id (latest write wins on same date)
-    if (!cur || eff > cur.eff || (eff === cur.eff && p.id > cur.id)) {
-      latestByItem.set(p.feedItemId, { price: p.pricePerUnit, eff, id: p.id });
-    }
-  }
-
-  return items.map((it) => ({
-    ...it,
-    currentPrice: latestByItem.get(it.id)?.price ?? null,
-  }));
+    .from(feedItems)
+    .where(isNull(feedItems.deletedAt))
+    .orderBy(feedItems.name);
 }
 
 export async function createFeedItem(data: { name: string; unit?: string; initialPrice?: string; priceEffectiveDate?: string }) {
