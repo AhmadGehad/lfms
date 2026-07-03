@@ -1,0 +1,9 @@
+{
+  "query": "CREATE INDEX IF NOT EXISTS idx_feed_stock_ledger_item_type ON feed_stock_ledger (feedItemId, transactionType, deletedAt);\nCREATE INDEX IF NOT EXISTS idx_feed_stock_ledger_item_date ON feed_stock_ledger (feedItemId, transactionDate);\nCREATE INDEX IF NOT EXISTS idx_ration_plans_item_active ON ration_plans (feedItemId, isActive, deletedAt);\nCREATE INDEX IF NOT EXISTS idx_feed_item_price_history_item_date ON feed_item_price_history (feedItemId, effectiveDate);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute CREATE INDEX IF NOT EXISTS idx_feed_stock_ledger_item_type ON feed_stock_ledger (feedItemId, transactionType, deletedAt);\nCREATE INDEX IF NOT EXISTS idx_feed_stock_ledger_item_date ON feed_stock_ledger (feedItemId, transactionDate);\nCREATE INDEX IF NOT EXISTS idx_ration_plans_item_active ON ration_plans (feedItemId, isActive, deletedAt);\nCREATE INDEX IF NOT EXISTS idx_feed_item_price_history_item_date ON feed_item_price_history (feedItemId, effectiveDate);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 4295
+}
