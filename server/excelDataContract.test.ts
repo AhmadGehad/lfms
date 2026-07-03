@@ -28,7 +28,7 @@ describe("canonical Excel data contract", () => {
     expect(
       workbook.getWorksheet(EXCEL_MANIFEST_SHEET)?.getCell("B1").value
     ).toBe(EXCEL_DATA_FORMAT_VERSION);
-    expect(CANONICAL_TABLES).toHaveLength(26);
+    expect(CANONICAL_TABLES).toHaveLength(27);
     expect(CANONICAL_TABLES.map(spec => getTableName(spec.table)).sort()).toEqual(
       Object.values(schema).map(table => getTableName(table)).sort()
     );

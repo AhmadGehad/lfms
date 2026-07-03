@@ -10,6 +10,7 @@ import {
   getAnimals,
   getExpenses,
   getSaleById,
+  getSaleForUpdate,
   getSales,
   updateSale,
   getNotifications,
@@ -163,19 +164,31 @@ export const salesRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input: { id, ...data }, ctx }) => {
-      const before = await getSaleById(id);
-      const result = await updateSale(id, data);
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "update",
-        ipAddress: getClientIp(ctx),
-        entityType: "sale",
-        entityId: String(id),
-        // Prior values of the changed fields, so the action can be reverted.
-        oldValues: before ? Object.fromEntries(Object.keys(data).map((k) => [k, (before as any)[k]])) as any : undefined,
-        newValues: data as any,
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      // Lock the row so concurrent edits and payments serialize, and the
+      // paid <= price invariant is checked against current values.
+      return db.transaction(async (tx) => {
+        const before = await getSaleForUpdate(id, tx);
+        if (!before) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+        const nextPrice = parseFloat(data.salePrice ?? before.salePrice ?? "0");
+        const nextPaid = parseFloat(data.amountPaid ?? before.amountPaid ?? "0");
+        if (nextPaid > nextPrice + 0.001) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Paid amount cannot exceed sale price" });
+        }
+        const result = await updateSale(id, data, tx);
+        await createAuditEntry({
+          userId: ctx.user?.id,
+          action: "update",
+          ipAddress: getClientIp(ctx),
+          entityType: "sale",
+          entityId: String(id),
+          // Prior values of the changed fields, so the action can be reverted.
+          oldValues: Object.fromEntries(Object.keys(data).map((k) => [k, (before as any)[k]])) as any,
+          newValues: data as any,
+        }, tx);
+        return result;
       });
-      return result;
     }),
 
   // Record an additional payment toward an outstanding balance. amountPaid is
@@ -186,23 +199,31 @@ export const salesRouter = router({
       payment: z.string().refine(v => parseFloat(v) > 0, "Payment must be greater than zero"),
     }))
     .mutation(async ({ input, ctx }) => {
-      const existing = await getSaleById(input.id);
-      if (!existing) throw new Error("Sale not found");
-      const price = parseFloat(existing.salePrice);
-      const currentPaid = parseFloat(existing.amountPaid ?? "0");
-      const newPaid = currentPaid + parseFloat(input.payment);
-      if (newPaid > price + 0.001) throw new Error("Payment would exceed sale price");
-      await updateSale(input.id, { amountPaid: String(newPaid) });
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "update",
-        ipAddress: getClientIp(ctx),
-        entityType: "sale",
-        entityId: String(input.id),
-        oldValues: { amountPaid: existing.amountPaid } as any,
-        newValues: { amountPaid: String(newPaid), paymentDelta: input.payment } as any,
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      // SELECT ... FOR UPDATE so two concurrent payments cannot both read the
+      // same amountPaid and silently drop one increment (lost update).
+      return db.transaction(async (tx) => {
+        const existing = await getSaleForUpdate(input.id, tx);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+        const price = parseFloat(existing.salePrice);
+        const currentPaid = parseFloat(existing.amountPaid ?? "0");
+        const newPaid = currentPaid + parseFloat(input.payment);
+        if (newPaid > price + 0.001) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Payment would exceed sale price" });
+        }
+        await updateSale(input.id, { amountPaid: String(newPaid) }, tx);
+        await createAuditEntry({
+          userId: ctx.user?.id,
+          action: "update",
+          ipAddress: getClientIp(ctx),
+          entityType: "sale",
+          entityId: String(input.id),
+          oldValues: { amountPaid: existing.amountPaid } as any,
+          newValues: { amountPaid: String(newPaid), paymentDelta: input.payment } as any,
+        }, tx);
+        return { success: true, amountPaid: String(newPaid), outstanding: String(price - newPaid) };
       });
-      return { success: true, amountPaid: String(newPaid), outstanding: String(price - newPaid) };
     }),
 });
 

@@ -30,10 +30,29 @@ const en = {
     groups: {
       overview: "Overview",
       livestock: "Livestock",
+      herd: "Herd",
       operations: "Operations",
       finance: "Finance",
+      admin: "Admin",
       system: "System"
-    }
+    },
+    menu: "Menu"
+  },
+
+  theme: {
+    label: "Theme",
+    light: "Light",
+    dark: "Dark",
+    system: "System"
+  },
+  design: {
+    label: "Design version",
+    old: "Classic",
+    new: "New"
+  },
+  search: {
+    open: "Search",
+    placeholder: "Search…"
   },
 
   auth: {
@@ -1020,10 +1039,29 @@ const ar = {
     groups: {
       overview: "نظرة عامة",
       livestock: "المواشي",
+      herd: "القطيع",
       operations: "العمليات",
       finance: "المالية",
+      admin: "الإدارة",
       system: "النظام"
-    }
+    },
+    menu: "القائمة"
+  },
+
+  theme: {
+    label: "السمة",
+    light: "فاتح",
+    dark: "داكن",
+    system: "النظام"
+  },
+  design: {
+    label: "إصدار التصميم",
+    old: "الكلاسيكي",
+    new: "الجديد"
+  },
+  search: {
+    open: "بحث",
+    placeholder: "بحث…"
   },
 
   auth: {
@@ -1970,6 +2008,549 @@ const ar = {
     goHome: "العودة للرئيسية"
   }
 };
+
+
+// ─── New-design i18n keys (auto-added; deep-merged so existing keys win) ───────
+const __newEn = {
+  "actions": {
+    "quickAdd": "Add"
+  },
+  "animals": {
+    "allSources": "All sources",
+    "deleteCascadeHint": "Its weights, expenses, sales and vaccination records go to the bin with it.",
+    "deleteRecalcHint": "Dashboard KPIs, feed forecasts and P&L are recalculated.",
+    "deleteToBinDescription": "Move {{id}} and all related records to the Recycle Bin? You can restore it anytime.",
+    "offspring": "Offspring",
+    "category": "Category",
+    "damDam": "Dam's dam",
+    "details": "Details",
+    "female": "Female",
+    "financial": "Financial",
+    "group": "Group",
+    "head": "head",
+    "male": "Male",
+    "none": "No animals yet",
+    "noneHint": "Animals you register or that are born will appear here.",
+    "sex": "Sex",
+    "sireDam": "Sire's dam",
+    "species": "Species",
+    "status": "Status"
+  },
+  "audit": {
+    "none": "No activity recorded",
+    "revert": "Revert",
+    "revertConsequence": "This recreates the prior state of the record and is itself recorded as an audit entry.",
+    "revertTitle": "Revert this action?"
+  },
+  "breeding": {
+    "births": "births",
+    "count": "How many (twins/triplets)",
+    "fillPromote": "Category, group and status are required",
+    "fillRequired": "Species, category and birth type are required",
+    "lamb": "Lamb",
+    "none": "No births recorded yet",
+    "promoteConsequence": "This creates a full animal record from the lamb and closes the lamb entry. The lamb gets a permanent animal ID.",
+    "promoteTitle": "Promote lamb to animal",
+    "promotedBadge": "Promoted",
+    "weight": "Weight"
+  },
+  "common": {
+    "allSpecies": "All species",
+    "back": "Back",
+    "clear": "Clear",
+    "noneYet": "Nothing here yet",
+    "optional": "Optional",
+    "saveAddAnother": "Save & add another",
+    "select": "Select",
+    "uncategorized": "Uncategorized",
+    "viewAll": "View all"
+  },
+  "config": {
+    "active": "Active",
+    "autoStage": "Auto-stage weight (kg)",
+    "autoStageHelp": "When an animal reaches this weight at weigh-in, it auto-moves to the target category.",
+    "boosterInterval": "Booster interval (days)",
+    "boosterRequired": "Booster required",
+    "days": "Days",
+    "exit": "Exit",
+    "exitStatus": "Exit status",
+    "exitStatusHelp": "Animals in an exit status are treated as having left the farm (sold/dead) and excluded from active counts.",
+    "gestation": "Gestation days",
+    "gestationHelp": "Average gestation length — used to compute pregnancy due dates.",
+    "idPrefixHelp": "Prefix for auto-generated animal IDs in this category.",
+    "inactive": "Inactive",
+    "months": "Months",
+    "name": "Name",
+    "owners": "Owners",
+    "saved": "Saved",
+    "subtitle": "Reference data & farm settings",
+    "unitHelp": "e.g. kg, bale, bag",
+    "vaccines": "Vaccines",
+    "validity": "Validity",
+    "validityPeriod": "Validity period",
+    "validityUnit": "Unit"
+  },
+  "dashboard": {
+    "actionCenter": "Your farm at a glance — what needs attention today",
+    "criticalFeed": "Low / critical feed",
+    "dueIn": "Due in",
+    "feedOk": "Stock levels healthy",
+    "grossPnL": "Gross P&L",
+    "left": "left",
+    "needsAttention": "Needs attention",
+    "noPregnancies": "No pregnancies due soon",
+    "noUnpaid": "All sales settled",
+    "noVaccinations": "Nothing due this week",
+    "overdue": "Overdue",
+    "pregnanciesDue": "Pregnancies due",
+    "salesTrend": "Sales revenue / month",
+    "expenseTrend": "Expenses / month",
+    "trends": "Revenue & expense trend",
+    "unpaidSales": "Unpaid sales",
+    "vaccinationsDue": "Vaccinations due"
+  },
+  "data": {
+    "exported": "Backup downloaded",
+    "replaceConfirmBtn": "Replace data",
+    "replaceConsequence": "Replace mode DELETES current records before loading the file. This cannot be undone — export a backup first.",
+    "replaceTitle": "Replace existing data?"
+  },
+  "expenses": {
+    "add": "Add expense",
+    "amount": "Amount",
+    "animalCategory": "Animal category",
+    "categoryAllocation": "Category (shared by group)",
+    "created": "Expense added",
+    "date": "Date",
+    "deleteRecalcHint": "Dashboard KPIs and animal P&L totals are recalculated.",
+    "deleteToBinDescription": "Move this expense to the Recycle Bin? You can restore it anytime.",
+    "entries": "entries",
+    "fillRequired": "Enter a category and amount",
+    "none": "No expenses yet",
+    "notes": "Notes",
+    "pickCategoryFirst": "Pick a category first",
+    "subCategories": "Sub-categories",
+    "subCategoryDescHelp": "Shown as inline help when staff pick this sub-category on an expense.",
+    "total": "Total"
+  },
+  "feed": {
+    "active": "Active",
+    "dailyUse": "Daily use",
+    "date": "Date",
+    "daysLeft": "Days left",
+    "deletePricePermanentHint": "This is permanent and changes feed cost calculations from that date.",
+    "deleteRationRecalcHint": "Daily consumption and days-remaining forecasts are recalculated.",
+    "deleteRationToBin": "Move the {{name}} ration plan to the Recycle Bin? You can restore it anytime.",
+    "deleteStockRecalcHint": "Stock on hand and days-remaining are recalculated.",
+    "deleteStockToBin": "Move this {{name}} entry to the Recycle Bin? You can restore it anytime.",
+    "effective": "Effective",
+    "endDate": "End date",
+    "ended": "Ended",
+    "ongoing": "Ongoing",
+    "runOut": "Run-out",
+    "healthy": "Stock healthy",
+    "item": "Feed item",
+    "ledger": "Ledger",
+    "needReorder": "items need reorder",
+    "noLedger": "No stock transactions yet",
+    "noRations": "No ration plans yet",
+    "noStock": "No feed items yet",
+    "onHand": "On hand",
+    "qty": "Qty",
+    "rations": "Rations",
+    "reorder": "Reorder",
+    "stock": "Stock",
+    "stockAdded": "Stock entry added",
+    "type": "Type"
+  },
+  "incomeStatement": {
+    "breakdown": "Breakdown",
+    "costs": "Total costs",
+    "costsByCategory": "Costs by category",
+    "feed": "Feed",
+    "feedPurchases": "Feed purchases",
+    "margin": "Profit margin",
+    "noData": "No data for this period.",
+    "outstanding": "Outstanding receivables",
+    "received": "Received",
+    "subtitle": "Revenue vs cost for the selected period"
+  },
+  "notifications": {
+    "allRead": "All caught up",
+    "none": "No notifications",
+    "unread": "unread"
+  },
+  "animalProfile": {
+    "deleteWeightHint": "Growth history and stage progress are recalculated.",
+    "feedRationPlans": "Feed ration plans (this animal's category)",
+    "photo": "Animal photo",
+    "weightDeleted": "Weight entry deleted"
+  },
+  "pnl": {
+    "allCategories": "All categories",
+    "allStatus": "All statuses",
+    "lossShort": "loss",
+    "netByAnimalChart": "Net P&L by animal (top 20 closed)",
+    "ongoing": "Ongoing",
+    "profitShort": "profit"
+  },
+  "pregnancy": {
+    "checkup": "Checkup date",
+    "confirm": "Confirm pregnancy",
+    "confirmed": "Pregnancy confirmed",
+    "confirmedOn": "Confirmed",
+    "dam": "Dam",
+    "deleteConsequence": "Soft-deleted — recoverable from the Recycle Bin.",
+    "deleteTitle": "Remove this pregnancy record?",
+    "dueHint": "Due date = confirmation + species gestation",
+    "none": "No pregnancy records yet",
+    "pickAnimal": "Pick the dam",
+    "remaining": "Days left"
+  },
+  "recycleBin": {
+    "deletedAt": "Deleted",
+    "item": "Item",
+    "items": "items",
+    "itemsAffected": "items affected",
+    "purge": "Purge",
+    "purgeAll": "Purge all",
+    "purgeAllConsequence": "All purgeable records are removed forever. This cannot be undone.",
+    "purgeAllTitle": "Permanently delete everything in the bin?",
+    "purgeConsequence": "This cannot be undone — the record is removed forever, not soft-deleted.",
+    "purgeTitle": "Permanently delete this record?",
+    "purged": "Permanently deleted",
+    "type": "Type"
+  },
+  "sales": {
+    "allSettled": "All sales settled",
+    "amount": "Amount",
+    "buyer": "Buyer",
+    "date": "Date",
+    "deleteRecalcHint": "Revenue totals and animal P&L are recalculated.",
+    "deleteToBinDescription": "Move this sale record to the Recycle Bin? You can restore it anytime.",
+    "editSaleAria": "Edit sale",
+    "editSaleFor": "Edit sale",
+    "pendingPrice": "pending price",
+    "price": "Price",
+    "record": "Record sale",
+    "status": "Status",
+    "unpaidOnly": "Unpaid only"
+  },
+  "search": {
+    "empty": "No results.",
+    "pages": "Pages"
+  },
+  "users": {
+    "lastSignedIn": "Last seen",
+    "name": "Name",
+    "page": "Page",
+    "permissions": "Permissions",
+    "permsSaved": "Permissions saved",
+    "searchPages": "Search pages…",
+    "unsaved": "Unsaved changes — highlighted cells differ from saved.",
+    "users": "users"
+  },
+  "vaccine": {
+    "batch": "Batch number",
+    "booster": "Booster",
+    "date": "Date",
+    "deletePermanentHint": "This record is removed permanently — it does not go to the Recycle Bin.",
+    "deleteReminderHint": "Its due-date reminders are removed too.",
+    "deleteVaccineHint": "Existing vaccination records keep their history, but the vaccine can no longer be applied.",
+    "nextDue": "Next due",
+    "none": "No vaccination records yet",
+    "notes": "Notes",
+    "pickAnimalVaccine": "Pick an animal and a vaccine",
+    "record": "Record vaccination",
+    "recorded": "Vaccination recorded",
+    "records": "records",
+    "vaccine": "Vaccine",
+    "vet": "Veterinarian"
+  },
+  "weight": {
+    "date": "Date",
+    "history": "Weight history",
+    "none": "No weights recorded yet.",
+    "record": "Record weight",
+    "weight": "Weight (kg)"
+  }
+};
+const __newAr = {
+  "actions": {
+    "quickAdd": "إضافة"
+  },
+  "animals": {
+    "allSources": "كل المصادر",
+    "deleteCascadeHint": "تنتقل أوزانه ومصروفاته ومبيعاته وسجلات تطعيمه إلى السلة معه.",
+    "deleteRecalcHint": "يُعاد حساب مؤشرات لوحة التحكم وتوقعات العلف والأرباح والخسائر.",
+    "deleteToBinDescription": "نقل {{id}} وكل السجلات المرتبطة إلى سلة المحذوفات؟ يمكنك استرجاعه في أي وقت.",
+    "offspring": "النسل",
+    "category": "الفئة",
+    "damDam": "أم الأم",
+    "details": "التفاصيل",
+    "female": "أنثى",
+    "financial": "المالية",
+    "group": "المجموعة",
+    "head": "رأس",
+    "male": "ذكر",
+    "none": "لا توجد حيوانات بعد",
+    "noneHint": "ستظهر هنا الحيوانات التي تسجلها أو التي تولد.",
+    "sex": "الجنس",
+    "sireDam": "أم الأب",
+    "species": "النوع",
+    "status": "الحالة"
+  },
+  "audit": {
+    "none": "لا يوجد نشاط مسجل",
+    "revert": "تراجع",
+    "revertConsequence": "يعيد هذا الإجراء الحالة السابقة للسجل ويُسجَّل بدوره في سجل التدقيق.",
+    "revertTitle": "التراجع عن هذا الإجراء؟"
+  },
+  "breeding": {
+    "births": "ولادات",
+    "count": "العدد (توأم/ثلاثي)",
+    "fillPromote": "الفئة والمجموعة والحالة مطلوبة",
+    "fillRequired": "النوع والفئة ونوع الولادة مطلوبة",
+    "lamb": "مولود",
+    "none": "لا توجد ولادات مسجلة بعد",
+    "promoteConsequence": "ينشئ هذا سجل حيوان كامل من المولود ويغلق سجل المولود. يحصل المولود على رقم تعريف دائم.",
+    "promoteTitle": "ترقية المولود إلى حيوان",
+    "promotedBadge": "تمت الترقية",
+    "weight": "الوزن"
+  },
+  "common": {
+    "allSpecies": "كل الأنواع",
+    "back": "رجوع",
+    "clear": "مسح",
+    "noneYet": "لا يوجد شيء هنا بعد",
+    "optional": "اختياري",
+    "saveAddAnother": "حفظ وإضافة آخر",
+    "select": "اختر",
+    "uncategorized": "غير مصنف",
+    "viewAll": "عرض الكل"
+  },
+  "config": {
+    "active": "نشط",
+    "autoStage": "وزن الترقية التلقائية (كجم)",
+    "autoStageHelp": "عند بلوغ الحيوان هذا الوزن أثناء الوزن، يُنقل تلقائياً إلى الفئة المستهدفة.",
+    "boosterInterval": "فترة الجرعة المعززة (أيام)",
+    "boosterRequired": "الجرعة المعززة مطلوبة",
+    "days": "أيام",
+    "exit": "خروج",
+    "exitStatus": "حالة خروج",
+    "exitStatusHelp": "الحيوانات في حالة خروج تُعتبر قد غادرت المزرعة (بيع/نفوق) وتُستبعد من العد النشط.",
+    "gestation": "أيام الحمل",
+    "gestationHelp": "متوسط مدة الحمل — يُستخدم لحساب تواريخ الولادة المتوقعة.",
+    "idPrefixHelp": "بادئة أرقام التعريف المُولّدة تلقائياً في هذه الفئة.",
+    "inactive": "غير نشط",
+    "months": "أشهر",
+    "name": "الاسم",
+    "owners": "الملاك",
+    "saved": "تم الحفظ",
+    "subtitle": "البيانات المرجعية وإعدادات المزرعة",
+    "unitHelp": "مثال: كجم، بالة، كيس",
+    "vaccines": "اللقاحات",
+    "validity": "الصلاحية",
+    "validityPeriod": "مدة الصلاحية",
+    "validityUnit": "الوحدة"
+  },
+  "dashboard": {
+    "actionCenter": "مزرعتك في لمحة — ما يحتاج إلى انتباه اليوم",
+    "criticalFeed": "علف منخفض / حرج",
+    "dueIn": "مستحق خلال",
+    "feedOk": "مستويات المخزون جيدة",
+    "grossPnL": "إجمالي الربح والخسارة",
+    "left": "متبقٍ",
+    "needsAttention": "يحتاج انتباه",
+    "noPregnancies": "لا حالات حمل مستحقة قريباً",
+    "noUnpaid": "كل المبيعات مسددة",
+    "noVaccinations": "لا شيء مستحق هذا الأسبوع",
+    "overdue": "متأخر",
+    "pregnanciesDue": "حالات حمل مستحقة",
+    "salesTrend": "إيراد المبيعات / شهر",
+    "expenseTrend": "المصروفات / شهر",
+    "trends": "اتجاه الإيرادات والمصروفات",
+    "unpaidSales": "مبيعات غير مدفوعة",
+    "vaccinationsDue": "تطعيمات مستحقة"
+  },
+  "data": {
+    "exported": "تم تنزيل النسخة الاحتياطية",
+    "replaceConfirmBtn": "استبدال البيانات",
+    "replaceConsequence": "وضع الاستبدال يحذف السجلات الحالية قبل تحميل الملف. لا يمكن التراجع — صدّر نسخة احتياطية أولاً.",
+    "replaceTitle": "استبدال البيانات الحالية؟"
+  },
+  "expenses": {
+    "add": "إضافة مصروف",
+    "amount": "المبلغ",
+    "animalCategory": "فئة الحيوان",
+    "categoryAllocation": "فئة (مشترك بين مجموعة)",
+    "created": "تمت إضافة المصروف",
+    "date": "التاريخ",
+    "deleteRecalcHint": "يُعاد حساب مؤشرات لوحة التحكم وإجماليات أرباح وخسائر الحيوانات.",
+    "deleteToBinDescription": "نقل هذا المصروف إلى سلة المحذوفات؟ يمكنك استرجاعه في أي وقت.",
+    "entries": "قيود",
+    "fillRequired": "أدخل الفئة والمبلغ",
+    "none": "لا توجد مصروفات بعد",
+    "notes": "ملاحظات",
+    "pickCategoryFirst": "اختر فئة أولاً",
+    "subCategories": "الفئات الفرعية",
+    "subCategoryDescHelp": "يظهر كمساعدة مضمنة عندما يختار الموظفون هذه الفئة الفرعية في مصروف.",
+    "total": "الإجمالي"
+  },
+  "feed": {
+    "active": "نشط",
+    "dailyUse": "الاستهلاك اليومي",
+    "date": "التاريخ",
+    "daysLeft": "الأيام المتبقية",
+    "deletePricePermanentHint": "هذا نهائي ويغيّر حسابات تكلفة العلف من ذلك التاريخ.",
+    "deleteRationRecalcHint": "يُعاد حساب الاستهلاك اليومي وتوقعات الأيام المتبقية.",
+    "deleteRationToBin": "نقل خطة أعلاف {{name}} إلى سلة المحذوفات؟ يمكنك استرجاعها في أي وقت.",
+    "deleteStockRecalcHint": "يُعاد حساب المخزون المتوفر والأيام المتبقية.",
+    "deleteStockToBin": "نقل حركة {{name}} هذه إلى سلة المحذوفات؟ يمكنك استرجاعها في أي وقت.",
+    "effective": "يبدأ في",
+    "endDate": "تاريخ الانتهاء",
+    "ended": "منتهٍ",
+    "ongoing": "مستمر",
+    "runOut": "تاريخ النفاد",
+    "healthy": "المخزون جيد",
+    "item": "صنف العلف",
+    "ledger": "دفتر الحركات",
+    "needReorder": "أصناف تحتاج إعادة طلب",
+    "noLedger": "لا توجد حركات مخزون بعد",
+    "noRations": "لا توجد خطط أعلاف بعد",
+    "noStock": "لا توجد أصناف علف بعد",
+    "onHand": "المتوفر",
+    "qty": "الكمية",
+    "rations": "خطط الأعلاف",
+    "reorder": "إعادة طلب",
+    "stock": "المخزون",
+    "stockAdded": "تمت إضافة حركة المخزون",
+    "type": "النوع"
+  },
+  "incomeStatement": {
+    "breakdown": "التفصيل",
+    "costs": "إجمالي التكاليف",
+    "costsByCategory": "التكاليف حسب الفئة",
+    "feed": "العلف",
+    "feedPurchases": "مشتريات العلف",
+    "margin": "هامش الربح",
+    "noData": "لا توجد بيانات لهذه الفترة.",
+    "outstanding": "الذمم المستحقة",
+    "received": "المحصّل",
+    "subtitle": "الإيراد مقابل التكلفة للفترة المحددة"
+  },
+  "notifications": {
+    "allRead": "كل شيء محدث",
+    "none": "لا توجد إشعارات",
+    "unread": "غير مقروء"
+  },
+  "animalProfile": {
+    "deleteWeightHint": "يُعاد حساب سجل النمو وتقدم المرحلة.",
+    "feedRationPlans": "خطط أعلاف (فئة هذا الحيوان)",
+    "photo": "صورة الحيوان",
+    "weightDeleted": "تم حذف قيد الوزن"
+  },
+  "pnl": {
+    "allCategories": "كل الفئات",
+    "allStatus": "كل الحالات",
+    "lossShort": "خسارة",
+    "netByAnimalChart": "صافي الربح/الخسارة حسب الحيوان (أفضل ٢٠ مغلقاً)",
+    "ongoing": "مستمر",
+    "profitShort": "ربح"
+  },
+  "pregnancy": {
+    "checkup": "تاريخ الفحص",
+    "confirm": "تأكيد الحمل",
+    "confirmed": "تم تأكيد الحمل",
+    "confirmedOn": "تاريخ التأكيد",
+    "dam": "الأم",
+    "deleteConsequence": "حذف مؤقت — يمكن استرجاعه من سلة المحذوفات.",
+    "deleteTitle": "إزالة سجل الحمل هذا؟",
+    "dueHint": "تاريخ الولادة = التأكيد + مدة حمل النوع",
+    "none": "لا توجد سجلات حمل بعد",
+    "pickAnimal": "اختر الأم",
+    "remaining": "الأيام المتبقية"
+  },
+  "recycleBin": {
+    "deletedAt": "تاريخ الحذف",
+    "item": "العنصر",
+    "items": "عناصر",
+    "itemsAffected": "عناصر متأثرة",
+    "purge": "حذف نهائي",
+    "purgeAll": "حذف الكل نهائياً",
+    "purgeAllConsequence": "تُحذف كل السجلات القابلة للحذف نهائياً. لا يمكن التراجع.",
+    "purgeAllTitle": "حذف كل ما في السلة نهائياً؟",
+    "purgeConsequence": "لا يمكن التراجع — يُحذف السجل نهائياً وليس حذفاً مؤقتاً.",
+    "purgeTitle": "حذف هذا السجل نهائياً؟",
+    "purged": "تم الحذف نهائياً",
+    "type": "النوع"
+  },
+  "sales": {
+    "allSettled": "كل المبيعات مسددة",
+    "amount": "المبلغ",
+    "buyer": "المشتري",
+    "date": "التاريخ",
+    "deleteRecalcHint": "يُعاد حساب إجماليات الإيراد وأرباح وخسائر الحيوان.",
+    "deleteToBinDescription": "نقل سجل البيع هذا إلى سلة المحذوفات؟ يمكنك استرجاعه في أي وقت.",
+    "editSaleAria": "تعديل البيع",
+    "editSaleFor": "تعديل البيع",
+    "pendingPrice": "بانتظار السعر",
+    "price": "السعر",
+    "record": "تسجيل بيع",
+    "status": "الحالة",
+    "unpaidOnly": "غير المدفوعة فقط"
+  },
+  "search": {
+    "empty": "لا نتائج.",
+    "pages": "الصفحات"
+  },
+  "users": {
+    "lastSignedIn": "آخر ظهور",
+    "name": "الاسم",
+    "page": "الصفحة",
+    "permissions": "الصلاحيات",
+    "permsSaved": "تم حفظ الصلاحيات",
+    "searchPages": "ابحث في الصفحات…",
+    "unsaved": "تغييرات غير محفوظة — الخلايا المميزة تختلف عن المحفوظ.",
+    "users": "مستخدمين"
+  },
+  "vaccine": {
+    "batch": "رقم الدفعة",
+    "booster": "الجرعة المعززة",
+    "date": "التاريخ",
+    "deletePermanentHint": "يُحذف هذا السجل نهائياً — لا ينتقل إلى سلة المحذوفات.",
+    "deleteReminderHint": "تُحذف تذكيرات مواعيده أيضاً.",
+    "deleteVaccineHint": "تحتفظ سجلات التطعيم الحالية بتاريخها، لكن لا يمكن استخدام اللقاح بعد الآن.",
+    "nextDue": "الموعد التالي",
+    "none": "لا توجد سجلات تطعيم بعد",
+    "notes": "ملاحظات",
+    "pickAnimalVaccine": "اختر حيواناً ولقاحاً",
+    "record": "تسجيل تطعيم",
+    "recorded": "تم تسجيل التطعيم",
+    "records": "سجلات",
+    "vaccine": "اللقاح",
+    "vet": "الطبيب البيطري"
+  },
+  "weight": {
+    "date": "التاريخ",
+    "history": "سجل الأوزان",
+    "none": "لا توجد أوزان مسجلة بعد.",
+    "record": "تسجيل وزن",
+    "weight": "الوزن (كجم)"
+  }
+};
+function __deepFill(target: any, src: any) {
+  for (const k of Object.keys(src)) {
+    if (src[k] && typeof src[k] === "object") {
+      if (!target[k] || typeof target[k] !== "object") target[k] = {};
+      __deepFill(target[k], src[k]);
+    } else if (target[k] === undefined) {
+      target[k] = src[k];
+    }
+  }
+}
+__deepFill(en, __newEn);
+__deepFill(ar, __newAr);
 
 i18n
   .use(LanguageDetector)

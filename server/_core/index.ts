@@ -39,6 +39,7 @@ async function startServer() {
     console.log(`✅ Owner recovery access enabled for: ${ENV.ownerOpenId}`);
   }
   const app = express();
+  app.set("trust proxy", "loopback, linklocal, uniquelocal");
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

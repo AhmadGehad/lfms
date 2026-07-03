@@ -19,7 +19,7 @@ export function LanguageSwitcher() {
       variant="ghost"
       size="sm"
       onClick={toggle}
-      className="gap-1.5 font-medium text-xs"
+      className="min-h-11 gap-1.5 px-3 text-xs font-medium sm:min-h-8"
       title={isArabic ? "Switch to English" : "التبديل إلى العربية"}
     >
       <Globe className="h-3.5 w-3.5" />

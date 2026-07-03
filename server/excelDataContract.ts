@@ -23,14 +23,15 @@ import {
   sales,
   species,
   systemSettings,
+  userSettings,
   users,
   vaccines,
   vaccinationRecords,
   weightLog,
 } from "../drizzle/schema";
 
-export const EXCEL_DATA_FORMAT_VERSION = 6;
-export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5, 6] as const;
+export const EXCEL_DATA_FORMAT_VERSION = 7;
+export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5, 6, 7] as const;
 export const EXCEL_MANIFEST_SHEET = "LFMS Manifest";
 const VERSION_3_MISSING_COLUMNS = new Set([
   "animal_categories.lambIdSequence",
@@ -54,6 +55,8 @@ const VERSION_5_MISSING_COLUMNS = new Set([
   "audit_log.revertedByUserId",
   "audit_log.revertOfAuditId",
 ]);
+// Whole tables introduced in v7 — their sheet/array may be absent in v3–v6 files.
+const NEW_IN_VERSION_7_TABLES = new Set(["user_settings"]);
 
 export type CanonicalTableSpec = {
   key: string;
@@ -63,6 +66,11 @@ export type CanonicalTableSpec = {
 
 export const CANONICAL_TABLES: CanonicalTableSpec[] = [
   { key: "users", sheetName: "Data - Users", table: users },
+  {
+    key: "user_settings",
+    sheetName: "Data - User Settings",
+    table: userSettings,
+  },
   {
     key: "role_permissions",
     sheetName: "Data - Role Permissions",
@@ -152,12 +160,16 @@ function isLegacyMissingColumnAllowed(
   if (version <= 4 && (VERSION_4_MISSING_COLUMNS.has(`${tableKey}.${columnName}`) || NEW_IN_VERSION_5_TABLES.has(tableKey))) return true;
   // Columns new in v6, missing in any pre-v6 file.
   if (version <= 5 && VERSION_5_MISSING_COLUMNS.has(`${tableKey}.${columnName}`)) return true;
+  // Any column of a table new in v7 may be missing when importing a pre-v7 file.
+  if (version <= 6 && NEW_IN_VERSION_7_TABLES.has(tableKey)) return true;
   return false;
 }
 
-// A whole sheet/table introduced in v5 may be absent in a pre-v5 file.
+// A whole sheet/table introduced in a later version may be absent in an older file.
 function isLegacyMissingTableAllowed(version: number, tableKey: string) {
-  return version <= 4 && NEW_IN_VERSION_5_TABLES.has(tableKey);
+  if (version <= 4 && NEW_IN_VERSION_5_TABLES.has(tableKey)) return true;
+  if (version <= 6 && NEW_IN_VERSION_7_TABLES.has(tableKey)) return true;
+  return false;
 }
 
 function dateOnly(value: unknown): string | null {
@@ -349,7 +361,7 @@ export function isCanonicalWorkbook(workbook: ExcelJS.Workbook): boolean {
   const version = manifest
     ? Number(rawCellValue(manifest.getCell("B1")))
     : NaN;
-  return SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5 | 6);
+  return SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5 | 6 | 7);
 }
 
 export function readCanonicalWorkbook(
@@ -357,7 +369,7 @@ export function readCanonicalWorkbook(
 ): CanonicalWorkbookData {
   const manifest = workbook.getWorksheet(EXCEL_MANIFEST_SHEET);
   const version = manifest ? Number(rawCellValue(manifest.getCell("B1"))) : NaN;
-  if (!SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5 | 6)) {
+  if (!SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5 | 6 | 7)) {
     throw new Error(
       `Unsupported or missing LFMS Excel data format version. Supported versions: ${SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.join(", ")}.`
     );

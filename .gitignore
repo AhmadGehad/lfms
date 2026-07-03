@@ -114,13 +114,32 @@ client/public/__manus__/version.json
 
 # Agent skills
 .agents/
+.augment/
+.codebuddy/
+.codex/
+.continue/
+.cursor/
+.factory/
+.gemini/
+.github/prompts/
+.kiro/
+.opencode/
+.qoder/
+.roo/
+.trae/
+.warp/
+.windsurf/
 .claude/skills/
 .claude/agents/
 .devin/skills/
 .kilocode/
 .config/kilo/
 skills-lock.json
+business-analysis-skills/
 
-
+# Local agent/browser artifacts
+.playwright-mcp/
 graphify-out/
 ux-audit/
+i-attached-ux-audit-zip-open-and-follow-claude-design-prompt/
+ux-audit.zip

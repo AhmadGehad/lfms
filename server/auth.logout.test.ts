@@ -10,7 +10,12 @@ type CookieCall = {
 
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] } {
+function createAuthContext(
+  req: Pick<TrpcContext["req"], "protocol" | "headers"> = {
+    protocol: "https",
+    headers: {},
+  }
+): { ctx: TrpcContext; clearedCookies: CookieCall[] } {
   const clearedCookies: CookieCall[] = [];
 
   const user: AuthenticatedUser = {
@@ -28,8 +33,8 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
   const ctx: TrpcContext = {
     user,
     req: {
-      protocol: "https",
-      headers: {},
+      protocol: req.protocol,
+      headers: req.headers,
     } as TrpcContext["req"],
     res: {
       clearCookie: (name: string, options: Record<string, unknown>) => {
@@ -55,6 +60,24 @@ describe("auth.logout", () => {
       maxAge: -1,
       secure: true,
       sameSite: "none",
+      httpOnly: true,
+      path: "/",
+    });
+  });
+
+  it("clears the session cookie with local HTTP-compatible options", async () => {
+    const { ctx, clearedCookies } = createAuthContext({
+      protocol: "http",
+      headers: {},
+    });
+    const caller = appRouter.createCaller(ctx);
+
+    await caller.auth.logout();
+
+    expect(clearedCookies[0]?.options).toMatchObject({
+      maxAge: -1,
+      secure: false,
+      sameSite: "lax",
       httpOnly: true,
       path: "/",
     });

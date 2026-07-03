@@ -57,6 +57,7 @@ import { useLocation } from "wouter";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { OwnerFilterSelect } from "./OwnerFilterSelect";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
+import { DesignSwitch } from "./DesignSwitch";
 import { Button } from "./ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -479,19 +480,22 @@ function DashboardLayoutContent({
         {/* Mobile top bar */}
         {isMobile && (
           <div className={`flex border-b h-14 items-center justify-between bg-background/95 px-4 backdrop-blur sticky top-0 z-40 ${isAr ? "flex-row-reverse" : ""}`}>
-            <div className={`flex items-center gap-3 ${isAr ? "flex-row-reverse" : ""}`}>
+            <div className={`flex min-w-0 items-center gap-3 ${isAr ? "flex-row-reverse" : ""}`}>
               <SidebarTrigger className="h-9 w-9 rounded-lg" />
-              <span className="font-semibold text-sm">{activeLabel}</span>
+              <span className="truncate font-semibold text-sm">{activeLabel}</span>
             </div>
-            <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
-              <OwnerFilterSelect className="w-32" />
+            <div className={`flex shrink-0 items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
+              <DesignSwitch compact />
+              <OwnerFilterSelect className="hidden w-32 sm:block" />
               <LanguageSwitcher />
-              <button onClick={() => setLocation("/notifications")} className="relative p-2 rounded-lg hover:bg-muted">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className={`absolute top-1 ${isAr ? "left-1" : "right-1"} h-2 w-2 rounded-full bg-red-500`} />
-                )}
-              </button>
+              {perms.can("notifications", "view") && (
+                <button onClick={() => setLocation("/notifications")} className="relative p-2 rounded-lg hover:bg-muted">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className={`absolute top-1 ${isAr ? "left-1" : "right-1"} h-2 w-2 rounded-full bg-red-500`} />
+                  )}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -502,6 +506,7 @@ function DashboardLayoutContent({
           <div className={`flex border-b h-12 items-center justify-between bg-background/95 px-4 md:px-6 backdrop-blur sticky top-0 z-40 ${isAr ? "flex-row-reverse" : ""}`}>
             <span className="font-semibold text-sm text-muted-foreground">{activeLabel}</span>
             <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
+              <DesignSwitch />
               <span className="text-xs text-muted-foreground hidden lg:inline">{t("owners.filterByOwner")}</span>
               <OwnerFilterSelect />
             </div>

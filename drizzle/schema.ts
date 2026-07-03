@@ -28,6 +28,24 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// ─── PER-USER SETTINGS ─────────────────────────────────────────────────────────
+// Durable per-user preferences (design version, theme, saved views, density…).
+// Key/value so new prefs need no migration. `companyId` is nullable today and
+// becomes the tenant scope when multi-farm SaaS lands (docs/TENANCY_DESIGN.md).
+export const userSettings = mysqlTable("user_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  companyId: int("companyId"),
+  settingKey: varchar("settingKey", { length: 100 }).notNull(),
+  settingValue: text("settingValue").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => ({
+  userKeyUnique: uniqueIndex("user_settings_user_key_unique").on(table.userId, table.settingKey),
+}));
+
+export type UserSetting = typeof userSettings.$inferSelect;
+export type InsertUserSetting = typeof userSettings.$inferInsert;
+
 // ─── ROLE PERMISSIONS ────────────────────────────────────────────────────────
 // Rows are explicit overrides. Missing rows fall back to the legacy role
 // hierarchy defined in shared/permissions.ts.

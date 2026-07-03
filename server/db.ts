@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { toMinor, toMajor, divMinor } from "./_core/money";
-import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, pregnancyRecords, rationPlans, sales, species, systemSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
+import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, pregnancyRecords, rationPlans, sales, species, systemSettings, userSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -738,6 +738,40 @@ export async function upsertSetting(key: string, value: string, updatedBy?: numb
     .onDuplicateKeyUpdate({ set: { settingValue: value, updatedBy } });
 }
 
+// ─── PER-USER SETTINGS ──────────────────────────────────────────────────────────
+
+export async function getUserSettings(userId: number): Promise<Record<string, string>> {
+  const db = await getDb();
+  if (!db) return {};
+  try {
+    const rows = await db
+      .select({
+        settingKey: userSettings.settingKey,
+        settingValue: userSettings.settingValue,
+      })
+      .from(userSettings)
+      .where(eq(userSettings.userId, userId));
+    return Object.fromEntries(rows.map(r => [r.settingKey, r.settingValue]));
+  } catch (error) {
+    console.warn("[Preferences] user_settings unavailable; using client fallback", error);
+    return {};
+  }
+}
+
+export async function upsertUserSetting(userId: number, key: string, value: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  try {
+    await db.execute(sql`
+      INSERT INTO user_settings (userId, settingKey, settingValue)
+      VALUES (${userId}, ${key}, ${value})
+      ON DUPLICATE KEY UPDATE settingValue = ${value}
+    `);
+  } catch (error) {
+    console.warn("[Preferences] user_settings unavailable; preference kept in client cache", error);
+  }
+}
+
 // ─── ANIMALS ──────────────────────────────────────────────────────────────────
 
 export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; ownerId?: number; acquisitionType?: string; isActive?: boolean; sex?: "male" | "female"; search?: string; limit?: number }) {
@@ -1014,6 +1048,17 @@ export async function getSaleById(id: number) {
   return rows[0] ?? null;
 }
 
+/** Lock one sale row while a payment or edit is applied (read-modify-write). */
+export async function getSaleForUpdate(id: number, tx: DbOrTx) {
+  const rows = await tx
+    .select()
+    .from(sales)
+    .where(and(eq(sales.id, id), isNull(sales.deletedAt)))
+    .limit(1)
+    .for("update");
+  return rows[0] ?? null;
+}
+
 /** Single expense row (P2 perf: replaces load-all-then-find patterns). */
 export async function getExpenseById(id: number) {
   const db = await getDb();
@@ -1032,9 +1077,10 @@ export async function updateSale(
     saleDate: string;
     buyerName: string | null;
     notes: string | null;
-  }>
+  }>,
+  tx?: DbOrTx
 ) {
-  const db = await getDb();
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
   await db
     .update(sales)

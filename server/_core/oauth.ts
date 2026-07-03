@@ -2,6 +2,8 @@ import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
+import { getSafeDevLoginNext, isLocalDevAuthBypassAllowed } from "./devAuth";
+import { ENV } from "./env";
 import { sdk } from "./sdk";
 
 function getQueryParam(req: Request, key: string): string | undefined {
@@ -10,6 +12,39 @@ function getQueryParam(req: Request, key: string): string | undefined {
 }
 
 export function registerOAuthRoutes(app: Express) {
+  app.get("/api/dev/login", async (req: Request, res: Response) => {
+    if (!isLocalDevAuthBypassAllowed(req.hostname, req.ip || req.socket.remoteAddress)) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    const openId = ENV.ownerOpenId || "local-dev-owner";
+    const name = "Local Developer";
+
+    try {
+      await db.upsertUser({
+        openId,
+        name,
+        email: "local@lfms.dev",
+        loginMethod: "local-dev",
+        role: ENV.ownerOpenId ? undefined : "admin",
+        lastSignedIn: new Date(),
+      });
+
+      const sessionToken = await sdk.createSessionToken(openId, {
+        name,
+        expiresInMs: ONE_YEAR_MS,
+      });
+
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+      res.redirect(302, getSafeDevLoginNext(req.query.next));
+    } catch (error) {
+      console.error("[Auth] Local dev login failed", error);
+      res.status(500).json({ error: "Local dev login failed" });
+    }
+  });
+
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
     const state = getQueryParam(req, "state");
