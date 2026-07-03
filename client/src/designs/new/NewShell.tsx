@@ -398,7 +398,6 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex items-center gap-1.5">
             <DesignSwitch className="hidden sm:inline-flex" />
-            <OwnerFilterSelect className="hidden w-36 lg:block" />
             <QuickAdd className="hidden sm:flex" />
             {perms.can("notifications", "view") && (
               <button
