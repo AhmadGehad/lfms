@@ -529,10 +529,10 @@ export default function NewAnimals() {
     { id: "birth", header: t("animals.birthDate", "Birth Date"), cell: a => fmtDate(a.animal?.birthDate), sortValue: a => a.animal?.birthDate, hideable: true, defaultHidden: true, mobileLabel: t("animals.birthDate", "Birth Date") },
     { id: "age", header: t("animals.age", "Age"), cell: a => formatAge(a.animal?.birthDate, t("animals.ageDaysSuffix", "d"), t("animals.ageMonthsSuffix", "m"), t("animals.ageYearsSuffix", "y")), sortValue: a => a.animal?.birthDate ? -new Date(a.animal.birthDate).getTime() : null, hideable: true, defaultHidden: true, mobileLabel: t("animals.age", "Age") },
     { id: "acq", header: t("animals.acquisitionDate", "Acquired"), cell: a => fmtDate(a.animal?.acquisitionDate), sortValue: a => a.animal?.acquisitionDate, hideable: true, mobileLabel: t("animals.acquisitionDate", "Acquired") },
-    { id: "purchaseCost", header: t("animals.purchaseCost", "Purchase Cost"), cell: a => <span className="tabular-nums">{money(a.animal?.purchaseCost)}</span>, sortValue: a => parseFloat(a.animal?.purchaseCost ?? "0"), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("animals.purchaseCost", "Purchase Cost") },
+    { id: "purchaseCost", header: t("animals.purchaseCost", "Purchase Cost"), cell: a => <span className="tabular-nums">{money(a.animal?.purchaseCost)}</span>, sortValue: a => parseFloat(a.animal?.purchaseCost ?? "0"), hideable: true, defaultHidden: true, mobileLabel: t("animals.purchaseCost", "Purchase Cost") },
     { id: "nextVaccine", header: t("vaccine.nextVaccine", "Next Vaccine"), cell: a => dueLabel(a.nextVaccineDate, a.nextVaccineName), sortValue: a => a.nextVaccineDate, hideable: true, defaultHidden: true, mobileLabel: t("vaccine.nextVaccine", "Next Vaccine") },
     { id: "booster", header: t("vaccine.boosterDue", "Booster Due"), cell: a => dueLabel(a.nextBoosterDate, a.nextBoosterName), sortValue: a => a.nextBoosterDate, hideable: true, defaultHidden: true, mobileLabel: t("vaccine.boosterDue", "Booster Due") },
-    { id: "days", header: t("animals.daysOnFarm", "Days On Farm"), cell: a => <span className="tabular-nums">{daysOnFarm(a) ?? "—"}</span>, sortValue: a => daysOnFarm(a), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("animals.daysOnFarm", "Days On Farm") },
+    { id: "days", header: t("animals.daysOnFarm", "Days On Farm"), cell: a => <span className="tabular-nums">{daysOnFarm(a) ?? "—"}</span>, sortValue: a => daysOnFarm(a), hideable: true, defaultHidden: true, mobileLabel: t("animals.daysOnFarm", "Days On Farm") },
     {
       id: "percentage",
       header: t("animals.percentage", "% of Target"),
@@ -548,7 +548,6 @@ export default function NewAnimals() {
         const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
         return target > 0 ? (latest / target) * 100 : 0;
       },
-      align: "end",
       hideable: true,
       mobileLabel: t("animals.percentage", "% of Target"),
     },

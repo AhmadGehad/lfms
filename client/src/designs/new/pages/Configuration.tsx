@@ -116,7 +116,7 @@ export default function NewConfiguration() {
         <TabsContent value="species" className="mt-4">
           <EntityTable
             title={t("config.species", "Species")} rows={(species.data as any[]) ?? []} loading={species.isLoading} canEdit={canEdit} storageKey="cfgSpecies" rowKey={r => r.id}
-            columns={[nameCol(t("config.name", "Name")), { id: "gest", header: t("config.gestation", "Gestation (d)"), cell: (r: any) => r.gestationDays ?? "—", align: "end", mobileLabel: t("config.gestation", "Gestation (d)") }, activeCol]}
+            columns={[nameCol(t("config.name", "Name")), { id: "gest", header: t("config.gestation", "Gestation (d)"), cell: (r: any) => r.gestationDays ?? "—", mobileLabel: t("config.gestation", "Gestation (d)") }, activeCol]}
             fields={[
               { key: "name", label: t("config.name", "Name"), type: "text", required: true },
               { key: "description", label: t("config.description", "Description"), type: "textarea" },
@@ -129,7 +129,7 @@ export default function NewConfiguration() {
         <TabsContent value="categories" className="mt-4">
           <EntityTable
             title={t("config.categories", "Category")} rows={(categories.data as any[]) ?? []} loading={categories.isLoading} canEdit={canEdit} storageKey="cfgCategories" rowKey={r => r.id}
-            columns={[nameCol(t("config.name", "Name")), { id: "prefix", header: t("config.idPrefix", "Prefix"), cell: (r: any) => r.idPrefix, mobileLabel: t("config.idPrefix", "Prefix") }, { id: "target", header: t("config.targetWeight", "Target kg"), cell: (r: any) => r.targetWeightKg ?? "—", align: "end", hideable: true, mobileLabel: t("config.targetWeight", "Target kg") }, { id: "ready", header: t("config.readyToSell", "Ready %"), cell: (r: any) => r.readyToSellThreshold ?? "80", align: "end", mobileLabel: t("config.readyToSell", "Ready %") }, activeCol]}
+            columns={[nameCol(t("config.name", "Name")), { id: "prefix", header: t("config.idPrefix", "Prefix"), cell: (r: any) => r.idPrefix, mobileLabel: t("config.idPrefix", "Prefix") }, { id: "target", header: t("config.targetWeight", "Target kg"), cell: (r: any) => r.targetWeightKg ?? "—", hideable: true, mobileLabel: t("config.targetWeight", "Target kg") }, { id: "ready", header: t("config.readyToSell", "Ready %"), cell: (r: any) => r.readyToSellThreshold ?? "80", mobileLabel: t("config.readyToSell", "Ready %") }, activeCol]}
             fields={[
               { key: "name", label: t("config.name", "Name"), type: "text", required: true },
               { key: "speciesId", label: t("animals.species", "Species"), type: "select", options: speciesOpts, required: true },

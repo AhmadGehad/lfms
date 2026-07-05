@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
+import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
@@ -650,17 +651,19 @@ export default function NewAnimalProfile() {
             <p className="py-4 text-center text-sm text-muted-foreground">{t("weight.none", "No weights recorded yet.")}</p>
           ) : (
             <div className="space-y-4">
-              <div className="flex h-44 items-end gap-2 rounded-xl bg-surface p-3">
-                {weightRows.slice(-12).map((w, i) => {
-                  const value = parseFloat(w.weightKg ?? w.weight ?? 0);
-                  const max = Math.max(...weightRows.map(x => parseFloat(x.weightKg ?? x.weight ?? 0)), targetWeight || 0, 1);
-                  return (
-                    <div key={w.id ?? i} className="flex min-w-0 flex-1 flex-col items-center gap-1">
-                      <div className="w-full rounded-t-md bg-primary" style={{ height: `${Math.max(8, (value / max) * 140)}px` }} />
-                      <span className="w-full truncate text-center text-[10px] text-muted-foreground">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</span>
-                    </div>
-                  );
-                })}
+              <div className="h-64 rounded-xl bg-surface p-3">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={weightRows.slice(-30).map(w => ({
+                    date: fmtDate(w.weighDate ?? w.recordedDate ?? w.date),
+                    weight: parseFloat(w.weightKg ?? w.weight ?? 0),
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+                    <XAxis dataKey="date" stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
+                    <YAxis stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
+                    <Tooltip contentStyle={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }} />
+                    <Line type="monotone" dataKey="weight" stroke="var(--color-primary)" dot={{ fill: "var(--color-primary)", r: 3 }} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
               <table className="w-full text-sm">
                 <thead className="text-left text-muted-foreground">
