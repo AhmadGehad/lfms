@@ -393,9 +393,9 @@ export default function NewFeed() {
   const stockRows = (stock as any[]) ?? [];
   const stockCols: Column<any>[] = [
     { id: "item", header: t("feed.item", "Feed item"), cell: i => <span className="font-medium">{i.feedItemName}</span>, sortValue: i => i.feedItemName, primary: true, mobileLabel: t("feed.item", "Feed item") },
-    { id: "onhand", header: t("feed.onHand", "On hand"), cell: i => `${parseFloat(i.stockOnHand ?? 0).toFixed(1)} ${i.unit ?? ""}`, sortValue: i => parseFloat(i.stockOnHand ?? 0), align: "end", mobileLabel: t("feed.onHand", "On hand") },
-    { id: "daily", header: t("feed.dailyUse", "Daily use"), cell: i => `${parseFloat(i.dailyConsumption ?? 0).toFixed(2)}`, align: "end", hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
-    { id: "days", header: t("feed.daysLeft", "Days left"), cell: i => <span className={i.daysRemaining < 7 ? "font-medium text-danger-soft-foreground" : i.daysRemaining < 14 ? "text-warning-soft-foreground" : "text-foreground"}>{i.daysRemaining === 999 ? "∞" : i.daysRemaining}</span>, sortValue: i => i.daysRemaining, align: "end", mobileLabel: t("feed.daysLeft", "Days left") },
+    { id: "onhand", header: t("feed.onHand", "On hand"), cell: i => `${parseFloat(i.stockOnHand ?? 0).toFixed(1)} ${i.unit ?? ""}`, sortValue: i => parseFloat(i.stockOnHand ?? 0), mobileLabel: t("feed.onHand", "On hand") },
+    { id: "daily", header: t("feed.dailyUse", "Daily use"), cell: i => `${parseFloat(i.dailyConsumption ?? 0).toFixed(2)}`, hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
+    { id: "days", header: t("feed.daysLeft", "Days left"), cell: i => <span className={i.daysRemaining < 7 ? "font-medium text-danger-soft-foreground" : i.daysRemaining < 14 ? "text-warning-soft-foreground" : "text-foreground"}>{i.daysRemaining === 999 ? "∞" : i.daysRemaining}</span>, sortValue: i => i.daysRemaining, mobileLabel: t("feed.daysLeft", "Days left") },
     { id: "runout", header: t("feed.runOut", "Run-out"), cell: i => (i.runOutDate && i.daysRemaining !== 999 ? fmtDate(i.runOutDate) : "—"), sortValue: i => i.runOutDate, hideable: true, defaultHidden: true, mobileLabel: t("feed.runOut", "Run-out") },
     {
       id: "shrinkage",
@@ -433,14 +433,14 @@ export default function NewFeed() {
     { id: "type", header: t("feed.type", "Type"), cell: e => <StatusBadge tone={e.transactionType === "purchase" ? "info" : "neutral"} icon={false}>{String(e.transactionType ?? "").replace("_", " ")}</StatusBadge>, mobileLabel: t("feed.type", "Type") },
     { id: "qty", header: t("feed.qty", "Qty"), cell: e => parseFloat(e.qty ?? 0).toFixed(1), mobileLabel: t("feed.qty", "Qty") },
     { id: "unitCost", header: t("feed.unitCost", "Unit cost"), cell: e => (e.unitCost ? fmt(parseFloat(e.unitCost)) : "—"), hideable: true, defaultHidden: true, mobileLabel: t("feed.unitCost", "Unit cost") },
-    { id: "cost", header: t("feed.totalCost", "Total"), cell: e => (e.totalCost ? fmt(parseFloat(e.totalCost)) : e.qty && e.unitCost ? fmt(parseFloat(e.qty) * parseFloat(e.unitCost)) : "—"), align: "end", hideable: true, mobileLabel: t("feed.totalCost", "Total") },
+    { id: "cost", header: t("feed.totalCost", "Total"), cell: e => (e.totalCost ? fmt(parseFloat(e.totalCost)) : e.qty && e.unitCost ? fmt(parseFloat(e.qty) * parseFloat(e.unitCost)) : "—"), hideable: true, mobileLabel: t("feed.totalCost", "Total") },
     { id: "supplier", header: t("feed.supplier", "Supplier"), cell: e => e.supplierName ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("feed.supplier", "Supplier") },
   ];
 
   const priceRows = (prices as any[]) ?? [];
   const priceCols: Column<any>[] = [
     { id: "item", header: t("feed.item", "Feed item"), cell: p => <span className="font-medium">{p.feedItemName ?? `#${p.feedItemId}`}</span>, sortValue: p => p.feedItemName, primary: true, mobileLabel: t("feed.item", "Feed item") },
-    { id: "price", header: t("feed.pricePerUnit", "Price per unit"), cell: p => <span className="tabular-nums">{fmt(parseFloat(p.pricePerUnit))}{p.unit ? `/${p.unit}` : ""}</span>, sortValue: p => parseFloat(p.pricePerUnit), align: "end", mobileLabel: t("feed.pricePerUnit", "Price per unit") },
+    { id: "price", header: t("feed.pricePerUnit", "Price per unit"), cell: p => <span className="tabular-nums">{fmt(parseFloat(p.pricePerUnit))}{p.unit ? `/${p.unit}` : ""}</span>, sortValue: p => parseFloat(p.pricePerUnit), mobileLabel: t("feed.pricePerUnit", "Price per unit") },
     { id: "eff", header: t("feed.effective", "Effective"), cell: p => fmtDate(p.effectiveDate), sortValue: p => p.effectiveDate, mobileLabel: t("feed.effective", "Effective") },
     { id: "notes", header: t("common.notes", "Notes"), cell: p => <span className="block max-w-40 truncate text-muted-foreground">{p.notes ?? "—"}</span>, hideable: true, defaultHidden: true, mobileLabel: t("common.notes", "Notes") },
     { id: "created", header: t("common.created", "Created"), cell: p => fmtDate(p.createdAt), sortValue: p => p.createdAt, hideable: true, defaultHidden: true, mobileLabel: t("common.created", "Created") },
