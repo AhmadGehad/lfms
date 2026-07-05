@@ -74,6 +74,8 @@ export const species = mysqlTable("species", {
   // Average gestation length in days for this species, used to compute a
   // pregnancy's expected delivery date (confirmationDate + gestationDays).
   gestationDays: int("gestationDays").default(150).notNull(),
+  // Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80%)
+  readyToSellThreshold: decimal("readyToSellThreshold", { precision: 5, scale: 2 }).default("80.00").notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

@@ -423,7 +423,8 @@ export default function NewDashboard() {
         .filter(a => {
           const target = parseFloat(a.targetWeightKg ?? 0);
           const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-          return target > 0 && latest >= target * 0.95;
+          const threshold = parseFloat(a.speciesReadyToSellThreshold ?? "80") / 100;
+          return target > 0 && latest >= target * threshold;
         })
         .slice(0, 8)
         .map(a => {

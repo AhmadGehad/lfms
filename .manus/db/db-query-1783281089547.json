@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `species` ADD COLUMN `readyToSellThreshold` decimal(5,2) DEFAULT 80.00 NOT NULL COMMENT 'Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80%)';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute ALTER TABLE `species` ADD COLUMN `readyToSellThreshold` decimal(5,2) DEFAULT 80.00 NOT NULL COMMENT 'Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80%)';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1996
+}

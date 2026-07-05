@@ -116,11 +116,12 @@ export default function NewConfiguration() {
         <TabsContent value="species" className="mt-4">
           <EntityTable
             title={t("config.species", "Species")} rows={(species.data as any[]) ?? []} loading={species.isLoading} canEdit={canEdit} storageKey="cfgSpecies" rowKey={r => r.id}
-            columns={[nameCol(t("config.name", "Name")), { id: "gest", header: t("config.gestation", "Gestation (d)"), cell: (r: any) => r.gestationDays ?? "—", align: "end", mobileLabel: t("config.gestation", "Gestation (d)") }, activeCol]}
+            columns={[nameCol(t("config.name", "Name")), { id: "gest", header: t("config.gestation", "Gestation (d)"), cell: (r: any) => r.gestationDays ?? "—", align: "end", mobileLabel: t("config.gestation", "Gestation (d)") }, { id: "ready", header: t("config.readyToSell", "Ready %"), cell: (r: any) => r.readyToSellThreshold ?? "80", align: "end", mobileLabel: t("config.readyToSell", "Ready %") }, activeCol]}
             fields={[
               { key: "name", label: t("config.name", "Name"), type: "text", required: true },
               { key: "description", label: t("config.description", "Description"), type: "textarea" },
               { key: "gestationDays", label: t("config.gestation", "Gestation days"), type: "number", help: t("config.gestationHelp", "Average gestation length — used to compute pregnancy due dates.") },
+              { key: "readyToSellThreshold", label: t("config.readyToSellThreshold", "Ready to Sell (%)"), type: "number", help: t("config.readyToSellHelp", "Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80% of target).") },
             ]}
             onCreate={v => m.createSpecies.mutate(v as any)} onUpdate={(id, v) => m.updateSpecies.mutate({ id, ...v } as any)}
           />

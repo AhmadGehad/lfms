@@ -451,7 +451,10 @@ export default function NewAnimals() {
       const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
       if (view === "active" && a.animal?.isActive === false) return false;
       if (view === "fattening" && !(category.includes("fatten") || status.includes("fatten"))) return false;
-      if (view === "ready" && !(a.animal?.isActive !== false && target > 0 && latest >= target)) return false;
+      if (view === "ready") {
+        const threshold = parseFloat(a.speciesReadyToSellThreshold ?? "80") / 100;
+        if (!(a.animal?.isActive !== false && target > 0 && latest >= target * threshold)) return false;
+      }
       if (view === "females" && a.animal?.sex !== "female") return false;
       if (view === "sold" && !(a.isExitStatus || status.includes("sold") || a.animal?.isActive === false)) return false;
       if (!q) return true;
@@ -474,7 +477,8 @@ export default function NewAnimals() {
       ready: count(a => {
         const target = parseFloat(a.targetWeightKg ?? 0);
         const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-        return a.animal?.isActive !== false && target > 0 && latest >= target;
+        const threshold = parseFloat(a.speciesReadyToSellThreshold ?? "80") / 100;
+        return a.animal?.isActive !== false && target > 0 && latest >= target * threshold;
       }),
       females: count(a => a.animal?.sex === "female"),
       sold: count(a => a.isExitStatus || String(a.statusName ?? "").toLowerCase().includes("sold") || a.animal?.isActive === false),

@@ -103,7 +103,7 @@ export async function createSpecies(data: { name: string; description?: string; 
   return result;
 }
 
-export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean; gestationDays: number }>) {
+export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean; gestationDays: number; readyToSellThreshold: number }>) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(species).set(data).where(eq(species.id, id));
@@ -786,6 +786,7 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
     .select({
       animal: animals,
       speciesName: species.name,
+      speciesReadyToSellThreshold: species.readyToSellThreshold,
       categoryName: animalCategories.name,
       categoryPrefix: animalCategories.idPrefix,
       targetWeightKg: animalCategories.targetWeightKg,
