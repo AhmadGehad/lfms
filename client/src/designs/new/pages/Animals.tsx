@@ -388,10 +388,24 @@ export default function NewAnimals() {
   const canVaccinate = perms.can("vaccinations", "create");
   const utils = trpc.useUtils();
 
+  const query = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
   const [search, setSearch] = useState("");
-  const [filterSpecies, setFilterSpecies] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterAcquisitionType, setFilterAcquisitionType] = useState("all");
+  const [filterSpecies, setFilterSpecies] = useState(() => query.get("species") || "all");
+  const [filterStatus, setFilterStatus] = useState(() => query.get("status") || "all");
+  const [filterAcquisitionType, setFilterAcquisitionType] = useState(() => query.get("source") || "all");
+  
+  // Sync filters to URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchStr);
+    if (filterSpecies !== "all") params.set("species", filterSpecies);
+    else params.delete("species");
+    if (filterStatus !== "all") params.set("status", filterStatus);
+    else params.delete("status");
+    if (filterAcquisitionType !== "all") params.set("source", filterAcquisitionType);
+    else params.delete("source");
+    const qs = params.toString();
+    setLocation(`${location.split("?")[0]}${qs ? `?${qs}` : ""}`);
+  }, [filterSpecies, filterStatus, filterAcquisitionType]);
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
   const [view, setView] = useState<"all" | "active" | "fattening" | "ready" | "females" | "sold">("active");
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
@@ -426,7 +440,6 @@ export default function NewAnimals() {
     onError: e => toast.error(e.message),
   });
   const rowsBase = (animals as any[]) ?? [];
-  const query = useMemo(() => new URLSearchParams(searchStr), [searchStr]);
 
   useEffect(() => {
     const qView = query.get("view");
