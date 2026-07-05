@@ -33,7 +33,7 @@ const monthAgo = () => {
 
 type ExpenseForm = {
   expenseDate: string;
-  categoryId: string;
+  categoryIds: string[];
   subCategoryId: string;
   amount: string;
   targetType: string;
@@ -45,7 +45,7 @@ type ExpenseForm = {
 
 const blankForm = (): ExpenseForm => ({
   expenseDate: today(),
-  categoryId: "",
+  categoryIds: [],
   subCategoryId: "",
   amount: "",
   targetType: "general",
@@ -82,13 +82,26 @@ function ExpenseFormFields({ form, setForm }: {
       <FormField label={t("expenses.amount", "Amount")} required>
         <Input type="number" inputMode="decimal" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
       </FormField>
-      <FormField label={t("expenses.category", "Category")} required>
-        <Select value={form.categoryId} onValueChange={v => setForm(f => ({ ...f, categoryId: v, subCategoryId: "" }))}>
-          <SelectTrigger><SelectValue placeholder={t("common.select", "Select")} /></SelectTrigger>
-          <SelectContent>
-            {((categories as any[]) ?? []).map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
+      <FormField label={t("expenses.category", "Categories")} required>
+        <div className="grid grid-cols-2 gap-3">
+          {((categories as any[]) ?? []).map(c => (
+            <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.categoryIds.includes(String(c.id))}
+                onChange={e => {
+                  if (e.target.checked) {
+                    setForm(f => ({ ...f, categoryIds: [...f.categoryIds, String(c.id)], subCategoryId: "" }));
+                  } else {
+                    setForm(f => ({ ...f, categoryIds: f.categoryIds.filter(id => id !== String(c.id)), subCategoryId: "" }));
+                  }
+                }}
+                className="w-4 h-4"
+              />
+              <span className="text-sm">{c.name}</span>
+            </label>
+          ))}
+        </div>
       </FormField>
       <FormField
         label={t("expenses.subCategory", "Sub-category")}
@@ -147,7 +160,7 @@ function ExpenseFormFields({ form, setForm }: {
 }
 
 function validateExpenseForm(form: ExpenseForm, t: (k: string, d: string) => string): string | null {
-  if (!form.categoryId || !(parseFloat(form.amount) > 0)) return t("expenses.fillRequired", "Enter a category and amount");
+  if (form.categoryIds.length === 0 || !(parseFloat(form.amount) > 0)) return t("expenses.fillRequired", "Enter at least one category and amount");
   if (form.targetType === "head" && !form.headId) return t("expenses.selectAnimalForHead", "Select an animal for a per-head expense");
   if (form.targetType === "category" && !form.categoryTarget) return t("expenses.selectCategoryForCat", "Select an animal category");
   return null;
@@ -155,7 +168,7 @@ function validateExpenseForm(form: ExpenseForm, t: (k: string, d: string) => str
 
 const toPayload = (form: ExpenseForm) => ({
   expenseDate: form.expenseDate,
-  categoryId: Number(form.categoryId),
+  categoryIds: form.categoryIds.map(Number),
   subCategoryId: form.subCategoryId ? Number(form.subCategoryId) : undefined,
   amount: form.amount,
   targetType: form.targetType as any,
@@ -233,7 +246,7 @@ export default function NewExpenses() {
   const startEdit = (r: any) => {
     setEditForm({
       expenseDate: new Date(r.expense.expenseDate).toISOString().slice(0, 10),
-      categoryId: String(r.expense.categoryId),
+      categoryIds: r.expense.categoryIds ? r.expense.categoryIds.map(String) : [String(r.expense.categoryId)],
       subCategoryId: r.expense.subCategoryId ? String(r.expense.subCategoryId) : "",
       amount: String(r.expense.amount),
       targetType: r.expense.targetType ?? "general",
