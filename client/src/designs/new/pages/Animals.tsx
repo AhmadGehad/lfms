@@ -449,10 +449,10 @@ export default function NewAnimals() {
       const category = String(a.categoryName ?? "").toLowerCase();
       const target = parseFloat(a.targetWeightKg ?? 0);
       const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-      if (view === "active" && a.animal?.isActive === false) return false;
+      if (view !== "all" && view !== "sold" && a.animal?.isActive === false) return false;
       if (view === "fattening" && !(category.includes("fatten") || status.includes("fatten"))) return false;
       if (view === "ready") {
-        const threshold = parseFloat(a.speciesReadyToSellThreshold ?? "80") / 100;
+        const threshold = parseFloat(a.categoryReadyToSellThreshold ?? "80") / 100;
         if (!(a.animal?.isActive !== false && target > 0 && latest >= target * threshold)) return false;
       }
       if (view === "females" && a.animal?.sex !== "female") return false;
@@ -477,7 +477,7 @@ export default function NewAnimals() {
       ready: count(a => {
         const target = parseFloat(a.targetWeightKg ?? 0);
         const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-        const threshold = parseFloat(a.speciesReadyToSellThreshold ?? "80") / 100;
+        const threshold = parseFloat(a.categoryReadyToSellThreshold ?? "80") / 100;
         return a.animal?.isActive !== false && target > 0 && latest >= target * threshold;
       }),
       females: count(a => a.animal?.sex === "female"),
@@ -533,6 +533,25 @@ export default function NewAnimals() {
     { id: "nextVaccine", header: t("vaccine.nextVaccine", "Next Vaccine"), cell: a => dueLabel(a.nextVaccineDate, a.nextVaccineName), sortValue: a => a.nextVaccineDate, hideable: true, defaultHidden: true, mobileLabel: t("vaccine.nextVaccine", "Next Vaccine") },
     { id: "booster", header: t("vaccine.boosterDue", "Booster Due"), cell: a => dueLabel(a.nextBoosterDate, a.nextBoosterName), sortValue: a => a.nextBoosterDate, hideable: true, defaultHidden: true, mobileLabel: t("vaccine.boosterDue", "Booster Due") },
     { id: "days", header: t("animals.daysOnFarm", "Days On Farm"), cell: a => <span className="tabular-nums">{daysOnFarm(a) ?? "—"}</span>, sortValue: a => daysOnFarm(a), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("animals.daysOnFarm", "Days On Farm") },
+    {
+      id: "percentage",
+      header: t("animals.percentage", "% of Target"),
+      cell: a => {
+        const target = parseFloat(a.targetWeightKg ?? 0);
+        const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
+        if (target <= 0) return "—";
+        const pct = ((latest / target) * 100).toFixed(1);
+        return <span className="tabular-nums">{pct}%</span>;
+      },
+      sortValue: a => {
+        const target = parseFloat(a.targetWeightKg ?? 0);
+        const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
+        return target > 0 ? (latest / target) * 100 : 0;
+      },
+      align: "end",
+      hideable: true,
+      mobileLabel: t("animals.percentage", "% of Target"),
+    },
   ];
 
   return (

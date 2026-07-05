@@ -786,8 +786,8 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
     .select({
       animal: animals,
       speciesName: species.name,
-      speciesReadyToSellThreshold: species.readyToSellThreshold,
       categoryName: animalCategories.name,
+      categoryReadyToSellThreshold: animalCategories.readyToSellThreshold,
       categoryPrefix: animalCategories.idPrefix,
       targetWeightKg: animalCategories.targetWeightKg,
       groupCode: groups.groupCode,

@@ -116,12 +116,11 @@ export default function NewConfiguration() {
         <TabsContent value="species" className="mt-4">
           <EntityTable
             title={t("config.species", "Species")} rows={(species.data as any[]) ?? []} loading={species.isLoading} canEdit={canEdit} storageKey="cfgSpecies" rowKey={r => r.id}
-            columns={[nameCol(t("config.name", "Name")), { id: "gest", header: t("config.gestation", "Gestation (d)"), cell: (r: any) => r.gestationDays ?? "—", align: "end", mobileLabel: t("config.gestation", "Gestation (d)") }, { id: "ready", header: t("config.readyToSell", "Ready %"), cell: (r: any) => r.readyToSellThreshold ?? "80", align: "end", mobileLabel: t("config.readyToSell", "Ready %") }, activeCol]}
+            columns={[nameCol(t("config.name", "Name")), { id: "gest", header: t("config.gestation", "Gestation (d)"), cell: (r: any) => r.gestationDays ?? "—", align: "end", mobileLabel: t("config.gestation", "Gestation (d)") }, activeCol]}
             fields={[
               { key: "name", label: t("config.name", "Name"), type: "text", required: true },
               { key: "description", label: t("config.description", "Description"), type: "textarea" },
               { key: "gestationDays", label: t("config.gestation", "Gestation days"), type: "number", help: t("config.gestationHelp", "Average gestation length — used to compute pregnancy due dates.") },
-              { key: "readyToSellThreshold", label: t("config.readyToSellThreshold", "Ready to Sell (%)"), type: "number", help: t("config.readyToSellHelp", "Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80% of target).") },
             ]}
             onCreate={v => m.createSpecies.mutate(v as any)} onUpdate={(id, v) => m.updateSpecies.mutate({ id, ...v } as any)}
           />
@@ -130,13 +129,14 @@ export default function NewConfiguration() {
         <TabsContent value="categories" className="mt-4">
           <EntityTable
             title={t("config.categories", "Category")} rows={(categories.data as any[]) ?? []} loading={categories.isLoading} canEdit={canEdit} storageKey="cfgCategories" rowKey={r => r.id}
-            columns={[nameCol(t("config.name", "Name")), { id: "prefix", header: t("config.idPrefix", "Prefix"), cell: (r: any) => r.idPrefix, mobileLabel: t("config.idPrefix", "Prefix") }, { id: "target", header: t("config.targetWeight", "Target kg"), cell: (r: any) => r.targetWeightKg ?? "—", align: "end", hideable: true, mobileLabel: t("config.targetWeight", "Target kg") }, activeCol]}
+            columns={[nameCol(t("config.name", "Name")), { id: "prefix", header: t("config.idPrefix", "Prefix"), cell: (r: any) => r.idPrefix, mobileLabel: t("config.idPrefix", "Prefix") }, { id: "target", header: t("config.targetWeight", "Target kg"), cell: (r: any) => r.targetWeightKg ?? "—", align: "end", hideable: true, mobileLabel: t("config.targetWeight", "Target kg") }, { id: "ready", header: t("config.readyToSell", "Ready %"), cell: (r: any) => r.readyToSellThreshold ?? "80", align: "end", mobileLabel: t("config.readyToSell", "Ready %") }, activeCol]}
             fields={[
               { key: "name", label: t("config.name", "Name"), type: "text", required: true },
               { key: "speciesId", label: t("animals.species", "Species"), type: "select", options: speciesOpts, required: true },
               { key: "idPrefix", label: t("config.idPrefix", "ID prefix"), type: "text", required: true, help: t("config.idPrefixHelp", "Prefix for auto-generated animal IDs in this category.") },
               { key: "targetWeightKg", label: t("config.targetWeight", "Target weight (kg)"), type: "number" },
               { key: "autoStageWeightKg", label: t("config.autoStage", "Auto-stage weight (kg)"), type: "number", help: t("config.autoStageHelp", "When an animal reaches this weight at weigh-in, it auto-moves to the target category.") },
+              { key: "readyToSellThreshold", label: t("config.readyToSellThreshold", "Ready to Sell (%)"), type: "number", help: t("config.readyToSellHelp", "Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80% of target).") },
             ]}
             onCreate={v => m.createCategory.mutate({ ...v, speciesId: Number(v.speciesId) } as any)} onUpdate={(id, v) => m.updateCategory.mutate({ id, ...v } as any)}
           />
