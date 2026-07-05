@@ -11,12 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
+import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, Pencil, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
 import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 
 function tone(name?: string): StatusTone {
@@ -308,6 +309,7 @@ export default function NewAnimalProfile() {
   const [weighOpen, setWeighOpen] = useState(false);
   const [saleOpen, setSaleOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [deleteWeightRow, setDeleteWeightRow] = useState<any | null>(null);
   const [tab, setTab] = useState<"weight" | "financial" | "expenses" | "feed" | "vaccinations" | "pregnancy" | "lineage" | "activity">("weight");
 
@@ -385,10 +387,16 @@ export default function NewAnimalProfile() {
         crumbs={[{ label: t("newNav.animals", "Animals"), href: "/animals" }, { label: code }]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" onClick={() => setLocation("/animals")}>
+            <Button type="button" variant="outline" onClick={() => window.history.back()}>
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               {t("common.back", "Back")}
             </Button>
+            {perms.can("animals", "update") && (
+              <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+                {t("common.edit", "Edit")}
+              </Button>
+            )}
             {perms.can("expenses", "create") && (
               <Button type="button" variant="outline" onClick={() => setExpenseOpen(true)}>
                 <DollarSign className="h-4 w-4" aria-hidden="true" />
@@ -733,6 +741,7 @@ export default function NewAnimalProfile() {
         </Panel>
       )}
 
+      <EditAnimalDialog open={editOpen} onOpenChange={setEditOpen} animalId={animalId} />
       <WeighInSessionDialog open={weighOpen} onOpenChange={setWeighOpen} animals={row ? [row] : []} startAnimalId={animalId} />
       <RecordSaleDialog open={saleOpen} onOpenChange={setSaleOpen} animal={row} pnl={p} />
       <ProfileAddExpense animalId={animalId} code={code} open={expenseOpen} onOpenChange={setExpenseOpen} />

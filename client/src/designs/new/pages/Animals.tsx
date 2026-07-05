@@ -506,6 +506,22 @@ export default function NewAnimals() {
 
   const columns: Column<any>[] = [
     {
+      id: "photo",
+      header: "",
+      cell: a => (
+        <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+          {a.animal?.photoUrl ? (
+            <img src={a.animal.photoUrl} alt={a.animal?.animalId} className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">—</div>
+          )}
+        </div>
+      ),
+      sortValue: () => null,
+      hideable: false,
+      mobileLabel: "",
+    },
+    {
       id: "animalId",
       header: t("animals.animalId", "Animal ID"),
       cell: a => <span className="font-medium text-foreground">{a.animal?.animalId}</span>,
@@ -518,6 +534,7 @@ export default function NewAnimals() {
     { id: "group", header: t("animals.group", "Group"), cell: a => a.groupName ?? "—", sortValue: a => a.groupName, hideable: true, mobileLabel: t("animals.group", "Group") },
     { id: "owner", header: t("owners.owner", "Owner"), cell: a => a.ownerName ?? "—", sortValue: a => a.ownerName, hideable: true, defaultHidden: true, mobileLabel: t("owners.owner", "Owner") },
     { id: "sex", header: t("animals.sex", "Sex"), cell: a => t(`animals.${a.animal?.sex}`, a.animal?.sex), sortValue: a => a.animal?.sex, hideable: true, mobileLabel: t("animals.sex", "Sex") },
+    { id: "weight", header: t("animals.currentWeight", "Current Weight (kg)"), cell: a => <span className="tabular-nums">{a.latestWeightKg ? parseFloat(a.latestWeightKg).toFixed(1) : a.animal?.weightAtAcquisition ? parseFloat(a.animal.weightAtAcquisition).toFixed(1) : "—"}</span>, sortValue: a => parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? "0"), hideable: true, mobileLabel: t("animals.currentWeight", "Current Weight") },
     {
       id: "status",
       header: t("animals.status", "Status"),
