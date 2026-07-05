@@ -893,8 +893,8 @@ export function BulkRecordSaleDialog({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid min-h-0 flex-1 gap-0 overflow-y-auto md:grid-cols-[330px_1fr]">
-            <section className="min-h-0 border-b border-border p-4 md:border-b-0 md:border-e">
+          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-0 overflow-y-auto md:overflow-hidden md:grid-cols-[330px_minmax(0,1fr)]">
+            <section className="border-b border-border p-4 md:min-h-0 md:overflow-y-auto md:border-b-0 md:border-e">
               <Label htmlFor="sale-animal-search">{t("animals.searchAnimal", "Search Animal")}</Label>
               <div className="relative mt-1">
                 <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -935,7 +935,7 @@ export function BulkRecordSaleDialog({
               </div>
             </section>
 
-            <section className="min-h-0 overflow-y-auto p-4">
+            <section className="p-4 md:min-h-0 md:overflow-y-auto">
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label={t("common.date", "Date")} htmlFor="bulk-sale-date" required>
                   <Input id="bulk-sale-date" name="saleDate" type="date" value={form.saleDate} onChange={e => setForm(f => ({ ...f, saleDate: e.target.value }))} />
