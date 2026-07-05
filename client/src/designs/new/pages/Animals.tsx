@@ -510,8 +510,8 @@ export default function NewAnimals() {
       header: "",
       cell: a => (
         <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-          {a.animal?.photoUrl ? (
-            <img src={a.animal.photoUrl} alt={a.animal?.animalId} className="h-full w-full object-cover" />
+          {a.photoUrl ? (
+            <img src={a.photoUrl} alt={a.animal?.animalId} className="h-full w-full object-cover" />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">—</div>
           )}
