@@ -96,7 +96,7 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" />{t("sales.recordSale")}</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("sales.recordAnimalSale")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">

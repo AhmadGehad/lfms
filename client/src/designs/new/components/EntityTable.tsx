@@ -115,7 +115,7 @@ export function EntityTable<T>({
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{editId != null ? t("common.edit", "Edit") : t("common.add", "Add")} {title}</DialogTitle></DialogHeader>
           <FormSection>
             {fields.filter(f => !(f.createOnly && editId != null)).map(f => (

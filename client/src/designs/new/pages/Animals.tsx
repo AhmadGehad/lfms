@@ -145,7 +145,7 @@ function BulkVaccinationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto p-0 sm:max-w-2xl">
         <DialogHeader className="border-b border-border px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-info-soft text-info-soft-foreground">
@@ -272,7 +272,7 @@ function BulkEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto p-0 sm:max-w-2xl">
         <DialogHeader className="border-b border-border px-6 py-4">
           <DialogTitle>{t("animals.bulkEdit", "Bulk Edit")} ({selectedAnimals.length})</DialogTitle>
         </DialogHeader>

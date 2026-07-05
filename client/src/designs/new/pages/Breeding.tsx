@@ -521,7 +521,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       />
 
       <Dialog open={birthOpen} onOpenChange={setBirthOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader><DialogTitle>{t("breeding.recordBirth", "Record birth")}</DialogTitle></DialogHeader>
           <FormSection>
             <FormField label={t("animals.species", "Species")} htmlFor="birth-species" required>
@@ -610,7 +610,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       </Dialog>
 
       <Dialog open={edit !== null} onOpenChange={open => !open && setEdit(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader><DialogTitle>{t("common.edit", "Edit")} {edit?.lambId}</DialogTitle></DialogHeader>
           <FormSection>
             <AnimalIdNumberField
@@ -683,7 +683,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       </Dialog>
 
       <Dialog open={promote !== null} onOpenChange={open => !open && setPromote(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("breeding.promoteLambToRegistry", "Promote lamb to animal registry")}</DialogTitle></DialogHeader>
           <div className="mb-2 flex items-start gap-2 rounded-lg border border-border bg-surface p-3 text-sm">
             <Baby className="mt-0.5 h-4 w-4 shrink-0 text-warning" />

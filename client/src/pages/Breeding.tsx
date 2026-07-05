@@ -171,7 +171,7 @@ function RecordBirthDialog() {
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" />{t("breeding.recordBirth")}</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("breeding.recordNewBirth")}</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -413,7 +413,7 @@ function EditLambingDialog({ record, open, onOpenChange }: { record: any; open: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto overscroll-contain">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle>{t("common.edit")} {record?.lambId}</DialogTitle>
         </DialogHeader>
@@ -861,7 +861,7 @@ export default function Breeding() {
 
       {/* Promote Dialog */}
       <Dialog open={promoteDialog.open} onOpenChange={(o) => setPromoteDialog({ open: o, lambId: promoteDialog.lambId })}>
-        <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto overscroll-contain">
+        <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto overscroll-contain">
           <DialogHeader><DialogTitle>{t("breeding.promoteLambToRegistry")}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">

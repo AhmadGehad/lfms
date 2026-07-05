@@ -326,7 +326,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("pregnancy.confirm", "Confirm pregnancy")}</DialogTitle></DialogHeader>
           <FormSection>
             <FormField label={t("pregnancy.animal", "Dam")} htmlFor="pregnancy-animal" required>
@@ -368,7 +368,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
       </Dialog>
 
       <Dialog open={editRow !== null} onOpenChange={open => !open && setEditRow(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("pregnancy.edit", "Edit pregnancy")}</DialogTitle></DialogHeader>
           <FormSection>
             <FormField label={t("pregnancy.confirmationDate", "Confirmation date")} htmlFor="edit-pregnancy-confirmation-date">

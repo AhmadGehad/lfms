@@ -82,7 +82,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2"><Plus className="h-4 w-4" />{t("expenses.addExpense")}</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("expenses.recordExpense")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -243,7 +243,7 @@ function EditExpenseDialog({ expense, onSuccess }: { expense: any; onSuccess: ()
           <Pencil className="h-4 w-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("expenses.editExpense")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -204,7 +204,7 @@ function RecordPregnancyDialog({ onSuccess }: { onSuccess: () => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" />{t("pregnancy.record")}</Button></DialogTrigger>
-      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("pregnancy.record")}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="space-y-1.5">

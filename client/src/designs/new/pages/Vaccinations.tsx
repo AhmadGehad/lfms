@@ -120,7 +120,7 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader><DialogTitle>{t("vaccine.bulkApply", "Bulk apply")}</DialogTitle></DialogHeader>
         <FormSection>
           <FormField label={t("vaccine.applyTo", "Apply to")} required full>
@@ -360,7 +360,7 @@ export default function NewVaccinations() {
 
       {/* Record */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("vaccine.record", "Record vaccination")}</DialogTitle></DialogHeader>
           <FormSection>
             <FormField label={t("animals.animalId", "Animal")} required>
@@ -410,7 +410,7 @@ export default function NewVaccinations() {
 
       {/* Edit (animal + vaccine locked, same as Old) */}
       <Dialog open={editRow !== null} onOpenChange={o => !o && setEditRow(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("vaccine.editVaccination", "Edit vaccination")} · {editRow?.animalIdStr ?? ""} · {editRow?.vaccineName ?? ""}</DialogTitle>
           </DialogHeader>

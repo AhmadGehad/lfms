@@ -355,7 +355,7 @@ export default function NewExpenses() {
 
       {/* Create */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("expenses.add", "Add expense")}</DialogTitle></DialogHeader>
           <ExpenseFormFields form={form} setForm={setForm} />
           <FormFooter>
@@ -368,7 +368,7 @@ export default function NewExpenses() {
 
       {/* Edit */}
       <Dialog open={editRow !== null} onOpenChange={o => !o && setEditRow(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("expenses.editExpense", "Edit expense")}</DialogTitle></DialogHeader>
           <ExpenseFormFields form={editForm} setForm={setEditForm} />
           <FormFooter>

@@ -139,7 +139,7 @@ export function EditAnimalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto overscroll-contain">
+      <DialogContent className="max-h-[90dvh] max-w-lg overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle>{t("common.edit")} {animal?.animal.animalId}</DialogTitle>
         </DialogHeader>

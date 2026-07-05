@@ -173,7 +173,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
   };
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader><DialogTitle>{t("expenses.add", "Add expense")} · {code}</DialogTitle></DialogHeader>
         <FormSection>
           <FormField label={t("expenses.date", "Date")} required>

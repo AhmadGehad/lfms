@@ -85,7 +85,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2"><span className="text-lg leading-none">+</span> {t("feed.addStock")}</Button>
       </DialogTrigger>
-      <DialogContent className="w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("feed.addStockEntry")}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">

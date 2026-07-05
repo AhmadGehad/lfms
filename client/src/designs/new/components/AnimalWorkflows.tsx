@@ -105,7 +105,7 @@ export function QuickExpenseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-lg">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto p-0 sm:max-w-lg">
         <DialogHeader className="border-b border-border px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-warning-soft text-warning-soft-foreground">
@@ -237,7 +237,7 @@ export function AnimalCreateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[92dvh] overflow-y-auto p-0 sm:max-w-2xl">
         <DialogHeader className="border-b border-border px-6 py-4">
           <DialogTitle className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary-soft text-primary-soft-foreground">
@@ -407,7 +407,7 @@ export function WeighInSessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[94vh] overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] max-h-[calc(100dvh-2rem)] overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="border-b border-border px-6 py-4">
           <DialogTitle className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-lg bg-info-soft text-info-soft-foreground">
@@ -635,7 +635,7 @@ export function RecordSaleDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[92vh] overflow-y-auto p-0 sm:max-w-2xl">
+        <DialogContent className="max-h-[92dvh] overflow-y-auto p-0 sm:max-w-2xl">
           <DialogHeader className="border-b border-border px-6 py-4">
             <DialogTitle className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-lg bg-danger-soft text-danger-soft-foreground">
@@ -878,7 +878,7 @@ export function BulkRecordSaleDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[94vh] overflow-hidden p-0 sm:max-w-5xl">
+        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] max-h-[calc(100dvh-2rem)] overflow-hidden p-0 sm:max-w-5xl">
           <DialogHeader className="border-b border-border px-6 py-4">
             <DialogTitle className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-lg bg-danger-soft text-danger-soft-foreground">
@@ -893,7 +893,7 @@ export function BulkRecordSaleDialog({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid min-h-0 flex-1 gap-0 overflow-hidden md:grid-cols-[330px_1fr]">
+          <div className="grid min-h-0 flex-1 gap-0 overflow-y-auto md:grid-cols-[330px_1fr]">
             <section className="min-h-0 border-b border-border p-4 md:border-b-0 md:border-e">
               <Label htmlFor="sale-animal-search">{t("animals.searchAnimal", "Search Animal")}</Label>
               <div className="relative mt-1">

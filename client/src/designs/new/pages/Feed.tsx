@@ -626,7 +626,7 @@ export default function NewFeed() {
 
       {/* Add stock */}
       <Dialog open={stockOpen} onOpenChange={setStockOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("feed.addStock", "Add stock")}</DialogTitle></DialogHeader>
           <StockFormFields form={stockForm} setForm={setStockForm} />
           <FormFooter>
@@ -644,7 +644,7 @@ export default function NewFeed() {
 
       {/* Edit stock entry */}
       <Dialog open={editEntry !== null} onOpenChange={o => !o && setEditEntry(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("feed.editStockEntry", "Edit stock entry")} · {editEntry?.feedItemName ?? ""}</DialogTitle>
           </DialogHeader>
@@ -674,7 +674,7 @@ export default function NewFeed() {
 
       {/* Create ration plan */}
       <Dialog open={rationOpen} onOpenChange={setRationOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("feed.addRation", "Add ration plan")}</DialogTitle></DialogHeader>
           <RationFormFields form={rationForm} setForm={setRationForm} />
           <FormFooter>
@@ -692,7 +692,7 @@ export default function NewFeed() {
 
       {/* Edit ration plan */}
       <Dialog open={editPlan !== null} onOpenChange={o => !o && setEditPlan(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t("feed.editRationPlan", "Edit ration plan")} · {editPlan?.categoryName ?? ""} — {editPlan?.feedItemName ?? ""}</DialogTitle>
           </DialogHeader>

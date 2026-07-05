@@ -253,7 +253,7 @@ function AnimalLocationPreview({ animal }: { animal: any }) {
             </div>
           </button>
         </DialogTrigger>
-        <DialogContent className="max-h-[95vh] w-[95vw] max-w-[95vw] overflow-y-auto overscroll-contain sm:max-w-[95vw]">
+        <DialogContent className="max-h-[95dvh] w-[95vw] max-w-[95vw] overflow-y-auto overscroll-contain sm:max-w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MapPinned aria-hidden="true" className="h-4 w-4 text-primary" />
@@ -622,7 +622,7 @@ function ProfileRecordSaleDialog({ animal }: { animal: any }) {
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="gap-2"><ShoppingCart className="h-3.5 w-3.5" />{t("sales.recordSale")}</Button>
       </DialogTrigger>
-      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("sales.recordAnimalSale")} — {animal.animal.animalId}</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">

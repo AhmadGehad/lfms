@@ -152,7 +152,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
           {t("animals.registerAnimal")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg w-[95vw] sm:w-auto max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg w-[95vw] sm:w-auto max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("animals.registerNewAnimal")}</DialogTitle>
         </DialogHeader>
@@ -350,7 +350,7 @@ function BulkVaccinationDialogContent({
 
   return (
     <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("vaccine.bulkApply")} ({selectedAnimals.length})</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
@@ -475,7 +475,7 @@ function BulkEditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl w-[95vw] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("animals.bulkEdit")} ({selectedAnimals.length})</DialogTitle>
         </DialogHeader>
@@ -689,7 +689,7 @@ function BulkSellDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl w-[95vw] max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />

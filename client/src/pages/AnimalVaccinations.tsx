@@ -133,7 +133,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
       <DialogTrigger asChild>
         <Button className="gap-2" variant="outline"><Users className="h-4 w-4" />{t("vaccine.bulkApply")}</Button>
       </DialogTrigger>
-      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{t("vaccine.bulkApply")}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
@@ -327,7 +327,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
       <DialogTrigger asChild>
         <Button className="gap-2"><Syringe className="h-4 w-4" />{record ? t("vaccine.editVaccination") : t("vaccine.addVaccination")}</Button>
       </DialogTrigger>
-      <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-full sm:max-w-2xl max-h-[90dvh] overflow-y-auto">
         <DialogHeader><DialogTitle>{record ? t("vaccine.editVaccination") : t("vaccine.addVaccination")}</DialogTitle></DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
