@@ -420,7 +420,7 @@ export default function NewFeed() {
   const rationCols: Column<any>[] = [
     { id: "category", header: t("animals.category", "Category"), cell: p => <span className="font-medium">{p.categoryName}</span>, sortValue: p => p.categoryName, primary: true, mobileLabel: t("animals.category", "Category") },
     { id: "item", header: t("feed.item", "Feed item"), cell: p => p.feedItemName, sortValue: p => p.feedItemName, mobileLabel: t("feed.item", "Feed item") },
-    { id: "qty", header: t("feed.qtyPerHead", "Qty/head/day"), cell: p => `${parseFloat(p.qtyPerHeadPerDay ?? 0).toFixed(3)} ${p.unit ?? ""}`, align: "end", mobileLabel: t("feed.qtyPerHead", "Qty/head/day") },
+    { id: "qty", header: t("feed.qtyPerHead", "Qty/head/day"), cell: p => `${parseFloat(p.qtyPerHeadPerDay ?? 0).toFixed(3)} ${p.unit ?? ""}`, mobileLabel: t("feed.qtyPerHead", "Qty/head/day") },
     { id: "eff", header: t("feed.effective", "Effective"), cell: p => fmtDate(p.effectiveDate), sortValue: p => p.effectiveDate, hideable: true, mobileLabel: t("feed.effective", "Effective") },
     { id: "end", header: t("feed.endDate", "End date"), cell: p => (p.endDate ? fmtDate(p.endDate) : t("feed.ongoing", "Ongoing")), sortValue: p => p.endDate, hideable: true, defaultHidden: true, mobileLabel: t("feed.endDate", "End date") },
     { id: "active", header: t("animals.status", "Status"), cell: p => <StatusBadge tone={p.isActive ? "success" : "neutral"}>{p.isActive ? t("feed.active", "Active") : t("feed.ended", "Ended")}</StatusBadge>, mobileLabel: t("animals.status", "Status") },
@@ -431,8 +431,8 @@ export default function NewFeed() {
     { id: "date", header: t("feed.date", "Date"), cell: e => fmtDate(e.transactionDate), sortValue: e => e.transactionDate, primary: true, mobileLabel: t("feed.date", "Date") },
     { id: "item", header: t("feed.item", "Feed item"), cell: e => e.feedItemName, sortValue: e => e.feedItemName, mobileLabel: t("feed.item", "Feed item") },
     { id: "type", header: t("feed.type", "Type"), cell: e => <StatusBadge tone={e.transactionType === "purchase" ? "info" : "neutral"} icon={false}>{String(e.transactionType ?? "").replace("_", " ")}</StatusBadge>, mobileLabel: t("feed.type", "Type") },
-    { id: "qty", header: t("feed.qty", "Qty"), cell: e => parseFloat(e.qty ?? 0).toFixed(1), align: "end", mobileLabel: t("feed.qty", "Qty") },
-    { id: "unitCost", header: t("feed.unitCost", "Unit cost"), cell: e => (e.unitCost ? fmt(parseFloat(e.unitCost)) : "—"), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("feed.unitCost", "Unit cost") },
+    { id: "qty", header: t("feed.qty", "Qty"), cell: e => parseFloat(e.qty ?? 0).toFixed(1), mobileLabel: t("feed.qty", "Qty") },
+    { id: "unitCost", header: t("feed.unitCost", "Unit cost"), cell: e => (e.unitCost ? fmt(parseFloat(e.unitCost)) : "—"), hideable: true, defaultHidden: true, mobileLabel: t("feed.unitCost", "Unit cost") },
     { id: "cost", header: t("feed.totalCost", "Total"), cell: e => (e.totalCost ? fmt(parseFloat(e.totalCost)) : e.qty && e.unitCost ? fmt(parseFloat(e.qty) * parseFloat(e.unitCost)) : "—"), align: "end", hideable: true, mobileLabel: t("feed.totalCost", "Total") },
     { id: "supplier", header: t("feed.supplier", "Supplier"), cell: e => e.supplierName ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("feed.supplier", "Supplier") },
   ];

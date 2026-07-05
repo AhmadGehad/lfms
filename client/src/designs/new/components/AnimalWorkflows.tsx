@@ -49,20 +49,23 @@ export function QuickExpenseDialog({
   const utils = trpc.useUtils();
   const [form, setForm] = useState({
     expenseDate: today(),
-    categoryId: "",
+    categoryIds: [] as string[],
     subCategoryId: "",
     amount: "",
     vendorName: "",
     notes: "",
   });
 
-  const { data: categories } = trpc.config.getExpenseCategories.useQuery();
-  const { data: subCategories } = trpc.config.getExpenseSubCategories.useQuery(
-    { categoryId: Number(form.categoryId) },
-    { enabled: !!form.categoryId }
-  );
+  const toggleCategoryId = (id: string) => {
+    setForm(f => ({
+      ...f,
+      categoryIds: f.categoryIds.includes(id) ? f.categoryIds.filter(cid => cid !== id) : [...f.categoryIds, id],
+    }));
+  };
 
-  const reset = () => setForm({ expenseDate: today(), categoryId: "", subCategoryId: "", amount: "", vendorName: "", notes: "" });
+  const { data: categories } = trpc.config.getExpenseCategories.useQuery();
+
+  const reset = () => setForm({ expenseDate: today(), categoryIds: [], subCategoryId: "", amount: "", vendorName: "", notes: "" });
   useEffect(() => {
     if (open) reset();
   }, [open]);
@@ -78,29 +81,37 @@ export function QuickExpenseDialog({
   });
 
   const submit = (addAnother: boolean) => {
-    if (!form.categoryId || !(parseFloat(form.amount) > 0)) {
-      toast.error(t("expenses.fillRequired", "Enter a category and amount"));
+    if (form.categoryIds.length === 0 || !(parseFloat(form.amount) > 0)) {
+      toast.error(t("expenses.fillRequired", "Select categories and enter amount"));
       return;
     }
-    create.mutate(
-      {
-        expenseDate: form.expenseDate,
-        categoryId: Number(form.categoryId),
-        subCategoryId: form.subCategoryId ? Number(form.subCategoryId) : undefined,
-        amount: form.amount,
-        targetType: "general",
-        vendorName: form.vendorName || undefined,
-        notes: form.notes || undefined,
-      } as any,
-      {
-        onSuccess: () => {
-          if (addAnother) {
-            reset();
-            onOpenChange(true);
-          }
-        },
-      }
-    );
+    const categoryIds = form.categoryIds.map(Number);
+    const amountPerCategory = parseFloat(form.amount) / categoryIds.length;
+    let successCount = 0;
+    categoryIds.forEach((categoryId) => {
+      create.mutate(
+        {
+          expenseDate: form.expenseDate,
+          categoryId,
+          subCategoryId: form.subCategoryId ? Number(form.subCategoryId) : undefined,
+          amount: amountPerCategory.toString(),
+          targetType: "general",
+          vendorName: form.vendorName || undefined,
+          notes: form.notes || undefined,
+        } as any,
+        {
+          onSuccess: () => {
+            successCount++;
+            if (successCount === categoryIds.length) {
+              if (addAnother) {
+                reset();
+                onOpenChange(true);
+              }
+            }
+          },
+        }
+      );
+    });
   };
 
   return (
@@ -122,21 +133,20 @@ export function QuickExpenseDialog({
             <FormField label={t("expenses.amount", "Amount")} htmlFor="dash-expense-amount" required>
               <Input id="dash-expense-amount" name="amount" type="number" inputMode="decimal" autoComplete="off" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
             </FormField>
-            <FormField label={t("expenses.category", "Category")} htmlFor="dash-expense-category" required>
-              <Select value={form.categoryId} onValueChange={v => setForm(f => ({ ...f, categoryId: v, subCategoryId: "" }))}>
-                <SelectTrigger id="dash-expense-category"><SelectValue placeholder={t("common.select", "Select")} /></SelectTrigger>
-                <SelectContent>
-                  {((categories as any[]) ?? []).map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </FormField>
-            <FormField label={t("expenses.subCategory", "Sub-category")} htmlFor="dash-expense-subcategory" hint={!form.categoryId ? t("expenses.pickCategoryFirst", "Pick a category first") : undefined}>
-              <Select value={form.subCategoryId} onValueChange={v => setForm(f => ({ ...f, subCategoryId: v }))} disabled={!form.categoryId}>
-                <SelectTrigger id="dash-expense-subcategory"><SelectValue placeholder={t("common.optional", "Optional")} /></SelectTrigger>
-                <SelectContent>
-                  {((subCategories as any[]) ?? []).map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <FormField label={t("expenses.categories", "Categories")} required full>
+              <div className="grid max-h-48 grid-cols-1 gap-1 overflow-y-auto rounded-lg border border-border p-2 sm:grid-cols-2">
+                {((categories as any[]) ?? []).map(c => (
+                  <label key={c.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-surface">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-[var(--primary)]"
+                      checked={form.categoryIds.includes(String(c.id))}
+                      onChange={() => toggleCategoryId(String(c.id))}
+                    />
+                    {c.name}
+                  </label>
+                ))}
+              </div>
             </FormField>
             <FormField label={t("expenses.vendor", "Vendor")} htmlFor="dash-expense-vendor" full>
               <Input id="dash-expense-vendor" name="vendorName" autoComplete="organization" value={form.vendorName} onChange={e => setForm(f => ({ ...f, vendorName: e.target.value }))} />

@@ -670,27 +670,37 @@ export default function NewAnimalProfile() {
                   <tr className="border-b border-border">
                     <th className="py-2 font-medium">{t("weight.date", "Date")}</th>
                     <th className="py-2 font-medium">{t("weight.weight", "Weight (kg)")}</th>
+                    <th className="py-2 font-medium">{t("weight.change", "Change (kg)")}</th>
+                    <th className="py-2 font-medium">{t("weight.changePercent", "Change (%)")}</th>
                     {canDeleteWeight && <th className="w-px py-2" />}
                   </tr>
                 </thead>
                 <tbody>
-                  {weightRows.slice().reverse().map((w, i) => (
-                    <tr key={w.id ?? i} className="border-b border-border last:border-0">
-                      <td className="py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
-                      <td className="py-2 font-medium tabular-nums">{parseFloat(w.weightKg ?? w.weight ?? 0).toFixed(1)}</td>
-                      {canDeleteWeight && (
-                        <td className="py-1 text-right">
-                          <button
-                            onClick={() => setDeleteWeightRow(w)}
-                            className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger-soft-foreground"
-                            aria-label={t("animalProfile.deleteWeightTitle", "Delete weight entry")}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
+                  {weightRows.slice().reverse().map((w, i) => {
+                    const currentWeight = parseFloat(w.weightKg ?? w.weight ?? 0);
+                    const prevWeight = i < weightRows.length - 1 ? parseFloat(weightRows[weightRows.length - 2 - i].weightKg ?? weightRows[weightRows.length - 2 - i].weight ?? 0) : null;
+                    const weightDiff = prevWeight !== null ? currentWeight - prevWeight : null;
+                    const weightPercent = prevWeight !== null && prevWeight > 0 ? ((weightDiff / prevWeight) * 100).toFixed(1) : null;
+                    return (
+                      <tr key={w.id ?? i} className="border-b border-border last:border-0">
+                        <td className="py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
+                        <td className="py-2 font-medium tabular-nums">{currentWeight.toFixed(1)}</td>
+                        <td className="py-2 tabular-nums">{weightDiff !== null ? (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(1) : '—'}</td>
+                        <td className="py-2 tabular-nums">{weightPercent !== null ? (parseFloat(weightPercent) >= 0 ? '+' : '') + weightPercent + '%' : '—'}</td>
+                        {canDeleteWeight && (
+                          <td className="py-1 text-right">
+                            <button
+                              onClick={() => setDeleteWeightRow(w)}
+                              className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger-soft-foreground"
+                              aria-label={t("animalProfile.deleteWeightTitle", "Delete weight entry")}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
