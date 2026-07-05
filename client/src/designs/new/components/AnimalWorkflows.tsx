@@ -779,7 +779,7 @@ export function BulkRecordSaleDialog({
 
   const visibleAnimals = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return activeAnimals.slice(0, 40);
+    if (!q) return activeAnimals.slice(0, 8);
     return activeAnimals
       .filter(a =>
         a.animal?.animalId?.toLowerCase().includes(q) ||
@@ -787,7 +787,7 @@ export function BulkRecordSaleDialog({
         a.groupName?.toLowerCase().includes(q) ||
         a.ownerName?.toLowerCase().includes(q)
       )
-      .slice(0, 40);
+      .slice(0, 8);
   }, [activeAnimals, search]);
 
   const selectedAnimals = useMemo(
@@ -878,7 +878,7 @@ export function BulkRecordSaleDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] max-h-[calc(100dvh-2rem)] overflow-hidden p-0 sm:max-w-5xl">
+        <DialogContent className="grid-rows-[auto_minmax(0,1fr)_auto] max-h-[calc(100dvh-2rem)] overflow-hidden p-0 sm:max-w-2xl">
           <DialogHeader className="border-b border-border px-6 py-4">
             <DialogTitle className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-lg bg-danger-soft text-danger-soft-foreground">
@@ -893,49 +893,46 @@ export function BulkRecordSaleDialog({
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-0 overflow-y-auto md:overflow-hidden md:grid-cols-[330px_minmax(0,1fr)]">
-            <section className="border-b border-border p-4 md:min-h-0 md:overflow-y-auto md:border-b-0 md:border-e">
-              <Label htmlFor="sale-animal-search">{t("animals.searchAnimal", "Search Animal")}</Label>
+          <div className="space-y-4 overflow-y-auto px-6 py-5">
+            <section className="rounded-xl border border-border bg-card p-3">
+              <Label htmlFor="sale-animal-search">{t("animals.selectAnimal", "Select Animal")}</Label>
               <div className="relative mt-1">
                 <Search className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <Input
                   id="sale-animal-search"
                   name="saleAnimalSearch"
                   autoComplete="off"
-                  placeholder={t("animals.searchByIdCategory", "Search by ID, category, group…")}
+                  placeholder={t("animals.searchByIdCategory", "Search by ID, category, group...")}
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="ps-9"
                 />
               </div>
-              <div className="mt-3 max-h-[52vh] space-y-2 overflow-y-auto pe-1">
+              <div className="mt-2 grid max-h-32 grid-cols-1 gap-1 overflow-y-auto sm:grid-cols-2">
                 {visibleAnimals.map(animal => {
                   const selected = selectedIds.has(animal.animal.id);
                   return (
-                    <label
+                    <button
                       key={animal.animal.id}
+                      type="button"
+                      onClick={() => toggle(animal)}
                       className={cn(
-                        "flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm",
+                        "flex min-w-0 items-center justify-between gap-2 rounded-lg border px-3 py-2 text-start text-sm focus-visible:outline-2 focus-visible:outline-ring",
                         selected ? "border-primary bg-primary-soft text-primary-soft-foreground" : "border-border hover:bg-surface"
                       )}
                     >
-                      <input
-                        type="checkbox"
-                        className="mt-1 h-4 w-4 accent-[var(--primary)]"
-                        checked={selected}
-                        onChange={() => toggle(animal)}
-                      />
                       <span className="min-w-0">
                         <span className="block truncate font-semibold">{animal.animal.animalId}</span>
-                        <span className="block truncate text-xs opacity-75">{animal.categoryName ?? "--"} · {animal.groupName ?? "--"} · {animal.ownerName ?? ""}</span>
+                        <span className="block truncate text-xs opacity-75">{animal.categoryName ?? "--"} · {animal.groupName ?? "--"}</span>
                       </span>
-                    </label>
+                      {selected && <Check className="h-4 w-4 shrink-0" aria-hidden="true" />}
+                    </button>
                   );
                 })}
               </div>
             </section>
 
-            <section className="p-4 md:min-h-0 md:overflow-y-auto">
+            <section className="rounded-xl border border-border bg-card-2 p-4 shadow-[var(--shadow-sm)]">
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label={t("common.date", "Date")} htmlFor="bulk-sale-date" required>
                   <Input id="bulk-sale-date" name="saleDate" type="date" value={form.saleDate} onChange={e => setForm(f => ({ ...f, saleDate: e.target.value }))} />
