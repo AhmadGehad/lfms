@@ -21,6 +21,22 @@ import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { AnimalCreateDialog, BulkRecordSaleDialog, RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 
+function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photoKey?: string | null; alt?: string }) {
+  const { data } = trpc.animals.getPhotoUrl.useQuery(
+    { id: animalId ?? 0 },
+    { enabled: !!photoKey && !!animalId, staleTime: 5 * 60_000 },
+  );
+  return (
+    <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+      {data?.url ? (
+        <img src={data.url} alt={alt} className="h-full w-full object-cover" loading="lazy" />
+      ) : (
+        <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">—</div>
+      )}
+    </div>
+  );
+}
+
 function statusTone(name?: string): StatusTone {
   const l = (name ?? "").toLowerCase();
   if (l.includes("active") || l.includes("نشط")) return "success";
@@ -521,15 +537,7 @@ export default function NewAnimals() {
     {
       id: "photo",
       header: "",
-      cell: a => (
-        <div className="h-10 w-10 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-          {a.animal?.photoUrl ? (
-            <img src={a.animal.photoUrl} alt={a.animal?.animalId} className="h-full w-full object-cover" />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">—</div>
-          )}
-        </div>
-      ),
+      cell: a => <AnimalPhotoCell animalId={a.animal?.id} photoKey={a.animal?.photoUrl} alt={a.animal?.animalId} />,
       sortValue: () => null,
       hideable: false,
       mobileLabel: "",

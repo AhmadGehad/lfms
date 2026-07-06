@@ -554,7 +554,7 @@ export default function NewAnimalProfile() {
                 <thead className="text-left text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="py-2 font-medium">{t("feed.item", "Feed item")}</th>
-                    <th className="py-2 text-right font-medium">{t("feed.qtyPerHead", "Qty/head/day")}</th>
+                    <th className="py-2 pe-6 font-medium">{t("feed.qtyPerHead", "Qty/head/day")}</th>
                     <th className="py-2 font-medium">{t("feed.effective", "Effective")}</th>
                     <th className="py-2 font-medium">{t("feed.endDate", "End date")}</th>
                     <th className="py-2 font-medium">{t("animals.status", "Status")}</th>
@@ -564,7 +564,7 @@ export default function NewAnimalProfile() {
                   {((feedHistory as any[]) ?? []).map((pl: any) => (
                     <tr key={pl.id} className="border-b border-border last:border-0">
                       <td className="py-2 font-medium">{pl.feedItemName ?? pl.feedItemId}</td>
-                      <td className="py-2 text-right tabular-nums">{parseFloat(pl.qtyPerHeadPerDay).toFixed(2)} kg</td>
+                      <td className="py-2 pe-6 tabular-nums">{parseFloat(pl.qtyPerHeadPerDay).toFixed(2)} kg</td>
                       <td className="py-2">{fmtDate(pl.effectiveDate)}</td>
                       <td className="py-2">{pl.endDate ? fmtDate(pl.endDate) : t("feed.ongoing", "Ongoing")}</td>
                       <td className="py-2"><StatusBadge tone={pl.isActive ? "success" : "neutral"}>{pl.isActive ? t("feed.active", "Active") : t("feed.ended", "Ended")}</StatusBadge></td>
