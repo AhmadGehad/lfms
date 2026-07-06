@@ -47,6 +47,7 @@ import { KpiCard } from "../components/KpiCard";
 import { ActionQueue, type QueueItem } from "../components/ActionCenter";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { AnimalCreateDialog, BulkRecordSaleDialog, QuickExpenseDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
+import { weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 
 const MS_DAY = 86400000;
 const DASHBOARD_PREF_KEY = "lfms:new-dashboard-layout";
@@ -430,12 +431,16 @@ export default function NewDashboard() {
         .map(a => {
           const target = parseFloat(a.targetWeightKg ?? 0);
           const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
+          const threshold = parseFloat(a.categoryReadyToSellThreshold ?? "80");
+          const percent = weightTargetPercent(latest, target);
+          const tone = weightProgressTone(percent, threshold);
           return {
             id: a.animal.id,
             title: a.animal.animalId,
             meta: `${latest.toFixed(1)} / ${target.toFixed(0)} kg · ${a.categoryName ?? ""}`,
             href: `/animals/${a.animal.id}`,
-            action: latest >= target ? <StatusBadge tone="success">{t("animals.ready", "Ready")}</StatusBadge> : <StatusBadge tone="warning">{t("animals.nearTarget", "Near")}</StatusBadge>,
+            tone,
+            action: <StatusBadge tone={tone}>{percent == null ? "--" : `${percent.toFixed(0)}%`}</StatusBadge>,
           };
         }),
     [activeAnimals, t]

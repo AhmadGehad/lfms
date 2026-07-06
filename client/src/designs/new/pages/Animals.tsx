@@ -20,6 +20,7 @@ import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { AnimalCreateDialog, BulkRecordSaleDialog, RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
+import { weightProgressPillClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 
 function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photoKey?: string | null; alt?: string }) {
   const { data } = trpc.animals.getPhotoUrl.useQuery(
@@ -585,14 +586,16 @@ export default function NewAnimals() {
       cell: a => {
         const target = parseFloat(a.targetWeightKg ?? 0);
         const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-        if (target <= 0) return "—";
-        const pct = ((latest / target) * 100).toFixed(1);
-        return <span className="tabular-nums">{pct}%</span>;
+        const pct = weightTargetPercent(latest, target);
+        if (pct == null) return "—";
+        const threshold = parseFloat(a.categoryReadyToSellThreshold ?? "80");
+        const tone = weightProgressTone(pct, threshold);
+        return <span className={`inline-flex min-w-[4.25rem] justify-end rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ${weightProgressPillClass(tone)}`}>{pct.toFixed(1)}%</span>;
       },
       sortValue: a => {
         const target = parseFloat(a.targetWeightKg ?? 0);
         const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-        return target > 0 ? (latest / target) * 100 : 0;
+        return weightTargetPercent(latest, target) ?? 0;
       },
       hideable: true,
       mobileLabel: t("animals.percentage", "% of Target"),

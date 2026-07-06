@@ -19,6 +19,7 @@ import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
+import { signedPercentClass, weightProgressBarClass, weightProgressTextClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 
 function tone(name?: string): StatusTone {
   const l = (name ?? "").toLowerCase();
@@ -354,7 +355,9 @@ export default function NewAnimalProfile() {
   );
   const latestWeight = weightRows.length ? parseFloat(weightRows[weightRows.length - 1].weightKg ?? weightRows[weightRows.length - 1].weight ?? 0) : parseFloat(a?.weightAtAcquisition ?? 0);
   const targetWeight = parseFloat((animal as any)?.targetWeightKg ?? 0);
-  const progress = targetWeight > 0 ? Math.min(100, Math.round((latestWeight / targetWeight) * 100)) : 0;
+  const progressPercent = weightTargetPercent(latestWeight, targetWeight);
+  const progress = progressPercent == null ? 0 : Math.min(100, Math.round(progressPercent));
+  const progressTone = weightProgressTone(progressPercent);
   const row = animal ? {
     ...(animal as any),
     animal: a,
@@ -433,9 +436,12 @@ export default function NewAnimalProfile() {
                 {targetWeight > 0 && <p className="pb-1 text-sm text-muted-foreground">{t("weight.target", "Target")}: {targetWeight.toFixed(0)} kg</p>}
               </div>
               {targetWeight > 0 && (
-                <div className="mt-3 h-2 max-w-md overflow-hidden rounded-full bg-surface">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
-                </div>
+                <>
+                  <div className="mt-3 h-2 max-w-md overflow-hidden rounded-full bg-surface">
+                    <div className={`h-full rounded-full ${weightProgressBarClass(progressTone)}`} style={{ width: `${progress}%` }} />
+                  </div>
+                  <p className={`mt-1 text-xs font-medium tabular-nums ${weightProgressTextClass(progressTone)}`}>{progressPercent?.toFixed(1) ?? "--"}%</p>
+                </>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3 sm:min-w-64">
@@ -688,13 +694,13 @@ export default function NewAnimalProfile() {
                     const currentWeight = parseFloat(w.weightKg ?? w.weight ?? 0);
                     const prevWeight = i < weightRows.length - 1 ? parseFloat(weightRows[weightRows.length - 2 - i].weightKg ?? weightRows[weightRows.length - 2 - i].weight ?? 0) : null;
                     const weightDiff = prevWeight !== null ? currentWeight - prevWeight : null;
-                    const weightPercent = weightDiff !== null && prevWeight !== null && prevWeight > 0 ? ((weightDiff / prevWeight) * 100).toFixed(1) : null;
+                    const weightPercent = weightDiff !== null && prevWeight !== null && prevWeight > 0 ? (weightDiff / prevWeight) * 100 : null;
                     return (
                       <tr key={w.id ?? i} className="border-b border-border last:border-0">
                         <td className="py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
                         <td className="py-2 font-medium tabular-nums">{currentWeight.toFixed(1)}</td>
                         <td className="py-2 tabular-nums">{weightDiff !== null ? (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(1) : '—'}</td>
-                        <td className="py-2 tabular-nums">{weightPercent !== null ? (parseFloat(weightPercent) >= 0 ? '+' : '') + weightPercent + '%' : '—'}</td>
+                        <td className={`py-2 font-medium tabular-nums ${signedPercentClass(weightPercent)}`}>{weightPercent !== null ? (weightPercent >= 0 ? '+' : '') + weightPercent.toFixed(1) + '%' : '—'}</td>
                         {canDeleteWeight && (
                           <td className="py-1 text-right">
                             <button
