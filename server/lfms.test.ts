@@ -871,6 +871,17 @@ describe("breeding birth integrity", () => {
     });
   });
 
+  it("passes the owner filter to the summary query", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.getLambingSummary).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+
+    await caller.breeding.summary({ ownerId: 7 });
+
+    expect(vi.mocked(dbModule.getLambingSummary))
+      .toHaveBeenLastCalledWith({ ownerId: 7 });
+  });
+
   it("passes the pending/promoted filter to the database query", async () => {
     const dbModule = await import("./db");
     vi.mocked(dbModule.getLambingLog).mockClear();

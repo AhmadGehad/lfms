@@ -1258,9 +1258,14 @@ export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: 
   return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
 }
 
-export async function getLambingSummary() {
+export async function getLambingSummary(filters?: { ownerId?: number }) {
   const db = await getDb();
   if (!db) return { total: 0, pending: 0, promoted: 0 };
+  const lambingConditions = [isNull(lambingLog.deletedAt)];
+  // Owner scope: lambs are attributed to the dam's owner, matching getLambingLog.
+  if (filters?.ownerId) {
+    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM animals WHERE ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
+  }
   const [row] = await db
     .select({
       total: sql<number>`COUNT(*)`,
@@ -1268,7 +1273,7 @@ export async function getLambingSummary() {
       promoted: sql<number>`SUM(CASE WHEN ${lambingLog.isPromoted} = true THEN 1 ELSE 0 END)`,
     })
     .from(lambingLog)
-    .where(isNull(lambingLog.deletedAt));
+    .where(and(...lambingConditions));
   return {
     total: Number(row?.total ?? 0),
     pending: Number(row?.pending ?? 0),

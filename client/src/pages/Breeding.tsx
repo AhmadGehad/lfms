@@ -582,7 +582,7 @@ export default function Breeding() {
     ownerId: ownerParam,
   };
   const { data: lambingLog, isLoading } = trpc.breeding.listLambing.useQuery(listInput);
-  const { data: lambingSummary } = trpc.breeding.summary.useQuery();
+  const { data: lambingSummary } = trpc.breeding.summary.useQuery({ ownerId: ownerParam });
   const utils = trpc.useUtils();
   const deepLinkResolvedId = useRef<number | null>(null);
 

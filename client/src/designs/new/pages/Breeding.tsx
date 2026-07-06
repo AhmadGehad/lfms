@@ -146,7 +146,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     ...(filter === "all" ? {} : { isPromoted: filter === "promoted" }),
     ownerId: ownerParam,
   });
-  const { data: summary } = trpc.breeding.summary.useQuery();
+  const { data: summary } = trpc.breeding.summary.useQuery({ ownerId: ownerParam });
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
   const { data: groups } = trpc.config.getGroups.useQuery();

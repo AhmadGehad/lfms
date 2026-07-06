@@ -41,7 +41,8 @@ export const breedingRouter = router({
     .query(({ input }) => getLambingLog(input)),
 
   summary: permissionProcedure("breeding", "view")
-    .query(() => getLambingSummary()),
+    .input(z.object({ ownerId: z.number().optional() }).optional())
+    .query(({ input }) => getLambingSummary(input)),
 
   // ─── RECORD BIRTH ───────────────────────────────────────────────────────────
   recordBirth: permissionProcedure("breeding", "create")
