@@ -963,6 +963,128 @@ export async function getActiveHeadCountByCategory(dateStr?: string): Promise<Re
   return result;
 }
 
+type CurrentHeadCountFilters = {
+  speciesId?: number;
+  categoryId?: number;
+  groupId?: number;
+  ownerId?: number;
+};
+
+function activeAnimalHeadConditions(filters?: CurrentHeadCountFilters) {
+  const conditions: any[] = [eq(animals.isActive, true), isNull(animals.deletedAt)];
+  if (filters?.speciesId) conditions.push(eq(animals.speciesId, filters.speciesId));
+  if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
+  if (filters?.groupId) conditions.push(eq(animals.groupId, filters.groupId));
+  if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
+  return conditions;
+}
+
+function unpromotedLambHeadConditions(filters?: CurrentHeadCountFilters) {
+  const conditions: any[] = [eq(lambingLog.isPromoted, false), isNull(lambingLog.deletedAt)];
+  if (filters?.speciesId) conditions.push(eq(lambingLog.speciesId, filters.speciesId));
+  if (filters?.categoryId) conditions.push(eq(lambingLog.categoryId, filters.categoryId));
+  if (filters?.groupId) conditions.push(eq(lambingLog.groupId, filters.groupId));
+  if (filters?.ownerId) {
+    conditions.push(sql`${lambingLog.damId} IN (SELECT id FROM animals WHERE ownerId = ${filters.ownerId} AND deletedAt IS NULL)`);
+  }
+  return conditions;
+}
+
+type HeadCountCategoryRow = {
+  categoryId: number | null;
+  categoryName: string | null;
+  headCount: number;
+};
+
+function mergeHeadCountCategoryRows(rows: HeadCountCategoryRow[]) {
+  const byCategory = new Map<string, HeadCountCategoryRow>();
+  for (const row of rows) {
+    const key = row.categoryId == null ? `unknown:${row.categoryName ?? ""}` : String(row.categoryId);
+    const existing = byCategory.get(key);
+    if (existing) {
+      existing.headCount += Number(row.headCount ?? 0);
+    } else {
+      byCategory.set(key, {
+        categoryId: row.categoryId,
+        categoryName: row.categoryName,
+        headCount: Number(row.headCount ?? 0),
+      });
+    }
+  }
+  return Array.from(byCategory.values());
+}
+
+async function getUnpromotedLambHeadStats(filters?: CurrentHeadCountFilters) {
+  const db = await getDb();
+  if (!db) return { total: 0, byCategory: [] as HeadCountCategoryRow[] };
+  const conditions = unpromotedLambHeadConditions(filters);
+  const totalRows = await db
+    .select({ count: sql<number>`COUNT(*)` })
+    .from(lambingLog)
+    .where(and(...conditions));
+  const byCategory = await db
+    .select({
+      categoryId: lambingLog.categoryId,
+      categoryName: animalCategories.name,
+      headCount: sql<number>`COUNT(*)`,
+    })
+    .from(lambingLog)
+    .leftJoin(animalCategories, eq(lambingLog.categoryId, animalCategories.id))
+    .where(and(...conditions))
+    .groupBy(lambingLog.categoryId, animalCategories.name);
+
+  return {
+    total: Number(totalRows[0]?.count ?? 0),
+    byCategory: byCategory.map(row => ({
+      categoryId: row.categoryId,
+      categoryName: row.categoryName,
+      headCount: Number(row.headCount ?? 0),
+    })),
+  };
+}
+
+async function getUnpromotedLambHeadDays(filters: CurrentHeadCountFilters | undefined, fromDate: string, toDate: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  const conditions = [
+    ...unpromotedLambHeadConditions(filters),
+    sql`${lambingLog.birthDate} <= ${toDate}`,
+  ];
+  const rows = await db
+    .select({
+      totalHeadDays: sql<number>`SUM(
+        GREATEST(0, DATEDIFF(${toDate}, GREATEST(${lambingLog.birthDate}, ${fromDate})) + 1)
+      )`,
+    })
+    .from(lambingLog)
+    .where(and(...conditions));
+  return Number(rows[0]?.totalHeadDays ?? 0);
+}
+
+export async function getCurrentHeadCountByCategory(filters?: CurrentHeadCountFilters) {
+  const db = await getDb();
+  if (!db) return [];
+  const animalRows = await db
+    .select({
+      categoryId: animals.categoryId,
+      categoryName: animalCategories.name,
+      headCount: sql<number>`COUNT(*)`,
+    })
+    .from(animals)
+    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
+    .where(and(...activeAnimalHeadConditions(filters)))
+    .groupBy(animals.categoryId, animalCategories.name);
+  const lambStats = await getUnpromotedLambHeadStats(filters);
+  return mergeHeadCountCategoryRows([
+    ...animalRows.map(row => ({
+      categoryId: row.categoryId,
+      categoryName: row.categoryName,
+      headCount: Number(row.headCount ?? 0),
+    })),
+    ...lambStats.byCategory,
+  ]);
+}
+
 // ─── ANIMAL STATUS HISTORY ────────────────────────────────────────────────────
 
 export async function getAnimalStatusHistory(animalId: number) {
@@ -2671,11 +2793,14 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const ownerBreakdown = ownerId ? await getOwnerExpenseBreakdownMinor(ownerId, fromDate, toDate) : null;
 
   // Active head count (exclude soft-deleted)
-  const headConditions = [eq(animals.isActive, true), isNull(animals.deletedAt)];
-  if (filters?.speciesId) headConditions.push(eq(animals.speciesId, filters.speciesId));
-  if (filters?.categoryId) headConditions.push(eq(animals.categoryId, filters.categoryId));
-  if (filters?.groupId) headConditions.push(eq(animals.groupId, filters.groupId));
-  if (ownerId) headConditions.push(eq(animals.ownerId, ownerId));
+  const headFilters = {
+    speciesId: filters?.speciesId,
+    categoryId: filters?.categoryId,
+    groupId: filters?.groupId,
+    ownerId,
+  };
+  const headConditions = activeAnimalHeadConditions(headFilters);
+  const lambHeadStats = await getUnpromotedLambHeadStats(headFilters);
 
   const headCount = await db
     .select({ count: sql<number>`COUNT(*)` })
@@ -2730,19 +2855,12 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
       ownerId ? eq(animals.ownerId, ownerId) : sql`1 = 1`,
     ));
   const totalHeadDays = Number(avgHeadRows[0]?.totalHeadDays ?? 0);
-  const avgHeads = totalHeadDays / periodDaysForAvg;
+  const lambHeadDays = await getUnpromotedLambHeadDays(headFilters, fromDate, toDate);
+  const combinedHeadDays = totalHeadDays + lambHeadDays;
+  const avgHeads = combinedHeadDays / periodDaysForAvg;
 
-  // Category breakdown (active animals only)
-  const categoryBreakdown = await db
-    .select({
-      categoryId: animals.categoryId,
-      categoryName: animalCategories.name,
-      headCount: sql<number>`COUNT(*)`
-    })
-    .from(animals)
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .where(and(...headConditions))
-    .groupBy(animals.categoryId, animalCategories.name);
+  // Category breakdown includes active animal rows plus unpromoted lambing rows.
+  const categoryBreakdown = await getCurrentHeadCountByCategory(headFilters);
 
   const otherExpensesMinor = ownerBreakdown ? ownerBreakdown.totalOtherMinor : toMinor(String(totalOtherExpenses[0]?.total ?? 0));
   const feedExpensesMinor = ownerId ? ownerFeedMinor : toMinor(String(feedPurchasesInPeriod[0]?.total ?? 0));
@@ -2750,7 +2868,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const revenueMinor = toMinor(String(totalRevenue[0]?.total ?? 0));
   const cashReceivedMinor = toMinor(String(totalRevenue[0]?.paid ?? 0));
   const outstandingMinor = revenueMinor - cashReceivedMinor;
-  const activeHeads = Number(headCount[0]?.count ?? 0);
+  const activeHeads = Number(headCount[0]?.count ?? 0) + lambHeadStats.total;
 
   const otherExpenses = toMajor(otherExpensesMinor);
   const feedExpenses = toMajor(feedExpensesMinor);
@@ -2760,7 +2878,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   // Cost per head per day (Excel's primary daily metric) — B3: divide by the
   // AVERAGE headcount over the period so selling animals mid-period doesn't
   // inflate the metric. totalHeadDays is exactly Σ(days each head was present).
-  const costPerHeadPerDay = totalHeadDays > 0 ? toMajor(divMinor(totalExpensesMinor, totalHeadDays)) : 0;
+  const costPerHeadPerDay = combinedHeadDays > 0 ? toMajor(divMinor(totalExpensesMinor, combinedHeadDays)) : 0;
 
   return {
     totalActiveHeads: activeHeads,

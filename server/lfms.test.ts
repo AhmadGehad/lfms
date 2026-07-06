@@ -183,6 +183,9 @@ vi.mock("./db", () => ({
     totalActiveHeads: 45, totalExpenses: 12500, totalRevenue: 8000,
     grossPnL: -4500, categoryBreakdown: [], period: { from: null, to: null },
   }),
+  getCurrentHeadCountByCategory: vi.fn().mockResolvedValue([
+    { categoryId: 1, categoryName: "Lamb", headCount: 2 },
+  ]),
   getFeedStockStatus: vi.fn().mockResolvedValue([
     { feedItemId: 1, feedItemName: "Hay", unit: "kg", stockOnHand: "250.00", dailyUsage: "10.00", daysRemaining: 25, reorderLevel: 100, status: "ok" },
     { feedItemId: 2, feedItemName: "Barley", unit: "kg", stockOnHand: "30.00", dailyUsage: "5.00", daysRemaining: 6, reorderLevel: 50, status: "critical" },
@@ -1113,12 +1116,12 @@ describe("dashboard.getHeadCountByCategory", () => {
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.dashboard.getHeadCountByCategory();
     expect(Array.isArray(result)).toBe(true);
-    // Router returns { category, count } from getAnimals mock
+    // Router returns merged active-animal + unpromoted-lamb category counts.
     if (result.length > 0) {
       expect(result[0]).toHaveProperty("category");
       expect(result[0]).toHaveProperty("count");
       expect(result[0].category).toBe("Lamb");
-      expect(result[0].count).toBe(1);
+      expect(result[0].count).toBe(2);
     }
   });
 });

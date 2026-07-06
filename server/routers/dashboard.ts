@@ -4,10 +4,10 @@ import { adminProcedure, permissionProcedure, privilegedProcedure, router } from
 import { getRevertPlan, revertAuditEntry } from "../revert";
 import {
   createAuditEntry,
+  getCurrentHeadCountByCategory,
   getDashboardKPIs,
   getFeedStockStatus,
   getIncomeStatement,
-  getAnimals,
   getExpenses,
   getSaleById,
   getSaleForUpdate,
@@ -103,14 +103,9 @@ export const dashboardRouter = router({
   getHeadCountByCategory: permissionProcedure("dashboard", "view")
     .input(z.object({ ownerId: z.number().optional() }).optional())
     .query(async ({ input }) => {
-    const animals = await getAnimals({ isActive: true, ownerId: input?.ownerId });
-    const byCategory: Record<string, number> = {};
-    for (const a of animals) {
-      const key = a.categoryName ?? "Unknown";
-      byCategory[key] = (byCategory[key] ?? 0) + 1;
-    }
-    return Object.entries(byCategory).map(([category, count]) => ({ category, count }));
-  }),
+      const rows = await getCurrentHeadCountByCategory({ ownerId: input?.ownerId });
+      return rows.map(row => ({ category: row.categoryName ?? "Unknown", count: Number(row.headCount ?? 0) }));
+    }),
 });
 
 export const notificationsRouter = router({

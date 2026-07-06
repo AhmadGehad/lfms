@@ -104,6 +104,38 @@ function money(value: unknown) {
     : "—";
 }
 
+type AnimalView = "all" | "active" | "fattening" | "ready" | "females" | "sold";
+
+function matchesAnimalSearch(row: any, query: string) {
+  if (!query) return true;
+  return (
+    row.animal?.animalId?.toLowerCase().includes(query) ||
+    row.categoryName?.toLowerCase().includes(query) ||
+    row.speciesName?.toLowerCase().includes(query) ||
+    row.groupName?.toLowerCase().includes(query) ||
+    row.ownerName?.toLowerCase().includes(query)
+  );
+}
+
+function matchesAnimalView(row: any, view: AnimalView) {
+  const status = String(row.statusName ?? "").toLowerCase();
+  const category = String(row.categoryName ?? "").toLowerCase();
+  const isSold = row.isExitStatus || status.includes("sold") || row.animal?.isActive === false;
+  if (view === "all") return true;
+  if (view === "sold") return isSold;
+  if (row.animal?.isActive === false) return false;
+  if (view === "active") return true;
+  if (view === "fattening") return category.includes("fatten") || status.includes("fatten");
+  if (view === "ready") {
+    const target = parseFloat(row.targetWeightKg ?? 0);
+    const latest = parseFloat(row.latestWeightKg ?? row.animal?.weightAtAcquisition ?? 0);
+    const threshold = parseFloat(row.categoryReadyToSellThreshold ?? "80") / 100;
+    return target > 0 && latest >= target * threshold;
+  }
+  if (view === "females") return row.animal?.sex === "female";
+  return false;
+}
+
 function BulkVaccinationDialog({
   open,
   onOpenChange,
@@ -423,7 +455,7 @@ export default function NewAnimals() {
     setLocation(`${location.split("?")[0]}${qs ? `?${qs}` : ""}`);
   }, [filterSpecies, filterStatus, filterAcquisitionType]);
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
-  const [view, setView] = useState<"all" | "active" | "fattening" | "ready" | "females" | "sold">("active");
+  const [view, setView] = useState<AnimalView>("active");
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
   const [editId, setEditId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -471,48 +503,24 @@ export default function NewAnimals() {
     }
   }, [canCreate, query]);
 
-  const rows = useMemo(() => {
+  const searchMatchedRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rowsBase.filter(a => {
-      const status = String(a.statusName ?? "").toLowerCase();
-      const category = String(a.categoryName ?? "").toLowerCase();
-      const target = parseFloat(a.targetWeightKg ?? 0);
-      const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-      if (view !== "all" && view !== "sold" && a.animal?.isActive === false) return false;
-      if (view === "fattening" && !(category.includes("fatten") || status.includes("fatten"))) return false;
-      if (view === "ready") {
-        const threshold = parseFloat(a.categoryReadyToSellThreshold ?? "80") / 100;
-        if (!(a.animal?.isActive !== false && target > 0 && latest >= target * threshold)) return false;
-      }
-      if (view === "females" && a.animal?.sex !== "female") return false;
-      if (view === "sold" && !(a.isExitStatus || status.includes("sold") || a.animal?.isActive === false)) return false;
-      if (!q) return true;
-      return (
-        a.animal?.animalId?.toLowerCase().includes(q) ||
-        a.categoryName?.toLowerCase().includes(q) ||
-        a.speciesName?.toLowerCase().includes(q) ||
-        a.groupName?.toLowerCase().includes(q) ||
-        a.ownerName?.toLowerCase().includes(q)
-      );
-    });
-  }, [rowsBase, search, view]);
+    return rowsBase.filter(a => matchesAnimalSearch(a, q));
+  }, [rowsBase, search]);
+
+  const rows = useMemo(() => searchMatchedRows.filter(a => matchesAnimalView(a, view)), [searchMatchedRows, view]);
 
   const counts = useMemo(() => {
-    const count = (predicate: (a: any) => boolean) => rowsBase.filter(predicate).length;
+    const count = (nextView: AnimalView) => searchMatchedRows.filter(a => matchesAnimalView(a, nextView)).length;
     return {
-      all: rowsBase.length,
-      active: count(a => a.animal?.isActive !== false),
-      fattening: count(a => String(a.categoryName ?? "").toLowerCase().includes("fatten") || String(a.statusName ?? "").toLowerCase().includes("fatten")),
-      ready: count(a => {
-        const target = parseFloat(a.targetWeightKg ?? 0);
-        const latest = parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? 0);
-        const threshold = parseFloat(a.categoryReadyToSellThreshold ?? "80") / 100;
-        return a.animal?.isActive !== false && target > 0 && latest >= target * threshold;
-      }),
-      females: count(a => a.animal?.sex === "female"),
-      sold: count(a => a.isExitStatus || String(a.statusName ?? "").toLowerCase().includes("sold") || a.animal?.isActive === false),
+      all: count("all"),
+      active: count("active"),
+      fattening: count("fattening"),
+      ready: count("ready"),
+      females: count("females"),
+      sold: count("sold"),
     };
-  }, [rowsBase]);
+  }, [searchMatchedRows]);
 
   useEffect(() => {
     setSelectedKeys(prev => {
