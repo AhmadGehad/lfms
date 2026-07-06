@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, DollarSign, Leaf, Scale, Search, ShoppingCart } from "lucide-react";
 import { FormField, FormFooter, FormSection } from "./FormLayout";
+import { ExpenseFormFields, blankExpenseForm, expenseFormToPayload, validateExpenseForm, type ExpenseForm } from "./ExpenseFormFields";
 
 type AnimalRow = any;
 
@@ -47,70 +48,30 @@ export function QuickExpenseDialog({
 }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
-  const [form, setForm] = useState({
-    expenseDate: today(),
-    categoryIds: [] as string[],
-    subCategoryId: "",
-    amount: "",
-    vendorName: "",
-    notes: "",
-  });
+  const [form, setForm] = useState<ExpenseForm>(blankExpenseForm());
 
-  const toggleCategoryId = (id: string) => {
-    setForm(f => ({
-      ...f,
-      categoryIds: f.categoryIds.includes(id) ? f.categoryIds.filter(cid => cid !== id) : [...f.categoryIds, id],
-    }));
-  };
-
-  const { data: categories } = trpc.config.getExpenseCategories.useQuery();
-
-  const reset = () => setForm({ expenseDate: today(), categoryIds: [], subCategoryId: "", amount: "", vendorName: "", notes: "" });
+  const reset = () => setForm(blankExpenseForm());
   useEffect(() => {
     if (open) reset();
   }, [open]);
 
   const create = trpc.expenses.create.useMutation({
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       utils.expenses.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
-      toast.success(t("expenses.created", "Expense added"));
-      onOpenChange(false);
+      utils.animals.getAllPnL.invalidate();
+      toast.success(data?.count > 1
+        ? t("expenses.createdN", "Created {{count}} expense rows", { count: data.count })
+        : t("expenses.created", "Expense added"));
     },
     onError: e => toast.error(e.message),
   });
 
   const submit = (addAnother: boolean) => {
-    if (form.categoryIds.length === 0 || !(parseFloat(form.amount) > 0)) {
-      toast.error(t("expenses.fillRequired", "Select categories and enter amount"));
-      return;
-    }
-    const categoryIds = form.categoryIds.map(Number);
-    const amountPerCategory = parseFloat(form.amount) / categoryIds.length;
-    let successCount = 0;
-    categoryIds.forEach((categoryId) => {
-      create.mutate(
-        {
-          expenseDate: form.expenseDate,
-          categoryId,
-          subCategoryId: form.subCategoryId ? Number(form.subCategoryId) : undefined,
-          amount: amountPerCategory.toString(),
-          targetType: "general",
-          vendorName: form.vendorName || undefined,
-          notes: form.notes || undefined,
-        } as any,
-        {
-          onSuccess: () => {
-            successCount++;
-            if (successCount === categoryIds.length) {
-              if (addAnother) {
-                reset();
-                onOpenChange(true);
-              }
-            }
-          },
-        }
-      );
+    const err = validateExpenseForm(form, t);
+    if (err) { toast.error(err); return; }
+    create.mutate(expenseFormToPayload(form) as any, {
+      onSuccess: () => (addAnother ? reset() : onOpenChange(false)),
     });
   };
 
@@ -126,35 +87,7 @@ export function QuickExpenseDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="px-6 py-5">
-          <FormSection>
-            <FormField label={t("expenses.date", "Date")} htmlFor="dash-expense-date" required>
-              <Input id="dash-expense-date" name="expenseDate" type="date" value={form.expenseDate} onChange={e => setForm(f => ({ ...f, expenseDate: e.target.value }))} />
-            </FormField>
-            <FormField label={t("expenses.amount", "Amount")} htmlFor="dash-expense-amount" required>
-              <Input id="dash-expense-amount" name="amount" type="number" inputMode="decimal" autoComplete="off" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
-            </FormField>
-            <FormField label={t("expenses.categories", "Categories")} required full>
-              <div className="grid max-h-48 grid-cols-1 gap-1 overflow-y-auto rounded-lg border border-border p-2 sm:grid-cols-2">
-                {((categories as any[]) ?? []).map(c => (
-                  <label key={c.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-surface">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-[var(--primary)]"
-                      checked={form.categoryIds.includes(String(c.id))}
-                      onChange={() => toggleCategoryId(String(c.id))}
-                    />
-                    {c.name}
-                  </label>
-                ))}
-              </div>
-            </FormField>
-            <FormField label={t("expenses.vendor", "Vendor")} htmlFor="dash-expense-vendor" full>
-              <Input id="dash-expense-vendor" name="vendorName" autoComplete="organization" value={form.vendorName} onChange={e => setForm(f => ({ ...f, vendorName: e.target.value }))} />
-            </FormField>
-            <FormField label={t("expenses.notes", "Notes")} htmlFor="dash-expense-notes" full>
-              <Textarea id="dash-expense-notes" name="notes" autoComplete="off" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} />
-            </FormField>
-          </FormSection>
+          <ExpenseFormFields form={form} setForm={setForm} />
           <FormFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel", "Cancel")}</Button>
             <Button type="button" variant="outline" disabled={create.isPending} onClick={() => submit(true)}>{t("common.saveAddAnother", "Save & add another")}</Button>

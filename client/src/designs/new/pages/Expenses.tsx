@@ -18,6 +18,7 @@ import { DataTable, type Column } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { ExpenseFormFields, blankExpenseForm, expenseFormToPayload, validateExpenseForm, type ExpenseForm } from "../components/ExpenseFormFields";
 
 function fmtDate(d: unknown) {
   if (!d) return "—";
@@ -31,155 +32,8 @@ const monthAgo = () => {
   return d.toISOString().slice(0, 10);
 };
 
-type ExpenseForm = {
-  expenseDate: string;
-  categoryIds: string[];
-  subCategoryId: string;
-  amount: string;
-  targetType: string;
-  headId: string;
-  categoryTarget: string;
-  vendorName: string;
-  notes: string;
-};
-
-const blankForm = (): ExpenseForm => ({
-  expenseDate: today(),
-  categoryIds: [],
-  subCategoryId: "",
-  amount: "",
-  targetType: "general",
-  headId: "",
-  categoryTarget: "",
-  vendorName: "",
-  notes: "",
-});
-
-/**
- * Shared create/edit expense form on the FormLayout pattern. Full parity with
- * Old: allocation type (general/herd/category/head) with conditional animal or
- * animal-category pickers, plus sub-category description hints.
- */
-function ExpenseFormFields({ form, setForm }: {
-  form: ExpenseForm;
-  setForm: React.Dispatch<React.SetStateAction<ExpenseForm>>;
-}) {
-  const { t } = useTranslation();
-  const { data: categories } = trpc.config.getExpenseCategories.useQuery();
-  // Sub-categories belong to a single parent, so the picker only applies when
-  // exactly one category is selected.
-  const soleCategoryId = form.categoryIds.length === 1 ? form.categoryIds[0] : "";
-  const { data: subCategories } = trpc.config.getExpenseSubCategories.useQuery(
-    { categoryId: Number(soleCategoryId) },
-    { enabled: !!soleCategoryId }
-  );
-  const { data: animals } = trpc.animals.lookup.useQuery({ isActive: true }, { enabled: form.targetType === "head" });
-  const { data: animalCategories } = trpc.config.getCategories.useQuery(undefined, { enabled: form.targetType === "category" });
-  const selectedSub = ((subCategories as any[]) ?? []).find(s => String(s.id) === form.subCategoryId);
-
-  return (
-    <FormSection>
-      <FormField label={t("expenses.date", "Date")} required>
-        <Input type="date" value={form.expenseDate} onChange={e => setForm(f => ({ ...f, expenseDate: e.target.value }))} />
-      </FormField>
-      <FormField label={t("expenses.amount", "Amount")} required>
-        <Input type="number" inputMode="decimal" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
-      </FormField>
-      <FormField label={t("expenses.category", "Categories")} required>
-        <div className="grid grid-cols-2 gap-3">
-          {((categories as any[]) ?? []).map(c => (
-            <label key={c.id} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={form.categoryIds.includes(String(c.id))}
-                onChange={e => {
-                  if (e.target.checked) {
-                    setForm(f => ({ ...f, categoryIds: [...f.categoryIds, String(c.id)], subCategoryId: "" }));
-                  } else {
-                    setForm(f => ({ ...f, categoryIds: f.categoryIds.filter(id => id !== String(c.id)), subCategoryId: "" }));
-                  }
-                }}
-                className="w-4 h-4"
-              />
-              <span className="text-sm">{c.name}</span>
-            </label>
-          ))}
-        </div>
-      </FormField>
-      <FormField
-        label={t("expenses.subCategory", "Sub-category")}
-        hint={selectedSub?.description ?? (!soleCategoryId ? t("expenses.pickCategoryFirst", "Pick a category first") : undefined)}
-      >
-        <Select value={form.subCategoryId} onValueChange={v => setForm(f => ({ ...f, subCategoryId: v }))} disabled={!soleCategoryId}>
-          <SelectTrigger><SelectValue placeholder={t("common.optional", "Optional")} /></SelectTrigger>
-          <SelectContent>
-            {((subCategories as any[]) ?? []).map(s => (
-              <SelectItem key={s.id} value={String(s.id)}>{s.name}{s.description ? ` — ${s.description}` : ""}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FormField>
-      <FormField label={t("expenses.allocation", "Allocation")} required>
-        <Select value={form.targetType} onValueChange={v => setForm(f => ({ ...f, targetType: v, headId: "", categoryTarget: "" }))}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="general">{t("expenses.general", "General (Farm-wide)")}</SelectItem>
-            <SelectItem value="herd">{t("expenses.herd", "Herd")}</SelectItem>
-            <SelectItem value="category">{t("expenses.categoryAllocation", "Category (shared by group)")}</SelectItem>
-            <SelectItem value="head">{t("expenses.specificAnimal", "Specific animal")}</SelectItem>
-          </SelectContent>
-        </Select>
-      </FormField>
-      {form.targetType === "category" && (
-        <FormField label={t("expenses.animalCategory", "Animal Category")} required>
-          <Select value={form.categoryTarget} onValueChange={v => setForm(f => ({ ...f, categoryTarget: v }))}>
-            <SelectTrigger><SelectValue placeholder={t("common.select", "Select")} /></SelectTrigger>
-            <SelectContent>
-              {((animalCategories as any[]) ?? []).map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </FormField>
-      )}
-      {form.targetType === "head" && (
-        <FormField label={t("animals.animalId", "Animal")} required>
-          <Select value={form.headId} onValueChange={v => setForm(f => ({ ...f, headId: v }))}>
-            <SelectTrigger><SelectValue placeholder={t("expenses.selectAnimal", "Select animal")} /></SelectTrigger>
-            <SelectContent>
-              {((animals as any[]) ?? []).map(a => (
-                <SelectItem key={a.animal.id} value={String(a.animal.id)}>{a.animal.animalId}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FormField>
-      )}
-      <FormField label={t("expenses.vendor", "Vendor")}>
-        <Input value={form.vendorName} onChange={e => setForm(f => ({ ...f, vendorName: e.target.value }))} />
-      </FormField>
-      <FormField label={t("expenses.notes", "Notes")} full>
-        <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} />
-      </FormField>
-    </FormSection>
-  );
-}
-
-function validateExpenseForm(form: ExpenseForm, t: (k: string, d: string) => string): string | null {
-  if (form.categoryIds.length === 0 || !(parseFloat(form.amount) > 0)) return t("expenses.fillRequired", "Enter at least one category and amount");
-  if (form.targetType === "head" && !form.headId) return t("expenses.selectAnimalForHead", "Select an animal for a per-head expense");
-  if (form.targetType === "category" && !form.categoryTarget) return t("expenses.selectCategoryForCat", "Select an animal category");
-  return null;
-}
-
-const toPayload = (form: ExpenseForm) => ({
-  expenseDate: form.expenseDate,
-  categoryIds: form.categoryIds.map(Number),
-  subCategoryId: form.subCategoryId ? Number(form.subCategoryId) : undefined,
-  amount: form.amount,
-  targetType: form.targetType as any,
-  headId: form.headId ? Number(form.headId) : undefined,
-  categoryTarget: form.categoryTarget ? Number(form.categoryTarget) : undefined,
-  vendorName: form.vendorName || undefined,
-  notes: form.notes || undefined,
-});
+const blankForm = blankExpenseForm;
+const toPayload = expenseFormToPayload;
 
 /**
  * New Expenses (high-frequency Staff task). DataTable list + sectioned create,
@@ -228,7 +82,12 @@ export default function NewExpenses() {
 
   const reset = () => setForm(blankForm());
   const create = trpc.expenses.create.useMutation({
-    onSuccess: () => { invalidate(); toast.success(t("expenses.created", "Expense added")); },
+    onSuccess: (data: any) => {
+      invalidate();
+      toast.success(data?.count > 1
+        ? t("expenses.createdN", "Created {{count}} expense rows", { count: data.count })
+        : t("expenses.created", "Expense added"));
+    },
     onError: e => toast.error(e.message),
   });
   const update = trpc.expenses.update.useMutation({
@@ -249,12 +108,13 @@ export default function NewExpenses() {
   const startEdit = (r: any) => {
     setEditForm({
       expenseDate: new Date(r.expense.expenseDate).toISOString().slice(0, 10),
-      categoryIds: r.expense.categoryIds ? r.expense.categoryIds.map(String) : [String(r.expense.categoryId)],
+      categoryId: String(r.expense.categoryId),
       subCategoryId: r.expense.subCategoryId ? String(r.expense.subCategoryId) : "",
       amount: String(r.expense.amount),
       targetType: r.expense.targetType ?? "general",
       headId: r.expense.headId ? String(r.expense.headId) : "",
-      categoryTarget: r.expense.categoryTarget ? String(r.expense.categoryTarget) : "",
+      categoryTargets: r.expense.categoryTarget ? [String(r.expense.categoryTarget)] : [],
+      splitMode: "headcount",
       vendorName: r.expense.vendorName ?? "",
       notes: r.expense.notes ?? "",
     });
@@ -262,9 +122,9 @@ export default function NewExpenses() {
   };
   const submitEdit = () => {
     if (!editRow) return;
-    const err = validateExpenseForm(editForm, t);
+    const err = validateExpenseForm(editForm, t, "edit");
     if (err) { toast.error(err); return; }
-    update.mutate({ id: editRow.expense.id, ...toPayload(editForm) } as any);
+    update.mutate({ id: editRow.expense.id, ...toPayload(editForm, "edit") } as any);
   };
 
   const rows = (expenses as any[]) ?? [];
@@ -386,7 +246,7 @@ export default function NewExpenses() {
       <Dialog open={editRow !== null} onOpenChange={o => !o && setEditRow(null)}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("expenses.editExpense", "Edit expense")}</DialogTitle></DialogHeader>
-          <ExpenseFormFields form={editForm} setForm={setEditForm} />
+          <ExpenseFormFields form={editForm} setForm={setEditForm} mode="edit" />
           <FormFooter>
             <button onClick={() => setEditRow(null)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button disabled={update.isPending} onClick={submitEdit} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">

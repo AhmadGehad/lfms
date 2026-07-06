@@ -35,7 +35,8 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
     amount: "",
     targetType: "general",
     headId: "",
-    categoryTarget: "",
+    categoryTargets: [] as string[],
+    splitMode: "headcount",
     vendorName: "",
     notes: "",
   });
@@ -49,8 +50,10 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   const utils = trpc.useUtils();
 
   const createExpense = trpc.expenses.create.useMutation({
-    onSuccess: () => {
-      toast.success(t("expenses.recorded"));
+    onSuccess: (data: any) => {
+      toast.success(data?.count > 1
+        ? t("expenses.createdN", "Created {{count}} expense rows", { count: data.count })
+        : t("expenses.recorded"));
       utils.expenses.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.animals.getAllPnL.invalidate();
@@ -63,7 +66,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   const handleSubmit = () => {
     if (!form.categoryId || !form.amount) { toast.error(t("expenses.categoryAmountRequired")); return; }
     if (form.targetType === "head" && !form.headId) { toast.error(t("expenses.selectAnimalForHead")); return; }
-    if (form.targetType === "category" && !form.categoryTarget) { toast.error(t("expenses.selectCategoryForCat")); return; }
+    if (form.targetType === "category" && form.categoryTargets.length === 0) { toast.error(t("expenses.selectCategoryForCat")); return; }
     createExpense.mutate({
       expenseDate: form.expenseDate,
       categoryId: Number(form.categoryId),
@@ -71,10 +74,11 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
       amount: form.amount,
       targetType: form.targetType as any,
       headId: form.headId ? Number(form.headId) : undefined,
-      categoryTarget: form.categoryTarget ? Number(form.categoryTarget) : undefined,
+      categoryTargets: form.targetType === "category" && form.categoryTargets.length > 0 ? form.categoryTargets.map(Number) : undefined,
+      splitMode: form.splitMode as any,
       vendorName: form.vendorName || undefined,
       notes: form.notes || undefined,
-    });
+    } as any);
   };
 
   return (
@@ -126,7 +130,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
             </div>
             <div className="space-y-1.5">
               <Label>Allocation Type *</Label>
-              <Select value={form.targetType} onValueChange={(v) => setForm((f) => ({ ...f, targetType: v, headId: "", categoryTarget: "" }))}>
+              <Select value={form.targetType} onValueChange={(v) => setForm((f) => ({ ...f, targetType: v, headId: "", categoryTargets: [] }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="general">General (Farm-wide)</SelectItem>
@@ -137,16 +141,46 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
               </Select>
             </div>
             {form.targetType === "category" && (
-              <div className="space-y-1.5">
-                <Label>Animal Category *</Label>
-                <Select value={form.categoryTarget} onValueChange={(v) => setForm((f) => ({ ...f, categoryTarget: v }))}>
-                  <SelectTrigger><SelectValue placeholder={t("common.selectCategory")} /></SelectTrigger>
-                  <SelectContent>
-                    {(animalCategories ?? []).map((c: any) => (
-                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{t("expenses.animalCategories", "Animal categories")} *</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(animalCategories ?? []).map((c: any) => (
+                    <label key={c.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.categoryTargets.includes(String(c.id))}
+                        onChange={(e) => setForm((f) => ({
+                          ...f,
+                          categoryTargets: e.target.checked
+                            ? [...f.categoryTargets, String(c.id)]
+                            : f.categoryTargets.filter((id) => id !== String(c.id)),
+                        }))}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+            {form.targetType === "category" && form.categoryTargets.length >= 2 && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{t("expenses.splitMode", "Split across categories")}</Label>
+                <div className="flex flex-col gap-2">
+                  {([["headcount", t("expenses.splitByHeadcount", "By head count")], ["equal", t("expenses.splitEqual", "Equal per category")]] as const).map(([value, label]) => (
+                    <label key={value} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="old-expense-split-mode"
+                        checked={form.splitMode === value}
+                        onChange={() => setForm((f) => ({ ...f, splitMode: value }))}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm">{label}</span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">{t("expenses.splitHint", "One expense row is created per category.")}</p>
               </div>
             )}
             {form.targetType === "head" && (

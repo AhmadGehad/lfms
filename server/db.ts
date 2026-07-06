@@ -1478,6 +1478,26 @@ export async function getHerdHeadCountOnDate(dateStr: string): Promise<number> {
   return Math.max(1, Number(rows[0]?.count ?? 1));
 }
 
+/**
+ * Raw active head counts per category on a specific date — same aliveness
+ * predicate as getHerdHeadCountOnDate, grouped by category. Unlike the
+ * clamped helpers above this returns 0 for empty categories, which the
+ * expense splitter needs to weigh (and drop) zero-head categories honestly.
+ */
+export async function getCategoryHeadCountsOnDate(categoryIds: number[], dateStr: string): Promise<Map<number, number>> {
+  const counts = new Map<number, number>(categoryIds.map(id => [id, 0]));
+  const db = await getDb();
+  if (!db || categoryIds.length === 0) return counts;
+  const d = dateStr.split("T")[0];
+  const rows = await db
+    .select({ categoryId: animals.categoryId, count: sql<number>`COUNT(*)` })
+    .from(animals)
+    .where(and(inArray(animals.categoryId, categoryIds), isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${d}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${d}`)))
+    .groupBy(animals.categoryId);
+  for (const row of rows) counts.set(Number(row.categoryId), Number(row.count ?? 0));
+  return counts;
+}
+
 // ─── FEED STOCK ───────────────────────────────────────────────────────────────
 
 export async function getFeedStockLedger(feedItemId?: number) {
