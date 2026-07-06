@@ -66,9 +66,12 @@ function ExpenseFormFields({ form, setForm }: {
 }) {
   const { t } = useTranslation();
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
+  // Sub-categories belong to a single parent, so the picker only applies when
+  // exactly one category is selected.
+  const soleCategoryId = form.categoryIds.length === 1 ? form.categoryIds[0] : "";
   const { data: subCategories } = trpc.config.getExpenseSubCategories.useQuery(
-    { categoryId: Number(form.categoryId) },
-    { enabled: !!form.categoryId }
+    { categoryId: Number(soleCategoryId) },
+    { enabled: !!soleCategoryId }
   );
   const { data: animals } = trpc.animals.lookup.useQuery({ isActive: true }, { enabled: form.targetType === "head" });
   const { data: animalCategories } = trpc.config.getCategories.useQuery(undefined, { enabled: form.targetType === "category" });
@@ -105,9 +108,9 @@ function ExpenseFormFields({ form, setForm }: {
       </FormField>
       <FormField
         label={t("expenses.subCategory", "Sub-category")}
-        hint={selectedSub?.description ?? (!form.categoryId ? t("expenses.pickCategoryFirst", "Pick a category first") : undefined)}
+        hint={selectedSub?.description ?? (!soleCategoryId ? t("expenses.pickCategoryFirst", "Pick a category first") : undefined)}
       >
-        <Select value={form.subCategoryId} onValueChange={v => setForm(f => ({ ...f, subCategoryId: v }))} disabled={!form.categoryId}>
+        <Select value={form.subCategoryId} onValueChange={v => setForm(f => ({ ...f, subCategoryId: v }))} disabled={!soleCategoryId}>
           <SelectTrigger><SelectValue placeholder={t("common.optional", "Optional")} /></SelectTrigger>
           <SelectContent>
             {((subCategories as any[]) ?? []).map(s => (

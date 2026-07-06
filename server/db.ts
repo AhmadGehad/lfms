@@ -1608,27 +1608,31 @@ export async function deleteExpense(id: number, deletedBy?: number) {
 
 // ─── PREGNANCY TRACKING ───────────────────────────────────────────────────────
 
-/** Expected delivery date = confirmation date + gestation days. Pure. */
+/** Expected delivery date = confirmation date + gestation days. Pure.
+ * All arithmetic in UTC so results never shift across DST transitions. */
 export function calculatePregnancyDueDate(confirmationDate: string, gestationDays: number): string {
-  const date = new Date(confirmationDate);
+  const date = new Date(String(confirmationDate).split("T")[0]);
   // Due date = confirmation date + the species gestation period.
-  date.setDate(date.getDate() + gestationDays);
+  date.setUTCDate(date.getUTCDate() + gestationDays);
   return date.toISOString().split("T")[0];
 }
 
-const startOfDay = (d: Date | string): Date => {
-  const dt = d instanceof Date ? new Date(d.getTime()) : new Date(String(d).split("T")[0]);
-  dt.setHours(0, 0, 0, 0);
-  return dt;
+// Calendar date as UTC-midnight epoch ms: local date-part for Date instances
+// ("today"), literal date-part for date strings. Differences between two such
+// values are exact multiples of 86400000 regardless of DST.
+const utcMidnight = (d: Date | string): number => {
+  if (d instanceof Date) return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  const dt = new Date(String(d).split("T")[0]); // date-only strings parse as UTC midnight
+  return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate());
 };
 
 /** Derived, never-stored pregnancy progress fields shown in the UI. */
 export function pregnancyProgress(confirmationDate: Date | string, expectedDueDate: Date | string, gestationDays: number, status: string) {
-  const today = startOfDay(new Date());
-  const conf = startOfDay(confirmationDate);
-  const due = startOfDay(expectedDueDate);
-  const daysPregnant = Math.max(0, Math.floor((today.getTime() - conf.getTime()) / 86400000));
-  const daysRemaining = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  const today = utcMidnight(new Date());
+  const conf = utcMidnight(confirmationDate);
+  const due = utcMidnight(expectedDueDate);
+  const daysPregnant = Math.max(0, Math.floor((today - conf) / 86400000));
+  const daysRemaining = Math.ceil((due - today) / 86400000);
   const progressPct = gestationDays > 0 ? Math.min(100, Math.max(0, Math.round((daysPregnant / gestationDays) * 100))) : 0;
   let displayStatus = status;
   if (status === "active") displayStatus = daysRemaining < 0 ? "overdue" : daysRemaining <= 7 ? "due" : "active";

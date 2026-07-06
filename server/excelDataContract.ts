@@ -30,8 +30,8 @@ import {
   weightLog,
 } from "../drizzle/schema";
 
-export const EXCEL_DATA_FORMAT_VERSION = 7;
-export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5, 6, 7] as const;
+export const EXCEL_DATA_FORMAT_VERSION = 8;
+export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5, 6, 7, 8] as const;
 export const EXCEL_MANIFEST_SHEET = "LFMS Manifest";
 const VERSION_3_MISSING_COLUMNS = new Set([
   "animal_categories.lambIdSequence",
@@ -57,6 +57,10 @@ const VERSION_5_MISSING_COLUMNS = new Set([
 ]);
 // Whole tables introduced in v7 — their sheet/array may be absent in v3–v6 files.
 const NEW_IN_VERSION_7_TABLES = new Set(["user_settings"]);
+// Columns introduced in v8 — tolerated as missing when importing a pre-v8 file.
+const VERSION_7_MISSING_COLUMNS = new Set([
+  "animal_categories.readyToSellThreshold",
+]);
 
 export type CanonicalTableSpec = {
   key: string;
@@ -162,6 +166,8 @@ function isLegacyMissingColumnAllowed(
   if (version <= 5 && VERSION_5_MISSING_COLUMNS.has(`${tableKey}.${columnName}`)) return true;
   // Any column of a table new in v7 may be missing when importing a pre-v7 file.
   if (version <= 6 && NEW_IN_VERSION_7_TABLES.has(tableKey)) return true;
+  // Columns new in v8, missing in any pre-v8 file.
+  if (version <= 7 && VERSION_7_MISSING_COLUMNS.has(`${tableKey}.${columnName}`)) return true;
   return false;
 }
 

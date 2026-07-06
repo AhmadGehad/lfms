@@ -688,7 +688,7 @@ export default function NewAnimalProfile() {
                     const currentWeight = parseFloat(w.weightKg ?? w.weight ?? 0);
                     const prevWeight = i < weightRows.length - 1 ? parseFloat(weightRows[weightRows.length - 2 - i].weightKg ?? weightRows[weightRows.length - 2 - i].weight ?? 0) : null;
                     const weightDiff = prevWeight !== null ? currentWeight - prevWeight : null;
-                    const weightPercent = prevWeight !== null && prevWeight > 0 ? ((weightDiff / prevWeight) * 100).toFixed(1) : null;
+                    const weightPercent = weightDiff !== null && prevWeight !== null && prevWeight > 0 ? ((weightDiff / prevWeight) * 100).toFixed(1) : null;
                     return (
                       <tr key={w.id ?? i} className="border-b border-border last:border-0">
                         <td className="py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
