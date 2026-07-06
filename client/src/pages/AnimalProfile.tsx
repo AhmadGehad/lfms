@@ -402,11 +402,16 @@ function WeightChart({ animalId }: { animalId: number }) {
               <TableRow key={w.id}>
                 <TableCell>{new Date(w.weighDate).toLocaleDateString()}</TableCell>
                 <TableCell className="font-medium">{parseFloat(w.weightKg).toFixed(1)} kg</TableCell>
-                <TableCell className={
-                  diffPct === null ? "text-muted-foreground" :
-                  diffPct > 0 ? "text-green-600" : diffPct < 0 ? "text-red-600" : "text-muted-foreground"
-                }>
-                  {diffPct !== null ? `${diffPct > 0 ? "+" : ""}${diffPct.toFixed(1)}%` : "—"}
+                <TableCell>
+                  <span className={`inline-flex min-w-[4rem] justify-end rounded-md px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                    diffPct === null || diffPct === 0
+                      ? "bg-secondary text-secondary-foreground"
+                      : diffPct > 0
+                        ? "bg-green-100 text-green-800 dark:bg-green-950/30 dark:text-green-300"
+                        : "bg-red-100 text-red-800 dark:bg-red-950/30 dark:text-red-300"
+                  }`}>
+                    {diffPct !== null ? `${diffPct > 0 ? "+" : ""}${diffPct.toFixed(1)}%` : "—"}
+                  </span>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">{w.notes ?? "—"}</TableCell>
                 <TableCell className="text-right">

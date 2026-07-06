@@ -19,7 +19,7 @@ import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
-import { signedPercentClass, weightProgressBarClass, weightProgressTextClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
+import { signedPercentPillClass, weightProgressBarClass, weightProgressTextClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 
 function tone(name?: string): StatusTone {
   const l = (name ?? "").toLowerCase();
@@ -700,7 +700,11 @@ export default function NewAnimalProfile() {
                         <td className="py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
                         <td className="py-2 font-medium tabular-nums">{currentWeight.toFixed(1)}</td>
                         <td className="py-2 tabular-nums">{weightDiff !== null ? (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(1) : '—'}</td>
-                        <td className={`py-2 font-medium tabular-nums ${signedPercentClass(weightPercent)}`}>{weightPercent !== null ? (weightPercent >= 0 ? '+' : '') + weightPercent.toFixed(1) + '%' : '—'}</td>
+                        <td className="py-2 tabular-nums">
+                          <span className={`inline-flex min-w-[4rem] justify-end rounded-md px-2 py-0.5 text-xs font-semibold ${signedPercentPillClass(weightPercent)}`}>
+                            {weightPercent !== null ? (weightPercent >= 0 ? '+' : '') + weightPercent.toFixed(1) + '%' : '—'}
+                          </span>
+                        </td>
                         {canDeleteWeight && (
                           <td className="py-1 text-right">
                             <button

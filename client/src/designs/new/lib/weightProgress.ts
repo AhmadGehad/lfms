@@ -45,3 +45,10 @@ export function signedPercentClass(percent: number | null) {
   if (percent == null || percent === 0) return "text-muted-foreground";
   return percent > 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground";
 }
+
+export function signedPercentPillClass(percent: number | null) {
+  if (percent == null || percent === 0) return "bg-secondary text-secondary-foreground";
+  return percent > 0
+    ? "bg-success-soft text-success-soft-foreground"
+    : "bg-danger-soft text-danger-soft-foreground";
+}
