@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import { AnimalCostDetailsDialog } from "@/components/AnimalCostDetailsDialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
-import { Activity, BarChart3, Search, TrendingDown, TrendingUp } from "lucide-react";
+import { Activity, BarChart3, ReceiptText, Search, TrendingDown, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -19,6 +21,7 @@ export default function PnL() {
   const [filterSpecies, setFilterSpecies] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedCostRow, setSelectedCostRow] = useState<any | null>(null);
   const { ownerParam } = useOwnerFilter();
 
   const { data: pnlData, isLoading } = trpc.animals.getAllPnL.useQuery({
@@ -67,7 +70,6 @@ export default function PnL() {
   // operatingCostActive = running costs excluding purchase price (feed + expenses)
   const operatingCostActive = activeAnimals.reduce((s: number, a: any) => s + ((a.totalCost ?? 0) - (a.purchaseCost ?? 0)), 0);
   const totalAnimalOperatingCost = filtered.reduce((s: number, a: any) => s + (a.animalOperatingCost ?? 0), 0);
-  const { data: generalExpensesTotal } = trpc.animals.getGeneralExpensesTotal.useQuery({});
   // Current Account Value = Revenue realised + Capital on hoof - Operating expenses spent on active herd
   const currentAccountValue = totalRevenue + capitalMoney - operatingCostActive;
 
@@ -153,17 +155,6 @@ export default function PnL() {
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.animalOperatingCostSub")}</p>
             </CardContent>
           </Card>
-          {/* Farm-wide overhead is not attributable to a single owner, so hide
-              it when the view is scoped to one owner. */}
-          {ownerParam == null && (
-            <Card>
-              <CardContent className="pt-4">
-                <p className="text-xs text-muted-foreground">{t("pnl.farmOperatingCost")}</p>
-                <p className="text-xl sm:text-2xl font-bold text-red-600">{fmt(generalExpensesTotal ?? 0)}</p>
-                <p className="text-xs text-muted-foreground mt-1">{t("pnl.farmOperatingCostSub")}</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
 
@@ -252,12 +243,13 @@ export default function PnL() {
                     <TableHead className="text-right">{t("pnl.netPnL")}</TableHead>
                     <TableHead className="text-right">{t("pnl.costDay")}</TableHead>
                     <TableHead className="text-right">{t("pnl.costMonth")}</TableHead>
+                    <TableHead><span className="sr-only">{t("pnl.viewCostDetails", "View cost details")}</span></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filtered.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={15} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={16} className="text-center py-12 text-muted-foreground">
                         {t("pnl.noAnimals")}
                       </TableCell>
                     </TableRow>
@@ -328,6 +320,17 @@ export default function PnL() {
                           <TableCell className="text-right tabular-nums text-muted-foreground text-xs">
                             {fmt(a.costPerMonth ?? 0)}/m
                           </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              title={t("pnl.viewCostDetails", "View cost details")}
+                              aria-label={t("pnl.viewCostDetails", "View cost details")}
+                              onClick={(event) => { event.stopPropagation(); setSelectedCostRow(a); }}
+                            >
+                              <ReceiptText className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })
@@ -338,6 +341,11 @@ export default function PnL() {
           </div>
         </CardContent>
       </Card>
+      <AnimalCostDetailsDialog
+        animal={selectedCostRow}
+        open={selectedCostRow !== null}
+        onOpenChange={(open) => { if (!open) setSelectedCostRow(null); }}
+      />
     </div>
   );
 }

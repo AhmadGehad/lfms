@@ -7,11 +7,12 @@ import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { AnimalCostDetailsDialog } from "@/components/AnimalCostDetailsDialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, Pencil, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
+import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, Pencil, ReceiptText, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
 import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
@@ -310,6 +311,7 @@ export default function NewAnimalProfile() {
   const [weighOpen, setWeighOpen] = useState(false);
   const [saleOpen, setSaleOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
+  const [costDetailsOpen, setCostDetailsOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [deleteWeightRow, setDeleteWeightRow] = useState<any | null>(null);
   const [tab, setTab] = useState<"weight" | "financial" | "expenses" | "feed" | "vaccinations" | "pregnancy" | "lineage" | "activity">("weight");
@@ -486,16 +488,28 @@ export default function NewAnimalProfile() {
       </div>
 
       {tab === "financial" && (
-        <Panel title={t("animals.financial", "Financial")} icon={Wallet}>
+        <Panel
+          title={t("animals.financial", "Financial")}
+          icon={Wallet}
+          action={
+            <Button variant="outline" size="sm" onClick={() => setCostDetailsOpen(true)} disabled={pnlLoading || !p}>
+              <ReceiptText className="h-4 w-4" />
+              {t("pnl.viewCostDetails", "Cost details")}
+            </Button>
+          }
+        >
           {pnlLoading ? (
             <PanelSkeleton rows={4} />
           ) : (
             <dl className="grid grid-cols-2 gap-3">
               <Stat label={t("pnl.purchaseCost", "Purchase cost")} value={fmt(parseFloat(p?.purchaseCost ?? 0))} />
               <Stat label={t("pnl.feedCost", "Feed cost")} value={fmt(parseFloat(p?.feedCost ?? 0))} />
-              <Stat label={t("pnl.directExpenses", "Direct expenses")} value={fmt(parseFloat(p?.directExpenses ?? 0))} />
+              <Stat label={t("pnl.directExpenses", "Direct expenses")} value={fmt(parseFloat(p?.directExpenseTotal ?? 0))} />
+              <Stat label={t("pnl.allocatedCatExpenses", "Category expenses")} value={fmt(parseFloat(p?.categoryExpenseAllocation ?? 0))} />
+              <Stat label={t("pnl.allocatedHerdExpenses", "Animal-wide expenses")} value={fmt(parseFloat(p?.herdExpenseAllocation ?? 0))} />
+              <Stat label={t("pnl.allocatedGeneralExpenses", "General expenses")} value={fmt(parseFloat(p?.generalExpenseAllocation ?? 0))} />
               <Stat label={t("pnl.totalCost", "Total cost")} value={fmt(parseFloat(p?.totalCost ?? 0))} />
-              <Stat label={t("pnl.saleRevenue", "Sale revenue")} value={fmt(parseFloat(p?.saleRevenue ?? 0))} />
+              <Stat label={t("pnl.saleRevenue", "Sale revenue")} value={fmt(parseFloat(p?.revenue ?? 0))} />
               <Stat
                 label={t("pnl.netPnL", "Net P&L")}
                 value={<span className={Number(p?.netPnL ?? 0) >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(parseFloat(p?.netPnL ?? 0))}</span>}
@@ -504,6 +518,11 @@ export default function NewAnimalProfile() {
           )}
         </Panel>
       )}
+      <AnimalCostDetailsDialog
+        animal={p ? { ...p, animalId, animalCode: code } : null}
+        open={costDetailsOpen}
+        onOpenChange={setCostDetailsOpen}
+      />
 
       {tab === "expenses" && (
         <Panel

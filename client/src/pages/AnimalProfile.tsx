@@ -143,6 +143,7 @@ function PnLCard({ animalId }: { animalId: number }) {
     { label: t("pnl.directExpenses"), value: pnl?.directExpenseTotal ?? 0, type: "cost" },
     { label: t("pnl.allocatedCatExpenses"), value: pnl?.categoryExpenseAllocation ?? 0, type: "cost" },
     { label: t("pnl.allocatedHerdExpenses"), value: pnl?.herdExpenseAllocation ?? 0, type: "cost" },
+    { label: t("pnl.allocatedGeneralExpenses"), value: pnl?.generalExpenseAllocation ?? 0, type: "cost" },
     { label: t("pnl.totalCost"), value: pnl?.totalCost ?? 0, type: "total-cost" },
     { label: t("pnl.saleRevenue"), value: pnl?.revenue ?? 0, type: "revenue" },
     { label: t("pnl.netPnL"), value: pnl?.netPnL ?? 0, type: "pnl" },

@@ -4,9 +4,11 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
+import { AnimalCostDetailsDialog } from "@/components/AnimalCostDetailsDialog";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, BarChart3, Banknote, Leaf, Search, TrendingDown, TrendingUp, Wheat } from "lucide-react";
+import { Activity, BarChart3, Banknote, Leaf, ReceiptText, Search, TrendingDown, TrendingUp, Wheat } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { PageHeader } from "../components/PageHeader";
 import { KpiCard } from "../components/KpiCard";
@@ -29,6 +31,7 @@ export default function NewPnL() {
   const [filterSpecies, setFilterSpecies] = useState("all");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [selectedCostRow, setSelectedCostRow] = useState<any | null>(null);
 
   const { data: pnl, isLoading } = trpc.animals.getAllPnL.useQuery({
     ownerId: ownerParam,
@@ -37,9 +40,6 @@ export default function NewPnL() {
   });
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
-  // Farm-wide overhead is not attributable to a single owner, so skip it when
-  // the view is scoped to one owner (matches Old).
-  const { data: generalExpensesTotal } = trpc.animals.getGeneralExpensesTotal.useQuery({}, { enabled: ownerParam == null });
 
   const allStatuses = useMemo(
     () => Array.from(new Set(((pnl as any[]) ?? []).map(a => a.statusName).filter(Boolean))) as string[],
@@ -137,11 +137,7 @@ export default function NewPnL() {
           icon={Banknote}
           hint={t("pnl.currentAccountValueSub", "Revenue + capital − operating spend")}
         />
-        {ownerParam == null ? (
-          <KpiCard label={t("pnl.farmOperatingCost", "Farm operating cost")} value={fmt(Number(generalExpensesTotal ?? 0))} icon={TrendingDown} hint={t("pnl.farmOperatingCostSub", "General farm-wide expenses")} />
-        ) : (
-          <KpiCard label={t("pnl.animalOperatingCost", "Animal operating cost")} value={fmt(stats.animalOperatingCost)} icon={TrendingDown} hint={t("pnl.animalOperatingCostSub", "Feed + expenses across herd")} />
-        )}
+        <KpiCard label={t("pnl.animalOperatingCost", "Animal operating cost")} value={fmt(stats.animalOperatingCost)} icon={TrendingDown} hint={t("pnl.animalOperatingCostSub", "Feed + expenses across herd")} />
       </div>
 
       {/* Net P&L by animal — top 20 closed, diverging around zero */}
@@ -154,6 +150,17 @@ export default function NewPnL() {
         loading={isLoading}
         storageKey="pnl"
         onRowClick={r => setLocation(`/animals/${r.animalId}`)}
+        rowActions={r => (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setSelectedCostRow(r)}
+            title={t("pnl.viewCostDetails", "View cost details")}
+            aria-label={t("pnl.viewCostDetails", "View cost details")}
+          >
+            <ReceiptText className="h-4 w-4" />
+          </Button>
+        )}
         empty={<EmptyState icon={Activity} title={t("pnl.noAnimals", "No animals to report on")} />}
         toolbar={
           <>
@@ -192,6 +199,11 @@ export default function NewPnL() {
             </Select>
           </>
         }
+      />
+      <AnimalCostDetailsDialog
+        animal={selectedCostRow}
+        open={selectedCostRow !== null}
+        onOpenChange={open => { if (!open) setSelectedCostRow(null); }}
       />
     </div>
   );

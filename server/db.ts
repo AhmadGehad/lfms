@@ -2150,17 +2150,25 @@ export async function getAnimalPnL(animalId: number) {
   const acqDateStr = acquisitionDate.split("T")[0];
   const exitDateStr = exitDate.split("T")[0];
   const catExpensesRows = await db
-    .select({ total: sql<number>`SUM(amount)` })
+    .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
     .from(expenses)
     .where(and(eq(expenses.targetType, "category"), eq(expenses.categoryTarget, animal.categoryId), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
-  const catExpTotalMinor = toMinor(String(catExpensesRows[0]?.total ?? 0));
 
-  // Allocate by the head count that overlapped the animal's time on farm —
-  // not today's count — so historical P&L stays stable as the herd changes.
+  // Allocate every bill by the category head count on that bill's date. This
+  // keeps historical P&L stable and matches the bulk P&L calculation.
   let categoryExpenseAllocationMinor = 0;
+  const categoryHeadCountByDate = new Map<string, number>();
   try {
-    const catHeadCount = await getCategoryHeadCountDuring(animal.categoryId, acqDateStr, exitDateStr);
-    categoryExpenseAllocationMinor = divMinor(catExpTotalMinor, catHeadCount);
+    for (const expense of catExpensesRows) {
+      const dateStr = expense.expenseDate instanceof Date ? expense.expenseDate.toISOString().split("T")[0] : String(expense.expenseDate).split("T")[0];
+      let headCount = categoryHeadCountByDate.get(dateStr);
+      if (headCount == null) {
+        const counts = await getCategoryHeadCountsOnDate([animal.categoryId], dateStr);
+        headCount = counts.get(animal.categoryId) ?? 1;
+        categoryHeadCountByDate.set(dateStr, headCount);
+      }
+      categoryExpenseAllocationMinor += divMinor(toMinor(String(expense.amount)), headCount);
+    }
   } catch (err) {
     console.error(`getAnimalPnL: category allocation failed for animal ${animalId}:`, err);
   }
@@ -2181,6 +2189,92 @@ export async function getAnimalPnL(animalId: number) {
   } catch (err) {
     console.error(`getAnimalPnL: herd allocation failed for animal ${animalId}:`, err);
   }
+
+  // General farm expenses (water, electricity, labour, etc.) are also real
+  // operating costs. Attribute each bill equally to the animals alive on its
+  // date so every animal's P&L reflects its full share of the farm's spending.
+  let generalExpenseAllocationMinor = 0;
+  try {
+    const generalExpenseRows = await db
+      .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
+      .from(expenses)
+      .where(and(eq(expenses.targetType, "general"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
+    for (const ge of generalExpenseRows) {
+      const dStr = ge.expenseDate instanceof Date ? ge.expenseDate.toISOString().split("T")[0] : String(ge.expenseDate).split("T")[0];
+      generalExpenseAllocationMinor += divMinor(toMinor(String(ge.amount)), await getHerdHeadCountOnDate(dStr));
+    }
+  } catch (err) {
+    console.error(`getAnimalPnL: general allocation failed for animal ${animalId}:`, err);
+  }
+
+  // Loaded only for the clicked animal. The list view stays compact while this
+  // response gives the dialog an exact, category-level audit trail.
+  const expenseDetailRows = await db
+    .select({
+      targetType: expenses.targetType,
+      amount: expenses.amount,
+      expenseDate: expenses.expenseDate,
+      categoryName: expenseCategories.name,
+      subCategoryName: expenseSubCategories.name,
+    })
+    .from(expenses)
+    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
+    .leftJoin(expenseSubCategories, eq(expenses.subCategoryId, expenseSubCategories.id))
+    .where(and(
+      isNull(expenses.deletedAt),
+      or(
+        and(eq(expenses.targetType, "head"), eq(expenses.headId, animalId)),
+        and(eq(expenses.targetType, "category"), eq(expenses.categoryTarget, animal.categoryId), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`),
+        and(eq(expenses.targetType, "herd"), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`),
+        and(eq(expenses.targetType, "general"), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`),
+      ),
+    ));
+  const expenseBreakdown = new Map<string, {
+    categoryName: string;
+    subCategoryName: string | null;
+    targetType: "head" | "category" | "herd" | "general";
+    amountMinor: number;
+  }>();
+  const addExpenseBreakdown = (
+    targetType: "head" | "category" | "herd" | "general",
+    categoryName: string,
+    subCategoryName: string | null,
+    amountMinor: number,
+  ) => {
+    if (amountMinor === 0) return;
+    const key = `${targetType}:${categoryName}:${subCategoryName ?? ""}`;
+    const current = expenseBreakdown.get(key);
+    if (current) current.amountMinor += amountMinor;
+    else expenseBreakdown.set(key, { categoryName, subCategoryName, targetType, amountMinor });
+  };
+  const herdCountByDate = new Map<string, number>();
+  let detailedCategoryAllocationMinor = 0;
+  for (const expense of expenseDetailRows) {
+    const amountMinor = toMinor(String(expense.amount));
+    const categoryName = expense.categoryName ?? "Other expense";
+    const subCategoryName = expense.subCategoryName ?? null;
+    if (expense.targetType === "head") {
+      addExpenseBreakdown("head", categoryName, subCategoryName, amountMinor);
+      continue;
+    }
+    if (expense.targetType === "category") {
+      const dateStr = expense.expenseDate instanceof Date ? expense.expenseDate.toISOString().split("T")[0] : String(expense.expenseDate).split("T")[0];
+      const shareMinor = divMinor(amountMinor, categoryHeadCountByDate.get(dateStr) ?? 1);
+      detailedCategoryAllocationMinor += shareMinor;
+      addExpenseBreakdown("category", categoryName, subCategoryName, shareMinor);
+      continue;
+    }
+    const dateStr = expense.expenseDate instanceof Date ? expense.expenseDate.toISOString().split("T")[0] : String(expense.expenseDate).split("T")[0];
+    let herdCount = herdCountByDate.get(dateStr);
+    if (herdCount == null) {
+      herdCount = await getHerdHeadCountOnDate(dateStr);
+      herdCountByDate.set(dateStr, herdCount);
+    }
+    addExpenseBreakdown(expense.targetType, categoryName, subCategoryName, divMinor(amountMinor, herdCount));
+  }
+  // Keep the headline total and detailed category rows on the same allocation
+  // basis, including minor-unit rounding for each individual bill.
+  categoryExpenseAllocationMinor = detailedCategoryAllocationMinor;
 
   // Sale revenue (exclude soft-deleted sales)
   const saleRows = await db
@@ -2206,7 +2300,7 @@ export async function getAnimalPnL(animalId: number) {
   // Operating cost = everything EXCEPT purchase cost. Computed by direct
   // addition (not totalCost - purchaseCost) so it's immune to purchaseCost
   // parsing issues.
-  const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+  const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor + generalExpenseAllocationMinor;
   const operatingCostMinor = animalOperatingCostMinor;
   const totalCostMinor = purchaseCostMinor + operatingCostMinor;
   const netPnLMinor = revenueMinor - totalCostMinor;
@@ -2215,6 +2309,7 @@ export async function getAnimalPnL(animalId: number) {
   const directExpenseTotal = toMajor(directExpenseTotalMinor);
   const categoryExpenseAllocation = toMajor(categoryExpenseAllocationMinor);
   const herdExpenseAllocation = toMajor(herdExpenseAllocationMinor);
+  const generalExpenseAllocation = toMajor(generalExpenseAllocationMinor);
   const revenue = toMajor(revenueMinor);
   const totalCost = toMajor(totalCostMinor);
   const netPnL = toMajor(netPnLMinor);
@@ -2259,6 +2354,11 @@ export async function getAnimalPnL(animalId: number) {
     directExpenseTotal,
     categoryExpenseAllocation,
     herdExpenseAllocation,
+    generalExpenseAllocation,
+    expenseBreakdown: Array.from(expenseBreakdown.values())
+      .filter(item => item.amountMinor > 0)
+      .sort((a, b) => b.amountMinor - a.amountMinor)
+      .map(({ amountMinor, ...item }) => ({ ...item, amount: toMajor(amountMinor) })),
     totalCost,
     revenue,
     netPnL,
@@ -2311,7 +2411,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const saleByAnimal = new Map<number, (typeof allSales)[0]>();
   for (const s of allSales) saleByAnimal.set(s.animalId, s);
 
-  // 3. Pre-fetch all direct (head) expenses per animal
+  // 3. Pre-fetch all direct (head) expenses per animal.
   const allDirectExp = await db
     .select({ headId: expenses.headId, total: sql<number>`SUM(amount)` })
     .from(expenses)
@@ -2333,8 +2433,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     .from(expenses)
     .where(and(eq(expenses.targetType, "category"), isNull(expenses.deletedAt)));
 
-  // Build a map: categoryId → array of { amountMinor, date }
-  const catExpByCatId = new Map<number, Array<{ amount: number; date: string }>>(); // amount in minor units
+  // Build a map: categoryId → array of { amountMinor, date }.
+  const catExpByCatId = new Map<number, Array<{ amount: number; date: string }>>(); // amounts in minor units
   for (const e of allCatExp) {
     if (e.categoryTarget == null) continue;
     const catId = Number(e.categoryTarget);
@@ -2379,6 +2479,17 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const herdExpenseShares = allHerdExp.map((he: any) => {
     const dateStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
     return { date: dateStr, perHeadMinor: divMinor(toMinor(String(he.amount)), herdCountOnDate(dateStr)) };
+  });
+
+  // General farm bills are shared over the same live herd denominator as
+  // animal-wide bills.
+  const allGeneralExp = await db
+    .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
+    .from(expenses)
+    .where(and(eq(expenses.targetType, "general"), isNull(expenses.deletedAt)));
+  const generalExpenseShares = allGeneralExp.map((ge: any) => {
+    const dateStr = ge.expenseDate instanceof Date ? ge.expenseDate.toISOString().split("T")[0] : String(ge.expenseDate).split("T")[0];
+    return { date: dateStr, perHeadMinor: divMinor(toMinor(String(ge.amount)), herdCountOnDate(dateStr)) };
   });
 
   // 5. Pre-fetch ALL ration plans (active + historical) for accurate per-period cost
@@ -2437,7 +2548,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     for (const ce of catExpenses) {
       if (ce.date >= acqDateStr && ce.date <= exitDateStr) {
         const headsAtExpense = Math.max(1, catAnimals.filter(a => a.acq <= ce.date && (a.exit === null || a.exit >= ce.date)).length);
-        categoryExpenseAllocationMinor += divMinor(ce.amount, headsAtExpense);
+        const shareMinor = divMinor(ce.amount, headsAtExpense);
+        categoryExpenseAllocationMinor += shareMinor;
       }
     }
 
@@ -2450,9 +2562,16 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       }
     }
 
-    // Operating cost = feed + direct + category + herd (NOT purchase cost).
+    let generalExpenseAllocationMinor = 0;
+    for (const gs of generalExpenseShares) {
+      if (gs.date >= acqDateStr && gs.date <= exitDateStr) {
+        generalExpenseAllocationMinor += gs.perHeadMinor;
+      }
+    }
+
+    // Operating cost = feed + direct + category + herd + general (NOT purchase cost).
     // Direct sum avoids any purchaseCost parsing issues.
-    const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor;
+    const animalOperatingCostMinor = feedCostMinor + directExpenseTotalMinor + categoryExpenseAllocationMinor + herdExpenseAllocationMinor + generalExpenseAllocationMinor;
     const operatingCostMinor = animalOperatingCostMinor;
     const totalCostMinor = purchaseCostMinor + operatingCostMinor;
     const netPnLMinor = revenueMinor - totalCostMinor;
@@ -2484,6 +2603,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       directExpenseTotal,
       categoryExpenseAllocation: toMajor(categoryExpenseAllocationMinor),
       herdExpenseAllocation: toMajor(herdExpenseAllocationMinor),
+      generalExpenseAllocation: toMajor(generalExpenseAllocationMinor),
       totalCost,
       revenue,
       netPnL,
