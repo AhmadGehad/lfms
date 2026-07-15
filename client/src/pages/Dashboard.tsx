@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
+import { CapitalPartnersSummary } from "@/components/CapitalPartnersSummary";
 import { toast } from "sonner";
 import { AlertTriangle, ArrowDownRight, ArrowUpRight, CalendarDays, Download, Egg, FileText, Leaf, Scale, TrendingUp, Syringe } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -198,6 +199,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
+      <CapitalPartnersSummary ownerId={ownerParam} />
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

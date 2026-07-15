@@ -33,6 +33,7 @@ export const PERMISSION_PAGES = [
   { id: "users", path: "/users", actions: ["view", "update"] },
   { id: "configuration", path: "/config", actions: ["view", "create", "update", "delete"] },
   { id: "farmMap", path: "/farm-map", actions: ["view", "update"] },
+  { id: "capital", path: "/config", actions: ["view", "create", "update"] },
   { id: "data", path: "/data", actions: ["view", "import", "export", "restore"] },
   { id: "recycleBin", path: "/recycle-bin", actions: ["view", "restore", "purge"] },
 ] as const;
@@ -69,6 +70,7 @@ const DEFAULT_MIN_ROLE: Record<PermissionPage, Partial<Record<PermissionAction, 
   users: { view: "admin", update: "admin" },
   configuration: { view: "supervisor", create: "supervisor", update: "supervisor", delete: "supervisor" },
   farmMap: { view: "supervisor", update: "supervisor" },
+  capital: { view: "supervisor", create: "admin", update: "admin" },
   data: { view: "admin", import: "admin", export: "admin", restore: "owner" },
   recycleBin: { view: "supervisor", restore: "admin", purge: "admin" },
 };

@@ -154,6 +154,90 @@ export const owners = mysqlTable("owners", {
   deletedBy: int("deletedBy"),
 });
 
+// ─── CAPITAL MANAGEMENT ──────────────────────────────────────────────────────
+// Capital is deliberately nested under an animal owner.  An owner can have
+// multiple investors; financial events are immutable ledger rows so historic
+// ownership and closed allocations remain reproducible.
+export const capitalInvestors = mysqlTable("capital_investors", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull(),
+  name: varchar("name", { length: 120 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  email: varchar("email", { length: 100 }),
+  notes: text("notes"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdBy: int("createdBy"),
+  deletedAt: timestamp("deletedAt"),
+  deletedBy: int("deletedBy"),
+}, table => ({
+  ownerActiveIdx: index("capital_investors_owner_active_idx").on(table.ownerId, table.isActive),
+}));
+
+export const capitalFundingBatches = mysqlTable("capital_funding_batches", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull(),
+  kind: mysqlEnum("kind", ["pro_rata", "reversal"]).notNull(),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  effectiveDate: date("effectiveDate").notNull(),
+  notes: text("notes"),
+  reversalOfBatchId: int("reversalOfBatchId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy").notNull(),
+}, table => ({
+  ownerDateIdx: index("capital_funding_batches_owner_date_idx").on(table.ownerId, table.effectiveDate),
+  reversalUnique: uniqueIndex("capital_funding_batches_reversal_unique").on(table.reversalOfBatchId),
+}));
+
+export const capitalContributions = mysqlTable("capital_contributions", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull(),
+  investorId: int("investorId").notNull(),
+  batchId: int("batchId"),
+  kind: mysqlEnum("kind", ["initial", "direct", "pro_rata", "reversal"]).notNull(),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  effectiveDate: date("effectiveDate").notNull(),
+  notes: text("notes"),
+  reversalOfContributionId: int("reversalOfContributionId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy").notNull(),
+}, table => ({
+  ownerDateIdx: index("capital_contributions_owner_date_idx").on(table.ownerId, table.effectiveDate),
+  investorDateIdx: index("capital_contributions_investor_date_idx").on(table.investorId, table.effectiveDate),
+  reversalUnique: uniqueIndex("capital_contributions_reversal_unique").on(table.reversalOfContributionId),
+}));
+
+export const capitalProfitAllocations = mysqlTable("capital_profit_allocations", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull(),
+  kind: mysqlEnum("kind", ["monthly", "adjustment"]).notNull(),
+  status: mysqlEnum("status", ["draft", "finalized"]).default("draft").notNull(),
+  periodStart: date("periodStart").notNull(),
+  periodEnd: date("periodEnd").notNull(),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  adjustmentOfAllocationId: int("adjustmentOfAllocationId"),
+  notes: text("notes"),
+  finalizedAt: timestamp("finalizedAt"),
+  finalizedBy: int("finalizedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdBy: int("createdBy").notNull(),
+}, table => ({
+  ownerPeriodIdx: index("capital_profit_allocations_owner_period_idx").on(table.ownerId, table.periodStart, table.periodEnd),
+  ownerKindPeriodUnique: uniqueIndex("capital_profit_allocations_owner_kind_period_unique").on(table.ownerId, table.kind, table.periodStart, table.periodEnd),
+}));
+
+export const capitalProfitAllocationLines = mysqlTable("capital_profit_allocation_lines", {
+  id: int("id").autoincrement().primaryKey(),
+  allocationId: int("allocationId").notNull(),
+  investorId: int("investorId").notNull(),
+  ownershipPct: decimal("ownershipPct", { precision: 9, scale: 6 }).notNull(),
+  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  allocationInvestorUnique: uniqueIndex("capital_profit_lines_allocation_investor_unique").on(table.allocationId, table.investorId),
+}));
+
 export const birthTypes = mysqlTable("birth_types", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 50 }).notNull().unique(),

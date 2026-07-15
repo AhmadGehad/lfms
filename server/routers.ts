@@ -16,6 +16,7 @@ import { vaccinationRouter } from "./routers/vaccination";
 import { pregnancyRouter } from "./routers/pregnancy";
 import { permissionsRouter } from "./routers/permissions";
 import { preferencesRouter } from "./routers/preferences";
+import { capitalRouter } from "./routers/capital";
 
 export const appRouter = router({
   system: systemRouter,
@@ -47,6 +48,7 @@ export const appRouter = router({
   pregnancy: pregnancyRouter,
   permissions: permissionsRouter,
   preferences: preferencesRouter,
+  capital: capitalRouter,
 });
 
 export type AppRouter = typeof appRouter;

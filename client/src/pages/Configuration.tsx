@@ -14,6 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { OwnerCapitalDialog } from "@/components/OwnerCapitalDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // ── Reusable inline edit dialog ───────────────────────────────────────────────
@@ -414,11 +415,13 @@ function StatusesTab() {
 function OwnersTab() {
   const { t } = useTranslation();
   const { canCreate, canUpdate } = usePermissions("configuration");
+  const capitalPerms = usePermissions();
   const { data: owners } = trpc.config.getOwners.useQuery({ activeOnly: false });
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
+  const [capitalOwner, setCapitalOwner] = useState<any>(null);
   const utils = trpc.useUtils();
   const create = trpc.config.createOwner.useMutation({
     onSuccess: () => {
@@ -483,7 +486,7 @@ function OwnersTab() {
           <TableHead>{t("owners.email")}</TableHead>
           <TableHead>{t("common.notes")}</TableHead>
           <TableHead>{t("common.status")}</TableHead>
-          <TableHead className="w-16"></TableHead>
+          <TableHead className="w-28"></TableHead>
         </TableRow></TableHeader>
         <TableBody>
           {(owners ?? []).map((o: any) => (
@@ -493,7 +496,7 @@ function OwnersTab() {
               <TableCell className="text-muted-foreground text-sm">{o.email ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">{o.notes ?? "—"}</TableCell>
               <TableCell>{o.isActive ? <Badge className="bg-green-100 text-green-800 border-green-200">{t("common.active")}</Badge> : <Badge variant="outline">{t("common.inactive")}</Badge>}</TableCell>
-              <TableCell>{canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
+              <TableCell className="whitespace-nowrap">{capitalPerms.can("capital", "view") && <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setCapitalOwner(o)}>Capital</Button>}{canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
           {(owners ?? []).length === 0 && (
@@ -501,6 +504,7 @@ function OwnersTab() {
           )}
         </TableBody>
       </Table>
+      <OwnerCapitalDialog owner={capitalOwner} open={capitalOwner !== null} onOpenChange={next => !next && setCapitalOwner(null)} />
     </div>
   );
 }

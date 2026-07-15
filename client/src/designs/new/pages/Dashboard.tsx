@@ -48,6 +48,7 @@ import { ActionQueue, type QueueItem } from "../components/ActionCenter";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { AnimalCreateDialog, BulkRecordSaleDialog, QuickExpenseDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
+import { CapitalPartnersSummary } from "@/components/CapitalPartnersSummary";
 
 const MS_DAY = 86400000;
 const DASHBOARD_PREF_KEY = "lfms:new-dashboard-layout";
@@ -717,6 +718,7 @@ export default function NewDashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {visibleKpis.map(id => <div key={id}>{kpiCards[id]}</div>)}
       </div>
+      <div className="mt-4"><CapitalPartnersSummary ownerId={ownerParam} /></div>
 
       <h2 className="mb-3 mt-6 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
         {t("dashboard.needsAttention", "Needs attention")}

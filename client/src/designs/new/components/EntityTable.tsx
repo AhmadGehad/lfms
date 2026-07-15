@@ -103,11 +103,11 @@ export function EntityTable<T>({
         rowKey={rowKey}
         loading={loading}
         storageKey={storageKey}
-        rowActions={canEdit ? r => (
+        rowActions={canEdit || extraRowActions ? r => (
           <div className="flex items-center justify-end gap-1">
-            <button onClick={() => startEdit(r)} className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-surface" aria-label={t("common.edit", "Edit")} title={t("common.edit", "Edit")}>
+            {canEdit && <button onClick={() => startEdit(r)} className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-surface" aria-label={t("common.edit", "Edit")} title={t("common.edit", "Edit")}>
               <Pencil className="h-4 w-4" />
-            </button>
+            </button>}
             {extraRowActions?.(r)}
           </div>
         ) : undefined}

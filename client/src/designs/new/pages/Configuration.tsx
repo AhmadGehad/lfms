@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
+import { OwnerCapitalDialog } from "@/components/OwnerCapitalDialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +24,7 @@ export default function NewConfiguration() {
   const { t } = useTranslation();
   const perms = usePermissions();
   const canEdit = perms.can("configuration", "update");
+  const canViewCapital = perms.can("capital", "view");
   const utils = trpc.useUtils();
   const ok = (msg: string, invalidate: () => void) => ({ onSuccess: () => { invalidate(); toast.success(msg); }, onError: (e: { message: string }) => toast.error(e.message) });
   const saved = t("config.saved", "Saved");
@@ -40,6 +42,7 @@ export default function NewConfiguration() {
   const vaccines = trpc.config.getVaccines.useQuery();
   const [deleteVaccineRow, setDeleteVaccineRow] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState("species");
+  const [capitalOwner, setCapitalOwner] = useState<any | null>(null);
 
   const speciesOpts = ((species.data as any[]) ?? []).map(s => ({ value: String(s.id), label: s.name }));
   const categoryOpts = ((categories.data as any[]) ?? []).map(c => ({ value: String(c.id), label: c.name }));
@@ -180,6 +183,7 @@ export default function NewConfiguration() {
               { key: "email", label: t("users.email", "Email"), type: "text" },
             ]}
             onCreate={v => m.createOwner.mutate(v as any)} onUpdate={(id, v) => m.updateOwner.mutate({ id, ...v } as any)}
+            extraRowActions={canViewCapital ? r => <button onClick={() => setCapitalOwner(r)} className="rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10" title="Capital & partners">Capital</button> : undefined}
           />
         </TabsContent>
 
@@ -271,6 +275,7 @@ export default function NewConfiguration() {
           <SettingsTab canEdit={canEdit} />
         </TabsContent>
       </Tabs>
+      <OwnerCapitalDialog owner={capitalOwner} open={capitalOwner !== null} onOpenChange={open => !open && setCapitalOwner(null)} />
     </div>
   );
 }
