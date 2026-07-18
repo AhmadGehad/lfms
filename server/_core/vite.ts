@@ -7,6 +7,7 @@ import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
 import adminViteConfig from "../../vite.admin.config";
 import { getResolvedRequestHost } from "./security/httpSecurity";
+import { setHtmlDocumentHeaders } from "./htmlResponse";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -58,7 +59,8 @@ export async function setupVite(app: Express, server: Server) {
         );
         const template = await fs.promises.readFile(adminTemplate, "utf-8");
         const page = await adminVite.transformIndexHtml(url, template);
-        res.status(200).set({ "Content-Type": "text/html" }).end(page);
+        setHtmlDocumentHeaders(res);
+        res.status(200).end(page);
         return;
       }
       const clientTemplate = path.resolve(
@@ -75,7 +77,8 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx?v=${nanoid()}"`
       );
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      setHtmlDocumentHeaders(res);
+      res.status(200).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
