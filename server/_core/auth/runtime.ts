@@ -151,10 +151,16 @@ export function validateProductionDatabaseUrl(value: string) {
   if (!url.hostname || !url.pathname || url.pathname === "/") {
     throw new Error("DATABASE_URL must include a host and database name");
   }
-  const ssl = (url.searchParams.get("ssl") ?? "").toLowerCase();
+  const sslParam = url.searchParams.get("ssl") ?? "";
+  const ssl = sslParam.toLowerCase();
   const sslMode = (url.searchParams.get("ssl-mode") ?? "").toUpperCase();
+  // Accept: ssl=true, ssl=verify_identity, ssl-mode=VERIFY_CA/VERIFY_IDENTITY,
+  // and TiDB/MySQL2 JSON format: ssl={"rejectUnauthorized":true}
+  let sslJson: Record<string, unknown> = {};
+  try { sslJson = JSON.parse(sslParam); } catch { /* not JSON */ }
   const verifiedSsl = ssl === "true" || ssl === "verify_identity" ||
-    sslMode === "VERIFY_CA" || sslMode === "VERIFY_IDENTITY";
+    sslMode === "VERIFY_CA" || sslMode === "VERIFY_IDENTITY" ||
+    sslJson["rejectUnauthorized"] === true;
   if (!verifiedSsl || ssl === "false" || sslMode === "DISABLED") {
     throw new Error("DATABASE_URL must require verified TLS in production");
   }
