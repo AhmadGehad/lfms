@@ -13,6 +13,10 @@ export type HostValidationOptions = {
   baseDomain: string;
   allowLegacyBareDomain?: boolean;
   allowDevelopmentPorts?: boolean;
+  /** Extra hostnames (without protocol) that are treated as tenant surface.
+   *  Use this to allow the Manus internal domain (e.g. livestockms-boywmbm5.manus.space)
+   *  when BASE_DOMAIN is a custom domain like l-fms.com. */
+  additionalTenantHostnames?: string[];
 };
 
 const HOST_LABEL = /^(?!-)[a-z0-9-]{1,63}(?<!-)$/;
@@ -55,6 +59,15 @@ export function resolveRequestHost(
     normalized === "127.0.0.1"
   ) {
     return { hostname: normalized, surface: "tenant", companySlug: null };
+  }
+
+  // Allow explicitly configured additional tenant hostnames (e.g. Manus internal domain)
+  if (options.additionalTenantHostnames) {
+    for (const extra of options.additionalTenantHostnames) {
+      if (normalizeHostname(extra) === normalized) {
+        return { hostname: normalized, surface: "tenant", companySlug: null };
+      }
+    }
   }
 
   const suffix = `.${baseDomain}`;

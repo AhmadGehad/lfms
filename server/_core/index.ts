@@ -78,12 +78,20 @@ async function startServer() {
     connectOrigins: ENV.cspConnectOrigins,
     imageOrigins: ENV.cspImageOrigins,
   }));
+  // Derive additional tenant hostnames from ALLOWED_TENANT_ORIGINS (strip protocol)
+  // This allows the Manus internal domain (e.g. livestockms-boywmbm5.manus.space)
+  // and any other explicitly allowed origins to be treated as tenant surface
+  // even when BASE_DOMAIN is a custom domain like l-fms.com.
+  const additionalTenantHostnames = ENV.allowedTenantOrigins
+    .map(origin => { try { return new URL(origin).hostname; } catch { return origin; } })
+    .filter(Boolean);
   app.use(hostValidationMiddleware({
     baseDomain: ENV.baseDomain,
     // The bare domain serves the marketing landing page in every environment;
     // API tenant resolution still requires a company subdomain.
     allowLegacyBareDomain: true,
     allowDevelopmentPorts: !ENV.isProduction,
+    additionalTenantHostnames,
   }));
   app.use(requestObservabilityMiddleware());
   app.use(exactCorsMiddleware(allowedOrigins));
