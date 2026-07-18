@@ -104,6 +104,18 @@ describe("OAuth state", () => {
       true,
     )).not.toThrow();
     expect(() => validateExternalServiceUrl(
+      "https://api.example.test/oauth",
+      "OAUTH_SERVER_URL",
+      ["example.test"],
+      true,
+    )).not.toThrow();
+    expect(() => validateExternalServiceUrl(
+      "https://evilexample.test/oauth",
+      "OAUTH_SERVER_URL",
+      ["example.test"],
+      true,
+    )).toThrow(/not allowlisted/);
+    expect(() => validateExternalServiceUrl(
       "http://api.example.test/oauth",
       "OAUTH_SERVER_URL",
       ["api.example.test"],

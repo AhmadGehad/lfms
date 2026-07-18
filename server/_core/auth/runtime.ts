@@ -174,8 +174,14 @@ export function validateExternalServiceUrl(
   if (production && (url.protocol !== "https:" || (url.port && url.port !== "443"))) {
     throw new Error(`${label} must use HTTPS on the standard port in production`);
   }
-  const normalizedAllowedHosts = new Set(allowedHosts.map(host => host.toLowerCase()));
-  if (production && !normalizedAllowedHosts.has(url.hostname.toLowerCase())) {
+  // A host is allowed on an exact match or as a subdomain of an allowlisted
+  // domain, so OAUTH_ALLOWED_HOSTS=manus.im covers api.manus.im.
+  const hostname = url.hostname.toLowerCase();
+  const hostAllowed = allowedHosts.some(allowed => {
+    const normalized = allowed.toLowerCase();
+    return hostname === normalized || hostname.endsWith(`.${normalized}`);
+  });
+  if (production && !hostAllowed) {
     throw new Error(`${label} host is not allowlisted`);
   }
   return url;
