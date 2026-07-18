@@ -121,11 +121,20 @@ export function validateProductionAuthConfiguration() {
   if (!ENV.oAuthPortalUrl || !ENV.oAuthServerUrl || !ENV.appId) {
     throw new Error("OAuth configuration is incomplete");
   }
-  if (ENV.oAuthAllowedHosts.length === 0) {
+  // Derive allowed OAuth hosts from the configured URLs; OAUTH_ALLOWED_HOSTS is optional.
+  const oauthHosts: string[] = ENV.oAuthAllowedHosts.length > 0
+    ? [...ENV.oAuthAllowedHosts]
+    : (() => {
+        const hosts: string[] = [];
+        try { hosts.push(new URL(ENV.oAuthServerUrl).hostname.toLowerCase()); } catch { /* ignore */ }
+        try { hosts.push(new URL(ENV.oAuthPortalUrl).hostname.toLowerCase()); } catch { /* ignore */ }
+        return [...new Set(hosts)];
+      })();
+  if (oauthHosts.length === 0) {
     throw new Error("OAUTH_ALLOWED_HOSTS must contain the approved tenant OAuth provider hosts");
   }
-  validateExternalServiceUrl(ENV.oAuthServerUrl, "OAUTH_SERVER_URL", ENV.oAuthAllowedHosts, true);
-  validateExternalServiceUrl(ENV.oAuthPortalUrl, "VITE_OAUTH_PORTAL_URL", ENV.oAuthAllowedHosts, true);
+  validateExternalServiceUrl(ENV.oAuthServerUrl, "OAUTH_SERVER_URL", oauthHosts, true);
+  validateExternalServiceUrl(ENV.oAuthPortalUrl, "VITE_OAUTH_PORTAL_URL", oauthHosts, true);
   // Platform admin login now uses Manus OAuth (same provider as tenant users).
   // No separate OIDC issuer/client credentials are required.
   validateProductionDatabaseUrl(ENV.databaseUrl);
