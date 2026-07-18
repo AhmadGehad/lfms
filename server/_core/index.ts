@@ -80,7 +80,9 @@ async function startServer() {
   }));
   app.use(hostValidationMiddleware({
     baseDomain: ENV.baseDomain,
-    allowLegacyBareDomain: !ENV.isProduction,
+    // The bare domain serves the marketing landing page in every environment;
+    // API tenant resolution still requires a company subdomain.
+    allowLegacyBareDomain: true,
     allowDevelopmentPorts: !ENV.isProduction,
   }));
   app.use(requestObservabilityMiddleware());
@@ -121,13 +123,13 @@ async function startServer() {
     })
   );
   // development mode uses Vite, production mode uses static files.
-  // vite is a devDependency pruned in production, so it MUST be loaded via
-  // dynamic import to avoid ERR_MODULE_NOT_FOUND at startup.
+  // vite is a devDependency pruned in production, so its module MUST be
+  // loaded via dynamic import to avoid ERR_MODULE_NOT_FOUND at startup.
   if (process.env.NODE_ENV === "development") {
     const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
-    const { serveStatic } = await import("./vite");
+    const { serveStatic } = await import("./staticServe");
     serveStatic(app);
   }
 

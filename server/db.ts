@@ -23,10 +23,22 @@ const transactionStorage = new AsyncLocalStorage<DbOrTx>();
 
 function databasePoolOptions(value: string) {
   const url = new URL(value);
-  const ssl = (url.searchParams.get("ssl") ?? "").toLowerCase();
+  const rawSsl = url.searchParams.get("ssl") ?? "";
+  const ssl = rawSsl.toLowerCase();
   const sslMode = (url.searchParams.get("ssl-mode") ?? "").toUpperCase();
+  // Managed platforms (TiDB Cloud via Manus) inject mysql2's JSON ssl profile:
+  // ssl={"rejectUnauthorized":true}
+  const jsonSslVerified = (() => {
+    if (!rawSsl.startsWith("{")) return false;
+    try {
+      const profile = JSON.parse(rawSsl) as { rejectUnauthorized?: unknown };
+      return profile.rejectUnauthorized !== false;
+    } catch {
+      return false;
+    }
+  })();
   const verifiedTlsRequested = ssl === "true" || ssl === "verify_identity" ||
-    sslMode === "VERIFY_CA" || sslMode === "VERIFY_IDENTITY";
+    sslMode === "VERIFY_CA" || sslMode === "VERIFY_IDENTITY" || jsonSslVerified;
   if (ENV.isProduction && !verifiedTlsRequested) {
     throw new Error("DATABASE_URL must require verified TLS in production");
   }
