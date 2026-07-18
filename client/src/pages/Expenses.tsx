@@ -28,6 +28,7 @@ import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     expenseDate: new Date().toISOString().split("T")[0],
     categoryId: "",
@@ -58,6 +59,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
       utils.dashboard.getKPIs.invalidate();
       utils.animals.getAllPnL.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -78,6 +80,7 @@ function AddExpenseDialog({ onSuccess }: { onSuccess: () => void }) {
       splitMode: form.splitMode as any,
       vendorName: form.vendorName || undefined,
       notes: form.notes || undefined,
+      idempotencyKey,
     } as any);
   };
 
@@ -258,6 +261,7 @@ function EditExpenseDialog({ expense, onSuccess }: { expense: any; onSuccess: ()
     if (form.targetType === "category" && !form.categoryTarget) { toast.error(t("expenses.selectCategoryForCat")); return; }
     updateExpense.mutate({
       id: expense.expense.id,
+      expectedVersion: expense.expense.version,
       expenseDate: form.expenseDate,
       amount: form.amount,
       categoryId: Number(form.categoryId),
@@ -517,7 +521,7 @@ export default function Expenses() {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                              <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteExpense.mutate({ id: e.expense.id })}>
+                              <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteExpense.mutate({ id: e.expense.id, expectedVersion: e.expense.version })}>
                                 {t("common.moveToBin")}
                               </AlertDialogAction>
                             </AlertDialogFooter>

@@ -1,6 +1,7 @@
 import { anyPermissionProcedure, permissionProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
+import { TRPCError } from "@trpc/server";
 import {
   getPregnancies,
   getActivePregnancyByAnimal,
@@ -18,6 +19,15 @@ import {
 } from "../db";
 
 const pregnancyStatus = z.enum(["active", "delivered", "aborted", "lost"]);
+
+function requireVersionedMutation(updated: boolean): void {
+  if (!updated) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: "Pregnancy record changed since it was loaded. Refresh and try again.",
+    });
+  }
+}
 
 export const pregnancyRouter = router({
   // ─── LIST / READ ───────────────────────────────────────────────────────────
@@ -112,6 +122,7 @@ export const pregnancyRouter = router({
     .input(
       z.object({
         id: z.number(),
+        expectedVersion: z.number().int().positive(),
         confirmationDate: z.string().optional(),
         sireId: z.number().nullable().optional(),
         notifyBeforeDue: z.number().int().min(0).max(365).optional(),
@@ -122,9 +133,12 @@ export const pregnancyRouter = router({
         notes: z.string().optional(),
       }),
     )
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const before = await getPregnancyRecordById(id);
-      await updatePregnancyRecord(id, data);
+      if (!before || before.deletedAt) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Pregnancy record not found" });
+      }
+      requireVersionedMutation(await updatePregnancyRecord(id, data, expectedVersion));
       await createAuditEntry({
         userId: ctx.user.id,
         entityType: "pregnancyRecord",
@@ -139,9 +153,9 @@ export const pregnancyRouter = router({
     }),
 
   delete: permissionProcedure("pregnancy", "delete")
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.number(), expectedVersion: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
-      await deletePregnancyRecord(input.id, ctx.user.id);
+      requireVersionedMutation(await deletePregnancyRecord(input.id, input.expectedVersion, ctx.user.id));
       await createAuditEntry({
         userId: ctx.user.id,
         entityType: "pregnancyRecord",

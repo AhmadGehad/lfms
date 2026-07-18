@@ -8,9 +8,44 @@ import superjson from "superjson";
 import { toast } from "sonner";
 import App from "./App";
 import { getLoginUrl } from "./const";
+import { getStoredFarmPublicId } from "./lib/farmSelection";
 import "./index.css";
 
 const queryClient = new QueryClient();
+
+function readCsrfCookie() {
+  const secureName = "__Host-lfms_tenant_csrf=";
+  const localName = "lfms_tenant_csrf=";
+  const entry = document.cookie
+    .split(";")
+    .map(value => value.trim())
+    .find(value => value.startsWith(secureName) || value.startsWith(localName));
+  if (!entry) return null;
+  return decodeURIComponent(entry.slice(entry.indexOf("=") + 1));
+}
+
+function authenticatedFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  includeFarm = true,
+) {
+  const headers = new Headers(init?.headers);
+  const csrfToken = readCsrfCookie();
+  if (csrfToken) headers.set("X-LFMS-CSRF", csrfToken);
+  const farmPublicId = includeFarm ? getStoredFarmPublicId() : null;
+  if (farmPublicId) headers.set("X-LFMS-Farm", farmPublicId);
+  return globalThis.fetch(input, {
+    ...(init ?? {}),
+    credentials: "include",
+    headers,
+  });
+}
+
+const csrfFetch = (input: RequestInfo | URL, init?: RequestInit) =>
+  authenticatedFetch(input, init, true);
+
+const contextFetch = (input: RequestInfo | URL, init?: RequestInit) =>
+  authenticatedFetch(input, init, false);
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
@@ -50,26 +85,24 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     splitLink({
-      condition: (op) => op.path.startsWith("feed.") || op.path === "config.getFeedItems",
+      condition: (op) => op.path === "auth.me" || op.path === "auth.tenantContext",
       true: httpLink({
         url: "/api/trpc",
         transformer: superjson,
-        fetch(input, init) {
-          return globalThis.fetch(input, {
-            ...(init ?? {}),
-            credentials: "include",
-          });
-        },
+        fetch: contextFetch,
       }),
-      false: httpBatchLink({
-        url: "/api/trpc",
-        transformer: superjson,
-        fetch(input, init) {
-          return globalThis.fetch(input, {
-            ...(init ?? {}),
-            credentials: "include",
-          });
-        },
+      false: splitLink({
+        condition: (op) => op.path.startsWith("feed.") || op.path === "config.getFeedItems",
+        true: httpLink({
+          url: "/api/trpc",
+          transformer: superjson,
+          fetch: csrfFetch,
+        }),
+        false: httpBatchLink({
+          url: "/api/trpc",
+          transformer: superjson,
+          fetch: csrfFetch,
+        }),
       }),
     }),
   ],

@@ -29,13 +29,13 @@ export const PERMISSION_PAGES = [
   { id: "incomeStatement", path: "/income-statement", actions: ["view", "export"] },
   { id: "sales", path: "/sales", actions: ["view", "create", "update", "delete"] },
   { id: "notifications", path: "/notifications", actions: ["view", "update"] },
-  { id: "audit", path: "/audit", actions: ["view"] },
+  { id: "audit", path: "/audit", actions: ["view", "revert"] },
   { id: "users", path: "/users", actions: ["view", "update"] },
   { id: "configuration", path: "/config", actions: ["view", "create", "update", "delete"] },
   { id: "farmMap", path: "/farm-map", actions: ["view", "update"] },
   { id: "capital", path: "/config", actions: ["view", "create", "update"] },
   { id: "data", path: "/data", actions: ["view", "import", "export", "restore"] },
-  { id: "recycleBin", path: "/recycle-bin", actions: ["view", "restore", "purge"] },
+  { id: "recycleBin", path: "/recycle-bin", actions: ["view", "restore"] },
 ] as const;
 
 export type PermissionPage = (typeof PERMISSION_PAGES)[number]["id"];
@@ -66,13 +66,13 @@ const DEFAULT_MIN_ROLE: Record<PermissionPage, Partial<Record<PermissionAction, 
   incomeStatement: { view: "viewer", export: "viewer" },
   sales: { view: "viewer", create: "staff", update: "staff", delete: "supervisor" },
   notifications: { view: "viewer", update: "user" },
-  audit: { view: "viewer" },
+  audit: { view: "viewer", revert: "owner" },
   users: { view: "admin", update: "admin" },
   configuration: { view: "supervisor", create: "supervisor", update: "supervisor", delete: "supervisor" },
   farmMap: { view: "supervisor", update: "supervisor" },
   capital: { view: "supervisor", create: "admin", update: "admin" },
   data: { view: "admin", import: "admin", export: "admin", restore: "owner" },
-  recycleBin: { view: "supervisor", restore: "admin", purge: "admin" },
+  recycleBin: { view: "supervisor", restore: "admin" },
 };
 
 export function permissionKey(

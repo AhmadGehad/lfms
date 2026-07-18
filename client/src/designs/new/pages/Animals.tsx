@@ -155,6 +155,7 @@ function BulkVaccinationDialog({
   const [batchNumber, setBatchNumber] = useState("");
   const [veterinarian, setVeterinarian] = useState("");
   const [notes, setNotes] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const { data: vaccines } = trpc.config.getVaccines.useQuery();
 
   useEffect(() => {
@@ -171,6 +172,7 @@ function BulkVaccinationDialog({
       toast.success(t("vaccine.bulkVaccinationApplied", "Bulk vaccination applied"));
       utils.vaccination.getVaccinationRecords.invalidate();
       utils.animals.list.invalidate();
+      setIdempotencyKey(crypto.randomUUID());
       onOpenChange(false);
       onSuccess();
     },
@@ -189,6 +191,7 @@ function BulkVaccinationDialog({
       batchNumber: batchNumber || undefined,
       veterinarian: veterinarian || undefined,
       notes: notes || undefined,
+      idempotencyKey,
     });
   };
 
@@ -306,7 +309,7 @@ function BulkEditDialog({
       return;
     }
     bulkUpdate.mutate({
-      animalIds: selectedAnimals.map(a => a.animal.id),
+      animals: selectedAnimals.map(a => ({ id: a.animal.id, expectedVersion: a.animal.version })),
       groupId: groupId === KEEP ? undefined : groupId === CLEAR ? null : Number(groupId),
       statusId: statusId === KEEP ? undefined : Number(statusId),
       ownerId: ownerId === KEEP ? undefined : ownerId === CLEAR ? null : Number(ownerId),
@@ -819,7 +822,7 @@ export default function NewAnimals() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={deleteAnimal.isPending}
-        onConfirm={() => deleteRow && deleteAnimal.mutate({ id: deleteRow.animal.id })}
+        onConfirm={() => deleteRow && deleteAnimal.mutate({ id: deleteRow.animal.id, expectedVersion: deleteRow.animal.version })}
       />
 
       <EditAnimalDialog animalId={editId} open={editId !== null} onOpenChange={o => !o && setEditId(null)} />

@@ -6,8 +6,28 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 import { COOKIE_NAME } from "../shared/const";
 import { animals, lambingLog } from "../drizzle/schema";
+import type { TenantContext } from "../shared/tenancy";
 import type { TrpcContext } from "./_core/context";
 import type { PermissionOverrides } from "../shared/permissions";
+import { VersionConflictError } from "./concurrency/versioning";
+
+vi.mock("./entitlements/sqlStore", async importOriginal => {
+  const actual = await importOriginal<typeof import("./entitlements/sqlStore")>();
+  return {
+    ...actual,
+    getEntitlementService: () => ({
+      assertAccess: vi.fn().mockResolvedValue(undefined),
+    }),
+  };
+});
+
+vi.mock("./platform/idempotency", async importOriginal => {
+  const actual = await importOriginal<typeof import("./platform/idempotency")>();
+  return {
+    ...actual,
+    executeIdempotent: vi.fn(async (_tx, _input, operation: () => Promise<unknown>) => operation()),
+  };
+});
 
 // ─── Mock DB module ──────────────────────────────────────────────────────────
 vi.mock("./db", () => ({
@@ -28,15 +48,15 @@ vi.mock("./db", () => ({
   ]),
   updateUserRole: vi.fn().mockResolvedValue(undefined),
   getAllSpecies: vi.fn().mockResolvedValue([
-    { id: 1, name: "Sheep", description: null, isActive: 1, createdAt: new Date() },
+    { id: 1, name: "Sheep", description: null, isActive: 1, version: 1, createdAt: new Date() },
   ]),
   createSpecies: vi.fn().mockResolvedValue({ id: 2, name: "Goat", description: null, isActive: 1, createdAt: new Date() }),
-  updateSpecies: vi.fn().mockResolvedValue(undefined),
+  updateSpecies: vi.fn().mockResolvedValue(true),
   getAllCategories: vi.fn().mockResolvedValue([
-    { id: 1, name: "Lamb", idPrefix: "LMB", speciesId: 1, speciesName: "Sheep", targetWeightKg: "25.00", isActive: 1 },
+    { id: 1, name: "Lamb", idPrefix: "LMB", speciesId: 1, speciesName: "Sheep", targetWeightKg: "25.00", isActive: 1, version: 1 },
   ]),
   createCategory: vi.fn().mockResolvedValue({ id: 2, name: "Ewe", idPrefix: "EWE", speciesId: 1, targetWeightKg: null }),
-  updateCategory: vi.fn().mockResolvedValue(undefined),
+  updateCategory: vi.fn().mockResolvedValue(true),
   getCategoryForUpdate: vi.fn().mockResolvedValue({
     id: 1,
     name: "Lamb",
@@ -44,6 +64,7 @@ vi.mock("./db", () => ({
     speciesId: 1,
     isActive: 1,
     deletedAt: null,
+    version: 1,
   }),
   categoryHasAnimals: vi.fn().mockResolvedValue(false),
   getAllStatuses: vi.fn().mockResolvedValue([
@@ -51,22 +72,30 @@ vi.mock("./db", () => ({
     { id: 6, name: "Sold", isExitStatus: 1, isActive: 1 },
   ]),
   createStatus: vi.fn().mockResolvedValue({ id: 7, name: "Transferred", isExitStatus: 1 }),
-  updateStatus: vi.fn().mockResolvedValue(undefined),
+  updateStatus: vi.fn().mockResolvedValue(true),
   getAllGroups: vi.fn().mockResolvedValue([
     { id: 1, groupCode: "PEN-A", name: "Pen A", speciesId: null, categoryId: null, mapShape: null, isActive: 1 },
   ]),
   createGroup: vi.fn().mockResolvedValue({ id: 2, groupCode: "PEN-B", name: "Pen B" }),
-  updateGroup: vi.fn().mockResolvedValue(undefined),
+  updateGroup: vi.fn().mockResolvedValue(true),
+  getAllOwners: vi.fn().mockResolvedValue([]),
+  createOwner: vi.fn().mockResolvedValue({ insertId: 1 }),
+  updateOwner: vi.fn().mockResolvedValue(true),
+  deleteOwner: vi.fn().mockResolvedValue(true),
   getAllBirthTypes: vi.fn().mockResolvedValue([
     { id: 1, name: "Single", description: null, isActive: 1 },
     { id: 2, name: "Twin", description: null, isActive: 1 },
   ]),
   createBirthType: vi.fn().mockResolvedValue({ id: 3, name: "Triplet" }),
+  updateBirthType: vi.fn().mockResolvedValue(true),
   getAllFeedItems: vi.fn().mockResolvedValue([
     { id: 1, name: "Hay", unit: "kg", currentPrice: "5.00", reorderLevel: 100, isActive: 1 },
   ]),
   createFeedItem: vi.fn().mockResolvedValue({ id: 2, name: "Barley", unit: "kg" }),
-  updateFeedItem: vi.fn().mockResolvedValue(undefined),
+  updateFeedItem: vi.fn().mockResolvedValue(true),
+  getAllFeedItemPrices: vi.fn().mockResolvedValue([]),
+  updateFeedItemPrice: vi.fn().mockResolvedValue(true),
+  deleteFeedItemPrice: vi.fn().mockResolvedValue(true),
   getFeedItemPriceHistory: vi.fn().mockResolvedValue([
     { id: 1, feedItemId: 1, effectiveDate: new Date("2024-01-01"), pricePerUnit: "5.00" },
   ]),
@@ -75,6 +104,9 @@ vi.mock("./db", () => ({
     { id: 1, name: "Veterinary", description: null, isActive: 1 },
   ]),
   createExpenseCategory: vi.fn().mockResolvedValue({ id: 2, name: "Labor" }),
+  updateExpenseCategory: vi.fn().mockResolvedValue(true),
+  getAllExpenseSubCategories: vi.fn().mockResolvedValue([]),
+  updateExpenseSubCategory: vi.fn().mockResolvedValue(true),
   getExpenseSubCategories: vi.fn().mockResolvedValue([]),
   createExpenseSubCategory: vi.fn().mockResolvedValue({ id: 1, name: "Checkup", categoryId: 1 }),
   getSystemSettings: vi.fn().mockResolvedValue([
@@ -90,12 +122,12 @@ vi.mock("./db", () => ({
   updateSystemSetting: vi.fn().mockResolvedValue(undefined),
   getAnimals: vi.fn().mockResolvedValue([
     {
-      animal: { id: 1, animalId: "LMB-001", sex: "male", acquisitionType: "born", isActive: 1, categoryId: 1, speciesId: 1, groupId: 1, statusId: 1 },
+      animal: { id: 1, animalId: "LMB-001", sex: "male", acquisitionType: "born", isActive: 1, categoryId: 1, speciesId: 1, groupId: 1, statusId: 1, version: 1 },
       categoryName: "Lamb", speciesName: "Sheep", groupName: "Pen A", statusName: "Active",
     },
   ]),
   getAnimalById: vi.fn().mockResolvedValue({
-    animal: { id: 1, animalId: "LMB-001", sex: "male", acquisitionType: "born", isActive: 1, categoryId: 1, speciesId: 1, groupId: 1, statusId: 1 },
+    animal: { id: 1, animalId: "LMB-001", sex: "male", acquisitionType: "born", isActive: 1, categoryId: 1, speciesId: 1, groupId: 1, statusId: 1, version: 1 },
     categoryName: "Lamb", speciesName: "Sheep", groupName: "Pen A", statusName: "Active",
   }),
   getLambingRecordById: vi.fn().mockResolvedValue({
@@ -118,6 +150,7 @@ vi.mock("./db", () => ({
     sireId: null,
     isPromoted: false,
     deletedAt: null,
+    version: 1,
   }),
   getLambingLog: vi.fn().mockResolvedValue([]),
   getLambingSummary: vi.fn().mockResolvedValue({
@@ -136,19 +169,22 @@ vi.mock("./db", () => ({
     statusId: 1,
     isActive: 1,
     deletedAt: null,
+    version: 1,
   }),
   getRawOwnerById: vi.fn().mockResolvedValue(null),
   createLambingRecord: vi.fn().mockResolvedValue({ insertId: 10 }),
   createAnimal: vi.fn().mockResolvedValue({ id: 3, animalId: "LMB-003" }),
-  updateLambingRecord: vi.fn().mockResolvedValue(undefined),
-  updateAnimal: vi.fn().mockResolvedValue(undefined),
+  updateLambingRecord: vi.fn().mockResolvedValue(true),
+  updateAnimal: vi.fn().mockResolvedValue(1),
   recordStatusChange: vi.fn().mockResolvedValue(undefined),
   getAnimalStatusHistory: vi.fn().mockResolvedValue([
     { id: 1, animalId: 1, fromStatusId: null, toStatusId: 1, changedAt: new Date(), reason: "Initial registration" },
   ]),
   getWeightLog: vi.fn().mockResolvedValue([
-    { id: 1, animalId: 1, weightKg: "15.50", recordedAt: new Date(), notes: null },
+    { id: 1, animalId: 1, weightKg: "15.50", recordedAt: new Date(), notes: null, version: 1 },
   ]),
+  getWeightEntryById: vi.fn().mockResolvedValue({ id: 1, animalId: 1, weightKg: "15.50", weighDate: new Date(), version: 1 }),
+  softDeleteWeightEntry: vi.fn().mockResolvedValue(true),
   createWeightEntry: vi.fn().mockResolvedValue({ id: 2, animalId: 1, weightKg: "18.00" }),
   checkAndStageAnimal: vi.fn().mockResolvedValue({ staged: false }),
   getAnimalPnL: vi.fn().mockResolvedValue({
@@ -161,6 +197,12 @@ vi.mock("./db", () => ({
   captureChangedOldValues: vi.fn().mockResolvedValue(undefined),
   captureRowSnapshot: vi.fn().mockResolvedValue(undefined),
   createNotification: vi.fn().mockResolvedValue({ id: 1, title: "Test", message: "Test msg" }),
+  getPregnancyRecordById: vi.fn().mockResolvedValue({ id: 1, status: "active", deletedAt: null, version: 1 }),
+  updatePregnancyRecord: vi.fn().mockResolvedValue(true),
+  deletePregnancyRecord: vi.fn().mockResolvedValue(true),
+  addVaccinationRecord: vi.fn().mockResolvedValue({ insertId: 1 }),
+  updateVaccinationRecord: vi.fn().mockResolvedValue(true),
+  deleteVaccinationRecord: vi.fn().mockResolvedValue(true),
   incrementCategorySequence: vi.fn().mockResolvedValue(1),
   incrementCategoryLambSequence: vi.fn().mockResolvedValue(1),
   ensureCategorySequenceAtLeast: vi.fn().mockResolvedValue(undefined),
@@ -179,6 +221,7 @@ vi.mock("./db", () => ({
   getExpenses: vi.fn().mockResolvedValue([]),
   createExpense: vi.fn().mockResolvedValue({ id: 1, amount: "500.00", description: "Vet visit" }),
   updateExpense: vi.fn().mockResolvedValue(undefined),
+  deleteExpense: vi.fn().mockResolvedValue({ id: 8, version: 5 }),
   getDashboardKPIs: vi.fn().mockResolvedValue({
     totalActiveHeads: 45, totalExpenses: 12500, totalRevenue: 8000,
     grossPnL: -4500, categoryBreakdown: [], period: { from: null, to: null },
@@ -206,7 +249,7 @@ vi.mock("./db", () => ({
   getNotifications: vi.fn().mockResolvedValue([
     { id: 1, alertType: "low_feed", title: "Low Feed Alert", message: "Barley running low", isRead: 0, priority: "high", createdAt: new Date() },
   ]),
-  markNotificationRead: vi.fn().mockResolvedValue(undefined),
+  markNotificationRead: vi.fn().mockResolvedValue(true),
   markAllNotificationsRead: vi.fn().mockResolvedValue(undefined),
   getAuditLog: vi.fn().mockResolvedValue([
     { id: 1, action: "create_animal", entityType: "animal", entityId: "1", userId: 1, notes: null, createdAt: new Date() },
@@ -226,10 +269,37 @@ vi.mock("./db", () => ({
   updateRationPlan: vi.fn().mockResolvedValue(undefined),
   getFeedStockLedger: vi.fn().mockResolvedValue([]),
   createFeedStockEntry: vi.fn().mockResolvedValue({ id: 1, feedItemId: 1, qty: "100.00" }),
+  updateFeedStockEntry: vi.fn().mockResolvedValue(undefined),
 }));
+
+beforeEach(async () => {
+  const dbModule = await import("./db");
+  vi.mocked(dbModule.getDb).mockReset();
+  vi.mocked(dbModule.getDb).mockResolvedValue(null);
+});
 
 // ─── Helper: create auth context ─────────────────────────────────────────────
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
+
+const tenantContext: TenantContext = {
+  companyId: 11,
+  companyPublicId: "01J00000000000000000000000",
+  companySlug: "test-company",
+  companyLifecycleStatus: "active",
+  userId: 1,
+  membershipId: 31,
+  membershipRole: "admin",
+  membershipStatus: "active",
+  authorizationVersion: 1,
+  farmAccessMode: "restricted",
+  accessibleFarmIds: [41],
+  selectedFarmId: 41,
+  permissionOverrides: {},
+  sessionId: 51,
+  authenticationLevel: "primary",
+  entitlementVersion: 1,
+  requestId: "lfms-router-test",
+};
 
 function makeCtx(
   role: "owner" | "admin" | "supervisor" | "staff" | "user" | "viewer" = "admin",
@@ -242,7 +312,13 @@ function makeCtx(
   };
   return {
     user,
+    tenant: {
+      ...tenantContext,
+      membershipRole: role,
+      permissionOverrides: permissionOverrides ?? {},
+    },
     permissionOverrides,
+    tenantWriteFence: async (_tenant, operation) => operation(),
     req: { protocol: "https", headers: {} } as TrpcContext["req"],
     res: { clearCookie: (n: string, o: any) => clearedCookies.push({ n, o }) } as TrpcContext["res"],
   };
@@ -250,9 +326,10 @@ function makeCtx(
 
 async function mockTransactionDb() {
   const dbModule = await import("./db");
-  const transaction = vi.fn(async (callback: (tx: object) => unknown) => callback({}));
+  const tx = {};
+  const transaction = vi.fn(async (callback: (tx: object) => unknown) => callback(tx));
   vi.mocked(dbModule.getDb).mockResolvedValueOnce({ transaction } as any);
-  return { dbModule, transaction };
+  return { dbModule, transaction, tx };
 }
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
@@ -274,9 +351,13 @@ describe("auth", () => {
     const caller = appRouter.createCaller(ctx);
     const result = await caller.auth.logout();
     expect(result).toEqual({ success: true });
-    expect(clearedCookies).toHaveLength(1);
-    expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
-    expect(clearedCookies[0]?.options).toMatchObject({ maxAge: -1, httpOnly: true });
+    expect(clearedCookies).toHaveLength(3);
+    expect(clearedCookies.map(cookie => cookie.name)).toEqual([
+      "__Host-lfms_tenant",
+      "__Host-lfms_tenant_csrf",
+      COOKIE_NAME,
+    ]);
+    expect(clearedCookies[2]?.options).toMatchObject({ maxAge: -1, httpOnly: true });
   });
 });
 
@@ -298,7 +379,16 @@ describe("config.species", () => {
 
   it("updateSpecies updates species fields", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    await expect(caller.config.updateSpecies({ id: 1, name: "Sheep (Updated)" })).resolves.not.toThrow();
+    await expect(caller.config.updateSpecies({ id: 1, expectedVersion: 1, name: "Sheep (Updated)" })).resolves.not.toThrow();
+  });
+
+  it("rejects a stale species update", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.updateSpecies).mockResolvedValueOnce(false);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.config.updateSpecies({ id: 1, expectedVersion: 1, name: "Stale" }))
+      .rejects.toThrow(/changed since it was loaded/i);
   });
 });
 
@@ -324,6 +414,7 @@ describe("config.categories", () => {
 
     await expect(caller.config.updateCategory({
       id: 1,
+      expectedVersion: 1,
       idPrefix: "NEW",
     })).rejects.toThrow(/prefix cannot change/i);
   });
@@ -348,6 +439,7 @@ describe("config.groups", () => {
     const caller = appRouter.createCaller(makeCtx());
     await expect(caller.config.updateGroup({
       id: 1,
+      expectedVersion: 1,
       mapShape: { type: "rect", x: 0.1, y: 0.2, width: 0.3, height: 0.4 },
     })).resolves.not.toThrow();
   });
@@ -419,6 +511,54 @@ describe("config.settings", () => {
   });
 });
 
+describe("optimistic concurrency for health and breeding records", () => {
+  it("rejects a stale pregnancy update", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.updatePregnancyRecord).mockResolvedValueOnce(false);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.pregnancy.update({
+      id: 1,
+      expectedVersion: 1,
+      notes: "stale",
+    })).rejects.toThrow(/changed since it was loaded/i);
+  });
+
+  it("rejects a stale vaccination delete", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.deleteVaccinationRecord).mockResolvedValueOnce(false);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.vaccination.deleteVaccinationRecord({
+      id: 1,
+      expectedVersion: 1,
+    })).rejects.toThrow(/changed since it was loaded/i);
+  });
+
+  it("rejects a stale lambing update", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.updateLambingRecord).mockResolvedValueOnce(false);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.breeding.updateLambing({
+      id: 1,
+      expectedVersion: 1,
+      notes: "stale",
+    })).rejects.toThrow(/changed since it was loaded/i);
+  });
+
+  it("rejects a stale weight delete", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.softDeleteWeightEntry).mockResolvedValueOnce(false);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.animals.deleteWeight({
+      id: 1,
+      expectedVersion: 1,
+    })).rejects.toThrow(/changed since it was loaded/i);
+  });
+});
+
 // ─── ANIMALS ─────────────────────────────────────────────────────────────────
 describe("animals.list", () => {
   it("returns list of animals with joined data", async () => {
@@ -460,6 +600,7 @@ describe("animals.list", () => {
       "animalId",
       "id",
       "sex",
+      "version",
     ]);
   });
 });
@@ -488,6 +629,7 @@ describe("animals.create", () => {
       categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
       sex: "male", acquisitionType: "born",
       acquisitionDate: "2024-01-15", birthDate: "2024-01-15",
+      idempotencyKey: "animal-create-auto-1",
     });
     expect(result).toBeDefined();
     expect(result.animalId).toBeDefined();
@@ -509,6 +651,7 @@ describe("animals.create", () => {
       acquisitionDate: "2024-01-15",
       birthDate: "2024-01-15",
       animalIdNumber: "00123",
+      idempotencyKey: "animal-create-manual-1",
     });
 
     expect(result.animalId).toBe("LMB00123");
@@ -536,6 +679,7 @@ describe("animals.create", () => {
       acquisitionDate: "2024-01-15",
       birthDate: "2024-01-15",
       animalIdNumber: "00123",
+      idempotencyKey: "animal-create-duplicate-1",
     })).rejects.toThrow(/already exists|Recycle Bin/i);
   });
 });
@@ -548,6 +692,7 @@ describe("animals.update ID", () => {
 
     await caller.animals.update({
       id: 1,
+      expectedVersion: 1,
       categoryId: 1,
       animalIdNumber: "0099",
     });
@@ -556,6 +701,7 @@ describe("animals.update ID", () => {
       1,
       expect.objectContaining({ animalId: "LMB0099" }),
       expect.anything(),
+      1,
     );
   });
 
@@ -569,6 +715,7 @@ describe("animals.update ID", () => {
 
     await expect(caller.animals.update({
       id: 1,
+      expectedVersion: 1,
       categoryId: 1,
       animalIdNumber: "0099",
     })).rejects.toThrow(/already exists|Recycle Bin/i);
@@ -593,6 +740,7 @@ describe("animals.update ID", () => {
 
     await caller.animals.update({
       id: 1,
+      expectedVersion: 1,
       categoryId: 2,
       animalIdNumber: "0099",
     });
@@ -601,6 +749,7 @@ describe("animals.update ID", () => {
       1,
       expect.objectContaining({ animalId: "EWE0099" }),
       expect.anything(),
+      1,
     );
   });
 
@@ -612,11 +761,13 @@ describe("animals.update ID", () => {
       categoryId: 2,
       speciesId: 1,
       deletedAt: null,
+      version: 2,
     } as any);
     const caller = appRouter.createCaller(makeCtx());
 
     await expect(caller.animals.update({
       id: 1,
+      expectedVersion: 1,
       animalIdNumber: "0099",
     })).rejects.toThrow(/changed while editing/i);
   });
@@ -846,9 +997,22 @@ describe("breeding birth integrity", () => {
       sex: "female",
       birthTypeId: 2,
       count: 2,
+      idempotencyKey: "birth-test-0001",
     });
 
     expect(result.map(row => row.lambId)).toEqual(["LMB0041", "LMB0042"]);
+    const { executeIdempotent } = await import("./platform/idempotency");
+    expect(vi.mocked(executeIdempotent)).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        companyId: tenantContext.companyId,
+        userId: tenantContext.userId,
+        key: "birth-test-0001",
+        operation: "breeding.recordBirth",
+        body: expect.not.objectContaining({ idempotencyKey: expect.anything() }),
+      }),
+      expect.any(Function),
+    );
     expect(vi.mocked(dbModule.generateNextLambId)).toHaveBeenCalledTimes(2);
     expect(vi.mocked(dbModule.createLambingRecord)).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -894,8 +1058,92 @@ describe("breeding birth integrity", () => {
   });
 });
 
+describe("tenant create idempotency contracts", () => {
+  it.each([
+    ["feed.createRationPlan", (caller: ReturnType<typeof appRouter.createCaller>) => (caller.feed.createRationPlan as any)({
+      categoryId: 1, feedItemId: 1, qtyPerHeadPerDay: "1.0", effectiveDate: "2024-01-15",
+    })],
+    ["feed.addStockEntry", (caller: ReturnType<typeof appRouter.createCaller>) => (caller.feed.addStockEntry as any)({
+      feedItemId: 1, transactionDate: "2024-01-15", transactionType: "purchase", qty: "10",
+    })],
+    ["vaccination.addVaccinationRecord", (caller: ReturnType<typeof appRouter.createCaller>) => (caller.vaccination.addVaccinationRecord as any)({
+      animalId: 1, vaccineId: 1, vaccinationDate: "2024-01-15",
+    })],
+    ["vaccination.bulkApplyToAnimals", (caller: ReturnType<typeof appRouter.createCaller>) => (caller.vaccination.bulkApplyToAnimals as any)({
+      animalIds: [1], vaccineId: 1, vaccinationDate: "2024-01-15",
+    })],
+    ["vaccination.bulkApplyToCategory", (caller: ReturnType<typeof appRouter.createCaller>) => (caller.vaccination.bulkApplyToCategory as any)({
+      categoryId: 1, vaccineId: 1, vaccinationDate: "2024-01-15",
+    })],
+    ["vaccination.bulkApplyToCategories", (caller: ReturnType<typeof appRouter.createCaller>) => (caller.vaccination.bulkApplyToCategories as any)({
+      categoryIds: [1], vaccineId: 1, vaccinationDate: "2024-01-15",
+    })],
+    ["breeding.recordBirth", (caller: ReturnType<typeof appRouter.createCaller>) => (caller.breeding.recordBirth as any)({
+      speciesId: 1, categoryId: 1, birthDate: "2024-01-15", sex: "female", birthTypeId: 1,
+    })],
+  ])("requires an idempotency key for %s", async (_name, invoke) => {
+    await expect(invoke(appRouter.createCaller(makeCtx()))).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("keeps ration-plan claim, write, and audit on one transaction", async () => {
+    const { dbModule, tx } = await mockTransactionDb();
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.feed.createRationPlan({
+      categoryId: 1,
+      feedItemId: 1,
+      qtyPerHeadPerDay: "1.0",
+      effectiveDate: "2024-01-15",
+      idempotencyKey: "ration-test-0001",
+    });
+
+    expect(vi.mocked(dbModule.createRationPlan)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ categoryId: 1, feedItemId: 1 }),
+      tx,
+    );
+    expect(vi.mocked(dbModule.createAuditEntry)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ entityType: "rationPlan", action: "create" }),
+      tx,
+    );
+  });
+
+  it("keeps vaccination claim, record, audit, and notification on one transaction", async () => {
+    const dbModule = await import("./db");
+    const tx = {
+      select: () => ({
+        from: () => ({
+          where: () => ({ limit: async () => [{ animalId: "LMB-001" }] }),
+        }),
+      }),
+    };
+    vi.mocked(dbModule.getDb).mockResolvedValueOnce({
+      transaction: async (operation: (value: typeof tx) => unknown) => operation(tx),
+    } as any);
+    vi.mocked(dbModule.addVaccinationRecord).mockResolvedValueOnce({ insertId: 77 } as any);
+
+    await appRouter.createCaller(makeCtx()).vaccination.addVaccinationRecord({
+      animalId: 1,
+      vaccineId: 1,
+      vaccinationDate: "2024-01-15",
+      idempotencyKey: "vaccine-test-0001",
+    });
+
+    expect(vi.mocked(dbModule.addVaccinationRecord)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ animalId: 1, vaccineId: 1 }),
+      tx,
+    );
+    expect(vi.mocked(dbModule.createAuditEntry)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ entityType: "vaccinationRecord", entityId: "77" }),
+      tx,
+    );
+    expect(vi.mocked(dbModule.createNotification)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ alertType: "vaccination_recorded", relatedEntityId: "77" }),
+      tx,
+    );
+  });
+});
+
 describe("birth history lifecycle", () => {
-  it("blocks deletion of a promoted birth record", async () => {
+  it("rejects a stale lambing delete", async () => {
     const dbModule = await import("./db");
     const tx = {
       select: () => ({
@@ -904,8 +1152,9 @@ describe("birth history lifecycle", () => {
             limit: () => ({
               for: async () => [{
                 id: 1,
-                lambId: "LMB0001",
-                isPromoted: true,
+                isPromoted: false,
+                deletedAt: null,
+                version: 2,
               }],
             }),
           }),
@@ -917,44 +1166,26 @@ describe("birth history lifecycle", () => {
     } as any);
     const caller = appRouter.createCaller(makeCtx());
 
-    await expect(caller.recycleBin.deleteLambingLog({ id: 1 }))
-      .rejects.toThrow(/permanent history/i);
+    await expect(caller.recycleBin.deleteLambingLog({ id: 1, expectedVersion: 1 }))
+      .rejects.toThrow(/changed since it was loaded/i);
   });
 
-  it("keeps the birth row and snapshots the animal code on purge", async () => {
+  it("blocks deletion of a promoted birth record", async () => {
     const dbModule = await import("./db");
-    const updates: Array<{ table: unknown; data: Record<string, unknown> }> = [];
-    const deletes: unknown[] = [];
     const tx = {
       select: () => ({
-        from: (table: unknown) => ({
+        from: () => ({
           where: () => ({
             limit: () => ({
-              for: async () => table === animals
-                ? [{
-                    id: 3,
-                    animalId: "RAM0003",
-                    deletedAt: new Date("2026-01-01"),
-                  }]
-                : [],
+              for: async () => [{
+                id: 1,
+                lambId: "LMB0001",
+                isPromoted: true,
+                version: 1,
+              }],
             }),
           }),
         }),
-      }),
-      update: (table: unknown) => ({
-        set: (data: Record<string, unknown>) => ({
-          where: async () => {
-            updates.push({ table, data });
-          },
-        }),
-      }),
-      delete: (table: unknown) => ({
-        where: async () => {
-          deletes.push(table);
-        },
-      }),
-      insert: () => ({
-        values: async () => undefined,
       }),
     };
     vi.mocked(dbModule.getDb).mockResolvedValueOnce({
@@ -962,19 +1193,17 @@ describe("birth history lifecycle", () => {
     } as any);
     const caller = appRouter.createCaller(makeCtx());
 
-    await caller.recycleBin.purgeAnimal({ id: 3 });
+    await expect(caller.recycleBin.deleteLambingLog({ id: 1, expectedVersion: 1 }))
+      .rejects.toThrow(/permanent history/i);
+  });
 
-    const birthUpdate = updates.find(write => write.table === lambingLog);
-    expect(birthUpdate?.data).toMatchObject({
-      isPromoted: true,
-      promotedAnimalCode: "RAM0003",
-      promotedHeadId: null,
-      deletedAt: null,
-      deletedBy: null,
-    });
-    expect(birthUpdate?.data.promotedAnimalPurgedAt).toBeInstanceOf(Date);
-    expect(deletes).not.toContain(lambingLog);
-    expect(deletes).toContain(animals);
+  it("does not expose tenant hard-purge procedures", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect((caller.recycleBin as any).purgeAnimal({ id: 3 }))
+      .rejects.toThrow(/No procedure found/i);
+    await expect((caller.recycleBin as any).purgeAll())
+      .rejects.toThrow(/No procedure found/i);
   });
 });
 
@@ -992,6 +1221,7 @@ describe("animals.weightLog", () => {
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.animals.addWeight({
       animalId: 1, weightKg: "18.00", weighDate: "2024-02-01",
+      idempotencyKey: "weight-create-1",
     });
     expect(result).toBeDefined();
     expect(result.weightKg).toBe("18.00");
@@ -1014,6 +1244,7 @@ describe("animals.weightLog", () => {
       animalId: 1,
       weightKg: "18.00",
       weighDate: "2024-02-01",
+      idempotencyKey: "weight-create-2",
     });
 
     expect(result.autoStaged).toBe(false);
@@ -1261,22 +1492,144 @@ describe("feed.getRationPlans", () => {
 
 describe("feed.updateRationPlan", () => {
   it("updateRationPlan accepts qty, effectiveDate, and endDate", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.updateRationPlan).mockClear();
     const caller = appRouter.createCaller(makeCtx());
     await expect(
       caller.feed.updateRationPlan({
         id: 1,
+        expectedVersion: 1,
         qtyPerHeadPerDay: "1.50",
         effectiveDate: "2025-01-01",
         endDate: null,
       })
     ).resolves.not.toThrow();
+    expect(dbModule.updateRationPlan).toHaveBeenCalledWith(
+      1,
+      1,
+      expect.objectContaining({ qtyPerHeadPerDay: "1.50", effectiveDate: "2025-01-01", endDate: null }),
+      expect.any(Object),
+    );
   });
 
   it("updateRationPlan with only qty change does not throw", async () => {
     const caller = appRouter.createCaller(makeCtx());
     await expect(
-      caller.feed.updateRationPlan({ id: 1, qtyPerHeadPerDay: "2.00" })
+      caller.feed.updateRationPlan({ id: 1, expectedVersion: 1, qtyPerHeadPerDay: "2.00" })
     ).resolves.not.toThrow();
+  });
+
+  it("maps a stale ration-plan version to tRPC CONFLICT", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.updateRationPlan).mockRejectedValueOnce(new VersionConflictError());
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.feed.updateRationPlan({
+      id: 1,
+      expectedVersion: 1,
+      qtyPerHeadPerDay: "2.00",
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+});
+
+describe("versioned business edits", () => {
+  it("forwards feed-stock expectedVersion", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.updateFeedStockEntry).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.feed.updateStockEntry({ id: 7, expectedVersion: 3, qty: "25.000" });
+    expect(dbModule.updateFeedStockEntry).toHaveBeenCalledWith(
+      7,
+      3,
+      { qty: "25.000" },
+      expect.any(Object),
+    );
+  });
+
+  it("forwards expense expectedVersion", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.updateExpense).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.expenses.update({ id: 8, expectedVersion: 4, amount: "75.00" });
+    expect(dbModule.updateExpense).toHaveBeenCalledWith(
+      8,
+      4,
+      { amount: "75.00" },
+      expect.any(Object),
+    );
+  });
+
+  it("requires and forwards expectedVersion for the legacy expense delete route", async () => {
+    const dbModule = await import("./db");
+    vi.mocked(dbModule.deleteExpense).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.expenses.delete({ id: 8 } as any))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await caller.expenses.delete({ id: 8, expectedVersion: 4 });
+    expect(dbModule.deleteExpense).toHaveBeenCalledWith(8, 4, expect.any(Object));
+  });
+
+  it("requires expectedVersion for feed soft deletes and ration bulk edits", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    await expect(caller.recycleBin.deleteFeedStock({ id: 7 } as any))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.recycleBin.deleteRationPlan({ id: 8 } as any))
+      .rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller.feed.bulkUpdateRationPlanDates({
+      ids: [8],
+      effectiveDate: "2026-07-13",
+    } as any)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("rejects a stale feed-stock delete before writing", async () => {
+    const dbModule = await import("./db");
+    const update = vi.fn();
+    const tx = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            limit: () => ({
+              for: async () => [{ id: 7, version: 2, deletedAt: null }],
+            }),
+          }),
+        }),
+      }),
+      update,
+    };
+    vi.mocked(dbModule.getDb).mockResolvedValueOnce({
+      transaction: async (callback: (scope: object) => unknown) => callback(tx),
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.recycleBin.deleteFeedStock({ id: 7, expectedVersion: 1 }))
+      .rejects.toMatchObject({ code: "CONFLICT" });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("rejects a stale ration-plan in an atomic bulk edit before writing", async () => {
+    const dbModule = await import("./db");
+    const update = vi.fn();
+    const tx = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            orderBy: () => ({
+              for: async () => [{ id: 8, effectiveDate: "2026-01-01", version: 2 }],
+            }),
+          }),
+        }),
+      }),
+      update,
+    };
+    vi.mocked(dbModule.getDb).mockResolvedValueOnce({
+      transaction: async (callback: (scope: object) => unknown) => callback(tx),
+    } as any);
+    const caller = appRouter.createCaller(makeCtx());
+
+    await expect(caller.feed.bulkUpdateRationPlanDates({
+      plans: [{ id: 8, expectedVersion: 1 }],
+      effectiveDate: "2026-07-13",
+    })).rejects.toMatchObject({ code: "CONFLICT" });
+    expect(update).not.toHaveBeenCalled();
   });
 });
 
@@ -1359,14 +1712,14 @@ describe("rbac", () => {
   it("'supervisor' role cannot change user roles (privileged only)", async () => {
     const caller = appRouter.createCaller(makeCtx("supervisor"));
     await expect(
-      caller.userMgmt.updateUserRole({ userId: 2, role: "admin" })
+      caller.userMgmt.updateUserRole({ userId: 2, role: "admin", expectedVersion: 1 })
     ).rejects.toThrow(/permission/i);
   });
 
-  it("'staff' role cannot permanently purge or restore", async () => {
+  it("'staff' role cannot restore deleted records", async () => {
     const caller = appRouter.createCaller(makeCtx("staff"));
     await expect(
-      caller.recycleBin.purgeAnimal({ id: 1 })
+      caller.recycleBin.restoreAnimal({ id: 1, expectedVersion: 1 })
     ).rejects.toThrow(/permission/i);
   });
 
@@ -1381,7 +1734,7 @@ describe("rbac", () => {
       "users:update": true,
     }));
     await expect(
-      caller.userMgmt.updateUserRole({ userId: 2, role: "admin" }),
+      caller.userMgmt.updateUserRole({ userId: 2, role: "admin", expectedVersion: 1 }),
     ).rejects.toThrow(/permission/i);
   });
 
@@ -1396,6 +1749,7 @@ describe("rbac", () => {
       "animalId",
       "id",
       "sex",
+      "version",
     ]);
   });
 
@@ -1439,7 +1793,7 @@ describe("validation", () => {
   it("rejects an unrealistically large weight", async () => {
     const caller = appRouter.createCaller(makeCtx());
     await expect(
-      caller.animals.addWeight({ animalId: 1, weighDate: "2026-01-01", weightKg: "99999" })
+      caller.animals.addWeight({ animalId: 1, weighDate: "2026-01-01", weightKg: "99999", idempotencyKey: "weight-invalid-1" })
     ).rejects.toThrow();
   });
 

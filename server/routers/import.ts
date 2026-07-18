@@ -1,5 +1,7 @@
 import ExcelJS from "exceljs";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import type { AppRole, PermissionOverrides } from "../../shared/permissions";
 import { getClientIp } from "../_core/audit";
 import { permissionProcedure, router } from "../_core/trpc";
 import { createAnimal, createExpense, createFeedStockEntry, createLambingRecord, createRationPlan, createSale, createWeightEntry, ensureCategoryLambSequenceAtLeast, getAllBirthTypes, getAllCategories, getAllExpenseCategories, getAllExpenseSubCategories, getAllFeedItems, getAllGroups, getAllSpecies, getAllStatuses, getAnimals, createAuditEntry, getDb, updateAnimal } from "../db";
@@ -9,6 +11,7 @@ import {
   readCanonicalWorkbook,
 } from "../excelDataContract";
 import { applyCanonicalData, type ImportMode } from "../canonicalTransfer";
+import { assertTenantImportMode } from "../tenancy/restorePolicy";
 
 // Helper to find a row by header→value mapping
 function getCell(row: ExcelJS.Row, col: number): any {
@@ -79,6 +82,103 @@ type ImportStats = {
 
 const importModeSchema = z.enum(["append", "replace"]).default("append");
 const SECURITY_TABLES = new Set(["users", "role_permissions", "audit_log"]);
+const MAX_XLSX_COMPRESSED_BYTES = 8 * 1024 * 1024;
+const MAX_XLSX_UNCOMPRESSED_BYTES = 64 * 1024 * 1024;
+const MAX_XLSX_ENTRY_BYTES = 32 * 1024 * 1024;
+const MAX_XLSX_ENTRIES = 512;
+const MAX_WORKBOOK_ROWS = 200_000;
+const MAX_WORKSHEET_ROWS = 100_000;
+const MAX_WORKSHEET_COLUMNS = 256;
+
+export function assertSafeXlsxArchive(buffer: Buffer) {
+  if (buffer.length === 0 || buffer.length > MAX_XLSX_COMPRESSED_BYTES) {
+    throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Excel import is too large" });
+  }
+
+  const minimumEocdOffset = Math.max(0, buffer.length - 65_557);
+  let eocdOffset = -1;
+  for (let offset = buffer.length - 22; offset >= minimumEocdOffset; offset -= 1) {
+    if (buffer.readUInt32LE(offset) === 0x06054b50) {
+      eocdOffset = offset;
+      break;
+    }
+  }
+  if (eocdOffset < 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid Excel archive" });
+
+  const entryCount = buffer.readUInt16LE(eocdOffset + 10);
+  const centralSize = buffer.readUInt32LE(eocdOffset + 12);
+  const centralOffset = buffer.readUInt32LE(eocdOffset + 16);
+  if (
+    entryCount === 0 ||
+    entryCount > MAX_XLSX_ENTRIES ||
+    centralOffset + centralSize > eocdOffset
+  ) {
+    throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Excel archive exceeds import limits" });
+  }
+
+  let cursor = centralOffset;
+  let totalUncompressed = 0;
+  for (let index = 0; index < entryCount; index += 1) {
+    if (cursor + 46 > eocdOffset || buffer.readUInt32LE(cursor) !== 0x02014b50) {
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid Excel archive directory" });
+    }
+    const flags = buffer.readUInt16LE(cursor + 8);
+    const compressedSize = buffer.readUInt32LE(cursor + 20);
+    const uncompressedSize = buffer.readUInt32LE(cursor + 24);
+    const fileNameLength = buffer.readUInt16LE(cursor + 28);
+    const extraLength = buffer.readUInt16LE(cursor + 30);
+    const commentLength = buffer.readUInt16LE(cursor + 32);
+    if (
+      (flags & 1) !== 0 ||
+      compressedSize === 0xffffffff ||
+      uncompressedSize === 0xffffffff ||
+      uncompressedSize > MAX_XLSX_ENTRY_BYTES
+    ) {
+      throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Excel archive entry exceeds import limits" });
+    }
+    totalUncompressed += uncompressedSize;
+    if (totalUncompressed > MAX_XLSX_UNCOMPRESSED_BYTES) {
+      throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Expanded Excel import is too large" });
+    }
+    cursor += 46 + fileNameLength + extraLength + commentLength;
+  }
+  if (cursor > centralOffset + centralSize) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid Excel archive directory" });
+  }
+}
+
+export function assertSafeWorkbook(workbook: ExcelJS.Workbook) {
+  let totalRows = 0;
+  for (const worksheet of workbook.worksheets) {
+    if (worksheet.rowCount > MAX_WORKSHEET_ROWS || worksheet.columnCount > MAX_WORKSHEET_COLUMNS) {
+      throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Excel worksheet exceeds import limits" });
+    }
+    totalRows += worksheet.rowCount;
+    if (totalRows > MAX_WORKBOOK_ROWS) {
+      throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Excel workbook has too many rows" });
+    }
+  }
+}
+
+async function loadImportWorkbook(base64: string) {
+  if (base64.length > Math.ceil(MAX_XLSX_COMPRESSED_BYTES / 3) * 4 + 4) {
+    throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Excel import is too large" });
+  }
+  const buffer = Buffer.from(base64, "base64");
+  assertSafeXlsxArchive(buffer);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as any);
+  assertSafeWorkbook(workbook);
+  return workbook;
+}
+
+export function assertImportModeAuthorized(
+  _role: AppRole,
+  _overrides: PermissionOverrides | null | undefined,
+  mode: ImportMode,
+) {
+  assertTenantImportMode(mode);
+}
 
 async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode: ImportMode) {
   const rowsByTable = readCanonicalWorkbook(workbook);
@@ -128,9 +228,7 @@ async function applyCanonicalWorkbook(workbook: ExcelJS.Workbook, ctx: any, mode
 export const importRouter = router({
   /** Preview an upload — count rows per sheet without inserting. */
   preview: permissionProcedure("data", "import").input(z.object({ base64: z.string() })).mutation(async ({ input }) => {
-    const buf = Buffer.from(input.base64, "base64");
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(buf as any);
+    const wb = await loadImportWorkbook(input.base64);
     if (isCanonicalWorkbook(wb)) readCanonicalWorkbook(wb);
     const sheets: Array<{ name: string; rowCount: number }> = [];
     wb.eachSheet(ws => {
@@ -144,9 +242,8 @@ export const importRouter = router({
 
   /** Apply an upload in append or full-snapshot replace mode. */
   applyImport: permissionProcedure("data", "import").input(z.object({ base64: z.string(), mode: importModeSchema })).mutation(async ({ input, ctx }) => {
-    const buf = Buffer.from(input.base64, "base64");
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load(buf as any);
+    assertImportModeAuthorized(ctx.user.role, ctx.permissionOverrides, input.mode);
+    const wb = await loadImportWorkbook(input.base64);
     if (isCanonicalWorkbook(wb)) {
       return applyCanonicalWorkbook(wb, ctx, input.mode);
     }

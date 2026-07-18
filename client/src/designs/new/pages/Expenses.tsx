@@ -69,6 +69,7 @@ export default function NewExpenses() {
   const [editRow, setEditRow] = useState<any | null>(null);
   const [editForm, setEditForm] = useState<ExpenseForm>(blankForm());
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
+  const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setOpen(true);
@@ -84,6 +85,7 @@ export default function NewExpenses() {
   const create = trpc.expenses.create.useMutation({
     onSuccess: (data: any) => {
       invalidate();
+      setCreateIdempotencyKey(crypto.randomUUID());
       toast.success(data?.count > 1
         ? t("expenses.createdN", "Created {{count}} expense rows", { count: data.count })
         : t("expenses.created", "Expense added"));
@@ -102,7 +104,7 @@ export default function NewExpenses() {
   const submit = (addAnother: boolean) => {
     const err = validateExpenseForm(form, t);
     if (err) { toast.error(err); return; }
-    create.mutate(toPayload(form) as any, { onSuccess: () => (addAnother ? reset() : setOpen(false)) });
+    create.mutate({ ...toPayload(form), idempotencyKey: createIdempotencyKey } as any, { onSuccess: () => (addAnother ? reset() : setOpen(false)) });
   };
 
   const startEdit = (r: any) => {
@@ -124,7 +126,7 @@ export default function NewExpenses() {
     if (!editRow) return;
     const err = validateExpenseForm(editForm, t, "edit");
     if (err) { toast.error(err); return; }
-    update.mutate({ id: editRow.expense.id, ...toPayload(editForm, "edit") } as any);
+    update.mutate({ id: editRow.expense.id, expectedVersion: editRow.expense.version, ...toPayload(editForm, "edit") } as any);
   };
 
   const rows = (expenses as any[]) ?? [];
@@ -270,7 +272,7 @@ export default function NewExpenses() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={deleteExpense.isPending}
-        onConfirm={() => deleteRow && deleteExpense.mutate({ id: deleteRow.expense.id })}
+        onConfirm={() => deleteRow && deleteExpense.mutate({ id: deleteRow.expense.id, expectedVersion: deleteRow.expense.version })}
       />
     </div>
   );

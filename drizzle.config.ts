@@ -1,15 +1,4 @@
-import { defineConfig } from "drizzle-kit";
-
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is required to run drizzle commands");
-}
-
-export default defineConfig({
-  schema: "./drizzle/schema.ts",
-  out: "./drizzle",
-  dialect: "mysql",
-  dbCredentials: {
-    url: connectionString,
-  },
-});
+throw new Error(
+  "The legacy Drizzle configuration is disabled: legacy LFMS production tables are immutable. "
+  + "Use a dedicated sidecar control-plane/tenant configuration once provisioned; do not target DATABASE_URL.",
+);

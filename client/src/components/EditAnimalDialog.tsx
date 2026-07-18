@@ -120,6 +120,7 @@ export function EditAnimalDialog({
     if (animalId === null) return;
     updateAnimal.mutate({
       id: animalId,
+      expectedVersion: animal!.animal.version,
       categoryId: data.categoryId ? Number(data.categoryId) : undefined,
       groupId: data.groupId ? Number(data.groupId) : undefined,
       statusId: data.statusId ? Number(data.statusId) : undefined,

@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* The Admin Vite app imports this shared stylesheet and reuses these Radix
+ * primitives. Keep their portal, overlay, and popover utilities in both CSS
+ * bundles. */
+@source "./components/ui";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

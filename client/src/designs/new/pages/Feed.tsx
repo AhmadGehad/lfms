@@ -194,6 +194,7 @@ export default function NewFeed() {
 
   // ── Stock entries (add / edit / delete) ──────────────────────────────────
   const [stockOpen, setStockOpen] = useState(false);
+  const [stockIdempotencyKey, setStockIdempotencyKey] = useState(() => crypto.randomUUID());
   const [stockForm, setStockForm] = useState<StockForm>(blankStock());
   const [editEntry, setEditEntry] = useState<any | null>(null);
   const [editStockForm, setEditStockForm] = useState<StockForm>(blankStock());
@@ -204,7 +205,7 @@ export default function NewFeed() {
     utils.feed.getStockLedger.invalidate();
   };
   const addStock = trpc.feed.addStockEntry.useMutation({
-    onSuccess: () => { invalidateStock(); toast.success(t("feed.stockAdded", "Stock entry added")); setStockOpen(false); },
+    onSuccess: () => { invalidateStock(); toast.success(t("feed.stockAdded", "Stock entry added")); setStockOpen(false); setStockIdempotencyKey(crypto.randomUUID()); },
     onError: e => toast.error(e.message),
   });
   const updateStock = trpc.feed.updateStockEntry.useMutation({
@@ -230,6 +231,7 @@ export default function NewFeed() {
       totalCost: computedTotal || undefined,
       supplierName: stockForm.supplierName || undefined,
       notes: stockForm.notes || undefined,
+      idempotencyKey: stockIdempotencyKey,
     } as any);
   };
   const startEditEntry = (e: any) => {
@@ -253,6 +255,7 @@ export default function NewFeed() {
       : editStockForm.totalCost;
     updateStock.mutate({
       id: editEntry.id,
+      expectedVersion: editEntry.version,
       transactionDate: editStockForm.transactionDate,
       transactionType: editStockForm.transactionType as any,
       qty: editStockForm.qty,
@@ -265,6 +268,7 @@ export default function NewFeed() {
 
   // ── Ration plans (add / edit / delete / bulk date) ───────────────────────
   const [rationOpen, setRationOpen] = useState(false);
+  const [rationIdempotencyKey, setRationIdempotencyKey] = useState(() => crypto.randomUUID());
   const [rationForm, setRationForm] = useState<RationForm>(blankRation());
   const [editPlan, setEditPlan] = useState<any | null>(null);
   const [editRationForm, setEditRationForm] = useState<RationForm>(blankRation());
@@ -278,7 +282,7 @@ export default function NewFeed() {
     utils.feed.getStockStatus.invalidate();
   };
   const createRation = trpc.feed.createRationPlan.useMutation({
-    onSuccess: () => { invalidateRations(); toast.success(t("feed.rationCreated", "Ration plan created")); setRationOpen(false); },
+    onSuccess: () => { invalidateRations(); toast.success(t("feed.rationCreated", "Ration plan created")); setRationOpen(false); setRationIdempotencyKey(crypto.randomUUID()); },
     onError: e => toast.error(e.message),
   });
   const updateRation = trpc.feed.updateRationPlan.useMutation({
@@ -310,6 +314,7 @@ export default function NewFeed() {
       qtyPerHeadPerDay: rationForm.qtyPerHeadPerDay,
       effectiveDate: rationForm.effectiveDate,
       endDate: rationForm.endDate || undefined,
+      idempotencyKey: rationIdempotencyKey,
     } as any);
   };
   const startEditPlan = (p: any) => {
@@ -331,6 +336,7 @@ export default function NewFeed() {
     }
     updateRation.mutate({
       id: editPlan.id,
+      expectedVersion: editPlan.version,
       categoryId: Number(editRationForm.categoryId),
       feedItemId: Number(editRationForm.feedItemId),
       qtyPerHeadPerDay: editRationForm.qtyPerHeadPerDay,
@@ -383,6 +389,7 @@ export default function NewFeed() {
     if (!priceForm.pricePerUnit || !priceForm.effectiveDate) { toast.error(t("feed.priceFieldsRequired", "Feed item, price and date are required")); return; }
     updatePrice.mutate({
       id: editPrice.id,
+      expectedVersion: editPrice.version,
       effectiveDate: priceForm.effectiveDate,
       pricePerUnit: priceForm.pricePerUnit,
       notes: priceForm.notes || null,
@@ -669,7 +676,7 @@ export default function NewFeed() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={deleteFeedStock.isPending}
-        onConfirm={() => deleteEntry && deleteFeedStock.mutate({ id: deleteEntry.id })}
+        onConfirm={() => deleteEntry && deleteFeedStock.mutate({ id: deleteEntry.id, expectedVersion: deleteEntry.version })}
       />
 
       {/* Create ration plan */}
@@ -717,7 +724,7 @@ export default function NewFeed() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={deleteRationPlan.isPending}
-        onConfirm={() => deletePlan && deleteRationPlan.mutate({ id: deletePlan.id })}
+        onConfirm={() => deletePlan && deleteRationPlan.mutate({ id: deletePlan.id, expectedVersion: deletePlan.version })}
       />
 
       {/* Bulk update ration effective dates */}
@@ -734,7 +741,15 @@ export default function NewFeed() {
             <button onClick={() => setBulkDateOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button
               disabled={!bulkDate || bulkUpdateDates.isPending}
-              onClick={() => bulkUpdateDates.mutate({ ids: Array.from(selectedPlanKeys).map(Number), effectiveDate: bulkDate })}
+              onClick={() => {
+                const selectedIds = new Set(Array.from(selectedPlanKeys).map(Number));
+                bulkUpdateDates.mutate({
+                  plans: ((rations as any[]) ?? [])
+                    .filter(plan => selectedIds.has(plan.id))
+                    .map(plan => ({ id: plan.id, expectedVersion: plan.version })),
+                  effectiveDate: bulkDate,
+                });
+              }}
               className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {bulkUpdateDates.isPending ? t("common.saving", "Saving...") : t("common.save", "Save")}
@@ -814,7 +829,7 @@ export default function NewFeed() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={deletePrice.isPending}
-        onConfirm={() => deletePriceRow && deletePrice.mutate({ id: deletePriceRow.id })}
+        onConfirm={() => deletePriceRow && deletePrice.mutate({ id: deletePriceRow.id, expectedVersion: deletePriceRow.version })}
       />
     </div>
   );

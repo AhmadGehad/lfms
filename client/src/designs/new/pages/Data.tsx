@@ -30,11 +30,11 @@ function Card({ icon: Icon, title, desc, children }: { icon: typeof Download; ti
   );
 }
 
-function ModeToggle({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
+function ModeToggle({ mode, onChange, allowReplace = true }: { mode: Mode; onChange: (m: Mode) => void; allowReplace?: boolean }) {
   const { t } = useTranslation();
   return (
     <div className="inline-flex rounded-lg border border-border p-0.5 text-sm">
-      {(["append", "replace"] as Mode[]).map(m => (
+      {(["append", ...(allowReplace ? ["replace"] : [])] as Mode[]).map(m => (
         <button
           key={m}
           onClick={() => onChange(m)}
@@ -125,7 +125,7 @@ export default function NewData() {
 
         {canImport && (
           <Card icon={Upload} title={t("data.importTitle", "Import (Excel)")} desc={t("data.importDesc", "Load records from an .xlsx workbook.")}>
-            <ModeToggle mode={importMode} onChange={setImportMode} />
+            <ModeToggle mode={importMode} onChange={setImportMode} allowReplace={false} />
             <input ref={importRef} type="file" accept=".xlsx,.xlsm" className="hidden" aria-label={t("data.chooseExcel", "Choose file")} onChange={e => { const f = e.target.files?.[0]; if (f) onFilePicked("import", f); e.target.value = ""; }} />
             <button onClick={() => importRef.current?.click()} disabled={apply.isPending} className="flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border px-3 text-sm font-medium hover:bg-surface disabled:opacity-50 sm:min-h-9">
               <Upload className="h-4 w-4" />{apply.isPending ? t("data.importing", "Importing…") : t("data.chooseExcel", "Choose file")}
@@ -135,7 +135,7 @@ export default function NewData() {
 
         {canRestore && (
           <Card icon={RotateCcw} title={t("data.restoreTitle", "Restore backup")} desc={t("data.restoreDesc", "Restore from a JSON backup file.")}>
-            <ModeToggle mode={restoreMode} onChange={setRestoreMode} />
+            <ModeToggle mode={restoreMode} onChange={setRestoreMode} allowReplace={false} />
             <input ref={restoreRef} type="file" accept=".json" className="hidden" aria-label={t("data.chooseBackup", "Choose backup")} onChange={e => { const f = e.target.files?.[0]; if (f) onFilePicked("restore", f); e.target.value = ""; }} />
             <button onClick={() => restoreRef.current?.click()} disabled={restore.isPending} className="flex min-h-11 w-fit items-center gap-1.5 rounded-lg border border-border px-3 text-sm font-medium hover:bg-surface disabled:opacity-50 sm:min-h-9">
               <RotateCcw className="h-4 w-4" />{restore.isPending ? t("data.restoring", "Restoring…") : t("data.chooseBackup", "Choose backup")}

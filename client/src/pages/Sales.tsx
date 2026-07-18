@@ -55,6 +55,7 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
   }, [exitStatuses.length]);
 
   const utils = trpc.useUtils();
+  const [exitIdempotencyKey, setExitIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const exitAnimal = trpc.animals.exit.useMutation({
     onSuccess: () => {
@@ -65,6 +66,7 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
       utils.animals.getAllPnL.invalidate();
       utils.feed.getStockStatus.invalidate();
       setOpen(false);
+      setExitIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e: any) => toast.error(e.message),
@@ -80,6 +82,8 @@ function RecordSaleDialog({ onSuccess }: { onSuccess: () => void }) {
     if (paidNum > priceNum) { toast.error(t("sales.paymentExceedsOutstanding")); return; }
     exitAnimal.mutate({
       id: Number(form.animalId),
+      expectedVersion: animals?.find((item: any) => item.animal.id === Number(form.animalId))?.animal.version ?? 1,
+      idempotencyKey: exitIdempotencyKey,
       exitDate: form.saleDate,
       exitReason: "sold",
       newStatusId: Number(form.statusId),
@@ -208,6 +212,7 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
       : undefined;
     update.mutate({
       id: sale.id,
+      expectedVersion: sale.version,
       salePrice: form.salePrice,
       weightAtSale: form.weightAtSale || undefined,
       saleDate: form.saleDate || undefined,
@@ -279,16 +284,18 @@ function EditSaleDialog({ sale, onSuccess }: { sale: any; onSuccess: () => void 
   );
 }
 
-function RecordPaymentDialog({ saleId, animalCode, outstanding, onSuccess }: { saleId: number; animalCode: string; outstanding: number; onSuccess: () => void }) {
+function RecordPaymentDialog({ saleId, saleVersion, animalCode, outstanding, onSuccess }: { saleId: number; saleVersion: number; animalCode: string; outstanding: number; onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [payment, setPayment] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const recordPayment = trpc.sales.recordPayment.useMutation({
     onSuccess: () => {
       toast.success(t("sales.paymentRecorded"));
       setOpen(false);
       setPayment("");
+      setIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -336,7 +343,7 @@ function RecordPaymentDialog({ saleId, animalCode, outstanding, onSuccess }: { s
           <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button
             disabled={amount <= 0 || amount > outstanding || recordPayment.isPending}
-            onClick={() => recordPayment.mutate({ id: saleId, payment: String(amount) })}
+            onClick={() => recordPayment.mutate({ id: saleId, expectedVersion: saleVersion, payment: String(amount), idempotencyKey })}
           >
             {recordPayment.isPending ? "..." : t("sales.recordPayment")}
           </Button>
@@ -489,6 +496,7 @@ export default function Sales() {
                       saleDate: saleDate ? (saleDate instanceof Date ? saleDate.toISOString().split("T")[0] : String(saleDate).substring(0, 10)) : "",
                       buyerName: buyerName ?? "",
                       notes: notes ?? "",
+                      version: s.sale?.version ?? s.version,
                     };
 
                     return (
@@ -517,7 +525,7 @@ export default function Sales() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             {canUpdate && outstanding > 0 && !isPending && (
-                              <RecordPaymentDialog saleId={saleId} animalCode={animalCode} outstanding={outstanding} onSuccess={refetch} />
+                              <RecordPaymentDialog saleId={saleId} saleVersion={s.sale?.version ?? s.version} animalCode={animalCode} outstanding={outstanding} onSuccess={refetch} />
                             )}
                             {canUpdate && <EditSaleDialog sale={saleForEdit} onSuccess={refetch} />}
                             {canDelete && <AlertDialog>
@@ -538,7 +546,7 @@ export default function Sales() {
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteSale.mutate({ id: saleId })}>
+                                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteSale.mutate({ id: saleId, expectedVersion: s.sale?.version ?? s.version })}>
                                     {t("common.moveToBin")}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>

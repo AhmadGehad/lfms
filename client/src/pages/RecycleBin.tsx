@@ -12,22 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   Trash2,
   RotateCcw,
-  AlertTriangle,
   Loader2,
   PackageOpen,
   Filter,
@@ -82,7 +70,7 @@ function formatDate(d: Date | null | undefined) {
 
 export default function RecycleBin() {
   const { t } = useTranslation();
-  const { canRestore, canPurge } = usePermissions("recycleBin");
+  const { canRestore } = usePermissions("recycleBin");
   const [filterType, setFilterType] = useState<string>("all");
   const utils = trpc.useUtils();
 
@@ -169,68 +157,23 @@ export default function RecycleBin() {
     onError: (e) => toast.error(e.message),
   });
 
-  // ─── PURGE MUTATIONS ────────────────────────────────────────────────────────
-  const purgeAnimal = trpc.recycleBin.purgeAnimal.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(`${t("animals.title")} ${t("recycleBin.permanentlyDeleted")}`); },
-    onError: (e) => toast.error(e.message),
-  });
-  const purgeExpense = trpc.recycleBin.purgeExpense.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(`${t("nav.expenses")} ${t("recycleBin.permanentlyDeleted")}`); },
-    onError: (e) => toast.error(e.message),
-  });
-  const purgeWeightLog = trpc.recycleBin.purgeWeightLog.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(`${t("animalProfile.weightLog")} ${t("recycleBin.permanentlyDeleted")}`); },
-    onError: (e) => toast.error(e.message),
-  });
-  const purgeLambingLog = trpc.recycleBin.purgeLambingLog.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(`${t("breeding.lambingLog")} ${t("recycleBin.permanentlyDeleted")}`); },
-    onError: (e) => toast.error(e.message),
-  });
-  const purgeRationPlan = trpc.recycleBin.purgeRationPlan.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(`${t("feed.rationPlans")} ${t("recycleBin.permanentlyDeleted")}`); },
-    onError: (e) => toast.error(e.message),
-  });
-  const purgeFeedStock = trpc.recycleBin.purgeFeedStock.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(`${t("feed.stockLedger")} ${t("recycleBin.permanentlyDeleted")}`); },
-    onError: (e) => toast.error(e.message),
-  });
-  const purgeSale = trpc.recycleBin.purgeSale.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(`${t("nav.sales")} ${t("recycleBin.permanentlyDeleted")}`); },
-    onError: (e) => toast.error(e.message),
-  });
-  const purgeAll = trpc.recycleBin.purgeAll.useMutation({
-    onSuccess: () => { invalidateAll(); toast.success(t("recycleBin.emptiedPermanently")); },
-    onError: (e) => toast.error(e.message),
-  });
-
-  function handleRestore(entityType: string, id: number) {
+  function handleRestore(entityType: string, id: number, expectedVersion: number) {
+    const input = { id, expectedVersion };
     switch (entityType) {
-      case "animal": restoreAnimal.mutate({ id }); break;
-      case "expense": restoreExpense.mutate({ id }); break;
-      case "weightLog": restoreWeightLog.mutate({ id }); break;
-      case "lambingLog": restoreLambingLog.mutate({ id }); break;
-      case "rationPlan": restoreRationPlan.mutate({ id }); break;
-      case "feedStock": restoreFeedStock.mutate({ id }); break;
-      case "sale": restoreSale.mutate({ id }); break;
-      case "species": restoreSpecies.mutate({ id }); break;
-      case "category": restoreCategory.mutate({ id }); break;
-      case "group": restoreGroup.mutate({ id }); break;
-      case "status": restoreStatus.mutate({ id }); break;
-      case "birthType": restoreBirthType.mutate({ id }); break;
-      case "feedItem": restoreFeedItem.mutate({ id }); break;
-      case "expenseCategory": restoreExpenseCategory.mutate({ id }); break;
-    }
-  }
-
-  function handlePurge(entityType: string, id: number) {
-    switch (entityType) {
-      case "animal": purgeAnimal.mutate({ id }); break;
-      case "expense": purgeExpense.mutate({ id }); break;
-      case "weightLog": purgeWeightLog.mutate({ id }); break;
-      case "lambingLog": purgeLambingLog.mutate({ id }); break;
-      case "rationPlan": purgeRationPlan.mutate({ id }); break;
-      case "feedStock": purgeFeedStock.mutate({ id }); break;
-      case "sale": purgeSale.mutate({ id }); break;
+      case "animal": restoreAnimal.mutate(input); break;
+      case "expense": restoreExpense.mutate(input); break;
+      case "weightLog": restoreWeightLog.mutate(input); break;
+      case "lambingLog": restoreLambingLog.mutate(input); break;
+      case "rationPlan": restoreRationPlan.mutate(input); break;
+      case "feedStock": restoreFeedStock.mutate(input); break;
+      case "sale": restoreSale.mutate(input); break;
+      case "species": restoreSpecies.mutate(input); break;
+      case "category": restoreCategory.mutate(input); break;
+      case "group": restoreGroup.mutate(input); break;
+      case "status": restoreStatus.mutate(input); break;
+      case "birthType": restoreBirthType.mutate(input); break;
+      case "feedItem": restoreFeedItem.mutate(input); break;
+      case "expenseCategory": restoreExpenseCategory.mutate(input); break;
     }
   }
 
@@ -251,7 +194,7 @@ export default function RecycleBin() {
               {t("recycleBin.title")}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
-              All soft-deleted records. Restore anytime or permanently delete (admin only).
+              Soft-deleted records remain recoverable. Permanent deletion is managed by platform retention policy.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -270,37 +213,6 @@ export default function RecycleBin() {
                 </SelectContent>
               </Select>
             </div>
-            {canPurge && items.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    {t("recycleBin.emptyBin")}
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                      <AlertTriangle className="h-5 w-5" />
-                      {t("recycleBin.emptyRecycleBin")}
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will <strong>{t("recycleBin.deleteAllRecords", { count: items.length })}</strong> in the recycle bin. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                    <AlertDialogAction
-                      className="bg-destructive hover:bg-destructive/90"
-                      onClick={() => purgeAll.mutate()}
-                    >
-                      {purgeAll.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                      Permanently Delete All
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
           </div>
         </div>
 
@@ -379,49 +291,13 @@ export default function RecycleBin() {
                             variant="outline"
                             size="sm"
                             className="text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                            onClick={() => handleRestore(item.entityType, item.id)}
+                            onClick={() => handleRestore(item.entityType, item.id, item.version)}
                           >
                             <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                             {t("recycleBin.restore")}
                           </Button>
                           )}
 
-                          {/* Permanent delete (admin only, and only for supported types) */}
-                          {canPurge && ["animal", "expense", "weightLog", "lambingLog", "rationPlan", "feedStock", "sale"].includes(item.entityType) && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-destructive hover:bg-destructive/10"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                                  {t("recycleBin.deleteForever")}
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                                    <AlertTriangle className="h-5 w-5" />
-                                    {t("recycleBin.permanentlyDelete")}
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to permanently delete <strong>{item.label}</strong>?
-                                    This action <strong>cannot be undone</strong>.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    className="bg-destructive hover:bg-destructive/90"
-                                    onClick={() => handlePurge(item.entityType, item.id)}
-                                  >
-                                    {t("recycleBin.deleteForever")}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
                         </div>
                       </div>
                     ))}

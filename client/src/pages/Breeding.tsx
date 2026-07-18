@@ -85,6 +85,7 @@ function PromotionStatus({ record }: { record: any }) {
 function RecordBirthDialog() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const { control, handleSubmit, reset, setValue, watch } = useForm({
     defaultValues: {
       birthDate: new Date().toISOString().split("T")[0],
@@ -140,6 +141,7 @@ function RecordBirthDialog() {
       utils.breeding.listLambing.invalidate();
       utils.breeding.summary.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       reset();
     },
     onError: (e) => toast.error(e.message),
@@ -163,6 +165,7 @@ function RecordBirthDialog() {
       groupId: data.groupId ? Number(data.groupId) : undefined,
       notes: data.notes || undefined,
       lambIdNumber: data.lambIdNumber || undefined,
+      idempotencyKey,
     });
   };
 
@@ -398,6 +401,7 @@ function EditLambingDialog({ record, open, onOpenChange }: { record: any; open: 
   const onSubmit = handleSubmit((data) => {
     updateLambing.mutate({
       id: record.id,
+      expectedVersion: record.version,
       lambIdNumber: data.lambIdNumber || undefined,
       birthDate: data.birthDate || undefined,
       sex: data.sex || undefined,
@@ -842,7 +846,7 @@ export default function Breeding() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteLambingLog.mutate({ id: l.id })}>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteLambingLog.mutate({ id: l.id, expectedVersion: l.version })}>
                                   {t("common.moveToBin")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>

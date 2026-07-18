@@ -76,7 +76,7 @@ function PanelSkeleton({ rows = 4 }: { rows?: number }) {
 }
 
 /** Animal photo with upload / change / remove / zoom (parity with Old). */
-function AnimalPhoto({ animalId }: { animalId: number }) {
+function AnimalPhoto({ animalId, animalVersion }: { animalId: number; animalVersion: number }) {
   const { t } = useTranslation();
   const { canUpdate } = usePermissions("animals");
   const utils = trpc.useUtils();
@@ -104,7 +104,7 @@ function AnimalPhoto({ animalId }: { animalId: number }) {
     const reader = new FileReader();
     reader.onload = () => {
       setUploading(true);
-      setPhoto.mutate({ id: animalId, dataUrl: String(reader.result) });
+      setPhoto.mutate({ id: animalId, expectedVersion: animalVersion, dataUrl: String(reader.result) });
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -135,7 +135,7 @@ function AnimalPhoto({ animalId }: { animalId: number }) {
             <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFile} disabled={uploading} />
           </label>
           {url && (
-            <button className="text-danger-soft-foreground hover:underline" onClick={() => removePhoto.mutate({ id: animalId })}>
+            <button className="text-danger-soft-foreground hover:underline" onClick={() => removePhoto.mutate({ id: animalId, expectedVersion: animalVersion })}>
               · {t("common.remove", "Remove")}
             </button>
           )}
@@ -150,6 +150,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [form, setForm] = useState({ expenseDate: today(), categoryId: "", amount: "", vendorName: "", notes: "" });
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
   const create = trpc.expenses.create.useMutation({
     onSuccess: () => {
@@ -160,6 +161,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
       utils.dashboard.getKPIs.invalidate();
       onOpenChange(false);
       setForm(f => ({ ...f, amount: "", vendorName: "", notes: "" }));
+      setIdempotencyKey(crypto.randomUUID());
     },
     onError: e => toast.error(e.message),
   });
@@ -173,6 +175,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
       headId: animalId,
       vendorName: form.vendorName || undefined,
       notes: form.notes || undefined,
+      idempotencyKey,
     } as any);
   };
   return (
@@ -271,7 +274,7 @@ function PregnancyPanel({ animalId }: { animalId: number }) {
               variant="outline"
               className="mt-3"
               disabled={update.isPending}
-              onClick={() => update.mutate({ id: active.record.id, status: "delivered", completedDate: today() })}
+              onClick={() => update.mutate({ id: active.record.id, expectedVersion: active.record.version, status: "delivered", completedDate: today() })}
             >
               {t("pregnancy.markDelivered", "Mark delivered")}
             </Button>
@@ -430,7 +433,7 @@ export default function NewAnimalProfile() {
       <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded-xl border border-border bg-card p-5 shadow-[var(--shadow-sm)]">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <AnimalPhoto animalId={animalId} />
+            <AnimalPhoto animalId={animalId} animalVersion={animal?.animal.version ?? 1} />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("animalProfile.currentWeight", "Current Weight")}</p>
               <div className="mt-1 flex items-end gap-3">
@@ -787,7 +790,7 @@ export default function NewAnimalProfile() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={deleteWeight.isPending}
-        onConfirm={() => deleteWeightRow && deleteWeight.mutate({ id: deleteWeightRow.id })}
+        onConfirm={() => deleteWeightRow && deleteWeight.mutate({ id: deleteWeightRow.id, expectedVersion: deleteWeightRow.version })}
       />
     </div>
   );

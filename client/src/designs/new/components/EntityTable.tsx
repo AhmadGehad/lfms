@@ -32,7 +32,7 @@ interface EntityTableProps<T> {
   canEdit?: boolean;
   storageKey: string;
   onCreate: (values: Record<string, any>) => void;
-  onUpdate: (id: number, values: Record<string, any>) => void;
+  onUpdate: (id: number, values: Record<string, any>, row: T) => void;
   /** Build the initial form values from a row for editing. */
   toForm?: (r: T) => Record<string, any>;
   /** Extra per-row actions rendered after the edit button (e.g. delete). */
@@ -61,12 +61,13 @@ export function EntityTable<T>({
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
+  const [editRow, setEditRow] = useState<T | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
 
   const startCreate = () => {
     const blank: Record<string, any> = {};
     for (const f of fields) blank[f.key] = f.type === "checkbox" ? false : "";
-    setForm(blank); setEditId(null); setOpen(true);
+    setForm(blank); setEditId(null); setEditRow(null); setOpen(true);
   };
   const startEdit = (row: T) => {
     if (toForm) {
@@ -79,11 +80,13 @@ export function EntityTable<T>({
       }
       setForm(f);
     }
-    setEditId((row as any).id); setOpen(true);
+    setEditId((row as any).id); setEditRow(row); setOpen(true);
   };
   const submit = () => {
     const values = coerce(fields, form);
-    if (editId != null) onUpdate(editId, values);
+    if (editId != null) {
+      if (editRow) onUpdate(editId, values, editRow);
+    }
     else onCreate(values);
     setOpen(false);
   };

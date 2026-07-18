@@ -143,3 +143,15 @@ graphify-out/
 ux-audit/
 i-attached-ux-audit-zip-open-and-follow-claude-design-prompt/
 ux-audit.zip
+/*.png
+backups/
+docs/validation/
+docs/CODE_WIKI.md
+docs/PRODUCTION_READINESS_BLOCKERS.md
+docs/SAAS_ARCHITECTURE.md
+docs/SYSTEM_OVERVIEW.md
+docs/TENANCY_DESIGN.md
+docs/TENANT_LIFECYCLE.md
+docs/TESTING.md
+docs/THREAT_MODEL.md
+docs/VALIDATION_RESULTS.md

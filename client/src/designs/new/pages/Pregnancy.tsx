@@ -177,6 +177,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
     const record = editRow.record ?? editRow;
     update.mutate({
       id: record.id,
+      expectedVersion: record.version,
       confirmationDate: editForm.confirmationDate || undefined,
       sireId: editForm.sireId !== "none" ? Number(editForm.sireId) : null,
       status: editForm.status,
@@ -190,7 +191,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
 
   const markDelivered = (row: any) => {
     const record = row.record ?? row;
-    update.mutate({ id: record.id, status: "delivered", completedDate: today() });
+    update.mutate({ id: record.id, expectedVersion: record.version, status: "delivered", completedDate: today() });
   };
 
   const summaryCards = [
@@ -423,7 +424,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
         confirmLabel={t("common.delete", "Delete")}
         destructive
         loading={del.isPending}
-        onConfirm={() => delRow && del.mutate({ id: delRow.record.id })}
+        onConfirm={() => delRow && del.mutate({ id: delRow.record.id, expectedVersion: delRow.record.version })}
       />
     </div>
   );

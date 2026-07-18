@@ -1,7 +1,16 @@
-import { getTableColumns } from "drizzle-orm";
-import { animalCategories, animals, lambingLog } from "../drizzle/schema";
+import { and, eq } from "drizzle-orm";
+import { animalCategories, animals, farms, lambingLog } from "../drizzle/schema";
 import type { DbOrTx } from "./db";
-import { CANONICAL_TABLES, type CanonicalWorkbookData } from "./excelDataContract";
+import {
+  CANONICAL_TABLES,
+  getCanonicalTableColumns,
+  type CanonicalWorkbookData,
+} from "./excelDataContract";
+import { requireTenantUserContext } from "./tenancy/runtime";
+import type { TenantContext } from "../shared/tenancy";
+import { generatePublicId } from "./tenancy/publicIds";
+import { tenantScope } from "./tenancy/scope";
+import { assertWithinLimit, getEffectiveLimit, lockCompanyQuota } from "./entitlements/limits";
 
 export type ImportMode = "append" | "replace";
 
@@ -13,7 +22,85 @@ export type TransferStat = {
 
 type ApplyCanonicalDataOptions = {
   excludedTables?: ReadonlySet<string>;
+  scope?: CanonicalTransferScope;
+  skipQuotaChecks?: boolean;
 };
+
+export type CanonicalTransferScope = Pick<
+  TenantContext,
+  "companyId" | "farmAccessMode" | "accessibleFarmIds" | "selectedFarmId"
+>;
+
+function transferTenant(scope?: CanonicalTransferScope): CanonicalTransferScope {
+  return scope ?? requireTenantUserContext();
+}
+
+const TENANT_EXCLUDED_TABLES = new Set(["users", "role_permissions", "audit_log"]);
+
+function activeAnimalRow(row: Record<string, unknown>) {
+  return row.deletedAt === null || row.deletedAt === undefined || row.deletedAt === "";
+}
+
+async function enforceAnimalImportLimit(
+  tx: DbOrTx,
+  rowsByTable: CanonicalWorkbookData,
+  mode: ImportMode,
+  tenant: CanonicalTransferScope,
+) {
+  await lockCompanyQuota(tx, tenant.companyId);
+  const imported = rowsByTable.get("animals") ?? [];
+  const limit = await getEffectiveLimit(tx, tenant.companyId, "animals_limit");
+  if (mode === "replace") {
+    assertWithinLimit(0, imported.filter(activeAnimalRow).length, limit, "animals");
+    return;
+  }
+
+  const existing = await tx.select({
+    id: animals.id,
+    animalId: animals.animalId,
+    deletedAt: animals.deletedAt,
+  }).from(animals).where(eq(animals.companyId, tenant.companyId));
+  const existingIds = new Set(existing.map(row => Number(row.id)));
+  const existingAnimalIds = new Set(existing.map(row => String(row.animalId).toUpperCase()));
+  const additions = imported.filter(row => {
+    if (!activeAnimalRow(row)) return false;
+    const id = numericId(row.id);
+    const animalId = String(row.animalId ?? "").toUpperCase();
+    return (id === null || !existingIds.has(id)) && (!animalId || !existingAnimalIds.has(animalId));
+  }).length;
+  const current = existing.filter(row => activeAnimalRow(row as Record<string, unknown>)).length;
+  assertWithinLimit(current, additions, limit, "animals");
+}
+
+function transferScope(tenant: CanonicalTransferScope, table: any) {
+  return tenant.farmAccessMode === "all"
+    ? eq(table.companyId, tenant.companyId)
+    : tenantScope(tenant as TenantContext, table);
+}
+
+function scopedImportedRow(
+  table: any,
+  row: Record<string, unknown>,
+  allowedFarmIds: ReadonlySet<number>,
+  tenant: CanonicalTransferScope,
+) {
+  const result: Record<string, unknown> = { ...row, companyId: tenant.companyId };
+  if (table.publicId) result.publicId = generatePublicId();
+  if (table.version) result.version = 1;
+  if (table.farmId) {
+    const suppliedFarmId = result.farmId;
+    if ((suppliedFarmId === null || suppliedFarmId === undefined || suppliedFarmId === "") && !table.farmId.notNull) {
+      result.farmId = null;
+      return result;
+    }
+    const farmId = Number(suppliedFarmId ?? tenant.selectedFarmId);
+    if (!Number.isInteger(farmId) || !allowedFarmIds.has(farmId)) {
+      throw new Error("Backup contains a farm outside the current company scope");
+    }
+    result.farmId = farmId;
+  }
+  return result;
+}
 
 function comparable(value: unknown): string {
   if (value instanceof Date) return value.toISOString();
@@ -35,6 +122,7 @@ async function normalizeBirthIntegrity(
   tx: DbOrTx,
   rowsByTable: CanonicalWorkbookData,
   mode: ImportMode,
+  tenant: CanonicalTransferScope,
 ) {
   rowsByTable.set(
     "vaccination_records",
@@ -61,9 +149,12 @@ async function normalizeBirthIntegrity(
   let existingAnimals: Record<string, unknown>[] = [];
   let existingBirths: Record<string, unknown>[] = [];
   if (mode === "append") {
-    existingCategories = await tx.select().from(animalCategories);
-    existingAnimals = await tx.select().from(animals);
-    existingBirths = await tx.select().from(lambingLog);
+    existingCategories = await tx.select().from(animalCategories)
+      .where(eq(animalCategories.companyId, tenant.companyId));
+    existingAnimals = await tx.select().from(animals)
+      .where(transferScope(tenant, animals));
+    existingBirths = await tx.select().from(lambingLog)
+      .where(transferScope(tenant, lambingLog));
   }
   const categories = [...existingCategories, ...importedCategories];
   const existingCategoryById = new Map(
@@ -180,10 +271,25 @@ async function normalizeBirthIntegrity(
   }
 }
 
-export async function readAllCanonicalTables(db: DbOrTx): Promise<CanonicalWorkbookData> {
+export async function readAllCanonicalTables(
+  db: DbOrTx,
+  scope?: CanonicalTransferScope,
+): Promise<CanonicalWorkbookData> {
   const rows: CanonicalWorkbookData = new Map();
+  const tenant = transferTenant(scope);
+  if (tenant.farmAccessMode !== "all") {
+    throw new Error("Full data export requires access to all company farms");
+  }
   for (const spec of CANONICAL_TABLES) {
-    rows.set(spec.key, await db.select().from(spec.table));
+    if (TENANT_EXCLUDED_TABLES.has(spec.key)) {
+      rows.set(spec.key, []);
+      continue;
+    }
+    if (!spec.table.companyId) {
+      throw new Error(`Canonical table lacks tenant scope: ${spec.key}`);
+    }
+    rows.set(spec.key, await db.select().from(spec.table)
+      .where(eq(spec.table.companyId, tenant.companyId)));
   }
   return rows;
 }
@@ -199,13 +305,29 @@ export async function applyCanonicalData(
   options: ApplyCanonicalDataOptions = {},
 ): Promise<TransferStat[]> {
   const stats: TransferStat[] = [];
-  const excludedTables = options.excludedTables ?? new Set<string>();
-  await normalizeBirthIntegrity(tx, rowsByTable, mode);
+  const excludedTables = new Set([
+    ...TENANT_EXCLUDED_TABLES,
+    ...(options.excludedTables ?? []),
+  ]);
+  const tenant = transferTenant(options.scope);
+  if (mode === "replace" && tenant.farmAccessMode !== "all") {
+    throw new Error("Full replace restore requires access to all company farms");
+  }
+  if (!options.skipQuotaChecks) {
+    await enforceAnimalImportLimit(tx, rowsByTable, mode, tenant);
+  }
+  const allowedFarmIds = tenant.accessibleFarmIds === "all"
+    ? new Set((await tx.select({ id: farms.id }).from(farms).where(and(
+        eq(farms.companyId, tenant.companyId),
+      ))).map(row => row.id))
+    : new Set(tenant.accessibleFarmIds);
+  await normalizeBirthIntegrity(tx, rowsByTable, mode, tenant);
 
   if (mode === "replace") {
     for (const spec of [...CANONICAL_TABLES].reverse()) {
       if (excludedTables.has(spec.key)) continue;
-      await tx.delete(spec.table);
+      if (!spec.table.companyId) throw new Error(`Canonical table lacks tenant scope: ${spec.key}`);
+      await tx.delete(spec.table).where(eq(spec.table.companyId, tenant.companyId));
     }
   }
 
@@ -216,16 +338,18 @@ export async function applyCanonicalData(
 
     if (mode === "replace") {
       for (const row of importedRows) {
-        await tx.insert(spec.table).values(row as any);
+        await tx.insert(spec.table).values(scopedImportedRow(spec.table, row, allowedFarmIds, tenant) as any);
         stat.applied++;
       }
       stats.push(stat);
       continue;
     }
 
-    const columns = getTableColumns(spec.table) as Record<string, any>;
+    const columns = getCanonicalTableColumns(spec.table);
     const columnNames = Object.keys(columns);
-    const existingRows = await tx.select().from(spec.table) as Record<string, unknown>[];
+    if (!spec.table.companyId) throw new Error(`Canonical table lacks tenant scope: ${spec.key}`);
+    const existingRows = await tx.select().from(spec.table)
+      .where(transferScope(tenant, spec.table)) as Record<string, unknown>[];
     const existingById = new Map(existingRows.map(row => [row.id, row]));
     const uniqueColumns = Object.entries(columns)
       .filter(([, column]) => column.isUnique)
@@ -264,12 +388,13 @@ export async function applyCanonicalData(
         }
       }
 
-      await tx.insert(spec.table).values(row as any);
-      existingById.set(row.id, row);
+      const scopedRow = scopedImportedRow(spec.table, row, allowedFarmIds, tenant);
+      await tx.insert(spec.table).values(scopedRow as any);
+      existingById.set(scopedRow.id, scopedRow);
       for (const uniqueColumn of uniqueColumns) {
         const value = row[uniqueColumn];
         if (value !== null && value !== undefined) {
-          existingByUnique.get(uniqueColumn)?.set(String(value), row);
+          existingByUnique.get(uniqueColumn)?.set(String(value), scopedRow);
         }
       }
       stat.applied++;

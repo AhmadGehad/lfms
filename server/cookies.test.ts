@@ -16,16 +16,16 @@ describe("getSessionCookieOptions", () => {
     });
   });
 
-  it("uses cross-site cookie options for HTTPS", () => {
+  it("uses same-site cookie options for HTTPS", () => {
     expect(getSessionCookieOptions(request("https"))).toMatchObject({
-      sameSite: "none",
+      sameSite: "lax",
       secure: true,
     });
   });
 
   it("trusts forwarded HTTPS when behind a proxy", () => {
     expect(getSessionCookieOptions(request("http", { secure: true }))).toMatchObject({
-      sameSite: "none",
+      sameSite: "lax",
       secure: true,
     });
   });

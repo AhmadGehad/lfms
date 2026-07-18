@@ -58,6 +58,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { OwnerFilterSelect } from "./OwnerFilterSelect";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { DesignSwitch } from "./DesignSwitch";
+import { FarmSwitcher } from "./FarmSwitcher";
 import { Button } from "./ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -161,6 +162,9 @@ function DashboardLayoutContent({
   const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const perms = usePermissions();
+  const tenantContext = trpc.auth.tenantContext.useQuery(undefined, { staleTime: 60_000, retry: false });
+  const company = tenantContext.data?.company;
+  const companyName = company?.name ?? "LFMS";
 
   // Notification count
   const { data: notifications } = trpc.notifications.list.useQuery(
@@ -254,7 +258,7 @@ function DashboardLayoutContent({
 
   const activeLabel = navGroups
     .flatMap((g) => g.items)
-    .find((item) => item.path === location)?.label ?? "Azal Farms";
+    .find((item) => item.path === location)?.label ?? companyName;
 
   return (
     <>
@@ -279,11 +283,15 @@ function DashboardLayoutContent({
               {showLabels && (
                 <div className={`flex items-center gap-2 min-w-0 ${isAr ? "flex-row-reverse" : ""}`}>
                   <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-                    <Leaf className="h-4 w-4 text-sidebar-primary-foreground" />
+                    {company?.logoUrl ? (
+                      <img src={company.logoUrl} alt={`${companyName} logo`} className="h-full w-full rounded-lg object-contain" />
+                    ) : (
+                      <Leaf className="h-4 w-4 text-sidebar-primary-foreground" />
+                    )}
                   </div>
                   <div className={`min-w-0 ${isAr ? "text-right" : ""}`}>
-                    <p className="text-sm font-bold text-sidebar-foreground truncate leading-none">Azal Farms</p>
-                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5">مزارع أزَل</p>
+                    <p className="text-sm font-bold text-sidebar-foreground truncate leading-none">{companyName}</p>
+                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5">{company?.slug ?? "LFMS"}</p>
                   </div>
                 </div>
               )}
@@ -486,6 +494,7 @@ function DashboardLayoutContent({
             </div>
             <div className={`flex shrink-0 items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
               <DesignSwitch compact />
+              <FarmSwitcher className="hidden w-36 sm:flex" />
               <OwnerFilterSelect className="hidden w-32 sm:block" />
               <LanguageSwitcher />
               {perms.can("notifications", "view") && (
@@ -507,6 +516,7 @@ function DashboardLayoutContent({
             <span className="font-semibold text-sm text-muted-foreground">{activeLabel}</span>
             <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
               <DesignSwitch />
+              <FarmSwitcher />
               <span className="text-xs text-muted-foreground hidden lg:inline">{t("owners.filterByOwner")}</span>
               <OwnerFilterSelect />
             </div>

@@ -33,7 +33,7 @@ import {
   YAxis,
 } from "recharts";
 
-function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boolean }) {
+function AnimalPhoto({ animalId, animalVersion, hasPhoto }: { animalId: number; animalVersion: number; hasPhoto: boolean }) {
   const { t } = useTranslation();
   const { canUpdate } = usePermissions("animals");
   const utils = trpc.useUtils();
@@ -65,7 +65,7 @@ function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boole
     const reader = new FileReader();
     reader.onload = () => {
       setUploading(true);
-      setPhoto.mutate({ id: animalId, dataUrl: String(reader.result) });
+      setPhoto.mutate({ id: animalId, expectedVersion: animalVersion, dataUrl: String(reader.result) });
     };
     reader.readAsDataURL(file);
     e.target.value = "";
@@ -99,7 +99,7 @@ function AnimalPhoto({ animalId, hasPhoto }: { animalId: number; hasPhoto: boole
           <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={onFile} disabled={uploading} />
         </label>}
         {canUpdate && hasPhoto && (
-          <button className="text-xs text-red-500 hover:underline" onClick={() => removePhoto.mutate({ id: animalId })}>
+          <button className="text-xs text-red-500 hover:underline" onClick={() => removePhoto.mutate({ id: animalId, expectedVersion: animalVersion })}>
             · {t("common.remove")}
           </button>
         )}
@@ -283,12 +283,14 @@ function WeightChart({ animalId }: { animalId: number }) {
   const { canCreate, canDelete } = usePermissions("fattening");
   const { data: weights } = trpc.animals.getWeightLog.useQuery({ animalId });
   const [open, setOpen] = useState(false);
+  const [weightIdempotencyKey, setWeightIdempotencyKey] = useState(() => crypto.randomUUID());
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [weight, setWeight] = useState("");
   const utils = trpc.useUtils();
 
   const addWeight = trpc.animals.addWeight.useMutation({
     onSuccess: (result: any) => {
+      setWeightIdempotencyKey(crypto.randomUUID());
       if (result?.autoStaged && result?.newAnimalId) {
         toast.success(t("animalProfile.weightAutoStaged", { id: result.newAnimalId }));
       } else {
@@ -357,7 +359,7 @@ function WeightChart({ animalId }: { animalId: number }) {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => addWeight.mutate({ animalId, weighDate: date, weightKg: weight })} disabled={!weight || addWeight.isPending}>
+              <Button onClick={() => addWeight.mutate({ animalId, weighDate: date, weightKg: weight, idempotencyKey: weightIdempotencyKey })} disabled={!weight || addWeight.isPending}>
                 {t("common.save")}
               </Button>
             </DialogFooter>
@@ -431,7 +433,7 @@ function WeightChart({ animalId }: { animalId: number }) {
                       </AlertDialogHeader>
                       <AlertDialogFooter>
                         <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                        <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteWeight.mutate({ id: w.id })}>
+                        <AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={() => deleteWeight.mutate({ id: w.id, expectedVersion: w.version })}>
                           {t("common.delete")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
@@ -527,6 +529,7 @@ function ProfileAddExpenseDialog({ animal }: { animal: any }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
+  const [expenseIdempotencyKey, setExpenseIdempotencyKey] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({ expenseDate: new Date().toISOString().slice(0, 10), categoryId: "", amount: "", vendorName: "", notes: "" });
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
   const create = trpc.expenses.create.useMutation({
@@ -538,6 +541,7 @@ function ProfileAddExpenseDialog({ animal }: { animal: any }) {
       utils.dashboard.getKPIs.invalidate();
       setOpen(false);
       setForm(f => ({ ...f, amount: "", vendorName: "", notes: "" }));
+      setExpenseIdempotencyKey(crypto.randomUUID());
     },
     onError: (e) => toast.error(e.message),
   });
@@ -551,6 +555,7 @@ function ProfileAddExpenseDialog({ animal }: { animal: any }) {
       headId: animal.animal.id,
       vendorName: form.vendorName || undefined,
       notes: form.notes || undefined,
+      idempotencyKey: expenseIdempotencyKey,
     });
   };
   return (
@@ -586,6 +591,7 @@ function ProfileRecordSaleDialog({ animal }: { animal: any }) {
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const exitStatuses = (statuses ?? []).filter((s: any) => s.isExitStatus);
   const [form, setForm] = useState({ saleDate: new Date().toISOString().slice(0, 10), salePrice: "", amountPaid: "", statusId: "", weightAtSale: "", buyerName: "", notes: "" });
@@ -602,6 +608,7 @@ function ProfileRecordSaleDialog({ animal }: { animal: any }) {
       utils.animals.getAllPnL.invalidate();
       utils.dashboard.getKPIs.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
     },
     onError: (e) => toast.error(e.message),
   });
@@ -613,6 +620,8 @@ function ProfileRecordSaleDialog({ animal }: { animal: any }) {
     if (paidNum > priceNum) { toast.error(t("sales.paymentExceedsOutstanding")); return; }
     exitAnimal.mutate({
       id: animal.animal.id,
+      expectedVersion: animal.animal.version,
+      idempotencyKey,
       exitDate: form.saleDate,
       exitReason: "sold",
       newStatusId: Number(form.statusId),
@@ -705,7 +714,7 @@ function PregnancyTab({ animalId }: { animalId: number }) {
               <span>{active.daysRemaining < 0 ? t("pregnancy.overdueBy", { days: Math.abs(active.daysRemaining) }) : t("pregnancy.dueIn", { days: active.daysRemaining })}</span>
             </div>
             {canUpdate && (
-              <Button size="sm" variant="outline" className="gap-2" onClick={() => update.mutate({ id: active.record.id, status: "delivered", completedDate: new Date().toISOString().slice(0, 10) })}>
+              <Button size="sm" variant="outline" className="gap-2" onClick={() => update.mutate({ id: active.record.id, expectedVersion: active.record.version, status: "delivered", completedDate: new Date().toISOString().slice(0, 10) })}>
                 {t("pregnancy.markDelivered")}
               </Button>
             )}
@@ -997,7 +1006,7 @@ export default function AnimalProfile() {
           <ArrowLeft className="h-4 w-4" />
           {t("animalProfile.back")}
         </Button>
-        <AnimalPhoto animalId={animal.animal.id} hasPhoto={!!animal.animal.photoUrl} />
+        <AnimalPhoto animalId={animal.animal.id} animalVersion={animal.animal.version} hasPhoto={!!animal.animal.photoUrl} />
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold font-mono">{animal.animal.animalId}</h1>

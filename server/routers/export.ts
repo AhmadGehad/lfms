@@ -4,6 +4,7 @@ import { permissionProcedure, router } from "../_core/trpc";
 import { getDb, getAllSpecies, getAllCategories, getAllStatuses, getAllGroups, getAllFeedItems, getAllExpenseCategories, getAllOwners, getAnimals, getSales, getLambingLog, getFeedStockLedger, getFeedStockStatus, getExpenses, getAllAnimalsPnL, getIncomeStatement, getDashboardKPIs, getActiveHeadCountByCategory, getFeedPriceOnDate, getPregnancies } from "../db";
 import { readAllCanonicalTables } from "../canonicalTransfer";
 import { addCanonicalSheets } from "../excelDataContract";
+import { getTenantCompanyBranding } from "../tenancy/branding";
 
 // ── styling helpers ──────────────────────────────────────────────────────────
 function headerRow(ws: ExcelJS.Worksheet, row: number) {
@@ -34,7 +35,7 @@ function fmtDate(d: any): Date | null {
 // When ownerId is given, the per-animal/financial report sheets are scoped to
 // that owner and the canonical round-trip "Data -" sheets are omitted — a
 // scoped owner report is not a whole-farm backup.
-async function buildWorkbook(ownerId?: number): Promise<Buffer> {
+async function buildWorkbook(companyName: string, ownerId?: number): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   wb.creator = "LFMS Export";
   wb.created = new Date();
@@ -53,7 +54,7 @@ async function buildWorkbook(ownerId?: number): Promise<Buffer> {
     properties: { tabColor: { argb: "FF0F6E56" } }
   });
   readme.columns = [{ width: 100 }];
-  titleRow(readme, 1, ownerId ? `Azal Farms — Owner Report: ${ownerName}` : "Azal Farms — LFMS Full Export", 1);
+  titleRow(readme, 1, ownerId ? `${companyName} — Owner Report: ${ownerName}` : `${companyName} — LFMS Full Export`, 1);
   readme.getCell("A2").value = `Generated: ${new Date().toLocaleString()}`;
   if (ownerId) {
     readme.getCell("A4").value = `Scoped to owner: ${ownerName}. All report numbers reflect only this owner's animals; farm-wide overhead (e.g. electricity), herd-wide costs and bulk feed purchases are excluded (feed is modelled from this owner's ration-plan consumption).`;
@@ -961,10 +962,12 @@ export const exportRouter = router({
     .input(z.object({ ownerId: z.number().optional() }).optional())
     .query(async ({ input }) => {
       const ownerId = input?.ownerId;
-      const buf = await buildWorkbook(ownerId);
+      const branding = await getTenantCompanyBranding();
+      const buf = await buildWorkbook(branding.name, ownerId);
       const date = new Date().toISOString().split("T")[0];
+      const filePrefix = branding.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "lfms";
       return {
-        filename: ownerId ? `lfms-owner-${ownerId}-report-${date}.xlsx` : `lfms-export-${date}.xlsx`,
+        filename: ownerId ? `${filePrefix}-owner-${ownerId}-report-${date}.xlsx` : `${filePrefix}-export-${date}.xlsx`,
         mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         base64: buf.toString("base64")
       };

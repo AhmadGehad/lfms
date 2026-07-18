@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function NewAuditLog() {
   const { t } = useTranslation();
   const perms = usePermissions();
-  const canRevert = perms.can("audit", "view"); // revert itself is admin-gated server-side
+  const canRevert = perms.can("audit", "revert");
   const utils = trpc.useUtils();
 
   const { data: rows, isLoading } = trpc.audit.list.useQuery({});

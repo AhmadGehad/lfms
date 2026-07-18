@@ -14,7 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
-import { OwnerCapitalDialog } from "@/components/OwnerCapitalDialog";
+import { CompanyBrandingSettings } from "@/components/CompanyBrandingSettings";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // ── Reusable inline edit dialog ───────────────────────────────────────────────
@@ -86,7 +86,7 @@ function SpeciesTab() {
 
       {editItem && (
         <EditDialog title={t("config.editSpecies")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined, gestationDays: (editItem.gestationDays != null && editItem.gestationDays !== "") ? Number(editItem.gestationDays) : undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, description: editItem.description || undefined, gestationDays: (editItem.gestationDays != null && editItem.gestationDays !== "") ? Number(editItem.gestationDays) : undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("pregnancy.gestationDays")}</Label><Input type="number" min={1} value={editItem.gestationDays ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, gestationDays: e.target.value }))} /></div>
@@ -147,6 +147,7 @@ function CategoriesTab() {
     if (!editItem) return;
     update.mutate({
       id: editItem.id,
+      expectedVersion: editItem.version,
       name: editItem.name,
       idPrefix: editItem.idPrefix,
       targetWeightKg: editItem.targetWeightKg || undefined,
@@ -312,7 +313,7 @@ function GroupsTab() {
 
       {editItem && (
         <EditDialog title={t("config.editGroupPen")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined, latitude: editItem.latitude ?? undefined, longitude: editItem.longitude ?? undefined, color: editItem.color ?? undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, groupCode: editItem.groupCode, description: editItem.description || undefined, latitude: editItem.latitude ?? undefined, longitude: editItem.longitude ?? undefined, color: editItem.color ?? undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.groupCode")}</Label><Input value={editItem.groupCode ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, groupCode: e.target.value.toUpperCase() }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
@@ -391,7 +392,7 @@ function StatusesTab() {
       </div>
       {editItem && (
         <EditDialog title={t("config.editAnimalStatus")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, description: editItem.description || undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
@@ -415,13 +416,11 @@ function StatusesTab() {
 function OwnersTab() {
   const { t } = useTranslation();
   const { canCreate, canUpdate } = usePermissions("configuration");
-  const capitalPerms = usePermissions();
   const { data: owners } = trpc.config.getOwners.useQuery({ activeOnly: false });
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [form, setForm] = useState({ name: "", phone: "", email: "", notes: "" });
-  const [capitalOwner, setCapitalOwner] = useState<any>(null);
   const utils = trpc.useUtils();
   const create = trpc.config.createOwner.useMutation({
     onSuccess: () => {
@@ -468,7 +467,7 @@ function OwnersTab() {
       </div>
       {editItem && (
         <EditDialog title={t("owners.editOwner")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, phone: editItem.phone || null, email: editItem.email || undefined, notes: editItem.notes || undefined, isActive: editItem.isActive })}>
+          onSave={() => update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, phone: editItem.phone || null, email: editItem.email || undefined, notes: editItem.notes || undefined, isActive: editItem.isActive })}>
           <div className="space-y-1.5"><Label>{t("common.name")} *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("owners.phone")}</Label><Input value={editItem.phone ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, phone: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("owners.email")}</Label><Input value={editItem.email ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, email: e.target.value }))} /></div>
@@ -496,7 +495,7 @@ function OwnersTab() {
               <TableCell className="text-muted-foreground text-sm">{o.email ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground text-sm max-w-[160px] truncate">{o.notes ?? "—"}</TableCell>
               <TableCell>{o.isActive ? <Badge className="bg-green-100 text-green-800 border-green-200">{t("common.active")}</Badge> : <Badge variant="outline">{t("common.inactive")}</Badge>}</TableCell>
-              <TableCell className="whitespace-nowrap">{capitalPerms.can("capital", "view") && <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setCapitalOwner(o)}>Capital</Button>}{canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
+              <TableCell className="whitespace-nowrap">{canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
           {(owners ?? []).length === 0 && (
@@ -504,7 +503,6 @@ function OwnersTab() {
           )}
         </TableBody>
       </Table>
-      <OwnerCapitalDialog owner={capitalOwner} open={capitalOwner !== null} onOpenChange={next => !next && setCapitalOwner(null)} />
     </div>
   );
 }
@@ -550,7 +548,7 @@ function BirthTypesTab() {
       </div>
       {editItem && (
         <EditDialog title={t("config.editBirthType")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, description: editItem.description || undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
@@ -636,7 +634,7 @@ function FeedItemsTab() {
 
       {editItem && (
         <EditDialog title={t("config.editFeedItem")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, unit: editItem.unit })}>
+          onSave={() => update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, unit: editItem.unit })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5">
             <Label>{t("config.unit")}</Label>
@@ -789,7 +787,7 @@ function ExpenseCategoriesTab() {
 
       {editItem && (
         <EditDialog title={t("config.editExpenseCategory")} open={editOpen} onOpenChange={setEditOpen} isPending={update.isPending}
-          onSave={() => update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description || undefined })}>
+          onSave={() => update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, description: editItem.description || undefined })}>
           <div className="space-y-1.5"><Label>Name *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("config.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
         </EditDialog>
@@ -797,7 +795,7 @@ function ExpenseCategoriesTab() {
 
       {editSubItem && (
         <EditDialog title={`${t("common.edit")} ${t("expenses.subCategory")}`} open={editSubOpen} onOpenChange={setEditSubOpen} isPending={updateSub.isPending}
-          onSave={() => updateSub.mutate({ id: editSubItem.id, categoryId: Number(editSubItem.categoryId), name: editSubItem.name, description: editSubItem.description || undefined })}>
+          onSave={() => updateSub.mutate({ id: editSubItem.id, expectedVersion: editSubItem.version, categoryId: Number(editSubItem.categoryId), name: editSubItem.name, description: editSubItem.description || undefined })}>
           <div className="space-y-1.5">
             <Label>{t("expenses.expenseCategory")} *</Label>
             <Select value={editSubItem.categoryId} onValueChange={(v) => setEditSubItem((p: any) => ({ ...p, categoryId: v }))}>
@@ -990,7 +988,7 @@ function VaccinesTab() {
               toast.error(t("vaccine.boosterIntervalRequired"));
               return;
             }
-            update.mutate({ id: editItem.id, name: editItem.name, description: editItem.description, validityPeriod: editItem.validityPeriod, validityUnit: editItem.validityUnit, boosterRequired: editItem.boosterRequired, boosterInterval: editItem.boosterInterval });
+            update.mutate({ id: editItem.id, expectedVersion: editItem.version, name: editItem.name, description: editItem.description, validityPeriod: editItem.validityPeriod, validityUnit: editItem.validityUnit, boosterRequired: editItem.boosterRequired, boosterInterval: editItem.boosterInterval });
           }}>
           <div className="space-y-1.5"><Label>{t("vaccine.vaccineName")} *</Label><Input value={editItem.name} onChange={(e) => setEditItem((p: any) => ({ ...p, name: e.target.value }))} /></div>
           <div className="space-y-1.5"><Label>{t("vaccine.description")}</Label><Input value={editItem.description ?? ""} onChange={(e) => setEditItem((p: any) => ({ ...p, description: e.target.value }))} /></div>
@@ -1043,7 +1041,7 @@ function VaccinesTab() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteVaccine.mutate({ id: v.id })}>{t("common.delete")}</AlertDialogAction>
+                          <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteVaccine.mutate({ id: v.id, expectedVersion: v.version })}>{t("common.delete")}</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>}
@@ -1093,6 +1091,8 @@ function SettingsTab() {
   return (
     <div className="space-y-6 max-w-xl">
       <h3 className="font-semibold">{t("config.systemSettings")}</h3>
+
+      <CompanyBrandingSettings className="border-b border-border pb-6" />
 
       <div className="space-y-1.5">
         <Label>{t("config.currencyCode")}</Label>

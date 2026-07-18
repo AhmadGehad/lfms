@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
-import { OwnerCapitalDialog } from "@/components/OwnerCapitalDialog";
+import { CompanyBrandingSettings } from "@/components/CompanyBrandingSettings";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,7 +24,6 @@ export default function NewConfiguration() {
   const { t } = useTranslation();
   const perms = usePermissions();
   const canEdit = perms.can("configuration", "update");
-  const canViewCapital = perms.can("capital", "view");
   const utils = trpc.useUtils();
   const ok = (msg: string, invalidate: () => void) => ({ onSuccess: () => { invalidate(); toast.success(msg); }, onError: (e: { message: string }) => toast.error(e.message) });
   const saved = t("config.saved", "Saved");
@@ -42,7 +41,6 @@ export default function NewConfiguration() {
   const vaccines = trpc.config.getVaccines.useQuery();
   const [deleteVaccineRow, setDeleteVaccineRow] = useState<any | null>(null);
   const [activeTab, setActiveTab] = useState("species");
-  const [capitalOwner, setCapitalOwner] = useState<any | null>(null);
 
   const speciesOpts = ((species.data as any[]) ?? []).map(s => ({ value: String(s.id), label: s.name }));
   const categoryOpts = ((categories.data as any[]) ?? []).map(c => ({ value: String(c.id), label: c.name }));
@@ -125,7 +123,7 @@ export default function NewConfiguration() {
               { key: "description", label: t("config.description", "Description"), type: "textarea" },
               { key: "gestationDays", label: t("config.gestation", "Gestation days"), type: "number", help: t("config.gestationHelp", "Average gestation length — used to compute pregnancy due dates.") },
             ]}
-            onCreate={v => m.createSpecies.mutate(v as any)} onUpdate={(id, v) => m.updateSpecies.mutate({ id, ...v } as any)}
+            onCreate={v => m.createSpecies.mutate(v as any)} onUpdate={(id, v, row: any) => m.updateSpecies.mutate({ id, expectedVersion: row.version, ...v } as any)}
           />
         </TabsContent>
 
@@ -141,7 +139,7 @@ export default function NewConfiguration() {
               { key: "autoStageWeightKg", label: t("config.autoStage", "Auto-stage weight (kg)"), type: "number", help: t("config.autoStageHelp", "When an animal reaches this weight at weigh-in, it auto-moves to the target category.") },
               { key: "readyToSellThreshold", label: t("config.readyToSellThreshold", "Ready to Sell (%)"), type: "number", help: t("config.readyToSellHelp", "Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80% of target).") },
             ]}
-            onCreate={v => m.createCategory.mutate({ ...v, speciesId: Number(v.speciesId) } as any)} onUpdate={(id, v) => m.updateCategory.mutate({ id, ...v } as any)}
+            onCreate={v => m.createCategory.mutate({ ...v, speciesId: Number(v.speciesId) } as any)} onUpdate={(id, v, row: any) => m.updateCategory.mutate({ id, expectedVersion: row.version, ...v } as any)}
           />
         </TabsContent>
 
@@ -154,7 +152,7 @@ export default function NewConfiguration() {
               { key: "description", label: t("config.description", "Description"), type: "textarea" },
               { key: "isExitStatus", label: t("config.exitStatus", "Exit status"), type: "checkbox", help: t("config.exitStatusHelp", "Animals in an exit status are treated as having left the farm (sold/dead) and excluded from active counts.") },
             ]}
-            onCreate={v => m.createStatus.mutate(v as any)} onUpdate={(id, v) => m.updateStatus.mutate({ id, ...v } as any)}
+            onCreate={v => m.createStatus.mutate(v as any)} onUpdate={(id, v, row: any) => m.updateStatus.mutate({ id, expectedVersion: row.version, ...v } as any)}
           />
         </TabsContent>
 
@@ -169,7 +167,7 @@ export default function NewConfiguration() {
               { key: "categoryId", label: t("animals.category", "Category"), type: "select", options: categoryOpts },
               { key: "description", label: t("config.description", "Description"), type: "textarea" },
             ]}
-            onCreate={v => m.createGroup.mutate({ ...v, speciesId: v.speciesId ? Number(v.speciesId) : undefined, categoryId: v.categoryId ? Number(v.categoryId) : undefined } as any)} onUpdate={(id, v) => m.updateGroup.mutate({ id, ...v, speciesId: v.speciesId ? Number(v.speciesId) : undefined, categoryId: v.categoryId ? Number(v.categoryId) : undefined } as any)}
+            onCreate={v => m.createGroup.mutate({ ...v, speciesId: v.speciesId ? Number(v.speciesId) : undefined, categoryId: v.categoryId ? Number(v.categoryId) : undefined } as any)} onUpdate={(id, v, row: any) => m.updateGroup.mutate({ id, expectedVersion: row.version, ...v, speciesId: v.speciesId ? Number(v.speciesId) : undefined, categoryId: v.categoryId ? Number(v.categoryId) : undefined } as any)}
           />
         </TabsContent>
 
@@ -182,8 +180,7 @@ export default function NewConfiguration() {
               { key: "phone", label: t("owners.phone", "Phone"), type: "text" },
               { key: "email", label: t("users.email", "Email"), type: "text" },
             ]}
-            onCreate={v => m.createOwner.mutate(v as any)} onUpdate={(id, v) => m.updateOwner.mutate({ id, ...v } as any)}
-            extraRowActions={canViewCapital ? r => <button onClick={() => setCapitalOwner(r)} className="rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10" title="Capital & partners">Capital</button> : undefined}
+            onCreate={v => m.createOwner.mutate(v as any)} onUpdate={(id, v, row: any) => m.updateOwner.mutate({ id, expectedVersion: row.version, ...v } as any)}
           />
         </TabsContent>
 
@@ -192,7 +189,7 @@ export default function NewConfiguration() {
             title={t("config.birthTypes", "Birth type")} rows={(birthTypes.data as any[]) ?? []} loading={birthTypes.isLoading} canEdit={canEdit} storageKey="cfgBirthTypes" rowKey={r => r.id}
             columns={[nameCol(t("config.name", "Name")), activeCol]}
             fields={[{ key: "name", label: t("config.name", "Name"), type: "text", required: true }, { key: "description", label: t("config.description", "Description"), type: "textarea" }]}
-            onCreate={v => m.createBirthType.mutate(v as any)} onUpdate={(id, v) => m.updateBirthType.mutate({ id, ...v } as any)}
+            onCreate={v => m.createBirthType.mutate(v as any)} onUpdate={(id, v, row: any) => m.updateBirthType.mutate({ id, expectedVersion: row.version, ...v } as any)}
           />
         </TabsContent>
 
@@ -201,7 +198,7 @@ export default function NewConfiguration() {
             title={t("config.feedItems", "Feed item")} rows={(feedItems.data as any[]) ?? []} loading={feedItems.isLoading} canEdit={canEdit} storageKey="cfgFeedItems" rowKey={r => r.id}
             columns={[nameCol(t("config.name", "Name")), { id: "unit", header: t("config.unit", "Unit"), cell: (r: any) => r.unit, mobileLabel: t("config.unit", "Unit") }, activeCol]}
             fields={[{ key: "name", label: t("config.name", "Name"), type: "text", required: true }, { key: "unit", label: t("config.unit", "Unit"), type: "text", help: t("config.unitHelp", "e.g. kg, bale, bag") }]}
-            onCreate={v => m.createFeedItem.mutate(v as any)} onUpdate={(id, v) => m.updateFeedItem.mutate({ id, ...v } as any)}
+            onCreate={v => m.createFeedItem.mutate(v as any)} onUpdate={(id, v, row: any) => m.updateFeedItem.mutate({ id, expectedVersion: row.version, ...v } as any)}
           />
         </TabsContent>
 
@@ -210,7 +207,7 @@ export default function NewConfiguration() {
             title={t("config.expenseCategories", "Expense category")} rows={(expenseCats.data as any[]) ?? []} loading={expenseCats.isLoading} canEdit={canEdit} storageKey="cfgExpenseCats" rowKey={r => r.id}
             columns={[nameCol(t("config.name", "Name")), activeCol]}
             fields={[{ key: "name", label: t("config.name", "Name"), type: "text", required: true }, { key: "description", label: t("config.description", "Description"), type: "textarea" }]}
-            onCreate={v => m.createExpenseCategory.mutate(v as any)} onUpdate={(id, v) => m.updateExpenseCategory.mutate({ id, ...v } as any)}
+            onCreate={v => m.createExpenseCategory.mutate(v as any)} onUpdate={(id, v, row: any) => m.updateExpenseCategory.mutate({ id, expectedVersion: row.version, ...v } as any)}
           />
           <div>
             <h2 className="mb-2 text-sm font-semibold">{t("expenses.subCategories", "Sub-categories")}</h2>
@@ -228,7 +225,7 @@ export default function NewConfiguration() {
                 { key: "description", label: t("config.description", "Description"), type: "textarea", help: t("expenses.subCategoryDescHelp", "Shown as inline help when staff pick this sub-category on an expense.") },
               ]}
               onCreate={v => m.createExpenseSubCategory.mutate({ ...v, categoryId: Number(v.categoryId) } as any)}
-              onUpdate={(id, v) => m.updateExpenseSubCategory.mutate({ id, ...v, categoryId: v.categoryId ? Number(v.categoryId) : undefined } as any)}
+              onUpdate={(id, v, row: any) => m.updateExpenseSubCategory.mutate({ id, expectedVersion: row.version, ...v, categoryId: v.categoryId ? Number(v.categoryId) : undefined } as any)}
             />
           </div>
         </TabsContent>
@@ -245,7 +242,7 @@ export default function NewConfiguration() {
               { key: "boosterInterval", label: t("config.boosterInterval", "Booster interval (days)"), type: "number" },
               { key: "description", label: t("config.description", "Description"), type: "textarea" },
             ]}
-            onCreate={v => m.createVaccine.mutate({ ...v, boosterRequired: Boolean(v.boosterRequired) } as any)} onUpdate={(id, v) => m.updateVaccine.mutate({ id, ...v } as any)}
+            onCreate={v => m.createVaccine.mutate({ ...v, boosterRequired: Boolean(v.boosterRequired) } as any)} onUpdate={(id, v, row: any) => m.updateVaccine.mutate({ id, expectedVersion: row.version, ...v } as any)}
             extraRowActions={r => (
               <button
                 onClick={() => setDeleteVaccineRow(r)}
@@ -267,7 +264,7 @@ export default function NewConfiguration() {
             cancelLabel={t("common.cancel", "Cancel")}
             destructive
             loading={m.deleteVaccine.isPending}
-            onConfirm={() => deleteVaccineRow && m.deleteVaccine.mutate({ id: deleteVaccineRow.id })}
+            onConfirm={() => deleteVaccineRow && m.deleteVaccine.mutate({ id: deleteVaccineRow.id, expectedVersion: deleteVaccineRow.version })}
           />
         </TabsContent>
 
@@ -275,7 +272,6 @@ export default function NewConfiguration() {
           <SettingsTab canEdit={canEdit} />
         </TabsContent>
       </Tabs>
-      <OwnerCapitalDialog owner={capitalOwner} open={capitalOwner !== null} onOpenChange={open => !open && setCapitalOwner(null)} />
     </div>
   );
 }
@@ -297,6 +293,7 @@ function SettingsTab({ canEdit }: { canEdit: boolean }) {
 
   return (
     <div className="max-w-md space-y-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
+      <CompanyBrandingSettings className="border-b border-border pb-4" />
       <div className="space-y-1.5">
         <label htmlFor="config-currency" className="text-sm font-medium">{t("config.currency", "Currency")}</label>
         <Input id="config-currency" value={curVal} onChange={e => setCurrency(e.target.value)} disabled={!canEdit} />

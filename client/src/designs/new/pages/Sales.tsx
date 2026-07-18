@@ -62,6 +62,7 @@ export default function NewSales() {
   const [editRow, setEditRow] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ salePrice: "", weightAtSale: "", saleDate: "", buyerName: "", notes: "" });
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
+  const [paymentIdempotencyKey, setPaymentIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const { data: sales, isLoading } = trpc.sales.list.useQuery({
     outstandingOnly: unpaidOnly || undefined,
@@ -84,6 +85,7 @@ export default function NewSales() {
       toast.success(t("sales.paymentRecorded", "Payment recorded"));
       setPayRow(null);
       setPayAmount("");
+      setPaymentIdempotencyKey(crypto.randomUUID());
     },
     onError: e => toast.error(e.message),
   });
@@ -129,6 +131,7 @@ export default function NewSales() {
     if (!editForm.salePrice) { toast.error(t("sales.priceRequired", "Enter a sale price")); return; }
     updateSale.mutate({
       id: editRow.sale.id,
+      expectedVersion: editRow.sale.version,
       salePrice: editForm.salePrice,
       weightAtSale: editForm.weightAtSale || undefined,
       saleDate: editForm.saleDate || undefined,
@@ -318,7 +321,7 @@ export default function NewSales() {
             </button>
             <button
               disabled={recordPayment.isPending || !(payNum > 0) || payNum > payOutstanding}
-              onClick={() => recordPayment.mutate({ id: payRow.sale.id, payment: payAmount })}
+              onClick={() => recordPayment.mutate({ id: payRow.sale.id, expectedVersion: payRow.sale.version, payment: payAmount, idempotencyKey: paymentIdempotencyKey })}
               className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {t("common.save", "Save")}
@@ -378,7 +381,7 @@ export default function NewSales() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={deleteSale.isPending}
-        onConfirm={() => deleteRow && deleteSale.mutate({ id: deleteRow.sale.id })}
+        onConfirm={() => deleteRow && deleteSale.mutate({ id: deleteRow.sale.id, expectedVersion: deleteRow.sale.version })}
       />
 
       <Dialog open={salePickerOpen} onOpenChange={setSalePickerOpen}>

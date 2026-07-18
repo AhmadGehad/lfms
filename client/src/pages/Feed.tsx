@@ -37,6 +37,7 @@ function StockStatusBadge({ status }: { status: string }) {
 function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     feedItemId: "",
     transactionDate: new Date().toISOString().split("T")[0],
@@ -57,6 +58,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
       utils.feed.getStockStatus.invalidate();
       utils.feed.getStockLedger.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -77,6 +79,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
       totalCost: computedTotal || undefined,
       supplierName: form.supplierName || undefined,
       notes: form.notes || undefined,
+      idempotencyKey,
     });
   };
 
@@ -190,6 +193,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
     if (!form.qty) return toast.error(t("feed.qtyRequired"));
     updateStock.mutate({
       id: entry.id,
+      expectedVersion: entry.version,
       transactionDate: form.transactionDate,
       transactionType: form.transactionType as any,
       qty: form.qty,
@@ -274,6 +278,7 @@ function EditStockDialog({ entry, onSuccess }: { entry: any; onSuccess: () => vo
 function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     categoryId: "",
     feedItemId: "",
@@ -291,6 +296,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
       utils.feed.getRationPlans.invalidate();
       utils.feed.getStockStatus.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       setForm({ categoryId: "", feedItemId: "", qtyPerHeadPerDay: "", effectiveDate: new Date().toISOString().split("T")[0], endDate: "" });
       onSuccess();
     },
@@ -307,6 +313,7 @@ function AddRationPlanDialog({ onSuccess }: { onSuccess: () => void }) {
       qtyPerHeadPerDay: form.qtyPerHeadPerDay,
       effectiveDate: form.effectiveDate,
       endDate: form.endDate || undefined,
+      idempotencyKey,
     });
   };
 
@@ -405,6 +412,7 @@ function EditRationPlanDialog({ plan, onSuccess }: { plan: any; onSuccess: () =>
     }
     updatePlan.mutate({
       id: plan.id,
+      expectedVersion: plan.version,
       categoryId: parseInt(form.categoryId),
       feedItemId: parseInt(form.feedItemId),
       qtyPerHeadPerDay: form.qtyPerHeadPerDay,
@@ -535,7 +543,7 @@ function PriceFormDialog({ trigger, price, onSuccess }: { trigger: ReactNode; pr
   const submit = () => {
     if (!form.feedItemId || !form.pricePerUnit || !form.effectiveDate) return toast.error(t("feed.priceFieldsRequired"));
     if (isEdit) {
-      updatePrice.mutate({ id: price.id, effectiveDate: form.effectiveDate, pricePerUnit: form.pricePerUnit, notes: form.notes || null });
+      updatePrice.mutate({ id: price.id, expectedVersion: price.version, effectiveDate: form.effectiveDate, pricePerUnit: form.pricePerUnit, notes: form.notes || null });
     } else {
       addPrice.mutate({ feedItemId: parseInt(form.feedItemId), effectiveDate: form.effectiveDate, pricePerUnit: form.pricePerUnit, notes: form.notes || undefined });
     }
@@ -655,7 +663,7 @@ function PriceHistoryTab() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deletePrice.mutate({ id: p.id })}>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deletePrice.mutate({ id: p.id, expectedVersion: p.version })}>
                                   {t("common.delete")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -920,7 +928,7 @@ export default function Feed() {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteFeedStock.mutate({ id: entry.id })}>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteFeedStock.mutate({ id: entry.id, expectedVersion: entry.version })}>
                                       {t("common.moveToBin")}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
@@ -972,7 +980,12 @@ export default function Feed() {
                         <Button variant="outline" onClick={() => setBulkDateOpen(false)}>{t("common.cancel")}</Button>
                         <Button
                           disabled={!bulkDate || bulkUpdateDates.isPending}
-                          onClick={() => bulkUpdateDates.mutate({ ids: Array.from(selectedPlanIds), effectiveDate: bulkDate })}
+                          onClick={() => bulkUpdateDates.mutate({
+                            plans: ((rationPlans as any[]) ?? [])
+                              .filter(plan => selectedPlanIds.has(plan.id))
+                              .map(plan => ({ id: plan.id, expectedVersion: plan.version })),
+                            effectiveDate: bulkDate,
+                          })}
                         >
                           {bulkUpdateDates.isPending ? t("common.saving") : t("common.save")}
                         </Button>
@@ -1070,7 +1083,7 @@ export default function Feed() {
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRationPlan.mutate({ id: plan.id })}>
+                                    <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteRationPlan.mutate({ id: plan.id, expectedVersion: plan.version })}>
                                       {t("common.moveToBin")}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>

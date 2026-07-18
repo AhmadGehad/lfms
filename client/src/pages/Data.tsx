@@ -78,7 +78,7 @@ function ImportCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{t("data.importDesc")}</p>
-        <ModeSelect mode={mode} onChange={setMode} source="excel" />
+        <ModeSelect mode={mode} onChange={setMode} source="excel" allowReplace={false} />
         <input
           ref={fileRef}
           type="file"
@@ -217,7 +217,7 @@ function RestoreCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{t("data.restoreDesc")}</p>
-        <ModeSelect mode={mode} onChange={setMode} source="json" />
+        <ModeSelect mode={mode} onChange={setMode} source="json" allowReplace={false} />
         <input
           ref={fileRef}
           type="file"
@@ -257,10 +257,12 @@ function ModeSelect({
   mode,
   onChange,
   source,
+  allowReplace = true,
 }: {
   mode: ImportMode;
   onChange: (mode: ImportMode) => void;
   source: "excel" | "json";
+  allowReplace?: boolean;
 }) {
   const { t } = useTranslation();
   return (
@@ -271,7 +273,7 @@ function ModeSelect({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="append">{t("data.appendMode")}</SelectItem>
-          <SelectItem value="replace">{t("data.replaceMode")}</SelectItem>
+          {allowReplace && <SelectItem value="replace">{t("data.replaceMode")}</SelectItem>}
         </SelectContent>
       </Select>
       <p className={`text-xs flex items-start gap-1.5 ${mode === "replace" ? "text-destructive" : "text-muted-foreground"}`}>

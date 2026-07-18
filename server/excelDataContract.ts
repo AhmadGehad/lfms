@@ -30,8 +30,8 @@ import {
   weightLog,
 } from "../drizzle/schema";
 
-export const EXCEL_DATA_FORMAT_VERSION = 8;
-export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5, 6, 7, 8] as const;
+export const EXCEL_DATA_FORMAT_VERSION = 9;
+export const SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS = [3, 4, 5, 6, 7, 8, 9] as const;
 export const EXCEL_MANIFEST_SHEET = "LFMS Manifest";
 const VERSION_3_MISSING_COLUMNS = new Set([
   "animal_categories.lambIdSequence",
@@ -152,12 +152,26 @@ export const CANONICAL_TABLES: CanonicalTableSpec[] = [
 
 export type CanonicalWorkbookData = Map<string, Record<string, unknown>[]>;
 const OMIT_VALUE = Symbol("omit-value");
+const SERVER_MANAGED_COLUMNS = new Set([
+  "publicId",
+  "companyId",
+  "version",
+]);
+
+export function getCanonicalTableColumns(table: any): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(getTableColumns(table)).filter(([name, column]: [string, any]) =>
+      !SERVER_MANAGED_COLUMNS.has(name) && !column.generated,
+    ),
+  );
+}
 
 function isLegacyMissingColumnAllowed(
   version: number,
   tableKey: string,
   columnName: string,
 ) {
+  if (version <= 8 && columnName === "farmId") return true;
   if (version <= 3 && VERSION_3_MISSING_COLUMNS.has(`${tableKey}.${columnName}`)) return true;
   // Anything new in v5 (a new column, or any column of a new table) is allowed
   // to be missing when importing a pre-v5 (v3/v4) file.
@@ -321,7 +335,7 @@ export function addCanonicalSheets(
   manifest.getRow(1).font = { bold: true };
 
   for (const spec of CANONICAL_TABLES) {
-    const columns = Object.entries(getTableColumns(spec.table)) as Array<
+    const columns = Object.entries(getCanonicalTableColumns(spec.table)) as Array<
       [string, any]
     >;
     const sheet = workbook.addWorksheet(spec.sheetName, {
@@ -394,7 +408,7 @@ export function readCanonicalWorkbook(
       errors.push(`Missing required canonical sheet: ${spec.sheetName}`);
       continue;
     }
-    const columns = getTableColumns(spec.table) as Record<string, any>;
+    const columns = getCanonicalTableColumns(spec.table);
     const headers = new Map<string, number>();
     sheet.getRow(1).eachCell({ includeEmpty: false }, (cell, columnNumber) => {
       headers.set(String(rawCellValue(cell)).trim(), columnNumber);
@@ -470,7 +484,7 @@ export function validateCanonicalDataObject(
       errors.push(`Missing required table array: ${spec.key}`);
       continue;
     }
-    const columns = getTableColumns(spec.table) as Record<string, any>;
+    const columns = getCanonicalTableColumns(spec.table);
     const rows: Record<string, unknown>[] = [];
     rawRows.forEach((rawRow, index) => {
       if (!rawRow || typeof rawRow !== "object" || Array.isArray(rawRow)) {

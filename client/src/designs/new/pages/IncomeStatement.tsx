@@ -32,7 +32,10 @@ export default function NewIncomeStatement() {
 
   const { data, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({ fromDate, toDate, ownerId: ownerParam });
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery(undefined, { enabled: canExport });
+  const { data: branding } = trpc.config.getCompanyBranding.useQuery();
   const d = data as any;
+  const companyName = branding?.name ?? "LFMS";
+  const companyFilePrefix = companyName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "lfms";
   const ownerLabel = ownerParam != null ? ((ownersList as any[]) ?? []).find(o => o.id === ownerParam)?.name ?? "" : "";
   const ownerSlug = ownerLabel ? "-" + ownerLabel.replace(/\s+/g, "_") : "";
 
@@ -44,7 +47,7 @@ export default function NewIncomeStatement() {
 
       doc.setFontSize(20);
       doc.setTextColor(34, 85, 34);
-      doc.text("Azal Farms - مزارع أزَل", 105, 20, { align: "center" });
+      doc.text(companyName, 105, 20, { align: "center" });
       doc.setFontSize(14);
       doc.setTextColor(60, 60, 60);
       doc.text(t("incomeStatement.title", "Income Statement"), 105, 30, { align: "center" });
@@ -124,9 +127,9 @@ export default function NewIncomeStatement() {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: "center" });
-        doc.text("Azal Farms - Confidential", 20, 290);
+        doc.text(`${companyName} - Confidential`, 20, 290);
       }
-      doc.save(`azal-farms-income-statement${ownerSlug}-${fromDate}-to-${toDate}.pdf`);
+      doc.save(`${companyFilePrefix}-income-statement${ownerSlug}-${fromDate}-to-${toDate}.pdf`);
       toast.success(t("incomeStatement.pdfExported", "PDF exported"));
     } catch (err) {
       console.error(err);
@@ -136,10 +139,9 @@ export default function NewIncomeStatement() {
 
   const handleExportExcel = async () => {
     try {
-      const XLSX = await import("xlsx");
-      const wb = XLSX.utils.book_new();
+      const { downloadExcelWorkbook } = await import("@/lib/excelDownload");
       const summaryData = [
-        ["Azal Farms - مزارع أزَل"],
+        [companyName],
         [t("incomeStatement.title", "Income Statement")],
         [`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`],
         ...(ownerLabel ? [[`Owner: ${ownerLabel}`]] : []),
@@ -165,19 +167,17 @@ export default function NewIncomeStatement() {
         ["Animal-wide (feed + per-animal)", d?.runningCostPerMonth?.animalWide ?? 0],
         ["Total Running Cost / Month", d?.runningCostPerMonth?.total ?? 0],
       ];
-      const ws = XLSX.utils.aoa_to_sheet(summaryData);
-      ws["!cols"] = [{ wch: 35 }, { wch: 20 }];
-      XLSX.utils.book_append_sheet(wb, ws, "Income Statement");
-
       const expenseBreakdown = [
         ["Expense Category", "Total (EGP)"],
         ...((d?.costs?.byCategory ?? []).map((cat: any) => [cat.categoryName ?? "Other", cat.total])),
       ];
-      const wsExpenses = XLSX.utils.aoa_to_sheet(expenseBreakdown);
-      wsExpenses["!cols"] = [{ wch: 30 }, { wch: 20 }];
-      XLSX.utils.book_append_sheet(wb, wsExpenses, "Expense Breakdown");
-
-      XLSX.writeFile(wb, `azal-farms-income-statement${ownerSlug}-${fromDate}-to-${toDate}.xlsx`);
+      await downloadExcelWorkbook(
+        `${companyFilePrefix}-income-statement${ownerSlug}-${fromDate}-to-${toDate}.xlsx`,
+        [
+          { name: "Income Statement", rows: summaryData, widths: [35, 20] },
+          { name: "Expense Breakdown", rows: expenseBreakdown, widths: [30, 20] },
+        ],
+      );
       toast.success(t("incomeStatement.excelExported", "Excel exported"));
     } catch (err) {
       console.error(err);

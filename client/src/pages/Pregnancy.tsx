@@ -139,7 +139,7 @@ export default function Pregnancy() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             {canUpdate && p.record.status === "active" && (
-                              <Button size="icon" variant="ghost" title={t("pregnancy.markDelivered")} onClick={() => updateStatus.mutate({ id: p.record.id, status: "delivered", completedDate: new Date().toISOString().slice(0, 10) })}>
+                              <Button size="icon" variant="ghost" title={t("pregnancy.markDelivered")} onClick={() => updateStatus.mutate({ id: p.record.id, expectedVersion: p.record.version, status: "delivered", completedDate: new Date().toISOString().slice(0, 10) })}>
                                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                               </Button>
                             )}
@@ -151,7 +151,7 @@ export default function Pregnancy() {
                                   <AlertDialogHeader><AlertDialogTitle>{t("pregnancy.deleteConfirm")}</AlertDialogTitle><AlertDialogDescription>{p.animalCode}</AlertDialogDescription></AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>{t("common.cancel") || "Cancel"}</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => deleteRecord.mutate({ id: p.record.id })}>{t("common.delete") || "Delete"}</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => deleteRecord.mutate({ id: p.record.id, expectedVersion: p.record.version })}>{t("common.delete") || "Delete"}</AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
@@ -307,6 +307,7 @@ function EditPregnancyDialog({ record, onSuccess }: { record: any; onSuccess: ()
         <DialogFooter>
           <Button onClick={() => update.mutate({
             id: record.id,
+            expectedVersion: record.version,
             confirmationDate: form.confirmationDate,
             status: form.status as any,
             checkupDate: form.checkupDate || null,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { adminProcedure, permissionProcedure, privilegedProcedure, router } from "../_core/trpc";
+import { assertFeatureAccess, permissionProcedure, router } from "../_core/trpc";
 import { getRevertPlan, revertAuditEntry } from "../revert";
 import {
   createAuditEntry,
@@ -23,8 +23,10 @@ import {
   updateUserRole,
 } from "../db";
 import { TRPCError } from "@trpc/server";
-import { users } from "../../drizzle/schema";
-import { ENV } from "../_core/env";
+import { companyMemberships } from "../../drizzle/schema";
+import { and, eq } from "drizzle-orm";
+import { tenantScope } from "../tenancy/scope";
+import { executeIdempotent } from "../platform/idempotency";
 
 export const dashboardRouter = router({
   // ─── KPIs ───────────────────────────────────────────────────────────────────
@@ -115,7 +117,13 @@ export const notificationsRouter = router({
 
   markRead: permissionProcedure("notifications", "update")
     .input(z.object({ id: z.number() }))
-    .mutation(({ input }) => markNotificationRead(input.id)),
+    .mutation(async ({ input, ctx }) => {
+      const updated = await markNotificationRead(input.id, ctx.user.id);
+      if (!updated) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Notification not found" });
+      }
+      return { success: true } as const;
+    }),
 
   markAllRead: permissionProcedure("notifications", "update")
     .mutation(({ ctx }) => markAllNotificationsRead(ctx.user!.id)),
@@ -151,6 +159,7 @@ export const salesRouter = router({
   update: permissionProcedure("sales", "update")
     .input(z.object({
       id: z.number(),
+      expectedVersion: z.number().int().positive(),
       salePrice: z.string().optional(),
       amountPaid: z.string().optional(),
       weightAtSale: z.string().optional(),
@@ -158,7 +167,7 @@ export const salesRouter = router({
       buyerName: z.string().optional(),
       notes: z.string().optional(),
     }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       // Lock the row so concurrent edits and payments serialize, and the
@@ -166,12 +175,18 @@ export const salesRouter = router({
       return db.transaction(async (tx) => {
         const before = await getSaleForUpdate(id, tx);
         if (!before) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+        if (before.version !== expectedVersion) {
+          throw new TRPCError({ code: "CONFLICT", message: "Sale changed since it was loaded. Refresh and try again." });
+        }
         const nextPrice = parseFloat(data.salePrice ?? before.salePrice ?? "0");
         const nextPaid = parseFloat(data.amountPaid ?? before.amountPaid ?? "0");
         if (nextPaid > nextPrice + 0.001) {
           throw new TRPCError({ code: "BAD_REQUEST", message: "Paid amount cannot exceed sale price" });
         }
-        const result = await updateSale(id, data, tx);
+        const affected = await updateSale(id, expectedVersion, data, tx);
+        if (affected !== 1) {
+          throw new TRPCError({ code: "CONFLICT", message: "Sale changed since it was loaded. Refresh and try again." });
+        }
         await createAuditEntry({
           userId: ctx.user?.id,
           action: "update",
@@ -180,9 +195,9 @@ export const salesRouter = router({
           entityId: String(id),
           // Prior values of the changed fields, so the action can be reverted.
           oldValues: Object.fromEntries(Object.keys(data).map((k) => [k, (before as any)[k]])) as any,
-          newValues: data as any,
+          newValues: { ...data, version: expectedVersion + 1 } as any,
         }, tx);
-        return result;
+        return { success: true, version: expectedVersion + 1 };
       });
     }),
 
@@ -191,7 +206,9 @@ export const salesRouter = router({
   recordPayment: permissionProcedure("sales", "update")
     .input(z.object({
       id: z.number(),
+      expectedVersion: z.number().int().positive(),
       payment: z.string().refine(v => parseFloat(v) > 0, "Payment must be greater than zero"),
+      idempotencyKey: z.string().min(8).max(200),
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -199,25 +216,39 @@ export const salesRouter = router({
       // SELECT ... FOR UPDATE so two concurrent payments cannot both read the
       // same amountPaid and silently drop one increment (lost update).
       return db.transaction(async (tx) => {
-        const existing = await getSaleForUpdate(input.id, tx);
-        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
-        const price = parseFloat(existing.salePrice);
-        const currentPaid = parseFloat(existing.amountPaid ?? "0");
-        const newPaid = currentPaid + parseFloat(input.payment);
-        if (newPaid > price + 0.001) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Payment would exceed sale price" });
-        }
-        await updateSale(input.id, { amountPaid: String(newPaid) }, tx);
-        await createAuditEntry({
-          userId: ctx.user?.id,
-          action: "update",
-          ipAddress: getClientIp(ctx),
-          entityType: "sale",
-          entityId: String(input.id),
-          oldValues: { amountPaid: existing.amountPaid } as any,
-          newValues: { amountPaid: String(newPaid), paymentDelta: input.payment } as any,
-        }, tx);
-        return { success: true, amountPaid: String(newPaid), outstanding: String(price - newPaid) };
+        return executeIdempotent(tx, {
+          companyId: ctx.tenant!.companyId,
+          userId: ctx.user.id,
+          key: input.idempotencyKey,
+          operation: "sales.recordPayment",
+          body: { id: input.id, expectedVersion: input.expectedVersion, payment: input.payment },
+        }, async () => {
+          const existing = await getSaleForUpdate(input.id, tx);
+          if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Sale not found" });
+          if (existing.version !== input.expectedVersion) {
+            throw new TRPCError({ code: "CONFLICT", message: "Sale changed since it was loaded. Refresh and try again." });
+          }
+          const price = parseFloat(existing.salePrice);
+          const currentPaid = parseFloat(existing.amountPaid ?? "0");
+          const newPaid = currentPaid + parseFloat(input.payment);
+          if (newPaid > price + 0.001) {
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Payment would exceed sale price" });
+          }
+          const affected = await updateSale(input.id, input.expectedVersion, { amountPaid: String(newPaid) }, tx);
+          if (affected !== 1) {
+            throw new TRPCError({ code: "CONFLICT", message: "Sale changed since it was loaded. Refresh and try again." });
+          }
+          await createAuditEntry({
+            userId: ctx.user?.id,
+            action: "update",
+            ipAddress: getClientIp(ctx),
+            entityType: "sale",
+            entityId: String(input.id),
+            oldValues: { amountPaid: existing.amountPaid, version: existing.version } as any,
+            newValues: { amountPaid: String(newPaid), paymentDelta: input.payment, version: input.expectedVersion + 1 } as any,
+          }, tx);
+          return { success: true, amountPaid: String(newPaid), outstanding: String(price - newPaid), version: input.expectedVersion + 1 };
+        });
       });
     }),
 });
@@ -252,10 +283,15 @@ export const auditRouter = router({
       });
     }),
 
-  // Undo a single audited action. Admin & Owner only; guarded server-side.
-  revert: adminProcedure
+  // Undo a single audited action. Owner recovery authority only.
+  revert: permissionProcedure("audit", "revert")
     .input(z.object({ auditId: z.number() }))
-    .mutation(({ input, ctx }) => revertAuditEntry(input.auditId, ctx.user.id)),
+    .mutation(async ({ input, ctx }) => {
+      await assertFeatureAccess(ctx, "data_recovery", "write");
+      return revertAuditEntry(input.auditId, ctx.user.id, async features => {
+        for (const feature of features) await assertFeatureAccess(ctx, feature, "write");
+      });
+    }),
 });
 
 export const userManagementRouter = router({
@@ -263,40 +299,53 @@ export const userManagementRouter = router({
     const allUsers = await getAllUsers();
     return allUsers.map(user => ({
       ...user,
-      role: user.role === "owner" && user.openId !== ENV.ownerOpenId
-        ? "admin" as const
-        : user.role,
-      isProtectedOwner: user.openId === ENV.ownerOpenId,
+      isProtectedOwner: user.role === "owner",
     }));
   }),
-  updateUserRole: privilegedProcedure
+  updateUserRole: permissionProcedure("users", "update")
     .input(z.object({
       userId: z.number(),
       role: z.enum(["viewer", "user", "staff", "supervisor", "admin"]),
+      expectedVersion: z.number().int().positive(),
     }))
     .mutation(async ({ input, ctx }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "owner") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Permission denied: user role administration requires an administrator or owner" });
+      }
       const db = await getDb();
       if (!db) throw new Error("DB unavailable");
       await db.transaction(async tx => {
         // Serialize role changes so two concurrent demotions cannot remove the
         // final administrator.
-        const allUsers = await tx.select().from(users).for("update");
-        const target = allUsers.find(user => user.id === input.userId);
+        if (!ctx.tenant) throw new TRPCError({ code: "FORBIDDEN", message: "Company context required" });
+        const memberships = await tx
+          .select()
+          .from(companyMemberships)
+          .where(and(
+            tenantScope(ctx.tenant, companyMemberships),
+            eq(companyMemberships.status, "active"),
+          ))
+          .for("update");
+        const target = memberships.find(membership => membership.userId === input.userId);
         if (!target) {
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
-        if (target.openId === ENV.ownerOpenId) {
+        if (target.role === "owner") {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "The owner role cannot be changed",
           });
         }
+        if (target.version !== input.expectedVersion) {
+          throw new TRPCError({ code: "CONFLICT", message: "User access changed since it was loaded. Refresh and try again." });
+        }
         if (
           target.role === "admin" &&
           input.role !== "admin" &&
-          !allUsers.some(user =>
-            user.id !== target.id &&
-            (user.role === "admin" || user.role === "owner"),
+          !memberships.some(membership =>
+            membership.id !== target.id &&
+            membership.status === "active" &&
+            (membership.role === "admin" || membership.role === "owner"),
           )
         ) {
           throw new TRPCError({
@@ -305,14 +354,16 @@ export const userManagementRouter = router({
           });
         }
 
-        await updateUserRole(input.userId, input.role, tx);
+        if (await updateUserRole(input.userId, input.role, input.expectedVersion, tx) !== 1) {
+          throw new TRPCError({ code: "CONFLICT", message: "User access changed since it was loaded. Refresh and try again." });
+        }
         await createAuditEntry({
           userId: ctx.user.id,
           entityType: "user",
           entityId: String(input.userId),
           action: "update",
-          oldValues: { role: target.role },
-          newValues: { role: input.role },
+          oldValues: { role: target.role, version: target.version },
+          newValues: { role: input.role, version: input.expectedVersion + 1 },
           ipAddress: getClientIp(ctx),
         }, tx);
       });

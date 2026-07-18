@@ -46,9 +46,8 @@ export function usePermissions(page?: PermissionPage) {
       canReport: scopedCan("report"),
       canImport: scopedCan("import"),
       canRestore: scopedCan("restore"),
-      canPurge: scopedCan("purge"),
       canMutate: page
-        ? ["create", "update", "delete", "import", "restore", "purge"]
+        ? ["create", "update", "delete", "import", "restore"]
           .some(action => scopedCan(action as PermissionAction))
         : false,
     };
@@ -64,8 +63,7 @@ export function usePermissions(page?: PermissionPage) {
     canRecord: page ? can(page, "create") : false,
     canEditConfig: can("configuration", "update"),
     canManageUsers: can("users", "update"),
-    canPurgeOrRestore:
-      can("recycleBin", "purge") || can("recycleBin", "restore"),
+    canPurgeOrRestore: can("recycleBin", "restore"),
     isViewer: user?.role === "viewer",
     isReadOnly: page ? !scoped.canMutate : false,
   };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getRevertPlan } from "./revert";
+import { getRevertFeatures, getRevertPlan } from "./revert";
 
 // Minimal audit-row factory (only the fields getRevertPlan reads).
 const entry = (over: Partial<any> = {}): any => ({
@@ -71,5 +71,29 @@ describe("getRevertPlan", () => {
       .toEqual({ revertable: false, reason: "no_snapshot" });
     expect(getRevertPlan(entry({ entityType: "feedItemPrice", action: "create" })))
       .toEqual({ revertable: true, kind: "hard_create" });
+  });
+
+  it("never reverts a tenant role action through the global user identity row", () => {
+    expect(getRevertPlan(entry({
+      entityType: "user",
+      action: "update",
+      oldValues: { role: "viewer" },
+      newValues: { role: "admin" },
+    }))).toEqual({ revertable: false, reason: "not_revertable" });
+  });
+
+  it("maps each revert to the target feature entitlements", () => {
+    expect(getRevertFeatures(
+      entry({ entityType: "animal", action: "exit" }),
+      { revertable: true, kind: "animal_exit" },
+    )).toEqual(["animals", "sales"]);
+    expect(getRevertFeatures(
+      entry({ entityType: "feedItem", action: "update" }),
+      { revertable: true, kind: "update" },
+    )).toEqual(["configuration", "feed"]);
+    expect(getRevertFeatures(
+      entry({ entityType: "vaccinationRecord", action: "create" }),
+      { revertable: true, kind: "soft_create" },
+    )).toEqual(["vaccinations"]);
   });
 });

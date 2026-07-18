@@ -18,9 +18,14 @@ export type PreferenceKey =
 
 export function usePreferences() {
   const utils = trpc.useUtils();
-  // `me` may be null when logged out; the query simply errors and we fall back
-  // to local/env defaults, so design + theme still resolve for the login screen.
+  const meQuery = trpc.auth.me.useQuery(undefined, {
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const isAuthenticated = Boolean(meQuery.data);
+
   const query = trpc.preferences.get.useQuery(undefined, {
+    enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
@@ -31,11 +36,12 @@ export function usePreferences() {
 
   const setPreference = useCallback(
     (key: PreferenceKey, value: string) => {
+      if (!isAuthenticated) return;
       // Fire-and-forget; the caller has already updated localStorage + UI so the
       // change is instant and survives even if the network call is slow/offline.
       mutation.mutate({ key, value });
     },
-    [mutation]
+    [isAuthenticated, mutation]
   );
 
   return {
@@ -44,8 +50,8 @@ export function usePreferences() {
     /** Org-wide defaults (system_settings ui.*). */
     globals: query.data?.globals ?? {},
     role: query.data?.role,
-    isLoaded: query.isSuccess,
-    isError: query.isError,
+    isLoaded: meQuery.isSuccess && (!isAuthenticated || query.isSuccess),
+    isError: meQuery.isError || (isAuthenticated && query.isError),
     setPreference,
   };
 }

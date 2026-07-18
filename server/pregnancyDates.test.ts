@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { calculatePregnancyDueDate, pregnancyProgress } from "./db";
 
 /**
@@ -16,6 +16,15 @@ describe("calculatePregnancyDueDate", () => {
 });
 
 describe("pregnancyProgress", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-13T12:00:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("computes days pregnant, remaining and percent (cow 283, confirmed 120d ago = 42%)", () => {
     const conf = new Date();
     conf.setDate(conf.getDate() - 120);

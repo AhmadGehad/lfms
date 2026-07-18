@@ -1,38 +1,111 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { createPool, type Pool } from "mysql2/promise";
 import { toMinor, toMajor, divMinor } from "./_core/money";
-import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notifications, owners, pregnancyRecords, rationPlans, sales, species, systemSettings, userSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
+import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, companyMemberships, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notificationReceipts, notifications, owners, pregnancyRecords, rationPlans, sales, species, systemSettings, userSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { generatePublicId } from "./tenancy/publicIds";
+import { requireTenantUserContext } from "./tenancy/runtime";
+import { tenantScope } from "./tenancy/scope";
+import { assertWithinLimit, getEffectiveLimit, lockCompanyQuota } from "./entitlements/limits";
+import { logger, redactLogFields } from "./observability/logger";
+import { executeVersionedUpdate } from "./concurrency/versioning";
+import { versionedTenantUpdateScope } from "./concurrency/tenantVersioning";
 
-let _db: ReturnType<typeof drizzle> | null = null;
+type LfmsDatabase = ReturnType<typeof drizzle<Record<string, never>, Pool>>;
+type LfmsTransaction = Parameters<Parameters<LfmsDatabase["transaction"]>[0]>[0];
+export type DbOrTx = LfmsDatabase | LfmsTransaction;
 
-export async function getDb() {
+let _db: LfmsDatabase | null = null;
+let _pool: Pool | null = null;
+const transactionStorage = new AsyncLocalStorage<DbOrTx>();
+
+function databasePoolOptions(value: string) {
+  const url = new URL(value);
+  const ssl = (url.searchParams.get("ssl") ?? "").toLowerCase();
+  const sslMode = (url.searchParams.get("ssl-mode") ?? "").toUpperCase();
+  const verifiedTlsRequested = ssl === "true" || ssl === "verify_identity" ||
+    sslMode === "VERIFY_CA" || sslMode === "VERIFY_IDENTITY";
+  if (ENV.isProduction && !verifiedTlsRequested) {
+    throw new Error("DATABASE_URL must require verified TLS in production");
+  }
+  if (!verifiedTlsRequested) return { uri: value };
+
+  // mysql2 does not implement MySQL's ssl-mode URI option and interprets
+  // ssl=true as a boolean profile, which it rejects. Convert the validated URI
+  // convention into an explicit TLS object with certificate/hostname checks.
+  url.searchParams.delete("ssl");
+  url.searchParams.delete("ssl-mode");
+  return {
+    uri: url.toString(),
+    ssl: { rejectUnauthorized: true, verifyIdentity: true },
+  };
+}
+
+export async function getDb(): Promise<DbOrTx | null> {
+  const transaction = transactionStorage.getStore();
+  if (transaction) return transaction;
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = createPool(databasePoolOptions(process.env.DATABASE_URL));
+      _db = drizzle(_pool);
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      logger.warn("database.connection_initialization_failed", { error });
       _db = null;
     }
   }
   return _db;
 }
 
+export function runWithDbTransaction<T>(transaction: DbOrTx, operation: () => T): T {
+  return transactionStorage.run(transaction, operation);
+}
+
 /**
  * A database handle that is either the shared pool or an active transaction.
  * Write helpers accept an optional tx so multi-step flows can run atomically.
  */
-type DbHandle = NonNullable<Awaited<ReturnType<typeof getDb>>>;
-type Tx = Parameters<Parameters<DbHandle["transaction"]>[0]>[0];
-export type DbOrTx = DbHandle | Tx;
+type TenantCreateInput<T> = Omit<T, "publicId" | "companyId" | "farmId">;
+
+function mutationAffectedOne(result: unknown): boolean {
+  return Number((result as { affectedRows?: number } | undefined)?.affectedRows ?? 0) === 1;
+}
+
+function tenantInsert<T extends object>(data: T, farmScoped: true): T & {
+  publicId: string;
+  companyId: number;
+  farmId: number;
+};
+function tenantInsert<T extends object>(data: T, farmScoped?: false): T & {
+  publicId: string;
+  companyId: number;
+};
+function tenantInsert<T extends object>(data: T, farmScoped = false) {
+  const tenant = requireTenantUserContext();
+  if (farmScoped && tenant.selectedFarmId === null) {
+    throw new Error("FARM_SELECTION_REQUIRED");
+  }
+  return {
+    ...data,
+    publicId: generatePublicId(),
+    companyId: tenant.companyId,
+    ...(farmScoped ? { farmId: tenant.selectedFarmId as number } : {}),
+  };
+}
 
 // ─── USER HELPERS ─────────────────────────────────────────────────────────────
 
-export async function upsertUser(user: InsertUser): Promise<void> {
+type UpsertUserInput = Omit<InsertUser, "publicId"> & { publicId?: string };
+
+export async function upsertUser(user: UpsertUserInput): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
   if (!db) return;
-  const values: InsertUser = { openId: user.openId };
+  const values: InsertUser = {
+    openId: user.openId,
+    publicId: user.publicId ?? generatePublicId(),
+  };
   const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod"] as const;
   textFields.forEach(field => {
@@ -42,6 +115,11 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     values[field] = normalized;
     updateSet[field] = normalized;
   });
+  if (user.email !== undefined) {
+    const normalizedEmail = user.email?.trim().toLowerCase() || null;
+    values.normalizedEmail = normalizedEmail;
+    updateSet.normalizedEmail = normalizedEmail;
+  }
   if (user.lastSignedIn !== undefined) {
     values.lastSignedIn = user.lastSignedIn;
     updateSet.lastSignedIn = user.lastSignedIn;
@@ -75,17 +153,59 @@ export async function getUserByOpenId(openId: string) {
 export async function getAllUsers() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(users).orderBy(desc(users.createdAt));
+  const tenant = requireTenantUserContext();
+  return db
+    .select({
+      id: users.id,
+      publicId: users.publicId,
+      openId: users.openId,
+      name: users.name,
+      email: users.email,
+      normalizedEmail: users.normalizedEmail,
+      loginMethod: users.loginMethod,
+      role: companyMemberships.role,
+      status: users.status,
+      authVersion: users.authVersion,
+      failedLoginAttempts: users.failedLoginAttempts,
+      lockedUntil: users.lockedUntil,
+      lastPasswordChange: users.lastPasswordChange,
+      version: companyMemberships.version,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(companyMemberships)
+    .innerJoin(users, eq(companyMemberships.userId, users.id))
+    .where(and(
+      eq(companyMemberships.companyId, tenant.companyId),
+      eq(companyMemberships.status, "active"),
+    ))
+    .orderBy(desc(users.createdAt));
 }
 
 export async function updateUserRole(
   userId: number,
   role: "owner" | "supervisor" | "staff" | "admin" | "user" | "viewer",
+  expectedVersion: number,
   dbOrTx?: DbOrTx,
 ) {
   const db = dbOrTx ?? await getDb();
   if (!db) return;
-  await db.update(users).set({ role }).where(eq(users.id, userId));
+  const tenant = requireTenantUserContext();
+  const [result] = await db
+    .update(companyMemberships)
+    .set({
+      role,
+      authorizationVersion: sql`${companyMemberships.authorizationVersion} + 1`,
+      version: sql`${companyMemberships.version} + 1`,
+    })
+    .where(and(
+      eq(companyMemberships.companyId, tenant.companyId),
+      eq(companyMemberships.userId, userId),
+      eq(companyMemberships.status, "active"),
+      eq(companyMemberships.version, expectedVersion),
+    ));
+  return Number((result as { affectedRows?: number }).affectedRows ?? 0);
 }
 
 // ─── SPECIES ──────────────────────────────────────────────────────────────────
@@ -93,20 +213,31 @@ export async function updateUserRole(
 export async function getAllSpecies() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(species).where(isNull(species.deletedAt)).orderBy(species.name);
+  const tenant = requireTenantUserContext();
+  return db.select().from(species).where(and(
+    eq(species.companyId, tenant.companyId),
+    isNull(species.deletedAt),
+  )).orderBy(species.name);
 }
 
 export async function createSpecies(data: { name: string; description?: string; gestationDays?: number }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(species).values(data);
+  const [result] = await db.insert(species).values(tenantInsert(data));
   return result;
 }
 
-export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean; gestationDays: number; readyToSellThreshold: number }>) {
+export async function updateSpecies(id: number, data: Partial<{ name: string; description: string; isActive: boolean; gestationDays: number; readyToSellThreshold: number }>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(species).set(data).where(eq(species.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(species).set({ ...data, version: sql`${species.version} + 1` }).where(and(
+    eq(species.companyId, tenant.companyId),
+    eq(species.id, id),
+    eq(species.version, expectedVersion),
+    isNull(species.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 // ─── ANIMAL CATEGORIES ────────────────────────────────────────────────────────
@@ -114,6 +245,7 @@ export async function updateSpecies(id: number, data: Partial<{ name: string; de
 export async function getAllCategories(speciesId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
 
   // Use alias for self-join on auto-stage target category
   const targetCat = db.$with("targetCat").as(db.select({ id: animalCategories.id, name: animalCategories.name }).from(animalCategories));
@@ -131,13 +263,20 @@ export async function getAllCategories(speciesId?: number) {
       expectedCycleDays: animalCategories.expectedCycleDays,
       autoStageWeightKg: animalCategories.autoStageWeightKg,
       autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
+      version: animalCategories.version,
       isExitStatus: animalCategories.isExitStatus,
       isActive: animalCategories.isActive,
       createdAt: animalCategories.createdAt
     })
     .from(animalCategories)
-    .leftJoin(species, eq(animalCategories.speciesId, species.id))
-    .where(isNull(animalCategories.deletedAt))
+    .leftJoin(species, and(
+      eq(animalCategories.speciesId, species.id),
+      eq(species.companyId, tenant.companyId),
+    ))
+    .where(and(
+      eq(animalCategories.companyId, tenant.companyId),
+      isNull(animalCategories.deletedAt),
+    ))
     .orderBy(animalCategories.name);
 
   const rows = speciesId
@@ -154,13 +293,21 @@ export async function getAllCategories(speciesId?: number) {
           expectedCycleDays: animalCategories.expectedCycleDays,
           autoStageWeightKg: animalCategories.autoStageWeightKg,
           autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
+          version: animalCategories.version,
           isExitStatus: animalCategories.isExitStatus,
           isActive: animalCategories.isActive,
           createdAt: animalCategories.createdAt
         })
         .from(animalCategories)
-        .leftJoin(species, eq(animalCategories.speciesId, species.id))
-        .where(and(eq(animalCategories.speciesId, speciesId), isNull(animalCategories.deletedAt)))
+        .leftJoin(species, and(
+          eq(animalCategories.speciesId, species.id),
+          eq(species.companyId, tenant.companyId),
+        ))
+        .where(and(
+          eq(animalCategories.companyId, tenant.companyId),
+          eq(animalCategories.speciesId, speciesId),
+          isNull(animalCategories.deletedAt),
+        ))
         .orderBy(animalCategories.name)
     : await baseQuery;
 
@@ -170,26 +317,38 @@ export async function getAllCategories(speciesId?: number) {
 export async function createCategory(data: { name: string; speciesId: number; idPrefix: string; targetWeightKg?: string; expectedCycleDays?: number }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(animalCategories).values(data);
+  const [result] = await db.insert(animalCategories).values(tenantInsert(data));
   return result;
 }
 
 export async function updateCategory(
   id: number,
   data: Partial<typeof animalCategories.$inferInsert>,
+  expectedVersion: number,
   tx?: DbOrTx,
 ) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  await db.update(animalCategories).set(data).where(eq(animalCategories.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(animalCategories).set({ ...data, version: sql`${animalCategories.version} + 1` }).where(and(
+    eq(animalCategories.companyId, tenant.companyId),
+    eq(animalCategories.id, id),
+    eq(animalCategories.version, expectedVersion),
+    isNull(animalCategories.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 /** Lock one category while an ID is allocated or its prefix is changed. */
 export async function getCategoryForUpdate(id: number, tx: DbOrTx) {
+  const tenant = requireTenantUserContext();
   const rows = await tx
     .select()
     .from(animalCategories)
-    .where(eq(animalCategories.id, id))
+    .where(and(
+      eq(animalCategories.companyId, tenant.companyId),
+      eq(animalCategories.id, id),
+    ))
     .limit(1)
     .for("update");
   return rows[0] ?? null;
@@ -202,15 +361,16 @@ export async function getCategoryForUpdate(id: number, tx: DbOrTx) {
 export async function categoryHasAnimals(categoryId: number, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return false;
+  const tenant = requireTenantUserContext();
   const animalRows = await db
     .select({ id: animals.id })
     .from(animals)
-    .where(eq(animals.categoryId, categoryId))
+    .where(and(eq(animals.companyId, tenant.companyId), eq(animals.categoryId, categoryId)))
     .limit(1);
   const birthRows = await db
     .select({ id: lambingLog.id })
     .from(lambingLog)
-    .where(eq(lambingLog.categoryId, categoryId))
+    .where(and(eq(lambingLog.companyId, tenant.companyId), eq(lambingLog.categoryId, categoryId)))
     .limit(1);
   return animalRows.length > 0 || birthRows.length > 0;
 }
@@ -218,17 +378,18 @@ export async function categoryHasAnimals(categoryId: number, tx?: DbOrTx) {
 export async function incrementCategorySequence(categoryId: number, tx?: DbOrTx): Promise<number> {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   await db
     .update(animalCategories)
     .set({ idSequence: sql`${animalCategories.idSequence} + 1` })
-    .where(eq(animalCategories.id, categoryId));
+    .where(and(eq(animalCategories.companyId, tenant.companyId), eq(animalCategories.id, categoryId)));
   const [cat] = await db
     .select({
       idSequence: animalCategories.idSequence,
       idPrefix: animalCategories.idPrefix
     })
     .from(animalCategories)
-    .where(eq(animalCategories.id, categoryId));
+    .where(and(eq(animalCategories.companyId, tenant.companyId), eq(animalCategories.id, categoryId)));
   return cat?.idSequence ?? 1;
 }
 
@@ -239,12 +400,13 @@ export async function ensureCategorySequenceAtLeast(
 ) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   await db
     .update(animalCategories)
     .set({
       idSequence: sql`GREATEST(${animalCategories.idSequence}, ${sequence})`,
     })
-    .where(eq(animalCategories.id, categoryId));
+    .where(and(eq(animalCategories.companyId, tenant.companyId), eq(animalCategories.id, categoryId)));
 }
 
 export async function incrementCategoryLambSequence(
@@ -253,14 +415,15 @@ export async function incrementCategoryLambSequence(
 ): Promise<number> {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   await db
     .update(animalCategories)
     .set({ lambIdSequence: sql`${animalCategories.lambIdSequence} + 1` })
-    .where(eq(animalCategories.id, categoryId));
+    .where(and(eq(animalCategories.companyId, tenant.companyId), eq(animalCategories.id, categoryId)));
   const [cat] = await db
     .select({ lambIdSequence: animalCategories.lambIdSequence })
     .from(animalCategories)
-    .where(eq(animalCategories.id, categoryId));
+    .where(and(eq(animalCategories.companyId, tenant.companyId), eq(animalCategories.id, categoryId)));
   return cat?.lambIdSequence ?? 1;
 }
 
@@ -271,21 +434,23 @@ export async function ensureCategoryLambSequenceAtLeast(
 ) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   await db
     .update(animalCategories)
     .set({
       lambIdSequence: sql`GREATEST(${animalCategories.lambIdSequence}, ${sequence})`,
     })
-    .where(eq(animalCategories.id, categoryId));
+    .where(and(eq(animalCategories.companyId, tenant.companyId), eq(animalCategories.id, categoryId)));
 }
 
 export async function getRawLambingByLambId(lambId: string, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return null;
+  const tenant = requireTenantUserContext();
   const rows = await db
     .select()
     .from(lambingLog)
-    .where(eq(lambingLog.lambId, lambId))
+    .where(and(eq(lambingLog.companyId, tenant.companyId), eq(lambingLog.lambId, lambId)))
     .limit(1);
   return rows[0] ?? null;
 }
@@ -321,14 +486,22 @@ export async function generateNextAnimalId(
 export async function getAllStatuses() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(animalStatuses).where(isNull(animalStatuses.deletedAt)).orderBy(animalStatuses.name);
+  const tenant = requireTenantUserContext();
+  return db.select().from(animalStatuses).where(and(
+    eq(animalStatuses.companyId, tenant.companyId),
+    isNull(animalStatuses.deletedAt),
+  )).orderBy(animalStatuses.name);
 }
 
 /** Fetch a single status row (used to verify isExitStatus on exits). */
 export async function getStatusById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(animalStatuses).where(eq(animalStatuses.id, id)).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(animalStatuses).where(and(
+    eq(animalStatuses.companyId, tenant.companyId),
+    eq(animalStatuses.id, id),
+  )).limit(1);
   return rows[0] ?? null;
 }
 
@@ -340,16 +513,21 @@ export async function getStatusById(id: number) {
 export async function getLambingRecordById(id: number, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return null;
-  const rows = await db.select().from(lambingLog).where(eq(lambingLog.id, id)).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(lambingLog).where(and(
+    tenantScope(tenant, lambingLog),
+    eq(lambingLog.id, id),
+  )).limit(1);
   return rows[0] ?? null;
 }
 
 /** Lock one lambing row for a promotion transaction. */
 export async function getLambingRecordForUpdate(id: number, tx: DbOrTx) {
+  const tenant = requireTenantUserContext();
   const rows = await tx
     .select()
     .from(lambingLog)
-    .where(eq(lambingLog.id, id))
+    .where(and(tenantScope(tenant, lambingLog), eq(lambingLog.id, id)))
     .limit(1)
     .for("update");
   return rows[0] ?? null;
@@ -359,16 +537,21 @@ export async function getLambingRecordForUpdate(id: number, tx: DbOrTx) {
 export async function getRawAnimalById(id: number, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return null;
-  const rows = await db.select().from(animals).where(eq(animals.id, id)).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(animals).where(and(
+    tenantScope(tenant, animals),
+    eq(animals.id, id),
+  )).limit(1);
   return rows[0] ?? null;
 }
 
 /** Lock one animal before an edit or automatic category transition. */
 export async function getRawAnimalForUpdate(id: number, tx: DbOrTx) {
+  const tenant = requireTenantUserContext();
   const rows = await tx
     .select()
     .from(animals)
-    .where(eq(animals.id, id))
+    .where(and(tenantScope(tenant, animals), eq(animals.id, id)))
     .limit(1)
     .for("update");
   return rows[0] ?? null;
@@ -378,7 +561,11 @@ export async function getRawAnimalForUpdate(id: number, tx: DbOrTx) {
 export async function getRawAnimalByAnimalId(animalId: string, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return null;
-  const rows = await db.select().from(animals).where(eq(animals.animalId, animalId)).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(animals).where(and(
+    eq(animals.companyId, tenant.companyId),
+    eq(animals.animalId, animalId),
+  )).limit(1);
   return rows[0] ?? null;
 }
 
@@ -386,7 +573,11 @@ export async function getRawAnimalByAnimalId(animalId: string, tx?: DbOrTx) {
 export async function getRawOwnerById(id: number, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return null;
-  const rows = await db.select().from(owners).where(eq(owners.id, id)).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(owners).where(and(
+    eq(owners.companyId, tenant.companyId),
+    eq(owners.id, id),
+  )).limit(1);
   return rows[0] ?? null;
 }
 
@@ -394,6 +585,7 @@ export async function getRawOwnerById(id: number, tx?: DbOrTx) {
 export async function getAnimalsByIds(ids: number[]) {
   const db = await getDb();
   if (!db || ids.length === 0) return [];
+  const tenant = requireTenantUserContext();
   return db
     .select({
       animal: animals,
@@ -407,25 +599,32 @@ export async function getAnimalsByIds(ids: number[]) {
       ownerName: owners.name,
     })
     .from(animals)
-    .leftJoin(species, eq(animals.speciesId, species.id))
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .leftJoin(groups, eq(animals.groupId, groups.id))
-    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
-    .leftJoin(owners, eq(animals.ownerId, owners.id))
-    .where(inArray(animals.id, ids));
+    .leftJoin(species, and(eq(animals.speciesId, species.id), eq(species.companyId, tenant.companyId)))
+    .leftJoin(animalCategories, and(eq(animals.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)))
+    .leftJoin(groups, and(eq(animals.groupId, groups.id), eq(groups.companyId, tenant.companyId)))
+    .leftJoin(animalStatuses, and(eq(animals.statusId, animalStatuses.id), eq(animalStatuses.companyId, tenant.companyId)))
+    .leftJoin(owners, and(eq(animals.ownerId, owners.id), eq(owners.companyId, tenant.companyId)))
+    .where(and(tenantScope(tenant, animals), inArray(animals.id, ids)));
 }
 
 export async function createStatus(data: { name: string; description?: string; isExitStatus?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(animalStatuses).values(data);
+  const [result] = await db.insert(animalStatuses).values(tenantInsert(data));
   return result;
 }
 
-export async function updateStatus(id: number, data: Partial<typeof animalStatuses.$inferInsert>) {
+export async function updateStatus(id: number, data: Partial<typeof animalStatuses.$inferInsert>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(animalStatuses).set(data).where(eq(animalStatuses.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(animalStatuses).set({ ...data, version: sql`${animalStatuses.version} + 1` }).where(and(
+    eq(animalStatuses.companyId, tenant.companyId),
+    eq(animalStatuses.id, id),
+    eq(animalStatuses.version, expectedVersion),
+    isNull(animalStatuses.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 // ─── GROUPS ───────────────────────────────────────────────────────────────────
@@ -433,13 +632,21 @@ export async function updateStatus(id: number, data: Partial<typeof animalStatus
 export async function getAllGroups(speciesId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   if (speciesId) {
     return db
       .select()
       .from(groups)
-      .where(and(or(eq(groups.speciesId, speciesId), isNull(groups.speciesId)), isNull(groups.deletedAt)));
+      .where(and(
+        tenantScope(tenant, groups),
+        or(eq(groups.speciesId, speciesId), isNull(groups.speciesId)),
+        isNull(groups.deletedAt),
+      ));
   }
-  return db.select().from(groups).where(isNull(groups.deletedAt)).orderBy(groups.groupCode);
+  return db.select().from(groups).where(and(
+    tenantScope(tenant, groups),
+    isNull(groups.deletedAt),
+  )).orderBy(groups.groupCode);
 }
 
 export async function createGroup(data: {
@@ -455,14 +662,21 @@ export async function createGroup(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(groups).values(data);
+  const [result] = await db.insert(groups).values(tenantInsert(data, true));
   return result;
 }
 
-export async function updateGroup(id: number, data: Partial<typeof groups.$inferInsert>) {
+export async function updateGroup(id: number, data: Partial<typeof groups.$inferInsert>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(groups).set(data).where(eq(groups.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(groups).set({ ...data, version: sql`${groups.version} + 1` }).where(and(
+    tenantScope(tenant, groups),
+    eq(groups.id, id),
+    eq(groups.version, expectedVersion),
+    isNull(groups.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 // ─── OWNERS ───────────────────────────────────────────────────────────────────
@@ -470,31 +684,46 @@ export async function updateGroup(id: number, data: Partial<typeof groups.$infer
 export async function getAllOwners(activeOnly = true) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   const where = activeOnly
-    ? and(isNull(owners.deletedAt), eq(owners.isActive, true))
-    : isNull(owners.deletedAt);
+    ? and(eq(owners.companyId, tenant.companyId), isNull(owners.deletedAt), eq(owners.isActive, true))
+    : and(eq(owners.companyId, tenant.companyId), isNull(owners.deletedAt));
   return db.select().from(owners).where(where).orderBy(owners.name);
 }
 
 export async function createOwner(data: { name: string; phone?: string; email?: string; notes?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(owners).values(data);
+  const [result] = await db.insert(owners).values(tenantInsert(data));
   return result;
 }
 
-export async function updateOwner(id: number, data: Partial<typeof owners.$inferInsert>) {
+export async function updateOwner(id: number, data: Partial<typeof owners.$inferInsert>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(owners).set(data).where(eq(owners.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(owners).set({ ...data, version: sql`${owners.version} + 1` }).where(and(
+    eq(owners.companyId, tenant.companyId),
+    eq(owners.id, id),
+    eq(owners.version, expectedVersion),
+    isNull(owners.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
-export async function deleteOwner(id: number, deletedBy?: number) {
+export async function deleteOwner(id: number, expectedVersion: number, deletedBy?: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(owners)
-    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null, isActive: false })
-    .where(eq(owners.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(owners)
+    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null, isActive: false, version: sql`${owners.version} + 1` })
+    .where(and(
+      eq(owners.companyId, tenant.companyId),
+      eq(owners.id, id),
+      eq(owners.version, expectedVersion),
+      isNull(owners.deletedAt),
+    ));
+  return mutationAffectedOne(result);
 }
 
 // ─── BIRTH TYPES ──────────────────────────────────────────────────────────────
@@ -502,25 +731,44 @@ export async function deleteOwner(id: number, deletedBy?: number) {
 export async function getAllBirthTypes() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(birthTypes).where(isNull(birthTypes.deletedAt)).orderBy(birthTypes.name);
+  const tenant = requireTenantUserContext();
+  return db.select().from(birthTypes).where(and(
+    eq(birthTypes.companyId, tenant.companyId),
+    isNull(birthTypes.deletedAt),
+  )).orderBy(birthTypes.name);
 }
 
 export async function createBirthType(data: { name: string; description?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(birthTypes).values(data);
+  const [result] = await db.insert(birthTypes).values(tenantInsert(data));
   return result;
 }
-export async function updateBirthType(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+export async function updateBirthType(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(birthTypes).set(data).where(eq(birthTypes.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(birthTypes).set({ ...data, version: sql`${birthTypes.version} + 1` }).where(and(
+    eq(birthTypes.companyId, tenant.companyId),
+    eq(birthTypes.id, id),
+    eq(birthTypes.version, expectedVersion),
+    isNull(birthTypes.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 // ─── FEED ITEMS ───────────────────────────────────────────────────────────────
 
 export async function getAllFeedItems() {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
+  const priceFarmScope = tenant.selectedFarmId !== null
+    ? sql`AND ph.farmId = ${tenant.selectedFarmId}`
+    : tenant.farmAccessMode === "all" || tenant.accessibleFarmIds === "all"
+      ? sql``
+      : tenant.accessibleFarmIds.length > 0
+        ? sql`AND ph.farmId IN (${sql.join(tenant.accessibleFarmIds.map(id => sql`${id}`), sql`, `)})`
+        : sql`AND FALSE`;
   return db
     .select({
       id: feedItems.id,
@@ -532,33 +780,36 @@ export async function getAllFeedItems() {
       createdBy: feedItems.createdBy,
       deletedAt: feedItems.deletedAt,
       deletedBy: feedItems.deletedBy,
+      version: feedItems.version,
       currentPrice: sql<string | null>`(
         SELECT ph.pricePerUnit
-        FROM feed_item_price_history ph
-        WHERE ph.feedItemId = ${sql.raw("`feed_items`.`id`")}
+        FROM saas_azal_feed_item_price_history ph
+        WHERE ph.feedItemId = ${sql.raw("`saas_azal_feed_items`.`id`")}
+          AND ph.companyId = ${tenant.companyId}
+          ${priceFarmScope}
         ORDER BY ph.effectiveDate DESC, ph.id DESC
         LIMIT 1
       )`.as("currentPrice"),
     })
     .from(feedItems)
-    .where(isNull(feedItems.deletedAt))
+    .where(and(eq(feedItems.companyId, tenant.companyId), isNull(feedItems.deletedAt)))
     .orderBy(feedItems.name);
 }
 
 export async function createFeedItem(data: { name: string; unit?: string; initialPrice?: string; priceEffectiveDate?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(feedItems).values({ name: data.name, unit: data.unit });
+  const [result] = await db.insert(feedItems).values(tenantInsert({ name: data.name, unit: data.unit }));
   const feedItemId = (result as any).insertId;
   // Seed an initial price-history row so feed cost isn't zero until a price is
   // added separately. Without at least one price, segmented feed costing can't
   // value the ration plan.
   if (feedItemId && data.initialPrice != null && data.initialPrice !== "" && parseFloat(data.initialPrice) > 0) {
-    await db.insert(feedItemPriceHistory).values({
+    await db.insert(feedItemPriceHistory).values(tenantInsert({
       feedItemId,
       effectiveDate: (data.priceEffectiveDate ?? new Date().toISOString().split("T")[0]) as any,
       pricePerUnit: data.initialPrice,
-    });
+    }, true));
   }
   return result;
 }
@@ -567,30 +818,46 @@ export async function createFeedItem(data: { name: string; unit?: string; initia
 export async function getCurrentFeedItemPrice(feedItemId: number): Promise<string | null> {
   const db = await getDb();
   if (!db) return null;
+  const tenant = requireTenantUserContext();
   const rows = await db
     .select({ pricePerUnit: feedItemPriceHistory.pricePerUnit })
     .from(feedItemPriceHistory)
-    .where(eq(feedItemPriceHistory.feedItemId, feedItemId))
+    .where(and(
+      tenantScope(tenant, feedItemPriceHistory),
+      eq(feedItemPriceHistory.feedItemId, feedItemId),
+    ))
     .orderBy(desc(feedItemPriceHistory.effectiveDate))
     .limit(1);
   return rows.length > 0 ? rows[0].pricePerUnit : null;
 }
 
-export async function updateFeedItem(id: number, data: Partial<typeof feedItems.$inferInsert>) {
+export async function updateFeedItem(id: number, data: Partial<typeof feedItems.$inferInsert>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(feedItems).set(data).where(eq(feedItems.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(feedItems).set({ ...data, version: sql`${feedItems.version} + 1` }).where(and(
+    eq(feedItems.companyId, tenant.companyId),
+    eq(feedItems.id, id),
+    eq(feedItems.version, expectedVersion),
+    isNull(feedItems.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 export async function getFeedItemPriceHistory(feedItemId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(feedItemPriceHistory).where(eq(feedItemPriceHistory.feedItemId, feedItemId)).orderBy(desc(feedItemPriceHistory.effectiveDate));
+  const tenant = requireTenantUserContext();
+  return db.select().from(feedItemPriceHistory).where(and(
+    tenantScope(tenant, feedItemPriceHistory),
+    eq(feedItemPriceHistory.feedItemId, feedItemId),
+  )).orderBy(desc(feedItemPriceHistory.effectiveDate));
 }
 
 export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate: string; pricePerUnit: string; notes?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   const effDate = data.effectiveDate.split("T")[0]; // normalize to YYYY-MM-DD
   // If a price already exists for this item on the same effective date,
   // update it in place instead of stacking a duplicate row.
@@ -598,6 +865,7 @@ export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate
     .select({ id: feedItemPriceHistory.id })
     .from(feedItemPriceHistory)
     .where(and(
+      tenantScope(tenant, feedItemPriceHistory),
       eq(feedItemPriceHistory.feedItemId, data.feedItemId),
       eq(feedItemPriceHistory.effectiveDate, effDate as any)
     ))
@@ -605,15 +873,15 @@ export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate
   if (existing.length > 0) {
     await db.update(feedItemPriceHistory)
       .set({ pricePerUnit: data.pricePerUnit, notes: data.notes })
-      .where(eq(feedItemPriceHistory.id, existing[0].id));
+      .where(and(tenantScope(tenant, feedItemPriceHistory), eq(feedItemPriceHistory.id, existing[0].id)));
     return existing[0];
   }
-  const [result] = await db.insert(feedItemPriceHistory).values({
+  const [result] = await db.insert(feedItemPriceHistory).values(tenantInsert({
     feedItemId: data.feedItemId,
     effectiveDate: effDate as any,
     pricePerUnit: data.pricePerUnit,
     notes: data.notes
-  });
+  }, true));
   return result;
 }
 
@@ -621,6 +889,7 @@ export async function addFeedItemPrice(data: { feedItemId: number; effectiveDate
 export async function getAllFeedItemPrices() {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   return db
     .select({
       id: feedItemPriceHistory.id,
@@ -631,39 +900,63 @@ export async function getAllFeedItemPrices() {
       effectiveDate: feedItemPriceHistory.effectiveDate,
       notes: feedItemPriceHistory.notes,
       createdAt: feedItemPriceHistory.createdAt,
+      version: feedItemPriceHistory.version,
     })
     .from(feedItemPriceHistory)
-    .leftJoin(feedItems, eq(feedItemPriceHistory.feedItemId, feedItems.id))
+    .leftJoin(feedItems, and(
+      eq(feedItemPriceHistory.feedItemId, feedItems.id),
+      eq(feedItems.companyId, tenant.companyId),
+    ))
+    .where(tenantScope(tenant, feedItemPriceHistory))
     .orderBy(desc(feedItemPriceHistory.effectiveDate), desc(feedItemPriceHistory.id));
 }
 
 export async function updateFeedItemPrice(
   id: number,
-  data: Partial<{ effectiveDate: string; pricePerUnit: string; notes: string | null }>
+  data: Partial<{ effectiveDate: string; pricePerUnit: string; notes: string | null }>,
+  expectedVersion: number,
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   const set: Record<string, unknown> = {};
   if (data.pricePerUnit != null) set.pricePerUnit = data.pricePerUnit;
   if (data.notes !== undefined) set.notes = data.notes;
   if (data.effectiveDate) set.effectiveDate = data.effectiveDate.split("T")[0] as any;
-  await db.update(feedItemPriceHistory).set(set).where(eq(feedItemPriceHistory.id, id));
+  set.version = sql`${feedItemPriceHistory.version} + 1`;
+  const [result] = await db.update(feedItemPriceHistory).set(set).where(and(
+    tenantScope(tenant, feedItemPriceHistory),
+    eq(feedItemPriceHistory.id, id),
+    eq(feedItemPriceHistory.version, expectedVersion),
+  ));
+  return mutationAffectedOne(result);
 }
 
 /** Hard delete — this table has no soft-delete column. */
-export async function deleteFeedItemPrice(id: number) {
+export async function deleteFeedItemPrice(id: number, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.delete(feedItemPriceHistory).where(eq(feedItemPriceHistory.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.delete(feedItemPriceHistory).where(and(
+    tenantScope(tenant, feedItemPriceHistory),
+    eq(feedItemPriceHistory.id, id),
+    eq(feedItemPriceHistory.version, expectedVersion),
+  ));
+  return mutationAffectedOne(result);
 }
 
 export async function getFeedPriceOnDate(feedItemId: number, dateStr: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
+  const tenant = requireTenantUserContext();
   const rows = await db
     .select({ pricePerUnit: feedItemPriceHistory.pricePerUnit })
     .from(feedItemPriceHistory)
-    .where(and(eq(feedItemPriceHistory.feedItemId, feedItemId), sql`${feedItemPriceHistory.effectiveDate} <= ${dateStr}`))
+    .where(and(
+      tenantScope(tenant, feedItemPriceHistory),
+      eq(feedItemPriceHistory.feedItemId, feedItemId),
+      sql`${feedItemPriceHistory.effectiveDate} <= ${dateStr}`,
+    ))
     .orderBy(desc(feedItemPriceHistory.effectiveDate))
     .limit(1);
   return rows.length > 0 ? parseFloat(rows[0].pricePerUnit) : 0;
@@ -674,61 +967,91 @@ export async function getFeedPriceOnDate(feedItemId: number, dateStr: string): P
 export async function getAllExpenseCategories() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(expenseCategories).where(isNull(expenseCategories.deletedAt)).orderBy(expenseCategories.name);
+  const tenant = requireTenantUserContext();
+  return db.select().from(expenseCategories).where(and(
+    eq(expenseCategories.companyId, tenant.companyId),
+    isNull(expenseCategories.deletedAt),
+  )).orderBy(expenseCategories.name);
 }
 
 export async function createExpenseCategory(data: { name: string; description?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(expenseCategories).values(data);
+  const [result] = await db.insert(expenseCategories).values(tenantInsert(data));
   return result;
 }
-export async function updateExpenseCategory(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>) {
+export async function updateExpenseCategory(id: number, data: Partial<{ name: string; description: string; isActive: boolean }>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(expenseCategories).set(data).where(eq(expenseCategories.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(expenseCategories).set({ ...data, version: sql`${expenseCategories.version} + 1` }).where(and(
+    eq(expenseCategories.companyId, tenant.companyId),
+    eq(expenseCategories.id, id),
+    eq(expenseCategories.version, expectedVersion),
+    isNull(expenseCategories.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 export async function getAllExpenseSubCategories(categoryId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   if (categoryId) {
-    return db.select().from(expenseSubCategories).where(eq(expenseSubCategories.categoryId, categoryId));
+    return db.select().from(expenseSubCategories).where(and(
+      eq(expenseSubCategories.companyId, tenant.companyId),
+      eq(expenseSubCategories.categoryId, categoryId),
+    ));
   }
-  return db.select().from(expenseSubCategories).orderBy(expenseSubCategories.name);
+  return db.select().from(expenseSubCategories).where(
+    eq(expenseSubCategories.companyId, tenant.companyId),
+  ).orderBy(expenseSubCategories.name);
 }
 
 export async function createExpenseSubCategory(data: { categoryId: number; name: string; description?: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(expenseSubCategories).values(data);
+  const [result] = await db.insert(expenseSubCategories).values(tenantInsert(data));
   return result;
 }
-export async function updateExpenseSubCategory(id: number, data: Partial<{ categoryId: number; name: string; description: string; isActive: boolean }>) {
+export async function updateExpenseSubCategory(id: number, data: Partial<{ categoryId: number; name: string; description: string; isActive: boolean }>, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(expenseSubCategories).set(data).where(eq(expenseSubCategories.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(expenseSubCategories).set({ ...data, version: sql`${expenseSubCategories.version} + 1` }).where(and(
+    eq(expenseSubCategories.companyId, tenant.companyId),
+    eq(expenseSubCategories.id, id),
+    eq(expenseSubCategories.version, expectedVersion),
+    isNull(expenseSubCategories.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 // ─── SYSTEM SETTINGS ──────────────────────────────────────────────────────────
 
 export async function getAllSettings() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(systemSettings);
+  const tenant = requireTenantUserContext();
+  return db.select().from(systemSettings).where(eq(systemSettings.companyId, tenant.companyId));
 }
 
 export async function getSetting(key: string): Promise<string | null> {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(systemSettings).where(eq(systemSettings.settingKey, key)).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(systemSettings).where(and(
+    eq(systemSettings.companyId, tenant.companyId),
+    eq(systemSettings.settingKey, key),
+  )).limit(1);
   return rows.length > 0 ? rows[0].settingValue : null;
 }
 
 export async function upsertSetting(key: string, value: string, updatedBy?: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   await db
     .insert(systemSettings)
-    .values({ settingKey: key, settingValue: value, updatedBy })
+    .values(tenantInsert({ settingKey: key, settingValue: value, updatedBy }))
     .onDuplicateKeyUpdate({ set: { settingValue: value, updatedBy } });
 }
 
@@ -737,6 +1060,7 @@ export async function upsertSetting(key: string, value: string, updatedBy?: numb
 export async function getUserSettings(userId: number): Promise<Record<string, string>> {
   const db = await getDb();
   if (!db) return {};
+  const tenant = requireTenantUserContext();
   try {
     const rows = await db
       .select({
@@ -744,10 +1068,13 @@ export async function getUserSettings(userId: number): Promise<Record<string, st
         settingValue: userSettings.settingValue,
       })
       .from(userSettings)
-      .where(eq(userSettings.userId, userId));
+      .where(and(
+        eq(userSettings.companyId, tenant.companyId),
+        eq(userSettings.userId, userId),
+      ));
     return Object.fromEntries(rows.map(r => [r.settingKey, r.settingValue]));
   } catch (error) {
-    console.warn("[Preferences] user_settings unavailable; using client fallback", error);
+    logger.warn("preferences.read_failed", { error });
     return {};
   }
 }
@@ -755,14 +1082,14 @@ export async function getUserSettings(userId: number): Promise<Record<string, st
 export async function upsertUserSetting(userId: number, key: string, value: string) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   try {
-    await db.execute(sql`
-      INSERT INTO user_settings (userId, settingKey, settingValue)
-      VALUES (${userId}, ${key}, ${value})
-      ON DUPLICATE KEY UPDATE settingValue = ${value}
-    `);
+    await db
+      .insert(userSettings)
+      .values(tenantInsert({ userId, settingKey: key, settingValue: value }))
+      .onDuplicateKeyUpdate({ set: { settingValue: value } });
   } catch (error) {
-    console.warn("[Preferences] user_settings unavailable; preference kept in client cache", error);
+    logger.warn("preferences.write_failed", { error });
   }
 }
 
@@ -771,7 +1098,8 @@ export async function upsertUserSetting(userId: number, key: string, value: stri
 export async function getAnimals(filters?: { speciesId?: number; categoryId?: number; groupId?: number; statusId?: number; ownerId?: number; acquisitionType?: string; isActive?: boolean; sex?: "male" | "female"; search?: string; limit?: number }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions: ReturnType<typeof eq>[] = [];
+  const tenant = requireTenantUserContext();
+  const conditions: any[] = [tenantScope(tenant, animals)];
   conditions.push(isNull(animals.deletedAt));
   if (filters?.speciesId) conditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
@@ -796,39 +1124,39 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
       isExitStatus: animalStatuses.isExitStatus,
       ownerName: owners.name,
       latestWeightKg: sql<string | null>`(
-        SELECT wl.weightKg FROM weight_log wl
-        WHERE wl.animalId = ${animals.id} AND wl.deletedAt IS NULL
+        SELECT wl.weightKg FROM saas_azal_weight_log wl
+        WHERE wl.companyId = ${tenant.companyId} AND wl.animalId = ${animals.id} AND wl.deletedAt IS NULL
         ORDER BY wl.weighDate DESC LIMIT 1
       )`,
       nextVaccineDate: sql<string | null>`(
-        SELECT vr.nextDueDate FROM vaccination_records vr
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        SELECT vr.nextDueDate FROM saas_azal_vaccination_records vr
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
         ORDER BY vr.nextDueDate ASC LIMIT 1
       )`,
       nextVaccineName: sql<string | null>`(
-        SELECT v.name FROM vaccination_records vr
-        INNER JOIN vaccines v ON vr.vaccineId = v.id
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        SELECT v.name FROM saas_azal_vaccination_records vr
+        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
         ORDER BY vr.nextDueDate ASC LIMIT 1
       )`,
       nextBoosterDate: sql<string | null>`(
-        SELECT vr.boosterDueDate FROM vaccination_records vr
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        SELECT vr.boosterDueDate FROM saas_azal_vaccination_records vr
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
         ORDER BY vr.boosterDueDate ASC LIMIT 1
       )`,
       nextBoosterName: sql<string | null>`(
-        SELECT v.name FROM vaccination_records vr
-        INNER JOIN vaccines v ON vr.vaccineId = v.id
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        SELECT v.name FROM saas_azal_vaccination_records vr
+        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
         ORDER BY vr.boosterDueDate ASC LIMIT 1
       )`
     })
     .from(animals)
-    .leftJoin(species, eq(animals.speciesId, species.id))
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .leftJoin(groups, eq(animals.groupId, groups.id))
-    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
-    .leftJoin(owners, eq(animals.ownerId, owners.id));
+    .leftJoin(species, and(eq(animals.speciesId, species.id), eq(species.companyId, tenant.companyId)))
+    .leftJoin(animalCategories, and(eq(animals.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)))
+    .leftJoin(groups, and(eq(animals.groupId, groups.id), eq(groups.companyId, tenant.companyId)))
+    .leftJoin(animalStatuses, and(eq(animals.statusId, animalStatuses.id), eq(animalStatuses.companyId, tenant.companyId)))
+    .leftJoin(owners, and(eq(animals.ownerId, owners.id), eq(owners.companyId, tenant.companyId)));
 
   const orderedQuery = conditions.length > 0
     ? query.where(and(...conditions)).orderBy(desc(animals.acquisitionDate))
@@ -840,6 +1168,7 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
 export async function getAnimalById(id: number) {
   const db = await getDb();
   if (!db) return null;
+  const tenant = requireTenantUserContext();
   const rows = await db
     .select({
       animal: animals,
@@ -853,35 +1182,35 @@ export async function getAnimalById(id: number) {
       isExitStatus: animalStatuses.isExitStatus,
       ownerName: owners.name,
       nextVaccineDate: sql<string | null>`(
-        SELECT vr.nextDueDate FROM vaccination_records vr
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        SELECT vr.nextDueDate FROM saas_azal_vaccination_records vr
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
         ORDER BY vr.nextDueDate ASC LIMIT 1
       )`,
       nextVaccineName: sql<string | null>`(
-        SELECT v.name FROM vaccination_records vr
-        INNER JOIN vaccines v ON vr.vaccineId = v.id
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
+        SELECT v.name FROM saas_azal_vaccination_records vr
+        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
         ORDER BY vr.nextDueDate ASC LIMIT 1
       )`,
       nextBoosterDate: sql<string | null>`(
-        SELECT vr.boosterDueDate FROM vaccination_records vr
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        SELECT vr.boosterDueDate FROM saas_azal_vaccination_records vr
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
         ORDER BY vr.boosterDueDate ASC LIMIT 1
       )`,
       nextBoosterName: sql<string | null>`(
-        SELECT v.name FROM vaccination_records vr
-        INNER JOIN vaccines v ON vr.vaccineId = v.id
-        WHERE vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
+        SELECT v.name FROM saas_azal_vaccination_records vr
+        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
+        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
         ORDER BY vr.boosterDueDate ASC LIMIT 1
       )`
     })
     .from(animals)
-    .leftJoin(species, eq(animals.speciesId, species.id))
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .leftJoin(groups, eq(animals.groupId, groups.id))
-    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
-    .leftJoin(owners, eq(animals.ownerId, owners.id))
-    .where(and(eq(animals.id, id), isNull(animals.deletedAt)))
+    .leftJoin(species, and(eq(animals.speciesId, species.id), eq(species.companyId, tenant.companyId)))
+    .leftJoin(animalCategories, and(eq(animals.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)))
+    .leftJoin(groups, and(eq(animals.groupId, groups.id), eq(groups.companyId, tenant.companyId)))
+    .leftJoin(animalStatuses, and(eq(animals.statusId, animalStatuses.id), eq(animalStatuses.companyId, tenant.companyId)))
+    .leftJoin(owners, and(eq(animals.ownerId, owners.id), eq(owners.companyId, tenant.companyId)))
+    .where(and(tenantScope(tenant, animals), eq(animals.id, id), isNull(animals.deletedAt)))
     .limit(1);
   if (rows.length === 0) return null;
   const [originBirthRecord] = await db
@@ -892,6 +1221,7 @@ export async function getAnimalById(id: number) {
     })
     .from(lambingLog)
     .where(and(
+      tenantScope(tenant, lambingLog),
       eq(lambingLog.promotedHeadId, id),
       isNull(lambingLog.deletedAt),
     ))
@@ -902,31 +1232,55 @@ export async function getAnimalById(id: number) {
   };
 }
 
-export async function createAnimal(data: typeof animals.$inferInsert, tx?: DbOrTx) {
-  const db = tx ?? (await getDb());
-  if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(animals).values(data);
-  // Mirror the acquisition weight into the weight history so it appears in the
-  // weight log / charts and feeds the latest-weight logic, instead of living
-  // only on the animal row.
-  const newId = (result as any)?.insertId;
-  const acqWeight = data.weightAtAcquisition != null ? parseFloat(String(data.weightAtAcquisition)) : 0;
-  if (newId && acqWeight > 0 && data.acquisitionDate) {
-    await db.insert(weightLog).values({
-      animalId: Number(newId),
-      weighDate: data.acquisitionDate as any,
-      weightKg: String(data.weightAtAcquisition),
-      notes: "Acquisition weight",
-      createdBy: data.createdBy ?? null,
-    });
-  }
-  return result;
+export async function createAnimal(data: TenantCreateInput<typeof animals.$inferInsert>, tx?: DbOrTx) {
+  const sharedDb = await getDb();
+  if (!sharedDb) throw new Error("DB not available");
+  const operation = async (handle: DbOrTx) => {
+    const tenant = requireTenantUserContext();
+    await lockCompanyQuota(handle, tenant.companyId);
+    const [count] = await handle.select({ count: sql<number>`COUNT(*)` })
+      .from(animals)
+      .where(and(eq(animals.companyId, tenant.companyId), isNull(animals.deletedAt)));
+    const limit = await getEffectiveLimit(handle, tenant.companyId, "animals_limit");
+    assertWithinLimit(Number(count?.count ?? 0), 1, limit, "animals");
+    const scopedData = tenantInsert(data, true);
+    const [result] = await handle.insert(animals).values(scopedData);
+    const newId = (result as any)?.insertId;
+    const acqWeight = data.weightAtAcquisition != null
+      ? parseFloat(String(data.weightAtAcquisition))
+      : 0;
+    if (newId && acqWeight > 0 && data.acquisitionDate) {
+      await handle.insert(weightLog).values(tenantInsert({
+        animalId: Number(newId),
+        weighDate: data.acquisitionDate as any,
+        weightKg: String(data.weightAtAcquisition),
+        notes: "Acquisition weight",
+        createdBy: data.createdBy ?? null,
+      }, true));
+    }
+    return result;
+  };
+  return tx ? operation(tx) : sharedDb.transaction(operation);
 }
 
-export async function updateAnimal(id: number, data: Partial<typeof animals.$inferInsert>, tx?: DbOrTx) {
+export async function updateAnimal(
+  id: number,
+  data: Partial<typeof animals.$inferInsert>,
+  tx?: DbOrTx,
+  expectedVersion?: number,
+) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  await db.update(animals).set(data).where(eq(animals.id, id));
+  const tenant = requireTenantUserContext();
+  const { companyId: _companyId, farmId: _farmId, ...safeData } = data;
+  const conditions = [tenantScope(tenant, animals), eq(animals.id, id), isNull(animals.deletedAt)];
+  if (expectedVersion !== undefined) conditions.push(eq(animals.version, expectedVersion));
+  const [result] = await db
+    .update(animals)
+    .set({ ...safeData, version: sql`${animals.version} + 1` })
+    .where(and(...conditions));
+  const affected = Number((result as { affectedRows?: number } | undefined)?.affectedRows ?? 0);
+  if (expectedVersion !== undefined && affected !== 1) return 0;
   const parentage: Partial<typeof lambingLog.$inferInsert> = {};
   if (Object.prototype.hasOwnProperty.call(data, "damId")) {
     parentage.damId = data.damId ?? null;
@@ -938,14 +1292,16 @@ export async function updateAnimal(id: number, data: Partial<typeof animals.$inf
     await db
       .update(lambingLog)
       .set(parentage)
-      .where(eq(lambingLog.promotedHeadId, id));
+      .where(and(tenantScope(tenant, lambingLog), eq(lambingLog.promotedHeadId, id)));
   }
+  return expectedVersion === undefined ? 1 : affected;
 }
 
 export async function getActiveHeadCountByCategory(dateStr?: string): Promise<Record<number, number>> {
   const db = await getDb();
   if (!db) return {};
-  const conditions = [eq(animals.isActive, true), isNull(animals.deletedAt)];
+  const tenant = requireTenantUserContext();
+  const conditions: any[] = [tenantScope(tenant, animals), eq(animals.isActive, true), isNull(animals.deletedAt)];
   if (dateStr) {
     const exitCond = or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${dateStr}`);
     if (exitCond) conditions.push(exitCond as any);
@@ -971,7 +1327,8 @@ type CurrentHeadCountFilters = {
 };
 
 function activeAnimalHeadConditions(filters?: CurrentHeadCountFilters) {
-  const conditions: any[] = [eq(animals.isActive, true), isNull(animals.deletedAt)];
+  const tenant = requireTenantUserContext();
+  const conditions: any[] = [tenantScope(tenant, animals), eq(animals.isActive, true), isNull(animals.deletedAt)];
   if (filters?.speciesId) conditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
   if (filters?.groupId) conditions.push(eq(animals.groupId, filters.groupId));
@@ -980,12 +1337,13 @@ function activeAnimalHeadConditions(filters?: CurrentHeadCountFilters) {
 }
 
 function unpromotedLambHeadConditions(filters?: CurrentHeadCountFilters) {
-  const conditions: any[] = [eq(lambingLog.isPromoted, false), isNull(lambingLog.deletedAt)];
+  const tenant = requireTenantUserContext();
+  const conditions: any[] = [tenantScope(tenant, lambingLog), eq(lambingLog.isPromoted, false), isNull(lambingLog.deletedAt)];
   if (filters?.speciesId) conditions.push(eq(lambingLog.speciesId, filters.speciesId));
   if (filters?.categoryId) conditions.push(eq(lambingLog.categoryId, filters.categoryId));
   if (filters?.groupId) conditions.push(eq(lambingLog.groupId, filters.groupId));
   if (filters?.ownerId) {
-    conditions.push(sql`${lambingLog.damId} IN (SELECT id FROM animals WHERE ownerId = ${filters.ownerId} AND deletedAt IS NULL)`);
+    conditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${lambingLog.farmId} AND ownerId = ${filters.ownerId} AND deletedAt IS NULL)`);
   }
   return conditions;
 }
@@ -1017,6 +1375,7 @@ function mergeHeadCountCategoryRows(rows: HeadCountCategoryRow[]) {
 async function getUnpromotedLambHeadStats(filters?: CurrentHeadCountFilters) {
   const db = await getDb();
   if (!db) return { total: 0, byCategory: [] as HeadCountCategoryRow[] };
+  const tenant = requireTenantUserContext();
   const conditions = unpromotedLambHeadConditions(filters);
   const totalRows = await db
     .select({ count: sql<number>`COUNT(*)` })
@@ -1029,7 +1388,10 @@ async function getUnpromotedLambHeadStats(filters?: CurrentHeadCountFilters) {
       headCount: sql<number>`COUNT(*)`,
     })
     .from(lambingLog)
-    .leftJoin(animalCategories, eq(lambingLog.categoryId, animalCategories.id))
+    .leftJoin(animalCategories, and(
+      eq(lambingLog.categoryId, animalCategories.id),
+      eq(animalCategories.companyId, tenant.companyId),
+    ))
     .where(and(...conditions))
     .groupBy(lambingLog.categoryId, animalCategories.name);
 
@@ -1064,6 +1426,7 @@ async function getUnpromotedLambHeadDays(filters: CurrentHeadCountFilters | unde
 export async function getCurrentHeadCountByCategory(filters?: CurrentHeadCountFilters) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   const animalRows = await db
     .select({
       categoryId: animals.categoryId,
@@ -1071,7 +1434,10 @@ export async function getCurrentHeadCountByCategory(filters?: CurrentHeadCountFi
       headCount: sql<number>`COUNT(*)`,
     })
     .from(animals)
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
+    .leftJoin(animalCategories, and(
+      eq(animals.categoryId, animalCategories.id),
+      eq(animalCategories.companyId, tenant.companyId),
+    ))
     .where(and(...activeAnimalHeadConditions(filters)))
     .groupBy(animals.categoryId, animalCategories.name);
   const lambStats = await getUnpromotedLambHeadStats(filters);
@@ -1090,6 +1456,7 @@ export async function getCurrentHeadCountByCategory(filters?: CurrentHeadCountFi
 export async function getAnimalStatusHistory(animalId: number) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   return db
     .select({
       id: animalStatusHistory.id,
@@ -1101,7 +1468,10 @@ export async function getAnimalStatusHistory(animalId: number) {
       notes: animalStatusHistory.notes
     })
     .from(animalStatusHistory)
-    .where(eq(animalStatusHistory.animalId, animalId))
+    .where(and(
+      tenantScope(tenant, animalStatusHistory),
+      eq(animalStatusHistory.animalId, animalId),
+    ))
     .orderBy(desc(animalStatusHistory.changedAt));
 }
 
@@ -1117,7 +1487,7 @@ export async function recordStatusChange(
 ) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  await db.insert(animalStatusHistory).values(data);
+  await db.insert(animalStatusHistory).values(tenantInsert(data, true));
 }
 
 // ─── SALES ────────────────────────────────────────────────────────────────────
@@ -1125,7 +1495,8 @@ export async function recordStatusChange(
 export async function getSales(filters?: { animalId?: number; fromDate?: string; toDate?: string; ownerId?: number; outstandingOnly?: boolean; buyer?: string }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [];
+  const tenant = requireTenantUserContext();
+  const conditions = [tenantScope(tenant, sales)];
   if (filters?.animalId) conditions.push(eq(sales.animalId, filters.animalId));
   if (filters?.fromDate) conditions.push(sql`${sales.saleDate} >= ${filters.fromDate}`);
   if (filters?.toDate) conditions.push(sql`${sales.saleDate} <= ${filters.toDate}`);
@@ -1142,18 +1513,21 @@ export async function getSales(filters?: { animalId?: number; fromDate?: string;
       outstanding: sql<string>`(${sales.salePrice} - ${sales.amountPaid})`,
     })
     .from(sales)
-    .leftJoin(animals, eq(sales.animalId, animals.id))
-    .leftJoin(species, eq(animals.speciesId, species.id))
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .leftJoin(owners, eq(animals.ownerId, owners.id));
+    .leftJoin(animals, and(
+      eq(sales.animalId, animals.id),
+      eq(animals.companyId, tenant.companyId),
+    ))
+    .leftJoin(species, and(eq(animals.speciesId, species.id), eq(species.companyId, tenant.companyId)))
+    .leftJoin(animalCategories, and(eq(animals.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)))
+    .leftJoin(owners, and(eq(animals.ownerId, owners.id), eq(owners.companyId, tenant.companyId)));
   conditions.push(isNull(sales.deletedAt));
   return query.where(and(...conditions)).orderBy(desc(sales.saleDate));
 }
 
-export async function createSale(data: typeof sales.$inferInsert, tx?: DbOrTx) {
+export async function createSale(data: TenantCreateInput<typeof sales.$inferInsert>, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(sales).values(data);
+  const [result] = await db.insert(sales).values(tenantInsert(data, true));
   return result;
 }
 
@@ -1161,16 +1535,18 @@ export async function createSale(data: typeof sales.$inferInsert, tx?: DbOrTx) {
 export async function getSaleById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(sales).where(and(eq(sales.id, id), isNull(sales.deletedAt))).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(sales).where(and(tenantScope(tenant, sales), eq(sales.id, id), isNull(sales.deletedAt))).limit(1);
   return rows[0] ?? null;
 }
 
 /** Lock one sale row while a payment or edit is applied (read-modify-write). */
 export async function getSaleForUpdate(id: number, tx: DbOrTx) {
+  const tenant = requireTenantUserContext();
   const rows = await tx
     .select()
     .from(sales)
-    .where(and(eq(sales.id, id), isNull(sales.deletedAt)))
+    .where(and(tenantScope(tenant, sales), eq(sales.id, id), isNull(sales.deletedAt)))
     .limit(1)
     .for("update");
   return rows[0] ?? null;
@@ -1180,11 +1556,13 @@ export async function getSaleForUpdate(id: number, tx: DbOrTx) {
 export async function getExpenseById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(expenses).where(and(eq(expenses.id, id), isNull(expenses.deletedAt))).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(expenses).where(and(tenantScope(tenant, expenses), eq(expenses.id, id), isNull(expenses.deletedAt))).limit(1);
   return rows[0] ?? null;
 }
 export async function updateSale(
   id: number,
+  expectedVersion: number,
   data: Partial<{
     animalId: number;
     salePrice: string;
@@ -1199,16 +1577,24 @@ export async function updateSale(
 ) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  await db
+  const tenant = requireTenantUserContext();
+  const [result] = await db
     .update(sales)
-    .set(data as any)
-    .where(eq(sales.id, id));
+    .set({ ...data, version: sql`${sales.version} + 1` } as any)
+    .where(and(
+      tenantScope(tenant, sales),
+      eq(sales.id, id),
+      eq(sales.version, expectedVersion),
+      isNull(sales.deletedAt),
+    ));
+  return Number((result as { affectedRows?: number }).affectedRows ?? 0);
 }
 // ─── LAMBING LOG ──────────────────────────────────────────────────────────────
 
 export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: number }) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   const query = db
     .select({
       id: lambingLog.id,
@@ -1227,33 +1613,34 @@ export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: 
       isPromoted: lambingLog.isPromoted,
       promotedHeadId: lambingLog.promotedHeadId,
       promotedAnimalCode: sql<string | null>`COALESCE(
-        (SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.promotedHeadId}),
+        (SELECT a.animalId FROM saas_azal_animals a WHERE a.id = ${lambingLog.promotedHeadId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId}),
         ${lambingLog.promotedAnimalCode}
       )`,
       promotedAnimalDeletedAt: sql<Date | null>`(
-        SELECT a.deletedAt FROM animals a WHERE a.id = ${lambingLog.promotedHeadId}
+        SELECT a.deletedAt FROM saas_azal_animals a WHERE a.id = ${lambingLog.promotedHeadId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId}
       )`,
       promotedAnimalPurgedAt: lambingLog.promotedAnimalPurgedAt,
       createdAt: lambingLog.createdAt,
+      version: lambingLog.version,
       birthTypeName: birthTypes.name,
       groupCode: groups.groupCode,
       speciesName: species.name,
       categoryName: animalCategories.name,
       effectiveDamId: lambingLog.damId,
       effectiveSireId: lambingLog.sireId,
-      damAnimalId: sql<string | null>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.damId})`,
-      sireAnimalId: sql<string | null>`(SELECT a.animalId FROM animals a WHERE a.id = ${lambingLog.sireId})`
+      damAnimalId: sql<string | null>`(SELECT a.animalId FROM saas_azal_animals a WHERE a.id = ${lambingLog.damId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId})`,
+      sireAnimalId: sql<string | null>`(SELECT a.animalId FROM saas_azal_animals a WHERE a.id = ${lambingLog.sireId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId})`
     })
     .from(lambingLog)
-    .leftJoin(birthTypes, eq(lambingLog.birthTypeId, birthTypes.id))
-    .leftJoin(groups, eq(lambingLog.groupId, groups.id))
-    .leftJoin(species, eq(lambingLog.speciesId, species.id))
-    .leftJoin(animalCategories, eq(lambingLog.categoryId, animalCategories.id));
-  const lambingConditions = [isNull(lambingLog.deletedAt)];
+    .leftJoin(birthTypes, and(eq(lambingLog.birthTypeId, birthTypes.id), eq(birthTypes.companyId, tenant.companyId)))
+    .leftJoin(groups, and(eq(lambingLog.groupId, groups.id), eq(groups.companyId, tenant.companyId)))
+    .leftJoin(species, and(eq(lambingLog.speciesId, species.id), eq(species.companyId, tenant.companyId)))
+    .leftJoin(animalCategories, and(eq(lambingLog.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)));
+  const lambingConditions = [tenantScope(tenant, lambingLog), isNull(lambingLog.deletedAt)];
   if (filters?.isPromoted !== undefined) lambingConditions.push(eq(lambingLog.isPromoted, filters.isPromoted) as any);
   // Owner scope: lambs are attributed to the dam's owner.
   if (filters?.ownerId) {
-    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM animals WHERE ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
+    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${lambingLog.farmId} AND ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
   }
   return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
 }
@@ -1261,10 +1648,11 @@ export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: 
 export async function getLambingSummary(filters?: { ownerId?: number }) {
   const db = await getDb();
   if (!db) return { total: 0, pending: 0, promoted: 0 };
-  const lambingConditions = [isNull(lambingLog.deletedAt)];
+  const tenant = requireTenantUserContext();
+  const lambingConditions = [tenantScope(tenant, lambingLog), isNull(lambingLog.deletedAt)];
   // Owner scope: lambs are attributed to the dam's owner, matching getLambingLog.
   if (filters?.ownerId) {
-    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM animals WHERE ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
+    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${lambingLog.farmId} AND ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
   }
   const [row] = await db
     .select({
@@ -1281,17 +1669,30 @@ export async function getLambingSummary(filters?: { ownerId?: number }) {
   };
 }
 
-export async function createLambingRecord(data: typeof lambingLog.$inferInsert, tx?: DbOrTx) {
+export async function createLambingRecord(data: TenantCreateInput<typeof lambingLog.$inferInsert>, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(lambingLog).values(data);
+  const [result] = await db.insert(lambingLog).values(tenantInsert(data, true));
   return result;
 }
 
-export async function updateLambingRecord(id: number, data: Partial<typeof lambingLog.$inferInsert>, tx?: DbOrTx) {
+export async function updateLambingRecord(
+  id: number,
+  data: Partial<typeof lambingLog.$inferInsert>,
+  tx?: DbOrTx,
+  expectedVersion?: number,
+) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  await db.update(lambingLog).set(data).where(eq(lambingLog.id, id));
+  const tenant = requireTenantUserContext();
+  const { companyId: _companyId, farmId: _farmId, publicId: _publicId, ...safeData } = data;
+  const [result] = await db.update(lambingLog).set({ ...safeData, version: sql`${lambingLog.version} + 1` }).where(and(
+    tenantScope(tenant, lambingLog),
+    eq(lambingLog.id, id),
+    isNull(lambingLog.deletedAt),
+    expectedVersion === undefined ? undefined : eq(lambingLog.version, expectedVersion),
+  ));
+  return mutationAffectedOne(result);
 }
 
 // ─── WEIGHT LOG ───────────────────────────────────────────────────────────────
@@ -1299,17 +1700,18 @@ export async function updateLambingRecord(id: number, data: Partial<typeof lambi
 export async function getWeightLog(animalId: number) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   return db
     .select()
     .from(weightLog)
-    .where(and(eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt)))
+    .where(and(tenantScope(tenant, weightLog), eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt)))
     .orderBy(weightLog.weighDate);
 }
 
-export async function createWeightEntry(data: typeof weightLog.$inferInsert, tx?: DbOrTx) {
+export async function createWeightEntry(data: TenantCreateInput<typeof weightLog.$inferInsert>, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(weightLog).values(data);
+  const [result] = await db.insert(weightLog).values(tenantInsert(data, true));
   return result;
 }
 
@@ -1317,23 +1719,32 @@ export async function createWeightEntry(data: typeof weightLog.$inferInsert, tx?
 export async function getWeightEntryById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(weightLog).where(and(eq(weightLog.id, id), isNull(weightLog.deletedAt))).limit(1);
+  const tenant = requireTenantUserContext();
+  const rows = await db.select().from(weightLog).where(and(tenantScope(tenant, weightLog), eq(weightLog.id, id), isNull(weightLog.deletedAt))).limit(1);
   return rows[0] ?? null;
 }
 
 /** Soft-delete a weight-log entry. */
-export async function softDeleteWeightEntry(id: number, deletedBy?: number) {
+export async function softDeleteWeightEntry(id: number, expectedVersion: number, deletedBy?: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(weightLog)
-    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null })
-    .where(eq(weightLog.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(weightLog)
+    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null, version: sql`${weightLog.version} + 1` })
+    .where(and(
+      tenantScope(tenant, weightLog),
+      eq(weightLog.id, id),
+      eq(weightLog.version, expectedVersion),
+      isNull(weightLog.deletedAt),
+    ));
+  return mutationAffectedOne(result);
 }
 
 export async function getLatestWeightForAnimals(animalIds: number[]) {
   const db = await getDb();
   if (!db) return [];
   if (animalIds.length === 0) return [];
+  const tenant = requireTenantUserContext();
   return db
     .select({
       animalId: weightLog.animalId,
@@ -1341,12 +1752,13 @@ export async function getLatestWeightForAnimals(animalIds: number[]) {
       weighDate: weightLog.weighDate
     })
     .from(weightLog)
-    .where(
+    .where(and(
+      tenantScope(tenant, weightLog),
       sql`${weightLog.animalId} IN (${sql.join(
         animalIds.map(id => sql`${id}`),
         sql`, `
-      )})`
-    )
+      )})`,
+    ))
     .orderBy(desc(weightLog.weighDate));
 }
 
@@ -1355,6 +1767,7 @@ export async function getLatestWeightForAnimals(animalIds: number[]) {
 export async function getRationPlans(categoryId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   const query = db
     .select({
       id: rationPlans.id,
@@ -1364,43 +1777,90 @@ export async function getRationPlans(categoryId?: number) {
       effectiveDate: rationPlans.effectiveDate,
       endDate: rationPlans.endDate,
       isActive: rationPlans.isActive,
+      version: rationPlans.version,
       createdAt: rationPlans.createdAt,
       feedItemName: feedItems.name,
       unit: feedItems.unit,
       categoryName: animalCategories.name,
       currentPrice: sql<string | null>`(
-        SELECT ph.pricePerUnit FROM feed_item_price_history ph
-        WHERE ph.feedItemId = ${rationPlans.feedItemId}
+        SELECT ph.pricePerUnit FROM saas_azal_feed_item_price_history ph
+        WHERE ph.feedItemId = ${rationPlans.feedItemId} AND ph.companyId = ${tenant.companyId} AND ph.farmId = ${rationPlans.farmId}
         ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1
       )`
     })
     .from(rationPlans)
-    .leftJoin(feedItems, eq(rationPlans.feedItemId, feedItems.id))
-    .leftJoin(animalCategories, eq(rationPlans.categoryId, animalCategories.id));
-  if (categoryId) return query.where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
-  return query.where(and(eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
+    .leftJoin(feedItems, and(eq(rationPlans.feedItemId, feedItems.id), eq(feedItems.companyId, tenant.companyId)))
+    .leftJoin(animalCategories, and(eq(rationPlans.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)));
+  if (categoryId) return query.where(and(tenantScope(tenant, rationPlans), eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
+  return query.where(and(tenantScope(tenant, rationPlans), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
 }
 
-export async function createRationPlan(data: typeof rationPlans.$inferInsert, tx?: DbOrTx) {
+export async function createRationPlan(data: TenantCreateInput<typeof rationPlans.$inferInsert>, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(rationPlans).values(data);
+  const [result] = await db.insert(rationPlans).values(tenantInsert(data, true));
   return result;
 }
 
-export async function updateRationPlan(id: number, data: Partial<typeof rationPlans.$inferInsert>) {
+export async function updateRationPlan(
+  id: number,
+  expectedVersion: number,
+  data: Partial<typeof rationPlans.$inferInsert>,
+  audit: { userId?: number; ipAddress?: string },
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(rationPlans).set(data).where(eq(rationPlans.id, id));
+  const tenant = requireTenantUserContext();
+  const { companyId: _companyId, farmId: _farmId, publicId: _publicId, version: _version, ...safeData } = data;
+  return db.transaction(async tx => {
+    const result = await executeVersionedUpdate({
+      expectedVersion,
+      lockCurrent: async () => {
+        const [row] = await tx.select().from(rationPlans).where(and(
+          tenantScope(tenant, rationPlans),
+          eq(rationPlans.id, id),
+          isNull(rationPlans.deletedAt),
+        )).limit(1).for("update");
+        return row ?? null;
+      },
+      compareAndSwap: async () => {
+        const [updated] = await tx.update(rationPlans).set({
+          ...safeData,
+          version: sql`${rationPlans.version} + 1`,
+        }).where(and(
+          versionedTenantUpdateScope(tenant, rationPlans, id, expectedVersion),
+          isNull(rationPlans.deletedAt),
+        ));
+        return Number((updated as { affectedRows?: number }).affectedRows ?? 0);
+      },
+      appendAudit: async current => {
+        const oldValues = Object.fromEntries([
+          ...Object.keys(safeData).map(key => [key, current[key as keyof typeof current]]),
+          ["version", current.version],
+        ]);
+        await createAuditEntry({
+          userId: audit.userId,
+          action: "update",
+          ipAddress: audit.ipAddress,
+          entityType: "rationPlan",
+          entityId: String(id),
+          oldValues,
+          newValues: { ...safeData, version: expectedVersion + 1 },
+        }, tx);
+      },
+    });
+    return { id, ...result };
+  });
 }
 
 export async function getActivePlanOnDate(categoryId: number, dateStr: string) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   return db
     .select()
     .from(rationPlans)
-    .where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true), sql`${rationPlans.effectiveDate} <= ${dateStr}`, or(isNull(rationPlans.endDate), sql`${rationPlans.endDate} >= ${dateStr}`)));
+    .where(and(tenantScope(tenant, rationPlans), eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true), sql`${rationPlans.effectiveDate} <= ${dateStr}`, or(isNull(rationPlans.endDate), sql`${rationPlans.endDate} >= ${dateStr}`)));
 }
 
 /**
@@ -1537,6 +1997,7 @@ export function segmentedFeedCostPure(
 export async function computeFeedCostForPeriod(categoryId: number, startDate: string, endDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
+  const tenant = requireTenantUserContext();
 
   // Normalize to YYYY-MM-DD — guard against Date objects or locale strings
   // accidentally passed as startDate/endDate (e.g. "Fri Nov 01 2025...").
@@ -1554,10 +2015,13 @@ export async function computeFeedCostForPeriod(categoryId: number, startDate: st
   const planRows = await db
     .select()
     .from(rationPlans)
-    .where(and(eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true)));
+    .where(and(tenantScope(tenant, rationPlans), eq(rationPlans.categoryId, categoryId), eq(rationPlans.isActive, true)));
 
   const feedItemIds = Array.from(new Set(planRows.map(p => p.feedItemId)));
-  const priceRows = feedItemIds.length ? await db.select().from(feedItemPriceHistory).where(inArray(feedItemPriceHistory.feedItemId, feedItemIds)) : [];
+  const priceRows = feedItemIds.length ? await db.select().from(feedItemPriceHistory).where(and(
+    tenantScope(tenant, feedItemPriceHistory),
+    inArray(feedItemPriceHistory.feedItemId, feedItemIds),
+  )) : [];
 
   const plansForPure = planRows.map(p => ({
     feedItemId: p.feedItemId,
@@ -1580,12 +2044,13 @@ export async function computeFeedCostForPeriod(categoryId: number, startDate: st
 export async function getCategoryHeadCountDuring(categoryId: number, windowStart: string, windowEnd: string): Promise<number> {
   const db = await getDb();
   if (!db) return 1;
+  const tenant = requireTenantUserContext();
   const ws = windowStart.split("T")[0];
   const we = windowEnd.split("T")[0];
   const rows = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(animals)
-    .where(and(eq(animals.categoryId, categoryId), isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${we}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${ws}`)));
+    .where(and(tenantScope(tenant, animals), eq(animals.categoryId, categoryId), isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${we}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${ws}`)));
   return Math.max(1, Number(rows[0]?.count ?? 1));
 }
 
@@ -1597,11 +2062,12 @@ export async function getCategoryHeadCountDuring(categoryId: number, windowStart
 export async function getHerdHeadCountOnDate(dateStr: string): Promise<number> {
   const db = await getDb();
   if (!db) return 1;
+  const tenant = requireTenantUserContext();
   const d = dateStr.split("T")[0];
   const rows = await db
     .select({ count: sql<number>`COUNT(*)` })
     .from(animals)
-    .where(and(isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${d}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${d}`)));
+    .where(and(tenantScope(tenant, animals), isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${d}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${d}`)));
   return Math.max(1, Number(rows[0]?.count ?? 1));
 }
 
@@ -1615,11 +2081,12 @@ export async function getCategoryHeadCountsOnDate(categoryIds: number[], dateStr
   const counts = new Map<number, number>(categoryIds.map(id => [id, 0]));
   const db = await getDb();
   if (!db || categoryIds.length === 0) return counts;
+  const tenant = requireTenantUserContext();
   const d = dateStr.split("T")[0];
   const rows = await db
     .select({ categoryId: animals.categoryId, count: sql<number>`COUNT(*)` })
     .from(animals)
-    .where(and(inArray(animals.categoryId, categoryIds), isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${d}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${d}`)))
+    .where(and(tenantScope(tenant, animals), inArray(animals.categoryId, categoryIds), isNull(animals.deletedAt), sql`${animals.acquisitionDate} <= ${d}`, or(isNull(animals.exitDate), sql`${animals.exitDate} >= ${d}`)))
     .groupBy(animals.categoryId);
   for (const row of rows) counts.set(Number(row.categoryId), Number(row.count ?? 0));
   return counts;
@@ -1630,6 +2097,7 @@ export async function getCategoryHeadCountsOnDate(categoryIds: number[], dateStr
 export async function getFeedStockLedger(feedItemId?: number) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   const query = db
     .select({
       id: feedStockLedger.id,
@@ -1641,24 +2109,26 @@ export async function getFeedStockLedger(feedItemId?: number) {
       totalCost: feedStockLedger.totalCost,
       supplierName: feedStockLedger.supplierName,
       notes: feedStockLedger.notes,
+      version: feedStockLedger.version,
       feedItemName: feedItems.name,
       feedItemUnit: feedItems.unit
     })
     .from(feedStockLedger)
-    .leftJoin(feedItems, eq(feedStockLedger.feedItemId, feedItems.id));
-  if (feedItemId) return query.where(and(eq(feedStockLedger.feedItemId, feedItemId), isNull(feedStockLedger.deletedAt))).orderBy(desc(feedStockLedger.transactionDate));
-  return query.where(isNull(feedStockLedger.deletedAt)).orderBy(desc(feedStockLedger.transactionDate));
+    .leftJoin(feedItems, and(eq(feedStockLedger.feedItemId, feedItems.id), eq(feedItems.companyId, tenant.companyId)));
+  if (feedItemId) return query.where(and(tenantScope(tenant, feedStockLedger), eq(feedStockLedger.feedItemId, feedItemId), isNull(feedStockLedger.deletedAt))).orderBy(desc(feedStockLedger.transactionDate));
+  return query.where(and(tenantScope(tenant, feedStockLedger), isNull(feedStockLedger.deletedAt))).orderBy(desc(feedStockLedger.transactionDate));
 }
 
-export async function createFeedStockEntry(data: typeof feedStockLedger.$inferInsert, tx?: DbOrTx) {
+export async function createFeedStockEntry(data: TenantCreateInput<typeof feedStockLedger.$inferInsert>, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(feedStockLedger).values(data);
+  const [result] = await db.insert(feedStockLedger).values(tenantInsert(data, true));
   return result;
 }
 
 export async function updateFeedStockEntry(
   id: number,
+  expectedVersion: number,
   data: Partial<{
     feedItemId: number;
     transactionDate: string;
@@ -1668,14 +2138,53 @@ export async function updateFeedStockEntry(
     totalCost: string | null;
     supplierName: string | null;
     notes: string | null;
-  }>
+  }>,
+  audit: { userId?: number; ipAddress?: string },
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   const updateData: Record<string, any> = { ...data };
   if (data.transactionDate) updateData.transactionDate = data.transactionDate as any;
-  const [result] = await db.update(feedStockLedger).set(updateData).where(eq(feedStockLedger.id, id));
-  return result;
+  return db.transaction(async tx => {
+    const result = await executeVersionedUpdate({
+      expectedVersion,
+      lockCurrent: async () => {
+        const [row] = await tx.select().from(feedStockLedger).where(and(
+          tenantScope(tenant, feedStockLedger),
+          eq(feedStockLedger.id, id),
+          isNull(feedStockLedger.deletedAt),
+        )).limit(1).for("update");
+        return row ?? null;
+      },
+      compareAndSwap: async () => {
+        const [updated] = await tx.update(feedStockLedger).set({
+          ...updateData,
+          version: sql`${feedStockLedger.version} + 1`,
+        }).where(and(
+          versionedTenantUpdateScope(tenant, feedStockLedger, id, expectedVersion),
+          isNull(feedStockLedger.deletedAt),
+        ));
+        return Number((updated as { affectedRows?: number }).affectedRows ?? 0);
+      },
+      appendAudit: async current => {
+        const oldValues = Object.fromEntries([
+          ...Object.keys(updateData).map(key => [key, current[key as keyof typeof current]]),
+          ["version", current.version],
+        ]);
+        await createAuditEntry({
+          userId: audit.userId,
+          action: "update",
+          ipAddress: audit.ipAddress,
+          entityType: "feedStock",
+          entityId: String(id),
+          oldValues,
+          newValues: { ...updateData, version: expectedVersion + 1 },
+        }, tx);
+      },
+    });
+    return { id, ...result };
+  });
 }
 
 // ─── EXPENSESS ─────────────────────────────────────────────────────────────────
@@ -1683,7 +2192,8 @@ export async function updateFeedStockEntry(
 export async function getGeneralExpensesTotal(filters?: { fromDate?: string; toDate?: string }) {
   const db = await getDb();
   if (!db) return 0;
-  const conditions = [eq(expenses.targetType, "general"), isNull(expenses.deletedAt)];
+  const tenant = requireTenantUserContext();
+  const conditions = [tenantScope(tenant, expenses), eq(expenses.targetType, "general"), isNull(expenses.deletedAt)];
   if (filters?.fromDate) conditions.push(sql`${expenses.expenseDate} >= ${filters.fromDate}`);
   if (filters?.toDate) conditions.push(sql`${expenses.expenseDate} <= ${filters.toDate}`);
   const rows = await db
@@ -1696,7 +2206,8 @@ export async function getGeneralExpensesTotal(filters?: { fromDate?: string; toD
 export async function getExpenses(filters?: { fromDate?: string; toDate?: string; categoryId?: number; targetType?: "general" | "category" | "head" | "herd"; headId?: number; ownerId?: number; vendor?: string }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [];
+  const tenant = requireTenantUserContext();
+  const conditions = [tenantScope(tenant, expenses)];
   if (filters?.fromDate) conditions.push(sql`${expenses.expenseDate} >= ${filters.fromDate}`);
   if (filters?.toDate) conditions.push(sql`${expenses.expenseDate} <= ${filters.toDate}`);
   if (filters?.categoryId) conditions.push(eq(expenses.categoryId, filters.categoryId));
@@ -1708,9 +2219,9 @@ export async function getExpenses(filters?: { fromDate?: string; toDate?: string
     // OR (b) it's targeted at a category in which the owner has at least one animal.
     const ownerId = filters.ownerId;
     conditions.push(sql`(
-      (${expenses.targetType} = 'head'     AND ${expenses.headId} IN (SELECT id FROM animals WHERE ownerId = ${ownerId} AND deletedAt IS NULL))
+      (${expenses.targetType} = 'head'     AND ${expenses.headId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${expenses.farmId} AND ownerId = ${ownerId} AND deletedAt IS NULL))
       OR
-      (${expenses.targetType} = 'category' AND ${expenses.categoryTarget} IN (SELECT DISTINCT categoryId FROM animals WHERE ownerId = ${ownerId} AND deletedAt IS NULL))
+      (${expenses.targetType} = 'category' AND ${expenses.categoryTarget} IN (SELECT DISTINCT categoryId FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${expenses.farmId} AND ownerId = ${ownerId} AND deletedAt IS NULL))
     )`);
   }
   const query = db
@@ -1723,34 +2234,120 @@ export async function getExpenses(filters?: { fromDate?: string; toDate?: string
       ownerName: owners.name,
     })
     .from(expenses)
-    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .leftJoin(expenseSubCategories, eq(expenses.subCategoryId, expenseSubCategories.id))
-    .leftJoin(animals, eq(expenses.headId, animals.id))
-    .leftJoin(owners, eq(animals.ownerId, owners.id));
+    .leftJoin(expenseCategories, and(eq(expenses.categoryId, expenseCategories.id), eq(expenseCategories.companyId, tenant.companyId)))
+    .leftJoin(expenseSubCategories, and(eq(expenses.subCategoryId, expenseSubCategories.id), eq(expenseSubCategories.companyId, tenant.companyId)))
+    .leftJoin(animals, and(eq(expenses.headId, animals.id), eq(animals.companyId, tenant.companyId)))
+    .leftJoin(owners, and(eq(animals.ownerId, owners.id), eq(owners.companyId, tenant.companyId)));
   conditions.push(isNull(expenses.deletedAt));
   return query.where(and(...conditions)).orderBy(desc(expenses.expenseDate));
 }
 
-export async function createExpense(data: typeof expenses.$inferInsert, tx?: DbOrTx) {
+export async function createExpense(data: TenantCreateInput<typeof expenses.$inferInsert>, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(expenses).values(data);
+  const [result] = await db.insert(expenses).values(tenantInsert(data, true));
   return result;
 }
 
-export async function updateExpense(id: number, data: Partial<typeof expenses.$inferInsert>) {
+export async function updateExpense(
+  id: number,
+  expectedVersion: number,
+  data: Partial<typeof expenses.$inferInsert>,
+  audit: { userId?: number; ipAddress?: string },
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(expenses).set(data).where(eq(expenses.id, id));
+  const tenant = requireTenantUserContext();
+  const { companyId: _companyId, farmId: _farmId, publicId: _publicId, version: _version, ...safeData } = data;
+  return db.transaction(async tx => {
+    const result = await executeVersionedUpdate({
+      expectedVersion,
+      lockCurrent: async () => {
+        const [row] = await tx.select().from(expenses).where(and(
+          tenantScope(tenant, expenses),
+          eq(expenses.id, id),
+          isNull(expenses.deletedAt),
+        )).limit(1).for("update");
+        return row ?? null;
+      },
+      compareAndSwap: async () => {
+        const [updated] = await tx.update(expenses).set({
+          ...safeData,
+          version: sql`${expenses.version} + 1`,
+        }).where(and(
+          versionedTenantUpdateScope(tenant, expenses, id, expectedVersion),
+          isNull(expenses.deletedAt),
+        ));
+        return Number((updated as { affectedRows?: number }).affectedRows ?? 0);
+      },
+      appendAudit: async current => {
+        const oldValues = Object.fromEntries([
+          ...Object.keys(safeData).map(key => [key, current[key as keyof typeof current]]),
+          ["version", current.version],
+        ]);
+        await createAuditEntry({
+          userId: audit.userId,
+          action: "update",
+          ipAddress: audit.ipAddress,
+          entityType: "expense",
+          entityId: String(id),
+          oldValues,
+          newValues: { ...safeData, version: expectedVersion + 1 },
+        }, tx);
+      },
+    });
+    return { id, ...result };
+  });
 }
 
-export async function deleteExpense(id: number, deletedBy?: number) {
+export async function deleteExpense(
+  id: number,
+  expectedVersion: number,
+  audit: { userId?: number; ipAddress?: string },
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db
-    .update(expenses)
-    .set({ deletedAt: new Date(), deletedBy: deletedBy ?? null })
-    .where(eq(expenses.id, id));
+  const tenant = requireTenantUserContext();
+  return db.transaction(async tx => {
+    const deletedAt = new Date();
+    const result = await executeVersionedUpdate({
+      expectedVersion,
+      lockCurrent: async () => {
+        const [row] = await tx.select().from(expenses).where(and(
+          tenantScope(tenant, expenses),
+          eq(expenses.id, id),
+          isNull(expenses.deletedAt),
+        )).limit(1).for("update");
+        return row ?? null;
+      },
+      compareAndSwap: async () => {
+        const [updated] = await tx.update(expenses).set({
+          deletedAt,
+          deletedBy: audit.userId ?? null,
+          version: sql`${expenses.version} + 1`,
+        }).where(and(
+          versionedTenantUpdateScope(tenant, expenses, id, expectedVersion),
+          isNull(expenses.deletedAt),
+        ));
+        return Number((updated as { affectedRows?: number }).affectedRows ?? 0);
+      },
+      appendAudit: current => createAuditEntry({
+        userId: audit.userId,
+        action: "delete",
+        ipAddress: audit.ipAddress,
+        entityType: "expense",
+        entityId: String(id),
+        oldValues: {
+          amount: current.amount,
+          vendorName: current.vendorName,
+          deletedAt: current.deletedAt,
+          version: current.version,
+        },
+        newValues: { deletedAt, version: expectedVersion + 1 },
+      }, tx),
+    });
+    return { id, ...result };
+  });
 }
 
 // ─── PREGNANCY TRACKING ───────────────────────────────────────────────────────
@@ -1798,11 +2395,12 @@ export async function createPregnancyRecord(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
 
   const [animal] = await db
     .select({ id: animals.id, sex: animals.sex, isActive: animals.isActive, deletedAt: animals.deletedAt, speciesId: animals.speciesId })
     .from(animals)
-    .where(eq(animals.id, data.animalId))
+    .where(and(tenantScope(tenant, animals), eq(animals.id, data.animalId)))
     .limit(1);
   if (!animal || animal.deletedAt) throw new Error("Animal not found");
   if (animal.sex !== "female") throw new Error("Only female animals can have a pregnancy record");
@@ -1810,15 +2408,15 @@ export async function createPregnancyRecord(data: {
   const existingActive = await db
     .select({ id: pregnancyRecords.id })
     .from(pregnancyRecords)
-    .where(and(eq(pregnancyRecords.animalId, data.animalId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)))
+    .where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.animalId, data.animalId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)))
     .limit(1);
   if (existingActive.length) throw new Error("This animal already has an active pregnancy");
 
-  const [sp] = await db.select({ gestationDays: species.gestationDays }).from(species).where(eq(species.id, animal.speciesId)).limit(1);
+  const [sp] = await db.select({ gestationDays: species.gestationDays }).from(species).where(and(eq(species.companyId, tenant.companyId), eq(species.id, animal.speciesId))).limit(1);
   const gestationDays = sp?.gestationDays ?? 150;
   const expectedDueDate = calculatePregnancyDueDate(data.confirmationDate, gestationDays);
 
-  const [result] = await db.insert(pregnancyRecords).values({
+  const [result] = await db.insert(pregnancyRecords).values(tenantInsert({
     animalId: data.animalId,
     sireId: data.sireId ?? null,
     confirmationDate: new Date(data.confirmationDate),
@@ -1829,7 +2427,7 @@ export async function createPregnancyRecord(data: {
     notifyBeforeCheckup: data.notifyBeforeCheckup ?? 3,
     notes: data.notes,
     createdBy: data.createdBy,
-  });
+  }, true));
   return result;
 }
 
@@ -1842,12 +2440,13 @@ export async function updatePregnancyRecord(id: number, data: {
   status?: "active" | "delivered" | "aborted" | "lost";
   completedDate?: string | null;
   notes?: string;
-}) {
+}, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
   const updateData: any = { ...data };
   if (data.confirmationDate !== undefined) {
-    const [rec] = await db.select({ gestationDays: pregnancyRecords.gestationDays }).from(pregnancyRecords).where(eq(pregnancyRecords.id, id)).limit(1);
+    const [rec] = await db.select({ gestationDays: pregnancyRecords.gestationDays }).from(pregnancyRecords).where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.id, id))).limit(1);
     if (rec) {
       updateData.confirmationDate = new Date(data.confirmationDate);
       updateData.expectedDueDate = new Date(calculatePregnancyDueDate(data.confirmationDate, rec.gestationDays));
@@ -1855,25 +2454,47 @@ export async function updatePregnancyRecord(id: number, data: {
   }
   if (data.checkupDate !== undefined) updateData.checkupDate = data.checkupDate ? new Date(data.checkupDate) : null;
   if (data.completedDate !== undefined) updateData.completedDate = data.completedDate ? new Date(data.completedDate) : null;
-  await db.update(pregnancyRecords).set(updateData).where(eq(pregnancyRecords.id, id));
+  const [result] = await db.update(pregnancyRecords).set({
+    ...updateData,
+    version: sql`${pregnancyRecords.version} + 1`,
+  }).where(and(
+    tenantScope(tenant, pregnancyRecords),
+    eq(pregnancyRecords.id, id),
+    eq(pregnancyRecords.version, expectedVersion),
+    isNull(pregnancyRecords.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
-export async function deletePregnancyRecord(id: number, deletedBy?: number) {
+export async function deletePregnancyRecord(id: number, expectedVersion: number, deletedBy?: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(pregnancyRecords).set({ deletedAt: new Date(), deletedBy: deletedBy ?? null }).where(eq(pregnancyRecords.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(pregnancyRecords).set({
+    deletedAt: new Date(),
+    deletedBy: deletedBy ?? null,
+    version: sql`${pregnancyRecords.version} + 1`,
+  }).where(and(
+    tenantScope(tenant, pregnancyRecords),
+    eq(pregnancyRecords.id, id),
+    eq(pregnancyRecords.version, expectedVersion),
+    isNull(pregnancyRecords.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 export async function restorePregnancyRecord(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(pregnancyRecords).set({ deletedAt: null, deletedBy: null }).where(eq(pregnancyRecords.id, id));
+  const tenant = requireTenantUserContext();
+  await db.update(pregnancyRecords).set({ deletedAt: null, deletedBy: null }).where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.id, id)));
 }
 
 export async function getPregnancies(filters?: { animalId?: number; status?: string; ownerId?: number; dueWithinDays?: number }) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [isNull(pregnancyRecords.deletedAt)];
+  const tenant = requireTenantUserContext();
+  const conditions = [tenantScope(tenant, pregnancyRecords), isNull(pregnancyRecords.deletedAt)];
   if (filters?.animalId) conditions.push(eq(pregnancyRecords.animalId, filters.animalId));
   if (filters?.status) conditions.push(eq(pregnancyRecords.status, filters.status as any));
   if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
@@ -1893,9 +2514,9 @@ export async function getPregnancies(filters?: { animalId?: number; status?: str
       ownerName: owners.name,
     })
     .from(pregnancyRecords)
-    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
-    .leftJoin(species, eq(animals.speciesId, species.id))
-    .leftJoin(owners, eq(animals.ownerId, owners.id))
+    .innerJoin(animals, and(eq(pregnancyRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId)))
+    .leftJoin(species, and(eq(animals.speciesId, species.id), eq(species.companyId, tenant.companyId)))
+    .leftJoin(owners, and(eq(animals.ownerId, owners.id), eq(owners.companyId, tenant.companyId)))
     .where(and(...conditions))
     .orderBy(pregnancyRecords.expectedDueDate);
   return rows.map(r => ({
@@ -1912,7 +2533,8 @@ export async function getActivePregnancyByAnimal(animalId: number) {
 export async function getPregnancyRecordById(id: number) {
   const db = await getDb();
   if (!db) return null;
-  const [row] = await db.select().from(pregnancyRecords).where(eq(pregnancyRecords.id, id)).limit(1);
+  const tenant = requireTenantUserContext();
+  const [row] = await db.select().from(pregnancyRecords).where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.id, id))).limit(1);
   return row ?? null;
 }
 
@@ -1920,16 +2542,23 @@ export async function getPregnancyRecordById(id: number) {
 export async function closePregnancyOnBirth(damId: number, lambingLogId: number | null, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return;
+  const tenant = requireTenantUserContext();
   const today = new Date(new Date().toISOString().split("T")[0]);
   await db
     .update(pregnancyRecords)
-    .set({ status: "delivered", outcomeLambingLogId: lambingLogId ?? null, completedDate: today })
-    .where(and(eq(pregnancyRecords.animalId, damId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)));
+    .set({
+      status: "delivered",
+      outcomeLambingLogId: lambingLogId ?? null,
+      completedDate: today,
+      version: sql`${pregnancyRecords.version} + 1`,
+    })
+    .where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.animalId, damId), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt)));
 }
 
 export async function getUpcomingPregnancyDueDates(days = 30) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   const target = new Date();
   target.setDate(target.getDate() + days);
   const targetStr = target.toISOString().split("T")[0];
@@ -1942,14 +2571,15 @@ export async function getUpcomingPregnancyDueDates(days = 30) {
       notifyBeforeDue: pregnancyRecords.notifyBeforeDue,
     })
     .from(pregnancyRecords)
-    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
-    .where(and(eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), sql`${pregnancyRecords.expectedDueDate} <= ${targetStr}`))
+    .innerJoin(animals, and(eq(pregnancyRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId)))
+    .where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), sql`${pregnancyRecords.expectedDueDate} <= ${targetStr}`))
     .orderBy(pregnancyRecords.expectedDueDate);
 }
 
 export async function getUpcomingPregnancyCheckups(days = 30) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
   const target = new Date();
   target.setDate(target.getDate() + days);
   const targetStr = target.toISOString().split("T")[0];
@@ -1962,8 +2592,8 @@ export async function getUpcomingPregnancyCheckups(days = 30) {
       notifyBeforeCheckup: pregnancyRecords.notifyBeforeCheckup,
     })
     .from(pregnancyRecords)
-    .innerJoin(animals, eq(pregnancyRecords.animalId, animals.id))
-    .where(and(eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), isNotNull(pregnancyRecords.checkupDate), sql`${pregnancyRecords.checkupDate} <= ${targetStr}`))
+    .innerJoin(animals, and(eq(pregnancyRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId)))
+    .where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.status, "active"), isNull(pregnancyRecords.deletedAt), isNotNull(pregnancyRecords.checkupDate), sql`${pregnancyRecords.checkupDate} <= ${targetStr}`))
     .orderBy(pregnancyRecords.checkupDate);
 }
 
@@ -2001,50 +2631,172 @@ export async function getReproductiveHistory(animalId: number) {
 export async function getNotifications(userId?: number, unreadOnly?: boolean) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [];
-  if (userId) conditions.push(or(eq(notifications.userId, userId), isNull(notifications.userId)));
-  if (unreadOnly) conditions.push(eq(notifications.isRead, false));
-  const query = db.select().from(notifications);
-  if (conditions.length > 0)
-    return query
-      .where(and(...conditions))
-      .orderBy(desc(notifications.createdAt))
-      .limit(50);
-  return query.orderBy(desc(notifications.createdAt)).limit(50);
+  const tenant = requireTenantUserContext();
+  if (userId !== undefined && userId !== tenant.userId) return [];
+  const conditions = [tenantScope(tenant, notifications)];
+  if (userId) {
+    const audience = or(eq(notifications.userId, userId), isNull(notifications.userId));
+    if (audience) conditions.push(audience);
+  }
+  if (unreadOnly) {
+    const unread = or(
+      and(isNotNull(notifications.userId), eq(notifications.isRead, false)),
+      and(isNull(notifications.userId), isNull(notificationReceipts.readAt)),
+    );
+    if (unread) conditions.push(unread);
+  }
+  const rows = await db
+    .select({ notification: notifications, receiptReadAt: notificationReceipts.readAt })
+    .from(notifications)
+    .leftJoin(notificationReceipts, and(
+      eq(notificationReceipts.companyId, tenant.companyId),
+      eq(notificationReceipts.notificationId, notifications.id),
+      eq(notificationReceipts.companyMembershipId, tenant.membershipId),
+    ))
+    .where(and(...conditions))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50);
+  return rows.map(row => ({
+    ...row.notification,
+    isRead: row.notification.userId === null
+      ? row.receiptReadAt !== null
+      : row.notification.isRead,
+  }));
 }
 
 export async function createNotification(
-  data: typeof notifications.$inferInsert,
+  data: TenantCreateInput<typeof notifications.$inferInsert>,
   tx?: DbOrTx,
 ) {
   const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(notifications).values(data);
+  const tenant = requireTenantUserContext();
+  const [result] = await db.insert(notifications).values({
+    ...tenantInsert(data),
+    farmId: tenant.selectedFarmId,
+  });
   return result;
 }
 
-export async function markNotificationRead(id: number) {
+export async function markNotificationRead(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, id));
+  const tenant = requireTenantUserContext();
+  if (userId !== tenant.userId) return false;
+  return db.transaction(async tx => {
+    const [notification] = await tx
+      .select({ id: notifications.id, userId: notifications.userId })
+      .from(notifications)
+      .where(and(tenantScope(tenant, notifications), eq(notifications.id, id)))
+      .limit(1)
+      .for("update");
+    if (!notification || (notification.userId !== null && notification.userId !== tenant.userId)) {
+      return false;
+    }
+    if (notification.userId !== null) {
+      await tx.update(notifications).set({ isRead: true }).where(and(
+        tenantScope(tenant, notifications),
+        eq(notifications.id, id),
+        eq(notifications.userId, tenant.userId),
+      ));
+    } else {
+      await tx.insert(notificationReceipts).values({
+        companyId: tenant.companyId,
+        notificationId: id,
+        companyMembershipId: tenant.membershipId,
+        deliveredAt: new Date(),
+        readAt: new Date(),
+      }).onDuplicateKeyUpdate({ set: { readAt: new Date() } });
+    }
+    return true;
+  });
 }
 
 export async function markAllNotificationsRead(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  // Mark both user-specific notifications AND system notifications (userId IS NULL) as read
-  await db
-    .update(notifications)
-    .set({ isRead: true })
-    .where(or(eq(notifications.userId, userId), isNull(notifications.userId)));
+  const tenant = requireTenantUserContext();
+  if (userId !== tenant.userId) return;
+  await db.transaction(async tx => {
+    await tx.update(notifications).set({ isRead: true }).where(and(
+      tenantScope(tenant, notifications),
+      eq(notifications.userId, tenant.userId),
+    ));
+    const systemRows = await tx.select({ id: notifications.id })
+      .from(notifications)
+      .where(and(tenantScope(tenant, notifications), isNull(notifications.userId)));
+    if (systemRows.length > 0) {
+      const now = new Date();
+      await tx.insert(notificationReceipts).values(systemRows.map(row => ({
+        companyId: tenant.companyId,
+        notificationId: row.id,
+        companyMembershipId: tenant.membershipId,
+        deliveredAt: now,
+        readAt: now,
+      }))).onDuplicateKeyUpdate({ set: { readAt: now } });
+    }
+  });
 }
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 
-export async function createAuditEntry(data: typeof auditLog.$inferInsert, tx?: DbOrTx) {
+type TenantAuditEntryInput = Omit<
+  typeof auditLog.$inferInsert,
+  | "publicId"
+  | "companyId"
+  | "farmId"
+  | "userId"
+  | "membershipId"
+  | "actorType"
+  | "actionCategory"
+  | "requestId"
+  | "outcome"
+> & Partial<Pick<
+  typeof auditLog.$inferInsert,
+  | "companyId"
+  | "farmId"
+  | "userId"
+  | "membershipId"
+  | "actorType"
+  | "actionCategory"
+  | "requestId"
+  | "outcome"
+>>;
+
+function redactAuditJson(value: unknown) {
+  if (!value || typeof value !== "object") return value;
+  return redactLogFields(value as Record<string, unknown>);
+}
+
+export async function createAuditEntry(data: TenantAuditEntryInput, tx?: DbOrTx) {
   const db = tx ?? (await getDb());
   if (!db) return;
-  await db.insert(auditLog).values(data);
+  const tenant = requireTenantUserContext();
+  // `null` is an intentional company-level audit scope; only an omitted value
+  // inherits the selected farm from the request context.
+  const farmId = data.farmId === undefined ? tenant.selectedFarmId : data.farmId;
+  if (
+    farmId !== null &&
+    tenant.accessibleFarmIds !== "all" &&
+    !tenant.accessibleFarmIds.includes(farmId)
+  ) {
+    throw new Error("FARM_ACCESS_DENIED");
+  }
+  await db.insert(auditLog).values({
+    ...data,
+    publicId: generatePublicId(),
+    companyId: tenant.companyId,
+    farmId,
+    userId: tenant.userId,
+    membershipId: tenant.membershipId,
+    actorType: "tenant_user",
+    actionCategory: data.actionCategory ?? "crud",
+    requestId: data.requestId ?? tenant.requestId,
+    outcome: data.outcome ?? "success",
+    oldValues: redactAuditJson(data.oldValues),
+    newValues: redactAuditJson(data.newValues),
+    metadata: redactAuditJson(data.metadata),
+  });
 }
 
 // entityType (as written to the audit log) → table, for capturing the
@@ -2063,13 +2815,19 @@ const AUDIT_TABLES: Record<string, any> = {
 /** Prior values of exactly the fields being changed, for a revertable update.
  * Best-effort: never throws — capturing audit context must not break the
  * mutation it accompanies. */
-export async function captureChangedOldValues(entityType: string, id: number, data: Record<string, unknown>) {
+export async function captureChangedOldValues(
+  entityType: string,
+  id: number,
+  data: Record<string, unknown>,
+  dbOrTx?: DbOrTx,
+) {
   try {
     const table = AUDIT_TABLES[entityType];
     if (!table) return undefined;
-    const db = await getDb();
+    const db = dbOrTx ?? await getDb();
     if (!db) return undefined;
-    const [row] = await db.select().from(table).where(eq(table.id, id)).limit(1);
+    const tenant = requireTenantUserContext();
+    const [row] = await db.select().from(table).where(and(tenantScope(tenant, table), eq(table.id, id))).limit(1);
     if (!row) return undefined;
     const out: Record<string, unknown> = {};
     for (const k of Object.keys(data)) if (k in (row as any)) out[k] = (row as any)[k];
@@ -2086,7 +2844,8 @@ export async function captureRowSnapshot(entityType: string, id: number) {
     if (!table) return undefined;
     const db = await getDb();
     if (!db) return undefined;
-    const [row] = await db.select().from(table).where(eq(table.id, id)).limit(1);
+    const tenant = requireTenantUserContext();
+    const [row] = await db.select().from(table).where(and(tenantScope(tenant, table), eq(table.id, id))).limit(1);
     return row ?? undefined;
   } catch {
     return undefined;
@@ -2096,7 +2855,18 @@ export async function captureRowSnapshot(entityType: string, id: number) {
 export async function getAuditLog(entityType?: string, entityId?: string) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [];
+  const tenant = requireTenantUserContext();
+  // The tenant feed shows work done inside the company; platform-admin and
+  // migration entries stay visible only in the Admin portal audit page.
+  // Rows imported from the legacy audit table carry a NULL actorType and are
+  // tenant actions by definition.
+  const conditions = [
+    tenantScope(tenant, auditLog),
+    or(
+      isNull(auditLog.actorType),
+      inArray(auditLog.actorType, ["tenant_user", "support", "system_job"]),
+    )!,
+  ];
   if (entityType) conditions.push(eq(auditLog.entityType, entityType));
   if (entityId) conditions.push(eq(auditLog.entityId, entityId));
   const query = db.select().from(auditLog);
@@ -2113,6 +2883,7 @@ export async function getAuditLog(entityType?: string, entityId?: string) {
 export async function getAnimalPnL(animalId: number) {
   const db = await getDb();
   if (!db) return null;
+  const tenant = requireTenantUserContext();
 
   const animalRows = await db
     .select({
@@ -2120,8 +2891,8 @@ export async function getAnimalPnL(animalId: number) {
       category: animalCategories
     })
     .from(animals)
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .where(and(eq(animals.id, animalId), isNull(animals.deletedAt)));
+    .leftJoin(animalCategories, and(eq(animals.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)))
+    .where(and(tenantScope(tenant, animals), eq(animals.id, animalId), isNull(animals.deletedAt)));
 
   if (animalRows.length === 0) return null;
   const animal = animalRows[0].animal;
@@ -2142,7 +2913,7 @@ export async function getAnimalPnL(animalId: number) {
   const directExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(eq(expenses.headId, animalId), eq(expenses.targetType, "head"), isNull(expenses.deletedAt)));
+    .where(and(tenantScope(tenant, expenses), eq(expenses.headId, animalId), eq(expenses.targetType, "head"), isNull(expenses.deletedAt)));
   const directExpenseTotalMinor = toMinor(String(directExpenses[0]?.total ?? 0));
 
   // Category-level expense allocation: animal's share of vet/vaccine bills etc
@@ -2152,7 +2923,7 @@ export async function getAnimalPnL(animalId: number) {
   const catExpensesRows = await db
     .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
     .from(expenses)
-    .where(and(eq(expenses.targetType, "category"), eq(expenses.categoryTarget, animal.categoryId), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
+    .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "category"), eq(expenses.categoryTarget, animal.categoryId), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
 
   // Allocate every bill by the category head count on that bill's date. This
   // keeps historical P&L stable and matches the bulk P&L calculation.
@@ -2170,7 +2941,7 @@ export async function getAnimalPnL(animalId: number) {
       categoryExpenseAllocationMinor += divMinor(toMinor(String(expense.amount)), headCount);
     }
   } catch (err) {
-    console.error(`getAnimalPnL: category allocation failed for animal ${animalId}:`, err);
+    logger.error("pnl.category_allocation_failed", { animalId, error: err });
   }
 
   // Herd (animal-wide) expenses: each such expense in the animal's window is
@@ -2180,14 +2951,14 @@ export async function getAnimalPnL(animalId: number) {
     const herdExpenseRows = await db
       .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
       .from(expenses)
-      .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
+      .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "herd"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
     for (const he of herdExpenseRows) {
       const dStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
       const herdCount = await getHerdHeadCountOnDate(dStr);
       herdExpenseAllocationMinor += divMinor(toMinor(String(he.amount)), herdCount);
     }
   } catch (err) {
-    console.error(`getAnimalPnL: herd allocation failed for animal ${animalId}:`, err);
+    logger.error("pnl.herd_allocation_failed", { animalId, error: err });
   }
 
   // General farm expenses (water, electricity, labour, etc.) are also real
@@ -2198,7 +2969,7 @@ export async function getAnimalPnL(animalId: number) {
     const generalExpenseRows = await db
       .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
       .from(expenses)
-      .where(and(eq(expenses.targetType, "general"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
+      .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "general"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
     for (const ge of generalExpenseRows) {
       const dStr = ge.expenseDate instanceof Date ? ge.expenseDate.toISOString().split("T")[0] : String(ge.expenseDate).split("T")[0];
       generalExpenseAllocationMinor += divMinor(toMinor(String(ge.amount)), await getHerdHeadCountOnDate(dStr));
@@ -2218,9 +2989,10 @@ export async function getAnimalPnL(animalId: number) {
       subCategoryName: expenseSubCategories.name,
     })
     .from(expenses)
-    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .leftJoin(expenseSubCategories, eq(expenses.subCategoryId, expenseSubCategories.id))
+    .leftJoin(expenseCategories, and(eq(expenses.categoryId, expenseCategories.id), eq(expenseCategories.companyId, tenant.companyId)))
+    .leftJoin(expenseSubCategories, and(eq(expenses.subCategoryId, expenseSubCategories.id), eq(expenseSubCategories.companyId, tenant.companyId)))
     .where(and(
+      tenantScope(tenant, expenses),
       isNull(expenses.deletedAt),
       or(
         and(eq(expenses.targetType, "head"), eq(expenses.headId, animalId)),
@@ -2280,7 +3052,7 @@ export async function getAnimalPnL(animalId: number) {
   const saleRows = await db
     .select()
     .from(sales)
-    .where(and(eq(sales.animalId, animalId), isNull(sales.deletedAt)))
+    .where(and(tenantScope(tenant, sales), eq(sales.animalId, animalId), isNull(sales.deletedAt)))
     .limit(1);
   const revenueMinor = saleRows.length > 0 ? toMinor(saleRows[0].salePrice) : 0;
   const weightAtSale = saleRows.length > 0 ? parseFloat(saleRows[0].weightAtSale ?? "0") : 0;
@@ -2292,7 +3064,7 @@ export async function getAnimalPnL(animalId: number) {
   try {
     feedCost = await computeFeedCostForPeriod(animal.categoryId, acquisitionDate, exitDate);
   } catch (err) {
-    console.error(`getAnimalPnL: feed cost failed for animal ${animalId}:`, err);
+    logger.error("pnl.feed_cost_failed", { animalId, error: err });
   }
   const feedCostMinor = toMinor(feedCost);
 
@@ -2324,7 +3096,7 @@ export async function getAnimalPnL(animalId: number) {
   const weightRows = await db
     .select({ weightKg: weightLog.weightKg, weighDate: weightLog.weighDate })
     .from(weightLog)
-    .where(and(eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt)))
+    .where(and(tenantScope(tenant, weightLog), eq(weightLog.animalId, animalId), isNull(weightLog.deletedAt)))
     .orderBy(desc(weightLog.weighDate))
     .limit(1);
   const acqWeight = parseFloat(animal.weightAtAcquisition ?? "0");
@@ -2379,11 +3151,12 @@ export async function getAnimalPnL(animalId: number) {
 export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
 
   const today = new Date().toISOString().split("T")[0];
 
   // 1. Fetch all animals with category + species + status names
-  const conditions = [isNotNull(animals.id), isNull(animals.deletedAt)];
+  const conditions = [tenantScope(tenant, animals), isNotNull(animals.id), isNull(animals.deletedAt)];
   if (filters?.speciesId) conditions.push(eq(animals.speciesId, filters.speciesId));
   if (filters?.categoryId) conditions.push(eq(animals.categoryId, filters.categoryId));
   if (filters?.ownerId) conditions.push(eq(animals.ownerId, filters.ownerId));
@@ -2397,17 +3170,17 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       ownerName: owners.name
     })
     .from(animals)
-    .leftJoin(animalCategories, eq(animals.categoryId, animalCategories.id))
-    .leftJoin(species, eq(animals.speciesId, species.id))
-    .leftJoin(animalStatuses, eq(animals.statusId, animalStatuses.id))
-    .leftJoin(owners, eq(animals.ownerId, owners.id))
+    .leftJoin(animalCategories, and(eq(animals.categoryId, animalCategories.id), eq(animalCategories.companyId, tenant.companyId)))
+    .leftJoin(species, and(eq(animals.speciesId, species.id), eq(species.companyId, tenant.companyId)))
+    .leftJoin(animalStatuses, and(eq(animals.statusId, animalStatuses.id), eq(animalStatuses.companyId, tenant.companyId)))
+    .leftJoin(owners, and(eq(animals.ownerId, owners.id), eq(owners.companyId, tenant.companyId)))
     .where(and(...conditions))
     .orderBy(animals.animalId);
 
   if (!allAnimals.length) return [];
 
   // 2. Pre-fetch all sales (one query)
-  const allSales = await db.select().from(sales).where(isNull(sales.deletedAt));
+  const allSales = await db.select().from(sales).where(and(tenantScope(tenant, sales), isNull(sales.deletedAt)));
   const saleByAnimal = new Map<number, (typeof allSales)[0]>();
   for (const s of allSales) saleByAnimal.set(s.animalId, s);
 
@@ -2415,7 +3188,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const allDirectExp = await db
     .select({ headId: expenses.headId, total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(eq(expenses.targetType, "head"), isNull(expenses.deletedAt)))
+    .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "head"), isNull(expenses.deletedAt)))
     .groupBy(expenses.headId);
   const directExpByAnimal = new Map<number, number>(); // minor units
   for (const e of allDirectExp) {
@@ -2431,7 +3204,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       categoryTarget: expenses.categoryTarget
     })
     .from(expenses)
-    .where(and(eq(expenses.targetType, "category"), isNull(expenses.deletedAt)));
+    .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "category"), isNull(expenses.deletedAt)));
 
   // Build a map: categoryId → array of { amountMinor, date }.
   const catExpByCatId = new Map<number, Array<{ amount: number; date: string }>>(); // amounts in minor units
@@ -2451,7 +3224,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const denomAnimals = await db
     .select({ categoryId: animals.categoryId, acquisitionDate: animals.acquisitionDate, exitDate: animals.exitDate })
     .from(animals)
-    .where(isNull(animals.deletedAt));
+    .where(and(tenantScope(tenant, animals), isNull(animals.deletedAt)));
   const normAcq = (d: any) => d instanceof Date ? d.toISOString().split("T")[0] : String(d ?? today).split("T")[0];
   const normExit = (d: any) => d ? (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]) : null;
 
@@ -2471,7 +3244,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const allHerdExp = await db
     .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
     .from(expenses)
-    .where(and(eq(expenses.targetType, "herd"), isNull(expenses.deletedAt)));
+    .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "herd"), isNull(expenses.deletedAt)));
   const allAnimalDates = denomAnimals.map(a => ({ acq: normAcq(a.acquisitionDate), exit: normExit(a.exitDate) }));
   const herdCountOnDate = (dateStr: string) => Math.max(1, allAnimalDates.filter((a) => a.acq <= dateStr && (a.exit === null || a.exit >= dateStr)).length);
   // Pre-split each herd expense → { date, perHeadMinor } so each animal alive
@@ -2486,14 +3259,14 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const allGeneralExp = await db
     .select({ amount: expenses.amount, expenseDate: expenses.expenseDate })
     .from(expenses)
-    .where(and(eq(expenses.targetType, "general"), isNull(expenses.deletedAt)));
+    .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "general"), isNull(expenses.deletedAt)));
   const generalExpenseShares = allGeneralExp.map((ge: any) => {
     const dateStr = ge.expenseDate instanceof Date ? ge.expenseDate.toISOString().split("T")[0] : String(ge.expenseDate).split("T")[0];
     return { date: dateStr, perHeadMinor: divMinor(toMinor(String(ge.amount)), herdCountOnDate(dateStr)) };
   });
 
   // 5. Pre-fetch ALL ration plans (active + historical) for accurate per-period cost
-  const allPlans = await db.select().from(rationPlans).where(isNull(rationPlans.deletedAt));
+  const allPlans = await db.select().from(rationPlans).where(and(tenantScope(tenant, rationPlans), isNull(rationPlans.deletedAt)));
   // Group by categoryId
   const plansByCategory = new Map<number, typeof allPlans>();
   for (const p of allPlans) {
@@ -2503,7 +3276,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
 
   // 6. Build feed price cache — key: `feedItemId:dateStr`
   // 6. Pre-fetch ALL feed price history (one query) for in-memory segmented costing.
-  const allPriceRows = await db.select().from(feedItemPriceHistory);
+  const allPriceRows = await db.select().from(feedItemPriceHistory).where(tenantScope(tenant, feedItemPriceHistory));
   const pricesByItem = buildPricesByItem(allPriceRows);
 
   // In-memory segmented feed cost for one animal over [start, end), reusing the
@@ -2631,6 +3404,7 @@ export async function checkAndStageAnimal(
 ): Promise<{ staged: boolean; newCategoryId?: number; newAnimalId?: string }> {
   const sharedDb = tx ?? (await getDb());
   if (!sharedDb) return { staged: false };
+  const tenant = requireTenantUserContext();
 
   const stageWithin = async (scope: DbOrTx) => {
     const lockedAnimal = await getRawAnimalForUpdate(animalId, scope);
@@ -2642,7 +3416,7 @@ export async function checkAndStageAnimal(
         autoStageTargetCategoryId: animalCategories.autoStageTargetCategoryId,
       })
       .from(animalCategories)
-      .where(eq(animalCategories.id, lockedAnimal.categoryId))
+      .where(and(eq(animalCategories.companyId, tenant.companyId), eq(animalCategories.id, lockedAnimal.categoryId)))
       .limit(1);
 
     if (!catRow?.autoStageWeightKg || !catRow.autoStageTargetCategoryId) {
@@ -2675,7 +3449,7 @@ export async function checkAndStageAnimal(
         animalId: stagedAnimalId,
         updatedAt: new Date(),
       })
-      .where(and(eq(animals.id, animalId), isNull(animals.deletedAt)));
+      .where(and(tenantScope(tenant, animals), eq(animals.id, animalId), isNull(animals.deletedAt)));
 
     await createAuditEntry({
       userId: changedBy,
@@ -2716,6 +3490,7 @@ export async function checkAndStageAnimal(
 export async function getOwnerFeedCostMinor(ownerId: number, fromDate: string, toDate: string): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
+  const tenant = requireTenantUserContext();
 
   const norm = (d: Date | string | null): string | null => {
     if (d == null) return null;
@@ -2729,16 +3504,16 @@ export async function getOwnerFeedCostMinor(ownerId: number, fromDate: string, t
       exitDate: animals.exitDate,
     })
     .from(animals)
-    .where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)));
+    .where(and(tenantScope(tenant, animals), eq(animals.ownerId, ownerId), isNull(animals.deletedAt)));
   if (!owned.length) return 0;
 
-  const allPlans = await db.select().from(rationPlans).where(isNull(rationPlans.deletedAt));
+  const allPlans = await db.select().from(rationPlans).where(and(tenantScope(tenant, rationPlans), isNull(rationPlans.deletedAt)));
   const plansByCategory = new Map<number, typeof allPlans>();
   for (const p of allPlans) {
     if (!plansByCategory.has(p.categoryId)) plansByCategory.set(p.categoryId, []);
     plansByCategory.get(p.categoryId)!.push(p);
   }
-  const allPriceRows = await db.select().from(feedItemPriceHistory);
+  const allPriceRows = await db.select().from(feedItemPriceHistory).where(tenantScope(tenant, feedItemPriceHistory));
   const pricesByItem = buildPricesByItem(allPriceRows);
 
   let totalMinor = 0;
@@ -2836,6 +3611,7 @@ export async function getOwnerExpenseBreakdownMinor(ownerId: number, fromDate: s
   const empty = { byCategory: [], headMinor: 0, categoryMinor: 0, herdMinor: 0, totalOtherMinor: 0 };
   const db = await getDb();
   if (!db) return empty;
+  const tenant = requireTenantUserContext();
 
   const norm = (d: Date | string | null): string | null =>
     d == null ? null : (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]);
@@ -2843,7 +3619,7 @@ export async function getOwnerExpenseBreakdownMinor(ownerId: number, fromDate: s
   const allAnimals = await db
     .select({ id: animals.id, categoryId: animals.categoryId, ownerId: animals.ownerId, acquisitionDate: animals.acquisitionDate, exitDate: animals.exitDate })
     .from(animals)
-    .where(isNull(animals.deletedAt));
+    .where(and(tenantScope(tenant, animals), isNull(animals.deletedAt)));
   const ownedAnimalIds = new Set(allAnimals.filter(a => a.ownerId === ownerId).map(a => a.id));
   if (ownedAnimalIds.size === 0) return empty;
 
@@ -2864,8 +3640,8 @@ export async function getOwnerExpenseBreakdownMinor(ownerId: number, fromDate: s
       categoryName: expenseCategories.name,
     })
     .from(expenses)
-    .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
+    .leftJoin(expenseCategories, and(eq(expenses.categoryId, expenseCategories.id), eq(expenseCategories.companyId, tenant.companyId)))
+    .where(and(tenantScope(tenant, expenses), sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
 
   const expForCalc = expRows.map(e => ({
     targetType: e.targetType,
@@ -2894,6 +3670,7 @@ export async function getOwnerExpenseBreakdownMinor(ownerId: number, fromDate: s
 export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: string; speciesId?: number; categoryId?: number; groupId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return null;
+  const tenant = requireTenantUserContext();
 
   const today = new Date().toISOString().split("T")[0];
   const twelveMonthsAgo = new Date();
@@ -2910,7 +3687,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   // owner's ration-plan consumption.
   const ownerId = filters?.ownerId;
   const ownedAnimalIds: number[] = ownerId
-    ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map(r => r.id)
+    ? (await db.select({ id: animals.id }).from(animals).where(and(tenantScope(tenant, animals), eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map(r => r.id)
     : [];
   const ownerSalesCond = ownerId
     ? (ownedAnimalIds.length > 0 ? inArray(sales.animalId, ownedAnimalIds) : sql`1 = 0`)
@@ -2938,7 +3715,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const totalOtherExpenses = await db
     .select({ total: sql<number>`SUM(amount)` })
     .from(expenses)
-    .where(and(sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
+    .where(and(tenantScope(tenant, expenses), sql`${expenses.expenseDate} >= ${fromDate}`, sql`${expenses.expenseDate} <= ${toDate}`, isNull(expenses.deletedAt)));
 
   // Feed cost in period. Whole-farm = actual bulk purchases (cash basis).
   // Owner-scoped = modeled consumption of the owner's animals (accrual basis),
@@ -2946,7 +3723,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const feedPurchasesInPeriod = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
-    .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${fromDate}`, sql`${feedStockLedger.transactionDate} <= ${toDate}`, isNull(feedStockLedger.deletedAt)));
+    .where(and(tenantScope(tenant, feedStockLedger), eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${fromDate}`, sql`${feedStockLedger.transactionDate} <= ${toDate}`, isNull(feedStockLedger.deletedAt)));
   const ownerFeedMinor = ownerId ? await getOwnerFeedCostMinor(ownerId, fromDate, toDate) : 0;
 
   // Total sales revenue in period — F9: track BOTH accrued (salePrice) and
@@ -2957,7 +3734,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
       paid: sql<number>`SUM(amountPaid)`,
     })
     .from(sales)
-    .where(and(sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt), ownerSalesCond));
+    .where(and(tenantScope(tenant, sales), sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt), ownerSalesCond));
 
   // B3: AVERAGE head count over the period (not today's count). An animal
   // contributes the fraction of the period it was actually on the farm:
@@ -2974,6 +3751,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
     })
     .from(animals)
     .where(and(
+      tenantScope(tenant, animals),
       isNull(animals.deletedAt),
       sql`${animals.acquisitionDate} <= ${toDate}`,
       sql`(${animals.exitDate} IS NULL OR ${animals.exitDate} >= ${fromDate})`,
@@ -3022,14 +3800,44 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   };
 }
 
-export async function getFeedStockStatus(timings?: Record<string, number>) {
+export async function getFeedStockStatus(timings?: Record<string, number>, tx?: DbOrTx) {
   const started = Date.now();
-  const db = await getDb();
+  const db = tx ?? (await getDb());
   if (!db) return [];
+  const tenant = requireTenantUserContext();
 
   const today = new Date().toISOString().split("T")[0];
+  const scopedFarmIds = tenant.selectedFarmId !== null
+    ? [tenant.selectedFarmId]
+    : tenant.accessibleFarmIds === "all"
+      ? null
+      : [...tenant.accessibleFarmIds];
+  const allFarms = tenant.selectedFarmId === null &&
+    (tenant.farmAccessMode === "all" || scopedFarmIds === null);
+  const farmList = scopedFarmIds?.map(id => sql`${id}`) ?? [];
+  const stockFarmScope = allFarms
+    ? sql`TRUE`
+    : farmList.length > 0
+      ? sql`farmId IN (${sql.join(farmList, sql`, `)})`
+      : sql`FALSE`;
+  const stockAliasFarmScope = allFarms
+    ? sql`TRUE`
+    : farmList.length > 0
+      ? sql`l.farmId IN (${sql.join(farmList, sql`, `)})`
+      : sql`FALSE`;
+  const animalFarmScope = allFarms
+    ? sql`TRUE`
+    : farmList.length > 0
+      ? sql`farmId IN (${sql.join(farmList, sql`, `)})`
+      : sql`FALSE`;
+  const rationFarmScope = allFarms
+    ? sql`TRUE`
+    : farmList.length > 0
+      ? sql`rp.farmId IN (${sql.join(farmList, sql`, `)})`
+      : sql`FALSE`;
 
   type FeedStockStatusRow = {
+    farmId: number | null;
     feedItemId: number;
     feedItemName: string;
     unit: string;
@@ -3045,42 +3853,64 @@ export async function getFeedStockStatus(timings?: Record<string, number>) {
   const queryStarted = Date.now();
   const [rows] = await db.execute(sql`
     WITH latest_counts AS (
-      SELECT feedItemId, qty, transactionDate
+      SELECT farmId, feedItemId, qty, transactionDate
       FROM (
         SELECT
+          farmId,
           feedItemId,
           qty,
           transactionDate,
           ROW_NUMBER() OVER (
-            PARTITION BY feedItemId
+            PARTITION BY farmId, feedItemId
             ORDER BY transactionDate DESC, id DESC
           ) AS rn
-        FROM feed_stock_ledger
+        FROM saas_azal_feed_stock_ledger
         WHERE transactionType = 'stock_count'
+          AND companyId = ${tenant.companyId}
+          AND ${stockFarmScope}
           AND deletedAt IS NULL
       ) ranked_counts
       WHERE rn = 1
     ),
     tx_sums AS (
       SELECT
+        l.farmId,
         l.feedItemId,
         SUM(CASE WHEN l.transactionType = 'purchase' THEN l.qty ELSE 0 END) AS purchasedQty,
         SUM(CASE WHEN l.transactionType = 'adjustment' THEN l.qty ELSE 0 END) AS adjustmentQty
-      FROM feed_stock_ledger l
-      LEFT JOIN latest_counts lc ON lc.feedItemId = l.feedItemId
+      FROM saas_azal_feed_stock_ledger l
+      LEFT JOIN latest_counts lc
+        ON lc.farmId = l.farmId AND lc.feedItemId = l.feedItemId
       WHERE l.transactionType IN ('purchase', 'adjustment')
+        AND l.companyId = ${tenant.companyId}
+        AND ${stockAliasFarmScope}
         AND l.deletedAt IS NULL
         AND l.transactionDate >= COALESCE(lc.transactionDate, '2020-01-01')
-      GROUP BY l.feedItemId
+      GROUP BY l.farmId, l.feedItemId
     ),
     head_counts AS (
-      SELECT categoryId, COUNT(*) AS heads
-      FROM animals
+      SELECT farmId, categoryId, COUNT(*) AS heads
+      FROM saas_azal_animals
       WHERE isActive = TRUE
+        AND companyId = ${tenant.companyId}
+        AND ${animalFarmScope}
         AND deletedAt IS NULL
-      GROUP BY categoryId
+      GROUP BY farmId, categoryId
+    ),
+    farm_feed AS (
+      SELECT farmId, feedItemId FROM latest_counts
+      UNION
+      SELECT farmId, feedItemId FROM tx_sums
+      UNION
+      SELECT rp.farmId, rp.feedItemId
+      FROM saas_azal_ration_plans rp
+      WHERE rp.companyId = ${tenant.companyId}
+        AND ${rationFarmScope}
+        AND rp.isActive = TRUE
+        AND rp.deletedAt IS NULL
     )
     SELECT
+      ff.farmId AS farmId,
       fi.id AS feedItemId,
       fi.name AS feedItemName,
       fi.unit AS unit,
@@ -3091,15 +3921,23 @@ export async function getFeedStockStatus(timings?: Record<string, number>) {
       rp.categoryId AS categoryId,
       rp.qtyPerHeadPerDay AS planQty,
       COALESCE(hc.heads, 0) AS heads
-    FROM feed_items fi
-    LEFT JOIN latest_counts lc ON lc.feedItemId = fi.id
-    LEFT JOIN tx_sums tx ON tx.feedItemId = fi.id
-    LEFT JOIN ration_plans rp
+    FROM saas_azal_feed_items fi
+    LEFT JOIN farm_feed ff ON ff.feedItemId = fi.id
+    LEFT JOIN latest_counts lc
+      ON lc.farmId = ff.farmId AND lc.feedItemId = fi.id
+    LEFT JOIN tx_sums tx
+      ON tx.farmId = ff.farmId AND tx.feedItemId = fi.id
+    LEFT JOIN saas_azal_ration_plans rp
       ON rp.feedItemId = fi.id
+      AND rp.farmId = ff.farmId
+      AND rp.companyId = ${tenant.companyId}
+      AND ${rationFarmScope}
       AND rp.isActive = TRUE
       AND rp.deletedAt IS NULL
-    LEFT JOIN head_counts hc ON hc.categoryId = rp.categoryId
-    WHERE fi.deletedAt IS NULL
+    LEFT JOIN head_counts hc
+      ON hc.farmId = rp.farmId AND hc.categoryId = rp.categoryId
+    WHERE fi.companyId = ${tenant.companyId}
+      AND fi.deletedAt IS NULL
     ORDER BY fi.name
   `) as unknown as [FeedStockStatusRow[], unknown];
   timings && (timings["feedStock.sqlMs"] = Date.now() - queryStarted);
@@ -3112,7 +3950,7 @@ export async function getFeedStockStatus(timings?: Record<string, number>) {
       : String(value).split("T")[0];
   };
 
-  const byItem = new Map<number, {
+  const byFarmItem = new Map<string, {
     feedItemId: number;
     feedItemName: string;
     unit: string;
@@ -3129,7 +3967,8 @@ export async function getFeedStockStatus(timings?: Record<string, number>) {
   }>();
 
   for (const row of rows) {
-    let item = byItem.get(row.feedItemId);
+    const key = `${row.farmId ?? "none"}:${row.feedItemId}`;
+    let item = byFarmItem.get(key);
     if (!item) {
       item = {
         feedItemId: row.feedItemId,
@@ -3142,7 +3981,7 @@ export async function getFeedStockStatus(timings?: Record<string, number>) {
         dailyConsumption: 0,
         consumptionByCategory: [],
       };
-      byItem.set(row.feedItemId, item);
+      byFarmItem.set(key, item);
     }
 
     if (row.categoryId != null) {
@@ -3159,9 +3998,19 @@ export async function getFeedStockStatus(timings?: Record<string, number>) {
     }
   }
 
-  const result = [];
+  const aggregated = new Map<number, {
+    feedItemId: number;
+    feedItemName: string;
+    unit: string;
+    stockOnHand: number;
+    consumedSinceCount: number;
+    daysSinceCount: number;
+    lastCountDate: string;
+    dailyConsumption: number;
+    consumptionByCategory: Map<number, { categoryDailyKg: number; heads: number }>;
+  }>();
 
-  for (const item of Array.from(byItem.values())) {
+  for (const item of Array.from(byFarmItem.values())) {
     const lastCountDateStr = item.lastCountDateStr;
     const lastCountQty = item.lastCountQty;
     const purchasedQty = item.purchasedQty;
@@ -3173,25 +4022,67 @@ export async function getFeedStockStatus(timings?: Record<string, number>) {
     const daysSinceCount = Math.max(0, Math.floor((new Date(today).getTime() - new Date(lastCountDateStr).getTime()) / 86400000));
     const consumedSinceCount = dailyConsumption * daysSinceCount;
 
-    const stockOnHand = Math.max(0, lastCountQty + purchasedQty + adjustmentQty - consumedSinceCount);
-    const daysRemaining = dailyConsumption > 0 ? Math.floor(stockOnHand / dailyConsumption) : 999;
-    const runOutDate = dailyConsumption > 0 ? new Date(Date.now() + daysRemaining * 86400000).toISOString().split("T")[0] : null;
+    const farmStockOnHand = Math.max(
+      0,
+      lastCountQty + purchasedQty + adjustmentQty - consumedSinceCount,
+    );
+    let aggregate = aggregated.get(item.feedItemId);
+    if (!aggregate) {
+      aggregate = {
+        feedItemId: item.feedItemId,
+        feedItemName: item.feedItemName,
+        unit: item.unit,
+        stockOnHand: 0,
+        consumedSinceCount: 0,
+        daysSinceCount: 0,
+        lastCountDate: lastCountDateStr,
+        dailyConsumption: 0,
+        consumptionByCategory: new Map(),
+      };
+      aggregated.set(item.feedItemId, aggregate);
+    }
+    aggregate.stockOnHand += farmStockOnHand;
+    aggregate.consumedSinceCount += consumedSinceCount;
+    aggregate.dailyConsumption += dailyConsumption;
+    if (daysSinceCount > aggregate.daysSinceCount) {
+      aggregate.daysSinceCount = daysSinceCount;
+      aggregate.lastCountDate = lastCountDateStr;
+    }
+    for (const category of consumptionByCategory) {
+      const existing = aggregate.consumptionByCategory.get(category.categoryId) ?? {
+        categoryDailyKg: 0,
+        heads: 0,
+      };
+      existing.categoryDailyKg += category.categoryDailyKg;
+      existing.heads += category.heads;
+      aggregate.consumptionByCategory.set(category.categoryId, existing);
+    }
+  }
 
-    result.push({
+  const result = Array.from(aggregated.values()).map(item => {
+    const daysRemaining = item.dailyConsumption > 0
+      ? Math.floor(item.stockOnHand / item.dailyConsumption)
+      : 999;
+    return {
       feedItemId: item.feedItemId,
       feedItemName: item.feedItemName,
       unit: item.unit,
-      stockOnHand,
-      consumedSinceCount: Math.round(consumedSinceCount * 100) / 100,
-      daysSinceCount,
-      lastCountDate: lastCountDateStr,
-      dailyConsumption,
-      consumptionByCategory,
+      stockOnHand: item.stockOnHand,
+      consumedSinceCount: Math.round(item.consumedSinceCount * 100) / 100,
+      daysSinceCount: item.daysSinceCount,
+      lastCountDate: item.lastCountDate,
+      dailyConsumption: item.dailyConsumption,
+      consumptionByCategory: Array.from(item.consumptionByCategory, ([categoryId, values]) => ({
+        categoryId,
+        ...values,
+      })),
       daysRemaining,
-      runOutDate,
-      status: daysRemaining <= 3 ? "critical" : daysRemaining <= 7 ? "low" : "ok"
-    });
-  }
+      runOutDate: item.dailyConsumption > 0
+        ? new Date(Date.now() + daysRemaining * 86400000).toISOString().split("T")[0]
+        : null,
+      status: daysRemaining <= 3 ? "critical" : daysRemaining <= 7 ? "low" : "ok",
+    };
+  });
 
   timings && (timings["feedStock.shapeMs"] = Date.now() - shapeStarted);
   timings && (timings["feedStock.totalMs"] = Date.now() - started);
@@ -3218,13 +4109,14 @@ async function computeRationConsumptionBetween(
 ): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
+  const tenant = requireTenantUserContext();
   const days = Math.max(0, Math.floor((new Date(endStr).getTime() - new Date(startStr).getTime()) / 86400000));
   if (days === 0) return 0;
   // Active plans for this feed item, with the head count over the window.
   const plans = await db
     .select({ qty: rationPlans.qtyPerHeadPerDay, categoryId: rationPlans.categoryId })
     .from(rationPlans)
-    .where(and(eq(rationPlans.feedItemId, feedItemId), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
+    .where(and(tenantScope(tenant, rationPlans), eq(rationPlans.feedItemId, feedItemId), eq(rationPlans.isActive, true), isNull(rationPlans.deletedAt)));
   let total = 0;
   for (const p of plans) {
     const heads = await getCategoryHeadCountDuring(p.categoryId, startStr, endStr);
@@ -3252,6 +4144,7 @@ export async function getFeedShrinkage(): Promise<{
 }> {
   const db = await getDb();
   if (!db) return { rows: [], byItemLatest: {}, byMonth: [] };
+  const tenant = requireTenantUserContext();
 
   const items = await getAllFeedItems();
   const rows: ShrinkageRow[] = [];
@@ -3260,13 +4153,14 @@ export async function getFeedShrinkage(): Promise<{
   const ds = (d: any) => (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]);
 
   for (const item of items) {
-    const price = item.currentPrice != null ? parseFloat(item.currentPrice) : 0;
+    const scopedPrice = await getCurrentFeedItemPrice(item.id);
+    const price = scopedPrice != null ? parseFloat(scopedPrice) : 0;
 
     // All stock counts for this item, oldest → newest.
     const counts = await db
       .select({ qty: feedStockLedger.qty, transactionDate: feedStockLedger.transactionDate })
       .from(feedStockLedger)
-      .where(and(eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "stock_count"), isNull(feedStockLedger.deletedAt)))
+      .where(and(tenantScope(tenant, feedStockLedger), eq(feedStockLedger.feedItemId, item.id), eq(feedStockLedger.transactionType, "stock_count"), isNull(feedStockLedger.deletedAt)))
       .orderBy(feedStockLedger.transactionDate);
 
     if (counts.length === 0) continue;
@@ -3276,7 +4170,7 @@ export async function getFeedShrinkage(): Promise<{
     const firstTxn = await db
       .select({ transactionDate: feedStockLedger.transactionDate })
       .from(feedStockLedger)
-      .where(and(eq(feedStockLedger.feedItemId, item.id), isNull(feedStockLedger.deletedAt)))
+      .where(and(tenantScope(tenant, feedStockLedger), eq(feedStockLedger.feedItemId, item.id), isNull(feedStockLedger.deletedAt)))
       .orderBy(feedStockLedger.transactionDate)
       .limit(1);
     const firstTxnDate = firstTxn.length > 0 ? ds(firstTxn[0].transactionDate) : null;
@@ -3319,6 +4213,7 @@ export async function getFeedShrinkage(): Promise<{
         })
         .from(feedStockLedger)
         .where(and(
+          tenantScope(tenant, feedStockLedger),
           eq(feedStockLedger.feedItemId, item.id),
           isNull(feedStockLedger.deletedAt),
           lowerBound,
@@ -3371,6 +4266,7 @@ export async function getFeedShrinkage(): Promise<{
 export async function getIncomeStatement(filters: { fromDate: string; toDate: string; speciesId?: number; categoryId?: number; ownerId?: number }) {
   const db = await getDb();
   if (!db) return null;
+  const tenant = requireTenantUserContext();
 
   // When scoped to an owner: sales, animal purchases and feed are restricted to
   // that owner's animals; expenses are the owner's ALLOCATED share (head in
@@ -3378,7 +4274,7 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   // per-animal P&L). General overhead (e.g. electricity) is excluded.
   const ownerId = filters.ownerId;
   const ownedAnimalIds: number[] = ownerId
-    ? (await db.select({ id: animals.id }).from(animals).where(and(eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.id)
+    ? (await db.select({ id: animals.id }).from(animals).where(and(tenantScope(tenant, animals), eq(animals.ownerId, ownerId), isNull(animals.deletedAt)))).map((r) => r.id)
     : [];
   const ownerSalesCond = ownerId
     ? (ownedAnimalIds.length > 0 ? inArray(sales.animalId, ownedAnimalIds) : sql`1 = 0`)
@@ -3392,13 +4288,14 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
       paid: sql<number>`SUM(amountPaid)`,
     })
     .from(sales)
-    .where(and(sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`, isNull(sales.deletedAt), ownerSalesCond));
+    .where(and(tenantScope(tenant, sales), sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`, isNull(sales.deletedAt), ownerSalesCond));
 
   // Animal purchase costs (exclude soft-deleted)
   const purchaseCosts = await db
     .select({ total: sql<number>`SUM(purchaseCost)` })
     .from(animals)
     .where(and(
+      tenantScope(tenant, animals),
       sql`${animals.acquisitionDate} >= ${filters.fromDate}`,
       sql`${animals.acquisitionDate} <= ${filters.toDate}`,
       isNull(animals.deletedAt),
@@ -3426,8 +4323,8 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
         total: sql<number>`SUM(${expenses.amount})`
       })
       .from(expenses)
-      .leftJoin(expenseCategories, eq(expenses.categoryId, expenseCategories.id))
-      .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
+      .leftJoin(expenseCategories, and(eq(expenses.categoryId, expenseCategories.id), eq(expenseCategories.companyId, tenant.companyId)))
+      .where(and(tenantScope(tenant, expenses), sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
       .groupBy(expenseCategories.name);
     const expensesByTarget = await db
       .select({
@@ -3435,7 +4332,7 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
         total: sql<number>`SUM(${expenses.amount})`,
       })
       .from(expenses)
-      .where(and(sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
+      .where(and(tenantScope(tenant, expenses), sql`${expenses.expenseDate} >= ${filters.fromDate}`, sql`${expenses.expenseDate} <= ${filters.toDate}`, isNull(expenses.deletedAt)))
       .groupBy(expenses.targetType);
     for (const r of expensesByTarget) expByTarget[r.targetType] = toMinor(String(r.total ?? 0));
     totalOtherCostMinor = expensesByCategory.reduce((sum, e) => sum + toMinor(String(e.total ?? 0)), 0);
@@ -3448,7 +4345,7 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   const feedPurchases = await db
     .select({ total: sql<number>`SUM(totalCost)` })
     .from(feedStockLedger)
-    .where(and(eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
+    .where(and(tenantScope(tenant, feedStockLedger), eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
   const totalFeedCostMinor = ownerId
     ? await getOwnerFeedCostMinor(ownerId, filters.fromDate, filters.toDate)
     : toMinor(String(feedPurchases[0]?.total ?? 0));
@@ -3515,20 +4412,33 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
 export async function getVaccines() {
   const db = await getDb();
   if (!db) return [];
-  return await db.select().from(vaccines).where(isNull(vaccines.deletedAt)).orderBy(vaccines.name);
+  const tenant = requireTenantUserContext();
+  return await db.select().from(vaccines).where(and(eq(vaccines.companyId, tenant.companyId), isNull(vaccines.deletedAt))).orderBy(vaccines.name);
 }
 
 export async function addVaccine(data: { name: string; description?: string; validityPeriod: number; validityUnit: "days" | "months"; boosterRequired: boolean; boosterInterval?: number }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const [result] = await db.insert(vaccines).values(data);
+  const [result] = await db.insert(vaccines).values(tenantInsert(data));
   return result;
 }
 
-export async function updateVaccine(id: number, data: { name?: string; description?: string; validityPeriod?: number; validityUnit?: "days" | "months"; boosterRequired?: boolean; boosterInterval?: number; isActive?: boolean }) {
-  const db = await getDb();
+export async function updateVaccine(
+  id: number,
+  data: { name?: string; description?: string; validityPeriod?: number; validityUnit?: "days" | "months"; boosterRequired?: boolean; boosterInterval?: number; isActive?: boolean },
+  expectedVersion: number,
+  dbOrTx?: DbOrTx,
+) {
+  const db = dbOrTx ?? await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(vaccines).set(data).where(eq(vaccines.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(vaccines).set({ ...data, version: sql`${vaccines.version} + 1` }).where(and(
+    eq(vaccines.companyId, tenant.companyId),
+    eq(vaccines.id, id),
+    eq(vaccines.version, expectedVersion),
+    isNull(vaccines.deletedAt),
+  ));
+  if (!mutationAffectedOne(result)) return false;
 
   // If the schedule-affecting fields changed, recompute next-due and booster
   // dates for all (non-deleted, not-completed) records of this vaccine — this
@@ -3540,22 +4450,29 @@ export async function updateVaccine(id: number, data: { name?: string; descripti
     data.boosterRequired !== undefined ||
     data.boosterInterval !== undefined
   ) {
-    await recomputeVaccinationDatesForVaccine(id);
+    await recomputeVaccinationDatesForVaccine(id, db);
   }
+  return true;
 }
 
 /** Recompute nextDueDate + boosterDueDate for every active record of a vaccine. */
-export async function recomputeVaccinationDatesForVaccine(vaccineId: number) {
-  const db = await getDb();
+export async function recomputeVaccinationDatesForVaccine(vaccineId: number, dbOrTx?: DbOrTx) {
+  const db = dbOrTx ?? await getDb();
   if (!db) return;
-  const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, vaccineId)).limit(1);
+  const tenant = requireTenantUserContext();
+  const vaccine = await db.select().from(vaccines).where(and(eq(vaccines.companyId, tenant.companyId), eq(vaccines.id, vaccineId))).limit(1);
   if (!vaccine.length) return;
   const v = vaccine[0];
 
   const records = await db
-    .select({ id: vaccinationRecords.id, vaccinationDate: vaccinationRecords.vaccinationDate })
+    .select({
+      id: vaccinationRecords.id,
+      vaccinationDate: vaccinationRecords.vaccinationDate,
+      version: vaccinationRecords.version,
+    })
     .from(vaccinationRecords)
-    .where(and(eq(vaccinationRecords.vaccineId, vaccineId), isNull(vaccinationRecords.deletedAt), eq(vaccinationRecords.isCompleted, false)));
+    .where(and(tenantScope(tenant, vaccinationRecords), eq(vaccinationRecords.vaccineId, vaccineId), isNull(vaccinationRecords.deletedAt), eq(vaccinationRecords.isCompleted, false)))
+    .for("update");
 
   for (const rec of records) {
     const dateStr = rec.vaccinationDate instanceof Date
@@ -3569,22 +4486,46 @@ export async function recomputeVaccinationDatesForVaccine(vaccineId: number) {
       { boosterRequired: v.boosterRequired, boosterInterval: v.boosterInterval ?? undefined },
       dateStr
     );
-    await db.update(vaccinationRecords)
-      .set({ nextDueDate: new Date(nextDueDateStr), boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null })
-      .where(eq(vaccinationRecords.id, rec.id));
+    const [result] = await db.update(vaccinationRecords)
+      .set({
+        nextDueDate: new Date(nextDueDateStr),
+        boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null,
+        version: sql`${vaccinationRecords.version} + 1`,
+      })
+      .where(and(
+        tenantScope(tenant, vaccinationRecords),
+        eq(vaccinationRecords.id, rec.id),
+        eq(vaccinationRecords.version, rec.version),
+        isNull(vaccinationRecords.deletedAt),
+      ));
+    if (!mutationAffectedOne(result)) {
+      throw new Error("VACCINATION_RECORD_VERSION_CONFLICT");
+    }
   }
 }
 
-export async function deleteVaccine(id: number) {
+export async function deleteVaccine(id: number, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(vaccines).set({ deletedAt: new Date() }).where(eq(vaccines.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(vaccines).set({
+    deletedAt: new Date(),
+    isActive: false,
+    version: sql`${vaccines.version} + 1`,
+  }).where(and(
+    eq(vaccines.companyId, tenant.companyId),
+    eq(vaccines.id, id),
+    eq(vaccines.version, expectedVersion),
+    isNull(vaccines.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 export async function getVaccinationRecords(animalId?: number, ownerId?: number) {
   const db = await getDb();
   if (!db) return [];
-  const conditions = [isNull(vaccinationRecords.deletedAt)];
+  const tenant = requireTenantUserContext();
+  const conditions = [tenantScope(tenant, vaccinationRecords), isNull(vaccinationRecords.deletedAt)];
   if (animalId) {
     conditions.push(eq(vaccinationRecords.animalId, animalId));
   }
@@ -3610,21 +4551,29 @@ export async function getVaccinationRecords(animalId?: number, ownerId?: number)
       veterinarian: vaccinationRecords.veterinarian,
       isCompleted: vaccinationRecords.isCompleted,
       createdAt: vaccinationRecords.createdAt,
+      version: vaccinationRecords.version,
     })
     .from(vaccinationRecords)
-    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
-    .innerJoin(animals, eq(vaccinationRecords.animalId, animals.id))
+    .innerJoin(vaccines, and(eq(vaccinationRecords.vaccineId, vaccines.id), eq(vaccines.companyId, tenant.companyId)))
+    .innerJoin(animals, and(eq(vaccinationRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId)))
     .where(and(...conditions))
     .orderBy(vaccinationRecords.vaccinationDate);
 }
 
-export async function addVaccinationRecord(data: { animalId: number; vaccineId: number; vaccinationDate: string; batchNumber?: string; notes?: string; veterinarian?: string; notifyBeforeNext?: number; notifyBeforeBooster?: number }) {
-  const db = await getDb();
+export async function addVaccinationRecord(data: { animalId: number; vaccineId: number; vaccinationDate: string; batchNumber?: string; notes?: string; veterinarian?: string; notifyBeforeNext?: number; notifyBeforeBooster?: number }, tx?: DbOrTx) {
+  const db = tx ?? (await getDb());
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
 
   // Get vaccine config to calculate next due date
-  const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, data.vaccineId)).limit(1);
+  const vaccine = await db.select().from(vaccines).where(and(eq(vaccines.companyId, tenant.companyId), eq(vaccines.id, data.vaccineId))).limit(1);
   if (!vaccine.length) throw new Error("Vaccine not found");
+  const accessibleAnimal = await db.select({ id: animals.id }).from(animals).where(and(
+    tenantScope(tenant, animals),
+    eq(animals.id, data.animalId),
+    isNull(animals.deletedAt),
+  )).limit(1);
+  if (!accessibleAnimal.length) throw new Error("Animal not found");
 
   const nextDueDateStr = calculateNextDueDate(
     {
@@ -3644,7 +4593,7 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
     data.vaccinationDate
   );
 
-  const [result] = await db.insert(vaccinationRecords).values({
+  const [result] = await db.insert(vaccinationRecords).values(tenantInsert({
     animalId: data.animalId,
     vaccineId: data.vaccineId,
     vaccinationDate: new Date(data.vaccinationDate),
@@ -3655,19 +4604,20 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
     boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null,
     notifyBeforeNext: data.notifyBeforeNext ?? 7,
     notifyBeforeBooster: data.notifyBeforeBooster ?? 7,
-  });
+  }, true));
   return result;
 }
 
-export async function updateVaccinationRecord(id: number, data: { vaccinationDate?: string; batchNumber?: string; notes?: string; veterinarian?: string; isCompleted?: boolean }) {
+export async function updateVaccinationRecord(id: number, data: { vaccinationDate?: string; batchNumber?: string; notes?: string; veterinarian?: string; isCompleted?: boolean }, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
+  const tenant = requireTenantUserContext();
 
   const updateData: any = { ...data };
   if (data.vaccinationDate) {
-    const record = await db.select({ vaccineId: vaccinationRecords.vaccineId }).from(vaccinationRecords).where(eq(vaccinationRecords.id, id)).limit(1);
+    const record = await db.select({ vaccineId: vaccinationRecords.vaccineId }).from(vaccinationRecords).where(and(tenantScope(tenant, vaccinationRecords), eq(vaccinationRecords.id, id))).limit(1);
     if (record.length) {
-      const vaccine = await db.select().from(vaccines).where(eq(vaccines.id, record[0].vaccineId)).limit(1);
+      const vaccine = await db.select().from(vaccines).where(and(eq(vaccines.companyId, tenant.companyId), eq(vaccines.id, record[0].vaccineId))).limit(1);
       if (vaccine.length) {
         const nextDueDateStr = calculateNextDueDate(
           {
@@ -3691,13 +4641,32 @@ export async function updateVaccinationRecord(id: number, data: { vaccinationDat
     }
   }
 
-  await db.update(vaccinationRecords).set(updateData).where(eq(vaccinationRecords.id, id));
+  const [result] = await db.update(vaccinationRecords).set({
+    ...updateData,
+    version: sql`${vaccinationRecords.version} + 1`,
+  }).where(and(
+    tenantScope(tenant, vaccinationRecords),
+    eq(vaccinationRecords.id, id),
+    eq(vaccinationRecords.version, expectedVersion),
+    isNull(vaccinationRecords.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
-export async function deleteVaccinationRecord(id: number) {
+export async function deleteVaccinationRecord(id: number, expectedVersion: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(vaccinationRecords).set({ deletedAt: new Date() }).where(eq(vaccinationRecords.id, id));
+  const tenant = requireTenantUserContext();
+  const [result] = await db.update(vaccinationRecords).set({
+    deletedAt: new Date(),
+    version: sql`${vaccinationRecords.version} + 1`,
+  }).where(and(
+    tenantScope(tenant, vaccinationRecords),
+    eq(vaccinationRecords.id, id),
+    eq(vaccinationRecords.version, expectedVersion),
+    isNull(vaccinationRecords.deletedAt),
+  ));
+  return mutationAffectedOne(result);
 }
 
 export function calculateNextDueDate(vaccine: { validityPeriod: number; validityUnit: "days" | "months"; boosterRequired: boolean; boosterInterval?: number }, lastDate: string): string {
@@ -3734,6 +4703,7 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
   const days = typeof input === 'number' ? input : (input?.days ?? 30);
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + days);
@@ -3751,10 +4721,11 @@ export async function getUpcomingVaccinations(input?: { days?: number } | number
       isCompleted: vaccinationRecords.isCompleted,
     })
     .from(vaccinationRecords)
-    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
-    .innerJoin(animals, eq(vaccinationRecords.animalId, animals.id))
+    .innerJoin(vaccines, and(eq(vaccinationRecords.vaccineId, vaccines.id), eq(vaccines.companyId, tenant.companyId)))
+    .innerJoin(animals, and(eq(vaccinationRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId)))
     .where(
       and(
+        tenantScope(tenant, vaccinationRecords),
         isNull(vaccinationRecords.deletedAt),
         eq(vaccinationRecords.isCompleted, false),
         or(
@@ -3773,6 +4744,7 @@ export async function getUpcomingBoosterVaccinations(input?: { days?: number } |
   const days = typeof input === 'number' ? input : (input?.days ?? 30);
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
 
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() + days);
@@ -3788,10 +4760,11 @@ export async function getUpcomingBoosterVaccinations(input?: { days?: number } |
       isCompleted: vaccinationRecords.isCompleted,
     })
     .from(vaccinationRecords)
-    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
-    .innerJoin(animals, eq(vaccinationRecords.animalId, animals.id))
+    .innerJoin(vaccines, and(eq(vaccinationRecords.vaccineId, vaccines.id), eq(vaccines.companyId, tenant.companyId)))
+    .innerJoin(animals, and(eq(vaccinationRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId)))
     .where(
       and(
+        tenantScope(tenant, vaccinationRecords),
         isNull(vaccinationRecords.deletedAt),
         eq(vaccinationRecords.isCompleted, false),
         sql`${vaccinationRecords.boosterDueDate} IS NOT NULL AND ${vaccinationRecords.boosterDueDate} <= ${cutoff.toISOString().split("T")[0]}`
@@ -3803,19 +4776,21 @@ export async function getUpcomingBoosterVaccinations(input?: { days?: number } |
 export async function getVaccinationCompliance() {
   const db = await getDb();
   if (!db) return [];
+  const tenant = requireTenantUserContext();
 
   const today = new Date().toISOString().split("T")[0];
 
   const total = await db
     .select({ count: sql<number>`count(*)` })
     .from(vaccinationRecords)
-    .where(isNull(vaccinationRecords.deletedAt));
+    .where(and(tenantScope(tenant, vaccinationRecords), isNull(vaccinationRecords.deletedAt)));
 
   const overdue = await db
     .select({ count: sql<number>`count(*)` })
     .from(vaccinationRecords)
     .where(
       and(
+        tenantScope(tenant, vaccinationRecords),
         isNull(vaccinationRecords.deletedAt),
         eq(vaccinationRecords.isCompleted, false),
         sql`${vaccinationRecords.nextDueDate} < ${today}`
@@ -3827,6 +4802,7 @@ export async function getVaccinationCompliance() {
     .from(vaccinationRecords)
     .where(
       and(
+        tenantScope(tenant, vaccinationRecords),
         isNull(vaccinationRecords.deletedAt),
         eq(vaccinationRecords.isCompleted, true)
       )
@@ -3843,6 +4819,7 @@ export async function getVaccinationCompliance() {
 export async function getNextVaccinationDate(animalId: number): Promise<{ nextDueDate: string | null; vaccineName: string | null } | null> {
   const db = await getDb();
   if (!db) return null;
+  const tenant = requireTenantUserContext();
 
   const result = await db
     .select({
@@ -3850,9 +4827,10 @@ export async function getNextVaccinationDate(animalId: number): Promise<{ nextDu
       vaccineName: vaccines.name,
     })
     .from(vaccinationRecords)
-    .innerJoin(vaccines, eq(vaccinationRecords.vaccineId, vaccines.id))
+    .innerJoin(vaccines, and(eq(vaccinationRecords.vaccineId, vaccines.id), eq(vaccines.companyId, tenant.companyId)))
     .where(
       and(
+        tenantScope(tenant, vaccinationRecords),
         eq(vaccinationRecords.animalId, animalId),
         isNull(vaccinationRecords.deletedAt),
         eq(vaccinationRecords.isCompleted, false),

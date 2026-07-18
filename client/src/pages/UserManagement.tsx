@@ -124,6 +124,7 @@ export default function UserManagement() {
                                   updateRole.mutate({
                                     userId: user.id,
                                     role: role as (typeof ROLE_OPTIONS)[number],
+                                    expectedVersion: user.version,
                                   })
                                 }
                                 disabled={updateRole.isPending}

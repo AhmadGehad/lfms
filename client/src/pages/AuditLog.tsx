@@ -26,8 +26,8 @@ const ACTION_COLORS: Record<string, string> = {
 
 export default function AuditLog() {
   const { t } = useTranslation();
-  const { role } = usePermissions();
-  const canRevert = role === "admin" || role === "owner";
+  const permissions = usePermissions();
+  const canRevert = permissions.can("audit", "revert");
   const { data: entries, isLoading } = trpc.audit.list.useQuery();
   const utils = trpc.useUtils();
   const revert = trpc.audit.revert.useMutation({

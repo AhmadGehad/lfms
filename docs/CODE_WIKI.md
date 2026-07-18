@@ -80,7 +80,7 @@ All business logic lives in `server/db.ts` (query helpers) and `server/routers/*
 │           ├── Configuration.tsx   ← All reference data management
 │           ├── Notifications.tsx   ← Notification centre
 │           ├── AuditLog.tsx        ← Audit trail viewer
-│           ├── RecycleBin.tsx      ← Soft-deleted records, restore/purge
+│           ├── RecycleBin.tsx      ← Soft-deleted records and restore
 │           └── UserManagement.tsx  ← User role management
 ├── server/
 │   ├── _core/
@@ -167,7 +167,7 @@ All tables are defined in `drizzle/schema.ts`. The database is MySQL (TiDB Cloud
 
 ### 3.4 Soft Delete Pattern
 
-All operational tables (and most configuration tables) include `deletedAt` (timestamp) and `deletedBy` (int FK → users) columns. All read queries filter `WHERE deletedAt IS NULL`. Soft-deleted records appear in the Recycle Bin and can be restored or permanently purged.
+All operational tables (and most configuration tables) include `deletedAt` (timestamp) and `deletedBy` (int FK to users) columns. All read queries filter `WHERE deletedAt IS NULL`. Soft-deleted records appear in the Recycle Bin and can be restored. Tenant-facing hard purge is intentionally unavailable; retention and deletion approval are handled by the platform lifecycle workflow.
 
 ---
 
@@ -387,15 +387,13 @@ All config procedures follow a `get*/create*/update*` pattern for each entity. T
 
 ### 5.9 `recycleBin.*`  (`server/routers/softDelete.ts`)
 
-The Recycle Bin router handles soft-delete lifecycle for all entity types. Each entity has three operations:
+The Recycle Bin router handles soft-delete lifecycle for all entity types:
 
 | Pattern | Description |
 |---|---|
 | `recycleBin.list` | Returns all soft-deleted records across all entity types |
 | `recycleBin.delete{Entity}` | Soft-deletes a record (sets `deletedAt`, `deletedBy`) |
 | `recycleBin.restore{Entity}` | Restores a soft-deleted record (clears `deletedAt`, `deletedBy`) |
-| `recycleBin.purge{Entity}` | Permanently deletes a record from the database |
-| `recycleBin.purgeAll` | Permanently deletes all soft-deleted records |
 
 Entities supported: `Animal`, `Expense`, `WeightLog`, `LambingLog`, `RationPlan`, `FeedStock`, `Sale`, `Species`, `Category`, `Group`, `Status`, `BirthType`, `FeedItem`, `ExpenseCategory`.
 

@@ -44,6 +44,7 @@ function VaccinationStatusBadge({ record }: { record: any }) {
 function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [bulkType, setBulkType] = useState<"animals" | "category" | "categories">("animals");
   const [form, setForm] = useState({
     animalIds: [] as string[],
@@ -66,6 +67,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
       toast.success(t("vaccine.bulkVaccinationApplied"));
       utils.vaccination.getVaccinationRecords.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -76,6 +78,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
       toast.success(t("vaccine.bulkVaccinationApplied"));
       utils.vaccination.getVaccinationRecords.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -86,6 +89,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
       toast.success(t("vaccine.bulkVaccinationApplied"));
       utils.vaccination.getVaccinationRecords.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -104,6 +108,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
         batchNumber: form.batchNumber || undefined,
         notes: form.notes || undefined,
         veterinarian: form.veterinarian || undefined,
+        idempotencyKey,
       });
     } else if (bulkType === "category") {
       if (!form.categoryId) return toast.error(t("vaccine.categoryRequired"));
@@ -114,6 +119,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
         batchNumber: form.batchNumber || undefined,
         notes: form.notes || undefined,
         veterinarian: form.veterinarian || undefined,
+        idempotencyKey,
       });
     } else {
       if (form.categoryIds.length === 0) return toast.error(t("vaccine.categoryRequired"));
@@ -124,6 +130,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
         batchNumber: form.batchNumber || undefined,
         notes: form.notes || undefined,
         veterinarian: form.veterinarian || undefined,
+        idempotencyKey,
       });
     }
   };
@@ -258,6 +265,7 @@ function BulkVaccinationDialog({ onSuccess }: { onSuccess: () => void }) {
 function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSuccess: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     animalId: record?.animalId ? String(record.animalId) : "",
     vaccineId: record?.vaccineId ? String(record.vaccineId) : "",
@@ -279,6 +287,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
       toast.success(t("vaccine.vaccinationSaved"));
       utils.vaccination.getVaccinationRecords.invalidate();
       setOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -302,6 +311,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
     if (record) {
       updateMutation.mutate({
         id: record.id,
+        expectedVersion: record.version,
         vaccinationDate: form.vaccinationDate,
         batchNumber: form.batchNumber || undefined,
         notes: form.notes || undefined,
@@ -318,6 +328,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
         veterinarian: form.veterinarian || undefined,
         notifyBeforeNext: form.notifyBeforeNext ? parseInt(form.notifyBeforeNext) : undefined,
         notifyBeforeBooster: form.notifyBeforeBooster ? parseInt(form.notifyBeforeBooster) : undefined,
+        idempotencyKey,
       });
     }
   };
@@ -525,7 +536,7 @@ export default function AnimalVaccinations() {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteMutation.mutate({ id: r.id })}>{t("common.delete")}</AlertDialogAction>
+                                <AlertDialogAction className="bg-destructive hover:bg-destructive/90" onClick={() => deleteMutation.mutate({ id: r.id, expectedVersion: r.version })}>{t("common.delete")}</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>}

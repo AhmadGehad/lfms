@@ -7,6 +7,9 @@ import { composeAnimalIdOrThrow, sequenceValueFromAnimalIdNumber } from "../_cor
 import { isDuplicateEntryError } from "../_core/databaseErrors";
 import { allPermissionsProcedure, permissionProcedure, router } from "../_core/trpc";
 import { optionalAnimalIdNumber, optionalMoneyString, optionalWeightString, pastOrTodayDate } from "../_core/validators";
+import { tenantScope } from "../tenancy/scope";
+import { logger } from "../observability/logger";
+import { executeIdempotent } from "../platform/idempotency";
 import {
   createLambingRecord,
   createAnimal,
@@ -62,6 +65,7 @@ export const breedingRouter = router({
         lambIdNumber: optionalAnimalIdNumber,
         // If multiple births (twins/triplets), call multiple times
         count: z.number().int().min(1).max(10).default(1),
+        idempotencyKey: z.string().min(8).max(200),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -98,7 +102,14 @@ export const breedingRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
 
       try {
-        return await db.transaction(async tx => {
+        const { idempotencyKey, ...birthInput } = input;
+        return await db.transaction(async tx => executeIdempotent(tx, {
+          companyId: ctx.tenant!.companyId,
+          userId: ctx.user.id,
+          key: idempotencyKey,
+          operation: "breeding.recordBirth",
+          body: birthInput,
+        }, async () => {
           const lockedCategory = await getCategoryForUpdate(input.categoryId, tx);
           if (!lockedCategory ||
               lockedCategory.deletedAt ||
@@ -174,10 +185,14 @@ export const breedingRouter = router({
           // Registering a birth against the dam closes her active pregnancy.
           let closedPregnancyId: number | null = null;
           if (input.damId) {
+            if (!ctx.tenant) {
+              throw new TRPCError({ code: "FORBIDDEN", message: "Company context required" });
+            }
             const [activePreg] = await tx
               .select({ id: pregnancyRecords.id })
               .from(pregnancyRecords)
               .where(and(
+                tenantScope(ctx.tenant, pregnancyRecords),
                 eq(pregnancyRecords.animalId, input.damId),
                 eq(pregnancyRecords.status, "active"),
                 isNull(pregnancyRecords.deletedAt),
@@ -195,17 +210,17 @@ export const breedingRouter = router({
             entityId: results[0]?.lambId ?? "unknown",
             // lambingIds + closedPregnancyId let the revert delete the lambs and
             // re-open the dam's pregnancy.
-            newValues: { ...input, lambingIds, closedPregnancyId } as any,
+            newValues: { ...birthInput, lambingIds, closedPregnancyId } as any,
           }, tx);
 
           return results;
-        });
+        }));
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         if (isDuplicateEntryError(error)) {
           throw new TRPCError({ code: "CONFLICT", message: "Lamb ID already exists" });
         }
-        console.error("[Breeding] Birth recording failed", error);
+        logger.error("breeding.birth_create_failed", { error });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not record birth. Try again.",
@@ -374,12 +389,18 @@ export const breedingRouter = router({
             notes: "Promoted from lambing log",
           }, tx);
 
-          await updateLambingRecord(input.lambingLogId, {
+          const promoted = await updateLambingRecord(input.lambingLogId, {
             isPromoted: true,
             promotedHeadId: insertId,
             promotedAnimalCode: animalId,
             promotedAnimalPurgedAt: null,
           }, tx);
+          if (!promoted) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Lambing record changed during promotion. Refresh and try again.",
+            });
+          }
 
           await createAuditEntry({
             userId: ctx.user.id,
@@ -408,7 +429,7 @@ export const breedingRouter = router({
             message: "Animal ID already exists or is in the Recycle Bin",
           });
         }
-        console.error("[Breeding] Lamb promotion failed", error);
+        logger.error("breeding.lamb_promote_failed", { error });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not promote lamb. Try again.",
@@ -423,6 +444,7 @@ export const breedingRouter = router({
     .input(
       z.object({
         id: z.number().int().positive(),
+        expectedVersion: z.number().int().positive(),
         lambIdNumber: optionalAnimalIdNumber,
         birthDate: pastOrTodayDate.optional(),
         sex: z.enum(["male", "female"]).optional(),
@@ -444,6 +466,12 @@ export const breedingRouter = router({
           const lamb = await getLambingRecordForUpdate(input.id, tx);
           if (!lamb || lamb.deletedAt) {
             throw new TRPCError({ code: "NOT_FOUND", message: "Lambing record not found" });
+          }
+          if (lamb.version !== input.expectedVersion) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Lambing record changed since it was loaded. Refresh and try again.",
+            });
           }
           if (lamb.isPromoted) {
             throw new TRPCError({ code: "CONFLICT", message: "Cannot edit a promoted lambing record" });
@@ -481,8 +509,11 @@ export const breedingRouter = router({
           if (input.damId !== undefined) updateData.damId = input.damId;
           if (input.sireId !== undefined) updateData.sireId = input.sireId;
 
-          if (Object.keys(updateData).length > 0) {
-            await updateLambingRecord(input.id, updateData, tx);
+          if (!await updateLambingRecord(input.id, updateData, tx, input.expectedVersion)) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Lambing record changed since it was loaded. Refresh and try again.",
+            });
           }
 
           await createAuditEntry({
@@ -502,7 +533,7 @@ export const breedingRouter = router({
         if (isDuplicateEntryError(error)) {
           throw new TRPCError({ code: "CONFLICT", message: "Lamb ID already exists" });
         }
-        console.error("[Breeding] Lambing record update failed", error);
+        logger.error("breeding.lambing_update_failed", { error });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not update lambing record. Try again.",

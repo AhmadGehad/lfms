@@ -12,7 +12,7 @@ import {
 } from "../../shared/permissions";
 import { getClientIp } from "../_core/audit";
 import {
-  privilegedProcedure,
+  permissionProcedure,
   protectedProcedure,
   router,
 } from "../_core/trpc";
@@ -45,12 +45,12 @@ export const permissionsRouter = router({
     ),
   })),
 
-  catalog: privilegedProcedure.query(() => ({
+  catalog: permissionProcedure("users", "view").query(() => ({
     configurableRoles: CONFIGURABLE_ROLES,
     pages: PERMISSION_PAGES,
   })),
 
-  roleMatrix: privilegedProcedure
+  roleMatrix: permissionProcedure("users", "view")
     .input(z.object({ role: configurableRoleSchema }))
     .query(async ({ input }) => {
       const state = await getRolePermissionState(input.role);
@@ -61,7 +61,7 @@ export const permissionsRouter = router({
       };
     }),
 
-  updateRoleMatrix: privilegedProcedure
+  updateRoleMatrix: permissionProcedure("users", "update")
     .input(z.object({
       role: configurableRoleSchema,
       expectedRevision: z.string(),
@@ -99,7 +99,8 @@ export const permissionsRouter = router({
       if (input.entries.some(entry =>
         entry.allowed && (
           (entry.page === "users" && entry.action === "update") ||
-          (entry.page === "data" && entry.action === "restore")
+          (entry.page === "data" && entry.action === "restore") ||
+          (entry.page === "audit" && entry.action === "revert")
         ),
       )) {
         throw new TRPCError({

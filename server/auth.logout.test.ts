@@ -54,12 +54,16 @@ describe("auth.logout", () => {
     const result = await caller.auth.logout();
 
     expect(result).toEqual({ success: true });
-    expect(clearedCookies).toHaveLength(1);
-    expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
-    expect(clearedCookies[0]?.options).toMatchObject({
+    expect(clearedCookies).toHaveLength(3);
+    expect(clearedCookies.map(cookie => cookie.name)).toEqual([
+      "__Host-lfms_tenant",
+      "__Host-lfms_tenant_csrf",
+      COOKIE_NAME,
+    ]);
+    expect(clearedCookies[2]?.options).toMatchObject({
       maxAge: -1,
       secure: true,
-      sameSite: "none",
+      sameSite: "lax",
       httpOnly: true,
       path: "/",
     });
@@ -74,7 +78,12 @@ describe("auth.logout", () => {
 
     await caller.auth.logout();
 
-    expect(clearedCookies[0]?.options).toMatchObject({
+    expect(clearedCookies.map(cookie => cookie.name)).toEqual([
+      "lfms_tenant_session",
+      "lfms_tenant_csrf",
+      COOKIE_NAME,
+    ]);
+    expect(clearedCookies[2]?.options).toMatchObject({
       maxAge: -1,
       secure: false,
       sameSite: "lax",

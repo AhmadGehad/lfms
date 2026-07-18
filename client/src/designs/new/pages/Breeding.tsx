@@ -192,6 +192,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
   };
 
   const [birthOpen, setBirthOpen] = useState(false);
+  const [birthIdempotencyKey, setBirthIdempotencyKey] = useState(() => crypto.randomUUID());
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>(initialTab);
   const [birth, setBirth] = useState(blankBirth);
   const [promote, setPromote] = useState<any | null>(null);
@@ -247,6 +248,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     onSuccess: () => {
       invalidate();
       toast.success(t("breeding.birthRecorded", "Birth recorded"));
+      setBirthIdempotencyKey(crypto.randomUUID());
     },
     onError: e => toast.error(e.message),
   });
@@ -337,6 +339,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
         lambIdNumber: birth.lambIdNumber || undefined,
         notes: birth.notes || undefined,
         count: Number(birth.count) || 1,
+        idempotencyKey: birthIdempotencyKey,
       },
       { onSuccess: () => (again ? setBirth({ ...blankBirth }) : setBirthOpen(false)) }
     );
@@ -346,6 +349,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     if (!edit) return;
     updateLambing.mutate({
       id: edit.id,
+      expectedVersion: edit.version,
       lambIdNumber: editForm.lambIdNumber || undefined,
       birthDate: editForm.birthDate || undefined,
       sex: editForm.sex as "male" | "female",
@@ -744,7 +748,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
         confirmLabel={t("common.moveToBin", "Move to bin")}
         destructive
         loading={deleteLambingLog.isPending}
-        onConfirm={() => deleteRow && deleteLambingLog.mutate({ id: deleteRow.id })}
+        onConfirm={() => deleteRow && deleteLambingLog.mutate({ id: deleteRow.id, expectedVersion: deleteRow.version })}
       />
         </>
       )}

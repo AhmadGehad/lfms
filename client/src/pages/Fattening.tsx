@@ -106,7 +106,7 @@ function RecordWeightDialog({
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button
-            onClick={() => addWeight.mutate({ animalId: Number(animalId), weighDate: date, weightKg: weight })}
+            onClick={() => addWeight.mutate({ animalId: Number(animalId), weighDate: date, weightKg: weight, idempotencyKey: crypto.randomUUID() })}
             disabled={!animalId || !weight || addWeight.isPending}
           >
             {addWeight.isPending ? "Saving..." : "Save"}
@@ -178,6 +178,7 @@ function EditAnimalDialog({ animal, groups, onSuccess }: { animal: any; groups: 
             onClick={() =>
               updateAnimal.mutate({
                 id: animal.animal.id,
+                expectedVersion: animal.animal.version,
                 animalIdNumber: animal.animal.animalIdNumber,
                 groupId: form.groupId && form.groupId !== "none" ? Number(form.groupId) : undefined,
                 notes: form.notes || undefined,
@@ -353,7 +354,7 @@ export default function Fattening() {
                                   <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                   <AlertDialogAction
                                     className="bg-destructive hover:bg-destructive/90"
-                                    onClick={() => deleteAnimal.mutate({ id: a.animal.id })}
+                                    onClick={() => deleteAnimal.mutate({ id: a.animal.id, expectedVersion: a.animal.version })}
                                   >
                                     {t("common.moveToBin")}
                                   </AlertDialogAction>

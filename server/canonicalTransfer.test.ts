@@ -1,13 +1,66 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getTableConfig } from "drizzle-orm/mysql-core";
 import {
-  applyCanonicalData,
+  applyCanonicalData as applyCanonicalDataWithoutContext,
   canonicalDataToObject,
-  readAllCanonicalTables,
+  readAllCanonicalTables as readAllCanonicalTablesWithoutContext,
 } from "./canonicalTransfer";
 import {
   CANONICAL_TABLES,
   type CanonicalWorkbookData,
 } from "./excelDataContract";
+import type { TenantContext } from "../shared/tenancy";
+import { feedItems } from "../drizzle/schema";
+import { runWithTenantContext } from "./tenancy/runtime";
+
+const limitMocks = vi.hoisted(() => ({
+  lockCompanyQuota: vi.fn(),
+  getEffectiveLimit: vi.fn(),
+}));
+
+vi.mock("./entitlements/limits", () => ({
+  lockCompanyQuota: limitMocks.lockCompanyQuota,
+  getEffectiveLimit: limitMocks.getEffectiveLimit,
+  assertWithinLimit(current: number, increment: number, limit: number | null, resource: string) {
+    if (limit !== null && current + increment > limit) {
+      throw new Error(`QUOTA_EXCEEDED: ${resource}`);
+    }
+  },
+}));
+
+const tenantContext: TenantContext = {
+  companyId: 11,
+  companyPublicId: "01J00000000000000000000000",
+  companySlug: "test-company",
+  companyLifecycleStatus: "active",
+  userId: 21,
+  membershipId: 31,
+  membershipRole: "admin",
+  membershipStatus: "active",
+  authorizationVersion: 1,
+  farmAccessMode: "all",
+  accessibleFarmIds: [41],
+  selectedFarmId: 41,
+  permissionOverrides: {},
+  sessionId: 51,
+  authenticationLevel: "primary",
+  entitlementVersion: 1,
+  requestId: "canonical-transfer-test",
+};
+
+function readAllCanonicalTables(
+  ...args: Parameters<typeof readAllCanonicalTablesWithoutContext>
+) {
+  return runWithTenantContext(tenantContext, () =>
+    readAllCanonicalTablesWithoutContext(...args));
+}
+
+function applyCanonicalData(
+  ...args: Parameters<typeof applyCanonicalDataWithoutContext>
+) {
+  return runWithTenantContext(tenantContext, () =>
+    applyCanonicalDataWithoutContext(...args));
+}
 
 const tableKeyByTable = new Map(CANONICAL_TABLES.map(spec => [spec.table, spec.key]));
 
@@ -25,12 +78,16 @@ function createTx(initial: Record<string, Record<string, unknown>[]> = {}) {
   const deleted: string[] = [];
   const tx = {
     select: () => ({
-      from: async (table: unknown) => (store.get(table) ?? []).map(row => ({ ...row })),
+      from: (table: unknown) => ({
+        where: async () => (store.get(table) ?? []).map(row => ({ ...row })),
+      }),
     }),
-    delete: async (table: unknown) => {
-      deleted.push(tableKeyByTable.get(table) ?? "unknown");
-      store.set(table, []);
-    },
+    delete: (table: unknown) => ({
+      where: async () => {
+        deleted.push(tableKeyByTable.get(table) ?? "unknown");
+        store.set(table, []);
+      },
+    }),
     insert: (table: unknown) => ({
       values: async (row: Record<string, unknown>) => {
         store.get(table)?.push({ ...row });
@@ -53,6 +110,10 @@ const feedItem = {
 };
 
 describe("canonical transfer modes", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    limitMocks.getEffectiveLimit.mockResolvedValue(null);
+  });
   it("reads and serializes every canonical table", async () => {
     const { tx } = createTx({ feed_items: [feedItem] });
 
@@ -61,6 +122,16 @@ describe("canonical transfer modes", () => {
 
     expect(Object.keys(obj)).toEqual(CANONICAL_TABLES.map(spec => spec.key));
     expect(obj.feed_items).toEqual([feedItem]);
+  });
+
+  it("blocks full data export for a farm-restricted membership", async () => {
+    const { tx } = createTx();
+    await expect(runWithTenantContext({
+      ...tenantContext,
+      farmAccessMode: "restricted",
+      accessibleFarmIds: [41],
+    }, () => readAllCanonicalTablesWithoutContext(tx as any)))
+      .rejects.toThrow(/access to all company farms/i);
   });
 
   it("append inserts missing rows and skips identical existing rows", async () => {
@@ -91,14 +162,39 @@ describe("canonical transfer modes", () => {
     );
   });
 
-  it("append aborts when a unique key belongs to another row", async () => {
+  it("locks the company quota and rejects an append above the animal limit", async () => {
+    const existingAnimal = {
+      id: 1,
+      animalId: "EWE0001",
+      deletedAt: null,
+      farmId: 41,
+    };
     const rows = emptyCanonicalData();
-    rows.set("feed_items", [{ ...feedItem, id: 2 }]);
-    const { tx } = createTx({ feed_items: [feedItem] });
+    rows.set("animals", [{
+      id: 2,
+      animalId: "EWE0002",
+      deletedAt: null,
+      farmId: 41,
+    }]);
+    const { tx, deleted } = createTx({ animals: [existingAnimal] });
+    limitMocks.getEffectiveLimit.mockResolvedValue(1);
 
-    await expect(applyCanonicalData(tx as any, rows, "append")).rejects.toThrow(
-      /name=Hay already belongs to ID 1/,
+    await expect(applyCanonicalData(tx as any, rows, "append"))
+      .rejects.toThrow(/QUOTA_EXCEEDED: animals/);
+    expect(limitMocks.lockCompanyQuota).toHaveBeenCalledWith(tx, tenantContext.companyId);
+    expect(deleted).toEqual([]);
+  });
+
+  it("keeps active feed names unique within each company at the database boundary", () => {
+    const index = getTableConfig(feedItems).indexes.find(
+      item => item.config.name === "feed_items_company_active_name_unique",
     );
+
+    expect(index?.config.unique).toBe(true);
+    expect(index?.config.columns).toEqual([
+      feedItems.companyId,
+      feedItems.activeName,
+    ]);
   });
 
   it("replace clears every table before restoring the complete snapshot", async () => {
@@ -109,14 +205,23 @@ describe("canonical transfer modes", () => {
 
     const stats = await applyCanonicalData(tx as any, rows, "replace");
 
-    expect(deleted).toEqual([...CANONICAL_TABLES].reverse().map(spec => spec.key));
+    expect(deleted).toEqual([...CANONICAL_TABLES]
+      .reverse()
+      .filter(spec => !["users", "role_permissions", "audit_log"].includes(spec.key))
+      .map(spec => spec.key));
     expect(stats.find(stat => stat.table === "feed_items")).toEqual({
       table: "feed_items",
       applied: 1,
       skipped: 0,
     });
     const feedSpec = CANONICAL_TABLES.find(spec => spec.key === "feed_items")!;
-    expect(store.get(feedSpec.table)).toEqual([replacementFeedItem]);
+    expect(store.get(feedSpec.table)).toEqual([
+      expect.objectContaining({
+        ...replacementFeedItem,
+        companyId: tenantContext.companyId,
+        version: 1,
+      }),
+    ]);
   });
 
   it("can exclude security tables from normal replace imports", async () => {
@@ -150,6 +255,61 @@ describe("canonical transfer modes", () => {
       const spec = CANONICAL_TABLES.find(item => item.key === key)!;
       expect(store.get(spec.table)).toHaveLength(1);
     }
+  });
+
+  it("accepts a selected company farm for an all-farm membership", async () => {
+    const rows = emptyCanonicalData();
+    rows.set("feed_item_price_history", [{
+      id: 1,
+      farmId: 41,
+      feedItemId: 1,
+      effectiveDate: "2026-01-01",
+      pricePerUnit: "5.00",
+    }]);
+    const { tx, store } = createTx();
+
+    await runWithTenantContext({
+      ...tenantContext,
+      farmAccessMode: "all",
+      accessibleFarmIds: [41],
+    }, () => applyCanonicalDataWithoutContext(tx as any, rows, "replace"));
+
+    const spec = CANONICAL_TABLES.find(
+      item => item.key === "feed_item_price_history",
+    )!;
+    expect(store.get(spec.table)?.[0]).toMatchObject({
+      companyId: tenantContext.companyId,
+      farmId: 41,
+    });
+  });
+
+  it("rejects a farm outside a restricted membership", async () => {
+    const rows = emptyCanonicalData();
+    rows.set("feed_item_price_history", [{
+      id: 1,
+      farmId: 99,
+      feedItemId: 1,
+      effectiveDate: "2026-01-01",
+      pricePerUnit: "5.00",
+    }]);
+    const { tx } = createTx();
+
+    await expect(runWithTenantContext({
+      ...tenantContext,
+      farmAccessMode: "restricted",
+      accessibleFarmIds: [41],
+    }, () => applyCanonicalDataWithoutContext(tx as any, rows, "append")))
+      .rejects.toThrow(/farm outside the current company scope/i);
+  });
+
+  it("requires all-farm authority for a full replace", async () => {
+    const { tx } = createTx();
+    await expect(runWithTenantContext({
+      ...tenantContext,
+      farmAccessMode: "restricted",
+      accessibleFarmIds: [41],
+    }, () => applyCanonicalDataWithoutContext(tx as any, emptyCanonicalData(), "replace")))
+      .rejects.toThrow(/access to all company farms/i);
   });
 
   it("derives the independent birth sequence from existing lamb IDs", async () => {

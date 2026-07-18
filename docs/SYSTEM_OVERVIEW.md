@@ -359,8 +359,10 @@ All deletions are soft deletes: the record's `deletedAt` and `deletedBy` fields 
 The Recycle Bin page lists all soft-deleted records across entity types. Each record can be:
 
 - **Restored** — `deletedAt` and `deletedBy` are cleared, `isActive` is reset to `true`.
-- **Purged** — permanently deleted from the database (irreversible).
-- **Purge All** — permanently deletes all soft-deleted records at once.
+
+Tenant users cannot permanently purge records. Company deletion uses the
+platform lifecycle process with retention, export, approval, and audit gates;
+no web-triggered hard-purge endpoint exists.
 
 ---
 

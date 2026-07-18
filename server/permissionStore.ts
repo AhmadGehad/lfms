@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { rolePermissions } from "../drizzle/schema";
+import { companyRolePermissions, rolePermissions } from "../drizzle/schema";
 import {
   isKnownPermission,
   permissionKey,
@@ -10,6 +10,7 @@ import {
   type PermissionPage,
 } from "../shared/permissions";
 import { createAuditEntry, getDb } from "./db";
+import { getTenantActorContext, isTenantUserContext } from "./tenancy/runtime";
 
 export async function getRolePermissionOverrides(
   role: AppRole,
@@ -17,7 +18,14 @@ export async function getRolePermissionOverrides(
   return (await getRolePermissionState(role)).overrides;
 }
 
-function permissionRevision(rows: Array<typeof rolePermissions.$inferSelect>) {
+type PermissionRevisionRow = {
+  page: string;
+  action: string;
+  allowed: boolean;
+  updatedAt: Date;
+};
+
+function permissionRevision(rows: PermissionRevisionRow[]) {
   return JSON.stringify(
     rows
       .map(row => [
@@ -35,10 +43,27 @@ export async function getRolePermissionState(role: AppRole) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
 
-  const rows = await db
-    .select()
-    .from(rolePermissions)
-    .where(eq(rolePermissions.role, role));
+  const actor = getTenantActorContext();
+  const rows: PermissionRevisionRow[] = actor && isTenantUserContext(actor)
+    ? await db.select({
+        page: companyRolePermissions.resource,
+        action: companyRolePermissions.action,
+        allowed: sql<boolean>`${companyRolePermissions.effect} = 'allow'`,
+        updatedAt: companyRolePermissions.updatedAt,
+      })
+        .from(companyRolePermissions)
+        .where(and(
+          eq(companyRolePermissions.companyId, actor.companyId),
+          eq(companyRolePermissions.role, role),
+        ))
+    : await db.select({
+        page: rolePermissions.page,
+        action: rolePermissions.action,
+        allowed: rolePermissions.allowed,
+        updatedAt: rolePermissions.updatedAt,
+      })
+        .from(rolePermissions)
+        .where(eq(rolePermissions.role, role));
 
   const overrides: PermissionOverrides = {};
   for (const row of rows) {
@@ -64,16 +89,29 @@ export async function replaceRolePermissions(
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
+  const actor = getTenantActorContext();
+  if (!actor || !isTenantUserContext(actor)) {
+    throw new TRPCError({ code: "FORBIDDEN", message: "Company context required" });
+  }
 
   await db.transaction(async tx => {
     const beforeRows = await tx
       .select()
-      .from(rolePermissions)
-      .where(eq(rolePermissions.role, role))
+      .from(companyRolePermissions)
+      .where(and(
+        eq(companyRolePermissions.companyId, actor.companyId),
+        eq(companyRolePermissions.role, role),
+      ))
       .for("update");
+    const beforeRevisionRows: PermissionRevisionRow[] = beforeRows.map(row => ({
+      page: row.resource,
+      action: row.action,
+      allowed: row.effect === "allow",
+      updatedAt: row.updatedAt,
+    }));
     if (
       expectedRevision !== undefined &&
-      permissionRevision(beforeRows) !== expectedRevision
+      permissionRevision(beforeRevisionRows) !== expectedRevision
     ) {
       throw new TRPCError({
         code: "CONFLICT",
@@ -81,17 +119,21 @@ export async function replaceRolePermissions(
       });
     }
     const before = Object.fromEntries(
-      beforeRows.map(row => [`${row.page}:${row.action}`, row.allowed]),
+      beforeRows.map(row => [`${row.resource}:${row.action}`, row.effect === "allow"]),
     );
-    await tx.delete(rolePermissions).where(eq(rolePermissions.role, role));
+    await tx.delete(companyRolePermissions).where(and(
+      eq(companyRolePermissions.companyId, actor.companyId),
+      eq(companyRolePermissions.role, role),
+    ));
     if (entries.length > 0) {
-      await tx.insert(rolePermissions).values(
+      await tx.insert(companyRolePermissions).values(
         entries.map(entry => ({
+          companyId: actor.companyId,
           role,
-          page: entry.page,
+          resource: entry.page,
           action: entry.action,
-          allowed: entry.allowed,
-          updatedBy,
+          effect: entry.allowed ? "allow" as const : "deny" as const,
+          updatedByMembershipId: actor.membershipId,
         })),
       );
     }
@@ -119,9 +161,19 @@ export async function clearInvalidRolePermission(
 ) {
   const db = await getDb();
   if (!db) return;
+  const actor = getTenantActorContext();
+  if (actor && isTenantUserContext(actor)) {
+    await db.delete(companyRolePermissions).where(and(
+      eq(companyRolePermissions.companyId, actor.companyId),
+      eq(companyRolePermissions.role, role),
+      eq(companyRolePermissions.resource, page),
+      eq(companyRolePermissions.action, action),
+    ));
+    return;
+  }
   await db.delete(rolePermissions).where(and(
-    eq(rolePermissions.role, role),
-    eq(rolePermissions.page, page),
-    eq(rolePermissions.action, action),
-  ));
+      eq(rolePermissions.role, role),
+      eq(rolePermissions.page, page),
+      eq(rolePermissions.action, action),
+    ));
 }

@@ -317,7 +317,7 @@ export default function FarmMap() {
 
   function saveShape() {
     if (!selectedGroup || !canSave) return;
-    updateGroup.mutate({ id: selectedGroup.id, mapShape: draftShape });
+    updateGroup.mutate({ id: selectedGroup.id, expectedVersion: selectedGroup.version, mapShape: draftShape });
   }
 
   return (

@@ -71,6 +71,7 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
     notes: "",
   };
   const [form, setForm] = useState(blank);
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const { data: animals } = trpc.animals.lookup.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery();
@@ -81,6 +82,7 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
       toast.success(t("vaccine.bulkVaccinationApplied", "Bulk vaccination applied"));
       utils.vaccination.getVaccinationRecords.invalidate();
       setForm({ ...blank });
+      setIdempotencyKey(crypto.randomUUID());
       onOpenChange(false);
     },
     onError: (e: any) => toast.error(e.message),
@@ -99,6 +101,7 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
       batchNumber: form.batchNumber || undefined,
       veterinarian: form.veterinarian || undefined,
       notes: form.notes || undefined,
+      idempotencyKey,
     };
     if (bulkType === "animals") {
       if (form.animalIds.length === 0) { toast.error(t("vaccine.animalRequired", "Pick at least one animal")); return; }
@@ -235,12 +238,13 @@ export default function NewVaccinations() {
     notifyBeforeNext: "7", notifyBeforeBooster: "7",
   };
   const [form, setForm] = useState(blank);
+  const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
   const [editRow, setEditRow] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ vaccinationDate: today(), batchNumber: "", veterinarian: "", notes: "", isCompleted: false });
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
 
   const add = trpc.vaccination.addVaccinationRecord.useMutation({
-    onSuccess: () => { utils.vaccination.getVaccinationRecords.invalidate(); toast.success(t("vaccine.recorded", "Vaccination recorded")); },
+    onSuccess: () => { utils.vaccination.getVaccinationRecords.invalidate(); toast.success(t("vaccine.recorded", "Vaccination recorded")); setCreateIdempotencyKey(crypto.randomUUID()); },
     onError: e => toast.error(e.message),
   });
   const update = trpc.vaccination.updateVaccinationRecord.useMutation({
@@ -266,6 +270,7 @@ export default function NewVaccinations() {
         notes: form.notes || undefined,
         notifyBeforeNext: form.notifyBeforeNext ? Number(form.notifyBeforeNext) : undefined,
         notifyBeforeBooster: form.notifyBeforeBooster ? Number(form.notifyBeforeBooster) : undefined,
+        idempotencyKey: createIdempotencyKey,
       },
       { onSuccess: () => (again ? setForm({ ...blank }) : setOpen(false)) }
     );
@@ -285,6 +290,7 @@ export default function NewVaccinations() {
     if (!editRow) return;
     update.mutate({
       id: editRow.id,
+      expectedVersion: editRow.version,
       vaccinationDate: editForm.vaccinationDate,
       batchNumber: editForm.batchNumber || undefined,
       veterinarian: editForm.veterinarian || undefined,
@@ -465,7 +471,7 @@ export default function NewVaccinations() {
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
         loading={remove.isPending}
-        onConfirm={() => deleteRow && remove.mutate({ id: deleteRow.id })}
+        onConfirm={() => deleteRow && remove.mutate({ id: deleteRow.id, expectedVersion: deleteRow.version })}
       />
 
       <BulkApplyDialog open={bulkOpen} onOpenChange={setBulkOpen} />

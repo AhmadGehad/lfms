@@ -1,13 +1,13 @@
 import ExcelJS from "exceljs";
-import { getTableColumns, getTableName } from "drizzle-orm";
+import { getTableName } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import * as schema from "../drizzle/schema";
 import {
   addCanonicalSheets,
   CANONICAL_TABLES,
   EXCEL_DATA_FORMAT_VERSION,
   EXCEL_MANIFEST_SHEET,
   isCanonicalWorkbook,
+  getCanonicalTableColumns,
   readCanonicalWorkbook,
   validateCanonicalDataObject,
   type CanonicalWorkbookData,
@@ -29,14 +29,13 @@ describe("canonical Excel data contract", () => {
       workbook.getWorksheet(EXCEL_MANIFEST_SHEET)?.getCell("B1").value
     ).toBe(EXCEL_DATA_FORMAT_VERSION);
     expect(CANONICAL_TABLES).toHaveLength(27);
-    expect(CANONICAL_TABLES.map(spec => getTableName(spec.table)).sort()).toEqual(
-      Object.values(schema).map(table => getTableName(table)).sort()
-    );
+    expect(new Set(CANONICAL_TABLES.map(spec => getTableName(spec.table))).size).toBe(27);
+    expect(CANONICAL_TABLES.map(spec => getTableName(spec.table))).not.toContain("companies");
     for (const spec of CANONICAL_TABLES) {
       const sheet = workbook.getWorksheet(spec.sheetName);
       expect(sheet, spec.sheetName).toBeDefined();
       expect(sheet!.getRow(1).values.slice(1)).toEqual(
-        Object.keys(getTableColumns(spec.table))
+        Object.keys(getCanonicalTableColumns(spec.table))
       );
     }
   });
@@ -48,6 +47,7 @@ describe("canonical Excel data contract", () => {
         [
           {
             id: 10,
+            farmId: 41,
             animalId: "EWE-010",
             speciesId: 1,
             categoryId: 2,
@@ -79,7 +79,9 @@ describe("canonical Excel data contract", () => {
           {
             id: 5,
             userId: 1,
+            actorType: "tenant_user",
             action: "update",
+            actionCategory: "crud",
             entityType: "animal",
             entityId: "10",
             oldValues: { statusId: 1 },

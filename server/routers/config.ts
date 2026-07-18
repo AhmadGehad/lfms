@@ -1,6 +1,8 @@
 import {
+  adminProcedure,
   anyPermissionProcedure,
   permissionProcedure,
+  protectedProcedure,
   router,
 } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -8,6 +10,12 @@ import { MAX_MAP_POLYGON_POINTS } from "@shared/const";
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
 import { storageGetSignedUrl, storagePut } from "../storage";
+import {
+  getTenantCompanyBranding,
+  removeTenantCompanyLogo,
+  updateTenantCompanyName,
+  uploadTenantCompanyLogo,
+} from "../tenancy/branding";
 import {
   getAllSpecies, createSpecies, updateSpecies,
   getAllCategories, createCategory, updateCategory,
@@ -30,6 +38,18 @@ import {
 const FARM_MAP_IMAGE_KEY_SETTING = "farmMapImageKey";
 const MAX_FARM_MAP_BYTES = 8 * 1024 * 1024;
 const MAX_FARM_MAP_DATA_URL_LENGTH = Math.ceil((MAX_FARM_MAP_BYTES * 4) / 3) + 128;
+const MAX_COMPANY_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_COMPANY_LOGO_DATA_URL_LENGTH = Math.ceil((MAX_COMPANY_LOGO_BYTES * 4) / 3) + 128;
+const expectedVersionSchema = z.number().int().positive();
+
+function requireVersionedMutation(updated: boolean, resource: string): void {
+  if (!updated) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `${resource} changed since it was loaded. Refresh and try again.`,
+    });
+  }
+}
 const REFERENCE_VIEW_PERMISSIONS = [
   ["dashboard", "view"],
   ["animals", "view"],
@@ -89,10 +109,11 @@ export const configRouter = router({
     }),
 
   updateSpecies: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional(), gestationDays: z.number().int().min(1).max(1000).optional() }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema, name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional(), gestationDays: z.number().int().min(1).max(1000).optional() }))
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("species", id, data);
-      const result = await updateSpecies(id, data);
+      const result = await updateSpecies(id, data, expectedVersion);
+      requireVersionedMutation(result, "Species");
       await createAuditEntry({ userId: ctx.user.id, entityType: "species", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
@@ -119,6 +140,7 @@ export const configRouter = router({
   updateCategory: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
+      expectedVersion: expectedVersionSchema,
       name: z.string().optional(),
       idPrefix: z.string().trim().min(1).max(10).optional(),
       targetWeightKg: z.string().optional(),
@@ -127,7 +149,7 @@ export const configRouter = router({
       autoStageTargetCategoryId: z.number().nullable().optional(),
       isActive: z.boolean().optional(),
     }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const db = await getDb();
       if (!db) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
@@ -137,6 +159,9 @@ export const configRouter = router({
         if (!current || current.deletedAt) {
           throw new TRPCError({ code: "NOT_FOUND", message: "Category not found" });
         }
+        if (current.version !== expectedVersion) {
+          requireVersionedMutation(false, "Category");
+        }
         if (data.idPrefix &&
             data.idPrefix !== current.idPrefix &&
             await categoryHasAnimals(id, tx)) {
@@ -145,7 +170,8 @@ export const configRouter = router({
             message: "Category prefix cannot change after animal or birth IDs have been assigned",
           });
         }
-        const result = await updateCategory(id, data as any, tx);
+        const result = await updateCategory(id, data as any, expectedVersion, tx);
+        requireVersionedMutation(result, "Category");
         await createAuditEntry({
           userId: ctx.user.id,
           entityType: "category",
@@ -171,10 +197,11 @@ export const configRouter = router({
     }),
 
   updateStatus: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isExitStatus: z.boolean().optional(), isActive: z.boolean().optional() }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema, name: z.string().optional(), description: z.string().optional(), isExitStatus: z.boolean().optional(), isActive: z.boolean().optional() }))
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("status", id, data);
-      const result = await updateStatus(id, data);
+      const result = await updateStatus(id, data, expectedVersion);
+      requireVersionedMutation(result, "Status");
       await createAuditEntry({ userId: ctx.user.id, entityType: "status", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
@@ -205,6 +232,7 @@ export const configRouter = router({
   updateGroup: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
+      expectedVersion: expectedVersionSchema,
       name: z.string().optional(),
       groupCode: z.string().optional(),
       speciesId: z.number().optional(),
@@ -216,9 +244,10 @@ export const configRouter = router({
       color: z.string().max(20).nullable().optional(),
       isActive: z.boolean().optional(),
     }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("group", id, data);
-      const result = await updateGroup(id, data);
+      const result = await updateGroup(id, data, expectedVersion);
+      requireVersionedMutation(result, "Group");
       await createAuditEntry({ userId: ctx.user.id, entityType: "group", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
@@ -226,11 +255,13 @@ export const configRouter = router({
   updateGroupMap: permissionProcedure("farmMap", "update")
     .input(z.object({
       id: z.number(),
+      expectedVersion: expectedVersionSchema,
       mapShape: mapShapeSchema.nullable(),
     }))
     .mutation(async ({ input, ctx }) => {
       const oldValues = await captureChangedOldValues("group", input.id, { mapShape: input.mapShape });
-      const result = await updateGroup(input.id, { mapShape: input.mapShape });
+      const result = await updateGroup(input.id, { mapShape: input.mapShape }, input.expectedVersion);
+      requireVersionedMutation(result, "Group");
       await createAuditEntry({
         userId: ctx.user.id,
         entityType: "group",
@@ -274,23 +305,24 @@ export const configRouter = router({
   updateOwner: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
+      expectedVersion: expectedVersionSchema,
       name: z.string().min(1).max(100).optional(),
       phone: z.string().max(30).nullable().optional(),
       email: z.string().max(100).optional(),
       notes: z.string().max(2000).optional(),
       isActive: z.boolean().optional(),
     }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const before = (await getAllOwners(false)).find((o: any) => o.id === id);
-      await updateOwner(id, data);
+      requireVersionedMutation(await updateOwner(id, data, expectedVersion), "Owner");
       await createAuditEntry({ userId: ctx.user.id, entityType: "owner", entityId: String(id), action: "update", oldValues: before as any, newValues: data as any, ipAddress: getClientIp(ctx) });
       return { success: true };
     }),
 
   deleteOwner: permissionProcedure("configuration", "delete")
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema }))
     .mutation(async ({ input, ctx }) => {
-      await deleteOwner(input.id, ctx.user?.id);
+      requireVersionedMutation(await deleteOwner(input.id, input.expectedVersion, ctx.user?.id), "Owner");
       await createAuditEntry({ userId: ctx.user.id, entityType: "owner", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx) });
       return { success: true };
     }),
@@ -310,10 +342,11 @@ export const configRouter = router({
     }),
 
   updateBirthType: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema, name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("birthType", id, data);
-      const result = await updateBirthType(id, data);
+      const result = await updateBirthType(id, data, expectedVersion);
+      requireVersionedMutation(result, "Birth type");
       await createAuditEntry({ userId: ctx.user.id, entityType: "birthType", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
@@ -339,10 +372,11 @@ export const configRouter = router({
     }),
 
   updateFeedItem: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), name: z.string().optional(), unit: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema, name: z.string().optional(), unit: z.string().optional(), isActive: z.boolean().optional() }))
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("feedItem", id, data);
-      const result = await updateFeedItem(id, data);
+      const result = await updateFeedItem(id, data, expectedVersion);
+      requireVersionedMutation(result, "Feed item");
       await createAuditEntry({ userId: ctx.user.id, entityType: "feedItem", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
@@ -375,13 +409,14 @@ export const configRouter = router({
   ])
     .input(z.object({
       id: z.number(),
+      expectedVersion: expectedVersionSchema,
       effectiveDate: z.string().optional(),
       pricePerUnit: z.string().optional(),
       notes: z.string().nullable().optional(),
     }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("feedItemPrice", id, data);
-      await updateFeedItemPrice(id, data);
+      requireVersionedMutation(await updateFeedItemPrice(id, data, expectedVersion), "Feed item price");
       await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return { id };
     }),
@@ -390,11 +425,11 @@ export const configRouter = router({
     ["configuration", "delete"],
     ["feed", "delete"],
   ])
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema }))
     .mutation(async ({ input, ctx }) => {
       // Snapshot the row before the hard delete so the revert can re-insert it.
       const snapshot = await captureRowSnapshot("feedItemPrice", input.id);
-      await deleteFeedItemPrice(input.id);
+      requireVersionedMutation(await deleteFeedItemPrice(input.id, input.expectedVersion), "Feed item price");
       await createAuditEntry({ userId: ctx.user.id, entityType: "feedItemPrice", entityId: String(input.id), action: "delete", oldValues: snapshot as any, newValues: input, ipAddress: getClientIp(ctx) });
       return { id: input.id };
     }),
@@ -414,10 +449,11 @@ export const configRouter = router({
     }),
 
   updateExpenseCategory: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema, name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("expenseCategory", id, data);
-      const result = await updateExpenseCategory(id, data);
+      const result = await updateExpenseCategory(id, data, expectedVersion);
+      requireVersionedMutation(result, "Expense category");
       await createAuditEntry({ userId: ctx.user.id, entityType: "expenseCategory", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
@@ -438,15 +474,63 @@ export const configRouter = router({
     }),
 
   updateExpenseSubCategory: permissionProcedure("configuration", "update")
-    .input(z.object({ id: z.number(), categoryId: z.number().optional(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema, categoryId: z.number().optional(), name: z.string().optional(), description: z.string().optional(), isActive: z.boolean().optional() }))
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
       const oldValues = await captureChangedOldValues("expenseSubCategory", id, data);
-      const result = await updateExpenseSubCategory(id, data);
+      const result = await updateExpenseSubCategory(id, data, expectedVersion);
+      requireVersionedMutation(result, "Expense sub-category");
       await createAuditEntry({ userId: ctx.user.id, entityType: "expenseSubCategory", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
       return result;
     }),
 
   // ─── SETTINGS ───────────────────────────────────────────────────────────────
+  // Branding is deliberately separate from general configuration permissions:
+  // only the company owner or an explicit company administrator can change it.
+  getCompanyBranding: protectedProcedure.query(() => getTenantCompanyBranding()),
+
+  updateCompanyBrandingName: adminProcedure
+    .input(z.object({
+      name: z.string().trim().min(2).max(200),
+      expectedVersion: expectedVersionSchema,
+    }))
+    .mutation(({ input, ctx }) => updateTenantCompanyName(input, {
+      userId: ctx.user.id,
+      ipAddress: getClientIp(ctx),
+    })),
+
+  uploadCompanyBrandingLogo: adminProcedure
+    .input(z.object({
+      dataUrl: z.string().max(MAX_COMPANY_LOGO_DATA_URL_LENGTH, "Logo is too large (max 2MB)")
+        .refine(value => /^data:image\/(jpeg|jpg|png|webp);base64,/.test(value), "Logo must be a JPEG, PNG, or WebP image"),
+      expectedVersion: expectedVersionSchema,
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const match = input.dataUrl.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,([A-Za-z0-9+/]+=*)$/);
+      if (!match) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid logo image" });
+      const contentType = match[1].toLowerCase() === "image/jpg" ? "image/jpeg" : match[1].toLowerCase();
+      const bytes = Buffer.from(match[2], "base64");
+      if (bytes.length === 0 || bytes.length > MAX_COMPANY_LOGO_BYTES || bytes.toString("base64") !== match[2]) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid logo image" });
+      }
+      const extension = contentType === "image/jpeg" ? "jpg" : contentType.split("/")[1];
+      return uploadTenantCompanyLogo({
+        bytes,
+        contentType,
+        extension,
+        expectedVersion: input.expectedVersion,
+      }, {
+        userId: ctx.user.id,
+        ipAddress: getClientIp(ctx),
+      });
+    }),
+
+  removeCompanyBrandingLogo: adminProcedure
+    .input(z.object({ expectedVersion: expectedVersionSchema }))
+    .mutation(({ input, ctx }) => removeTenantCompanyLogo(input, {
+      userId: ctx.user.id,
+      ipAddress: getClientIp(ctx),
+    })),
+
   getSettings: permissionProcedure("configuration", "view")
     .query(() => getAllSettings()),
 
@@ -562,6 +646,7 @@ export const configRouter = router({
   updateVaccine: permissionProcedure("configuration", "update")
     .input(z.object({
       id: z.number(),
+      expectedVersion: expectedVersionSchema,
       name: z.string().optional(),
       description: z.string().optional(),
       validityPeriod: z.number().optional(),
@@ -574,17 +659,23 @@ export const configRouter = router({
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["boosterInterval"], message: "Booster interval (days) is required when booster is required" });
       }
     }))
-    .mutation(async ({ input: { id, ...data }, ctx }) => {
-      const oldValues = await captureChangedOldValues("vaccine", id, data);
-      await updateVaccine(id, data);
-      await createAuditEntry({ userId: ctx.user.id, entityType: "vaccine", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) });
-      return { id };
+    .mutation(async ({ input: { id, expectedVersion, ...data }, ctx }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      }
+      return db.transaction(async tx => {
+        const oldValues = await captureChangedOldValues("vaccine", id, data, tx);
+        requireVersionedMutation(await updateVaccine(id, data, expectedVersion, tx), "Vaccine");
+        await createAuditEntry({ userId: ctx.user.id, entityType: "vaccine", entityId: String(id), action: "update", oldValues: oldValues as any, newValues: data, ipAddress: getClientIp(ctx) }, tx);
+        return { id, version: expectedVersion + 1 };
+      });
     }),
 
   deleteVaccine: permissionProcedure("configuration", "delete")
-    .input(z.object({ id: z.number() }))
+    .input(z.object({ id: z.number(), expectedVersion: expectedVersionSchema }))
     .mutation(async ({ input, ctx }) => {
-      await deleteVaccine(input.id);
+      requireVersionedMutation(await deleteVaccine(input.id, input.expectedVersion), "Vaccine");
       await createAuditEntry({ userId: ctx.user.id, entityType: "vaccine", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx) });
       return { id: input.id };
     }),

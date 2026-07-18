@@ -56,7 +56,7 @@ export default function NewUsers() {
         u.role === "owner" || !canEdit ? (
           <StatusBadge tone={roleTone(u.role)}>{u.role}</StatusBadge>
         ) : (
-          <Select value={u.role} onValueChange={v => updateRole.mutate({ userId: u.id, role: v as any })}>
+          <Select value={u.role} onValueChange={v => updateRole.mutate({ userId: u.id, role: v as any, expectedVersion: u.version })}>
             <SelectTrigger className="h-8 w-32" onClick={e => e.stopPropagation()}><SelectValue /></SelectTrigger>
             <SelectContent>
               {ASSIGNABLE_ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
@@ -108,7 +108,7 @@ function PermissionMatrix() {
   }, [matrix.data]);
 
   const pages = (matrix.data as any)?.matrix ?? [];
-  const actions: string[] = (catalog.data as any)?.actions ?? ["view", "create", "update", "delete", "report", "export", "import", "restore", "purge"];
+  const actions: string[] = (catalog.data as any)?.actions ?? ["view", "create", "update", "delete", "report", "export", "import", "restore"];
   const dirty = useMemo(() => Object.keys(local).some(k => local[k] !== server[k]), [local, server]);
 
   const save = trpc.permissions.updateRoleMatrix.useMutation({

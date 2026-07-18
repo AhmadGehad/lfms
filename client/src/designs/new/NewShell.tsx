@@ -49,6 +49,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { OwnerFilterSelect } from "@/components/OwnerFilterSelect";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
 import { DesignSwitch } from "@/components/DesignSwitch";
+import { FarmSwitcher } from "@/components/FarmSwitcher";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "./components/CommandPalette";
 import { QuickAdd } from "./components/QuickAdd";
@@ -170,31 +171,28 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 function SidebarBrand() {
-  const { t } = useTranslation();
+  const tenantContext = trpc.auth.tenantContext.useQuery(undefined, { staleTime: 60_000, retry: false });
+  const company = tenantContext.data?.company;
+  const companyName = company?.name ?? "LFMS";
   return (
     <div className="flex h-[60px] items-center gap-2.5 border-b border-sidebar-border px-5">
       <div className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--sidebar-active)]">
-        <Leaf className="h-4 w-4 text-[var(--sidebar-active-fg)]" />
+        {company?.logoUrl ? (
+          <img src={company.logoUrl} alt={`${companyName} logo`} className="h-full w-full rounded-lg object-contain" />
+        ) : (
+          <Leaf className="h-4 w-4 text-[var(--sidebar-active-fg)]" />
+        )}
       </div>
       <div className="min-w-0">
-        <p className="truncate text-sm font-bold leading-none text-sidebar-foreground">{t("appName", "Azal Farms")}</p>
-        <p className="truncate text-xs leading-none text-sidebar-muted mt-1">مزارع أزَل</p>
+        <p className="truncate text-sm font-bold leading-none text-sidebar-foreground">{companyName}</p>
+        <p className="mt-1 truncate text-xs leading-none text-sidebar-muted">{company?.slug ?? "LFMS"}</p>
       </div>
     </div>
   );
 }
 
 function FarmSwitcherSlot() {
-  const { t } = useTranslation();
-  return (
-    <div className="hidden h-9 items-center gap-2 rounded-lg border border-border bg-card px-2.5 text-sm text-foreground shadow-[var(--shadow-sm)] lg:flex">
-      <span className="grid h-6 w-6 place-items-center rounded-md bg-primary text-xs font-bold text-primary-foreground">A</span>
-      <span className="font-semibold">{t("appName", "Azal Farms")}</span>
-      <span className="rounded-md border border-border px-1.5 py-0.5 text-[10px] font-semibold text-muted-2">
-        {t("farm.single", "Farm")}
-      </span>
-    </div>
-  );
+  return <FarmSwitcher className="hidden lg:flex" />;
 }
 
 function MobileBottomNav() {

@@ -109,6 +109,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
   );
 
   const utils = trpc.useUtils();
+  const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
   const createAnimal = trpc.animals.create.useMutation({
     onSuccess: () => {
       toast.success(t("animals.title") + " registered");
@@ -118,6 +119,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       utils.feed.getStockStatus.invalidate();
       setOpen(false);
       reset();
+      setCreateIdempotencyKey(crypto.randomUUID());
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
@@ -141,6 +143,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       weightAtAcquisition: data.weightAtAcquisition || undefined,
       ownerId: (data.ownerId && data.ownerId !== "none") ? Number(data.ownerId) : undefined,
       animalIdNumber: data.animalIdNumber || undefined,
+      idempotencyKey: createIdempotencyKey,
     });
   };
 
@@ -319,6 +322,7 @@ function BulkVaccinationDialogContent({
   const [batchNumber, setBatchNumber] = useState("");
   const [veterinarian, setVeterinarian] = useState("");
   const [notes, setNotes] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const { data: vaccines } = trpc.config.getVaccines.useQuery();
   const utils = trpc.useUtils();
@@ -327,6 +331,7 @@ function BulkVaccinationDialogContent({
     onSuccess: () => {
       toast.success(t("vaccine.bulkVaccinationApplied"));
       utils.vaccination.getVaccinationRecords.invalidate();
+      setIdempotencyKey(crypto.randomUUID());
       onClose();
       onSuccess();
     },
@@ -345,6 +350,7 @@ function BulkVaccinationDialogContent({
       batchNumber: batchNumber || undefined,
       notes: notes || undefined,
       veterinarian: veterinarian || undefined,
+      idempotencyKey,
     });
   };
 
@@ -460,7 +466,7 @@ function BulkEditDialog({
       return;
     }
     bulkUpdate.mutate({
-      animalIds: selectedAnimals.map((a) => a.animal.id),
+      animals: selectedAnimals.map((a) => ({ id: a.animal.id, expectedVersion: a.animal.version })),
       groupId: groupId === KEEP ? undefined : groupId === CLEAR ? null : Number(groupId),
       statusId: statusId === KEEP ? undefined : Number(statusId),
       ownerId: ownerId === KEEP ? undefined : ownerId === CLEAR ? null : Number(ownerId),
@@ -680,6 +686,7 @@ function BulkSellDialog({
       saleNotes: saleNotes || undefined,
       animals: selectedAnimals.map((a) => ({
         id: a.animal.id,
+        expectedVersion: a.animal.version,
         salePrice: perAnimal[a.animal.id]?.salePrice || undefined,
         amountPaid: perAnimal[a.animal.id]?.amountPaid || undefined,
         weightAtSale: perAnimal[a.animal.id]?.weightAtSale || undefined,
@@ -1205,7 +1212,7 @@ export default function Animals() {
                                     <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-destructive hover:bg-destructive/90"
-                                      onClick={(e) => { e.stopPropagation(); deleteAnimalMutation.mutate({ id: a.animal.id }); }}
+                                      onClick={(e) => { e.stopPropagation(); deleteAnimalMutation.mutate({ id: a.animal.id, expectedVersion: a.animal.version }); }}
                                     >
                                       {t("common.moveToBin")}
                                     </AlertDialogAction>

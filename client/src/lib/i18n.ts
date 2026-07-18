@@ -804,8 +804,7 @@ const en = {
       export: "Export",
       report: "Download report",
       import: "Import",
-      restore: "Restore",
-      purge: "Purge"
+      restore: "Restore"
     },
     pages: {
       dashboard: "Dashboard",
@@ -1868,8 +1867,7 @@ const ar = {
       export: "تصدير",
       report: "تنزيل تقرير",
       import: "استيراد",
-      restore: "استعادة",
-      purge: "حذف نهائي"
+      restore: "استعادة"
     },
     pages: {
       dashboard: "لوحة التحكم",
@@ -2245,13 +2243,6 @@ const __newEn = {
     "item": "Item",
     "items": "items",
     "itemsAffected": "items affected",
-    "purge": "Purge",
-    "purgeAll": "Purge all",
-    "purgeAllConsequence": "All purgeable records are removed forever. This cannot be undone.",
-    "purgeAllTitle": "Permanently delete everything in the bin?",
-    "purgeConsequence": "This cannot be undone — the record is removed forever, not soft-deleted.",
-    "purgeTitle": "Permanently delete this record?",
-    "purged": "Permanently deleted",
     "type": "Type"
   },
   "sales": {
@@ -2516,13 +2507,6 @@ const __newAr = {
     "item": "العنصر",
     "items": "عناصر",
     "itemsAffected": "عناصر متأثرة",
-    "purge": "حذف نهائي",
-    "purgeAll": "حذف الكل نهائياً",
-    "purgeAllConsequence": "تُحذف كل السجلات القابلة للحذف نهائياً. لا يمكن التراجع.",
-    "purgeAllTitle": "حذف كل ما في السلة نهائياً؟",
-    "purgeConsequence": "لا يمكن التراجع — يُحذف السجل نهائياً وليس حذفاً مؤقتاً.",
-    "purgeTitle": "حذف هذا السجل نهائياً؟",
-    "purged": "تم الحذف نهائياً",
     "type": "النوع"
   },
   "sales": {

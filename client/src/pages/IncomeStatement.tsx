@@ -26,6 +26,9 @@ export default function IncomeStatement() {
   const filterOwner = ownerParam == null ? "all" : String(ownerParam);
 
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery();
+  const { data: branding } = trpc.config.getCompanyBranding.useQuery();
+  const companyName = branding?.name ?? "LFMS";
+  const companyFilePrefix = companyName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "lfms";
   const { data: statement, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({
     fromDate,
     toDate,
@@ -45,7 +48,7 @@ export default function IncomeStatement() {
       // Header
       doc.setFontSize(20);
       doc.setTextColor(34, 85, 34);
-      doc.text("Azal Farms - مزارع أزَل", 105, 20, { align: "center" });
+      doc.text(companyName, 105, 20, { align: "center" });
       doc.setFontSize(14);
       doc.setTextColor(60, 60, 60);
       doc.text(t("incomeStatement.title"), 105, 30, { align: "center" });
@@ -140,11 +143,11 @@ export default function IncomeStatement() {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: "center" });
-        doc.text("Azal Farms - Confidential", 20, 290);
+        doc.text(`${companyName} - Confidential`, 20, 290);
       }
 
       const _oSlug = filterOwner !== "all" ? "-" + ((ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? "owner").replace(/\s+/g, "_") : "";
-      doc.save(`azal-farms-income-statement${_oSlug}-${fromDate}-to-${toDate}.pdf`);
+      doc.save(`${companyFilePrefix}-income-statement${_oSlug}-${fromDate}-to-${toDate}.pdf`);
       toast.success(t("incomeStatement.pdfExported"));
     } catch (err) {
       console.error(err);
@@ -154,13 +157,11 @@ export default function IncomeStatement() {
 
   const handleExportExcel = async () => {
     try {
-      const XLSX = await import("xlsx");
-
-      const wb = XLSX.utils.book_new();
+      const { downloadExcelWorkbook } = await import("@/lib/excelDownload");
 
       // Summary sheet
       const summaryData = [
-        ["Azal Farms - مزارع أزَل"],
+        [companyName],
         [t("incomeStatement.title")],
         [`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`],
         ...(filterOwner !== "all" ? [[`Owner: ${(ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? ""}`]] : []),
@@ -187,28 +188,19 @@ export default function IncomeStatement() {
         ["Total Running Cost / Month", (statement as any)?.runningCostPerMonth?.total ?? 0],
       ];
 
-      const ws = XLSX.utils.aoa_to_sheet(summaryData);
-
-      // Column widths
-      ws["!cols"] = [{ wch: 35 }, { wch: 20 }];
-
-      // Style header rows
-      const headerStyle = { font: { bold: true, sz: 14 }, alignment: { horizontal: "center" } };
-      if (ws["A1"]) ws["A1"].s = headerStyle;
-
-      XLSX.utils.book_append_sheet(wb, ws, "Income Statement");
-
       // Expense breakdown sheet
       const expenseBreakdown = [
         ["Expense Category", "Total (EGP)"],
         ...(statement?.costs?.byCategory ?? []).map((cat: any) => [cat.categoryName ?? "Other", cat.total]),
       ];
-      const wsExpenses = XLSX.utils.aoa_to_sheet(expenseBreakdown);
-      wsExpenses["!cols"] = [{ wch: 30 }, { wch: 20 }];
-      XLSX.utils.book_append_sheet(wb, wsExpenses, "Expense Breakdown");
-
       const _oSlugX = filterOwner !== "all" ? "-" + ((ownersList ?? []).find((o: any) => String(o.id) === filterOwner)?.name ?? "owner").replace(/\s+/g, "_") : "";
-      XLSX.writeFile(wb, `azal-farms-income-statement${_oSlugX}-${fromDate}-to-${toDate}.xlsx`);
+      await downloadExcelWorkbook(
+        `${companyFilePrefix}-income-statement${_oSlugX}-${fromDate}-to-${toDate}.xlsx`,
+        [
+          { name: "Income Statement", rows: summaryData, widths: [35, 20] },
+          { name: "Expense Breakdown", rows: expenseBreakdown, widths: [30, 20] },
+        ],
+      );
       toast.success(t("incomeStatement.excelExported"));
     } catch (err) {
       console.error(err);
@@ -264,7 +256,7 @@ export default function IncomeStatement() {
       <Card className="w-full max-w-2xl print:shadow-none print:border-0">
         <CardHeader className="text-center">
           <CardTitle className="text-xl">
-            Azal Farms — Farm Income Statement
+            {companyName} — {t("incomeStatement.title")}
           </CardTitle>
           <p className="text-sm text-muted-foreground">
             {new Date(fromDate).toLocaleDateString("en-EG", { year: "numeric", month: "long", day: "numeric" })}

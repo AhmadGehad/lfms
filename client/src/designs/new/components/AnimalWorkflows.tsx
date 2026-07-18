@@ -49,6 +49,7 @@ export function QuickExpenseDialog({
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [form, setForm] = useState<ExpenseForm>(blankExpenseForm());
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   const reset = () => setForm(blankExpenseForm());
   useEffect(() => {
@@ -63,6 +64,7 @@ export function QuickExpenseDialog({
       toast.success(data?.count > 1
         ? t("expenses.createdN", "Created {{count}} expense rows", { count: data.count })
         : t("expenses.created", "Expense added"));
+      setIdempotencyKey(crypto.randomUUID());
     },
     onError: e => toast.error(e.message),
   });
@@ -70,7 +72,7 @@ export function QuickExpenseDialog({
   const submit = (addAnother: boolean) => {
     const err = validateExpenseForm(form, t);
     if (err) { toast.error(err); return; }
-    create.mutate(expenseFormToPayload(form) as any, {
+    create.mutate({ ...expenseFormToPayload(form), idempotencyKey } as any, {
       onSuccess: () => (addAnother ? reset() : onOpenChange(false)),
     });
   };
@@ -135,12 +137,14 @@ export function AnimalCreateDialog({
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const { data: owners } = trpc.config.getOwnerOptions.useQuery();
   const selectedCategory = ((categories as any[]) ?? []).find(c => String(c.id) === form.categoryId);
+  const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
   const create = trpc.animals.create.useMutation({
     onSuccess: () => {
       toast.success(t("animals.registered", "Animal registered"));
       invalidateAnimalWorkflows(utils);
       onOpenChange(false);
       onCreated?.();
+      setCreateIdempotencyKey(crypto.randomUUID());
       setForm(f => ({
         ...f,
         categoryId: "",
@@ -173,6 +177,7 @@ export function AnimalCreateDialog({
         weightAtAcquisition: form.weightAtAcquisition || undefined,
         ownerId: form.ownerId !== "none" ? Number(form.ownerId) : undefined,
         animalIdNumber: form.animalIdNumber || undefined,
+        idempotencyKey: createIdempotencyKey,
       },
       { onSuccess: () => addAnother && onOpenChange(true) }
     );
@@ -345,7 +350,7 @@ export function WeighInSessionDialog({
       toast.error(t("weight.required", "Enter weight"));
       return;
     }
-    addWeight.mutate({ animalId: current.animal.id, weighDate: date, weightKg: weight });
+    addWeight.mutate({ animalId: current.animal.id, weighDate: date, weightKg: weight, idempotencyKey: crypto.randomUUID() });
   };
 
   return (
@@ -502,6 +507,7 @@ export function RecordSaleDialog({
   const utils = trpc.useUtils();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [typed, setTyped] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const [form, setForm] = useState({
     saleDate: today(),
     salePrice: "",
@@ -544,6 +550,7 @@ export function RecordSaleDialog({
       toast.success(t("sales.recorded", "Sale recorded"));
       invalidateAnimalWorkflows(utils, animalId);
       setConfirmOpen(false);
+      setIdempotencyKey(crypto.randomUUID());
       onOpenChange(false);
     },
     onError: e => toast.error(e.message),
@@ -564,6 +571,8 @@ export function RecordSaleDialog({
     if (!animalId) return;
     exitAnimal.mutate({
       id: animalId,
+      expectedVersion: row?.animal?.version ?? 1,
+      idempotencyKey,
       exitDate: form.saleDate,
       exitReason: "sold",
       newStatusId: Number(form.statusId),
@@ -810,6 +819,7 @@ export function BulkRecordSaleDialog({
         const row = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
         return {
           id: a.animal.id,
+          expectedVersion: a.animal.version,
           salePrice: row.salePrice || undefined,
           amountPaid: row.amountPaid || undefined,
           weightAtSale: row.weightAtSale || undefined,

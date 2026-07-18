@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
-import { ownerProcedure, permissionProcedure, router } from "../_core/trpc";
+import { permissionProcedure, router } from "../_core/trpc";
 import { createAuditEntry, getDb } from "../db";
 import {
   applyCanonicalData,
@@ -9,13 +9,11 @@ import {
   type ImportMode,
 } from "../canonicalTransfer";
 import { CANONICAL_TABLES, validateCanonicalDataObject } from "../excelDataContract";
-import { users } from "../../drizzle/schema";
-import { ENV } from "../_core/env";
-import { eq } from "drizzle-orm";
+import { assertTenantImportMode } from "../tenancy/restorePolicy";
 
 const JSON_BACKUP_FORMAT = "lfms-canonical-json";
-const JSON_BACKUP_VERSION = 4;
-const SUPPORTED_JSON_BACKUP_VERSIONS = [3, 4] as const;
+const JSON_BACKUP_VERSION = 5;
+const SUPPORTED_JSON_BACKUP_VERSIONS = [3, 4, 5] as const;
 const importModeSchema = z.enum(["append", "replace"]).default("append");
 
 type CompleteSnapshot = {
@@ -35,7 +33,7 @@ function parseSnapshot(base64: string) {
   if (!parsed || typeof parsed !== "object") throw new Error("Invalid backup file");
   const snapshot = parsed as Partial<CompleteSnapshot>;
   if (snapshot.format !== JSON_BACKUP_FORMAT ||
-      !SUPPORTED_JSON_BACKUP_VERSIONS.includes(snapshot.version as 3 | 4)) {
+      !SUPPORTED_JSON_BACKUP_VERSIONS.includes(snapshot.version as 3 | 4 | 5)) {
     throw new Error(
       `Unsupported JSON backup format/version. Expected ${JSON_BACKUP_FORMAT} version ${SUPPORTED_JSON_BACKUP_VERSIONS.join(" or ")}.`,
     );
@@ -69,29 +67,17 @@ export const backupRouter = router({
     };
   }),
 
-  restore: ownerProcedure
+  restore: permissionProcedure("data", "restore")
     .input(z.object({ base64: z.string(), mode: importModeSchema }))
     .mutation(async ({ input, ctx }) => {
+      assertTenantImportMode(input.mode);
       const { snapshot, rowsByTable } = parseSnapshot(input.base64);
       const db = await getDb();
       if (!db) throw new Error("DB not available");
 
       let stats: Awaited<ReturnType<typeof applyCanonicalData>> = [];
       await db.transaction(async tx => {
-        const [ownerBefore] = await tx
-          .select()
-          .from(users)
-          .where(eq(users.openId, ENV.ownerOpenId))
-          .limit(1);
         stats = await applyCanonicalData(tx, rowsByTable, input.mode as ImportMode);
-        await tx.insert(users).values({
-          openId: ENV.ownerOpenId,
-          name: ownerBefore?.name ?? ctx.user.name,
-          email: ownerBefore?.email ?? ctx.user.email,
-          loginMethod: ownerBefore?.loginMethod ?? ctx.user.loginMethod,
-          role: "owner",
-          lastSignedIn: ownerBefore?.lastSignedIn ?? ctx.user.lastSignedIn,
-        }).onDuplicateKeyUpdate({ set: { role: "owner" } });
         await createAuditEntry(
           {
             userId: ctx.user?.id,

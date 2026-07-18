@@ -8,6 +8,8 @@ import { isDuplicateEntryError } from "../_core/databaseErrors";
 import { anyPermissionProcedure, permissionProcedure, router } from "../_core/trpc";
 import { optionalAnimalIdNumber, optionalMoneyString, optionalWeightString, weightString, pastOrTodayDate } from "../_core/validators";
 import { storagePut, storageGetSignedUrl } from "../storage";
+import { logger } from "../observability/logger";
+import { executeIdempotent } from "../platform/idempotency";
 import {
   checkAndStageAnimal,
   createAnimal,
@@ -135,6 +137,7 @@ export const animalsRouter = router({
           id: row.animal.id,
           animalId: row.animal.animalId,
           sex: row.animal.sex,
+          version: row.animal.version,
         },
       }));
     }),
@@ -186,6 +189,7 @@ export const animalsRouter = router({
         weightAtAcquisition: optionalWeightString,
         notes: z.string().max(2000).optional(),
         animalIdNumber: optionalAnimalIdNumber,
+        idempotencyKey: z.string().min(8).max(200),
       }).refine(
         (d) => new Date(d.birthDate) <= new Date(d.acquisitionDate),
         { message: "Birth date cannot be after acquisition date", path: ["birthDate"] }
@@ -207,13 +211,19 @@ export const animalsRouter = router({
         sireId: input.sireId,
       });
 
-      const { animalIdNumber, ...animalInput } = input;
+      const { animalIdNumber, idempotencyKey, ...animalInput } = input;
       const db = await getDb();
       if (!db) {
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       }
       try {
-        return await db.transaction(async (tx) => {
+        return await db.transaction(async (tx) => executeIdempotent(tx, {
+          companyId: ctx.tenant!.companyId,
+          userId: ctx.user.id,
+          key: idempotencyKey,
+          operation: "animals.create",
+          body: { ...animalInput, animalIdNumber },
+        }, async () => {
           const lockedCat = await getCategoryForUpdate(input.categoryId, tx);
           if (!lockedCat ||
               lockedCat.deletedAt ||
@@ -271,7 +281,7 @@ export const animalsRouter = router({
           }, tx);
 
           return { ...result, animalId };
-        });
+        }));
       } catch (error) {
         if (error instanceof TRPCError) throw error;
         if (isDuplicateEntryError(error)) {
@@ -280,7 +290,7 @@ export const animalsRouter = router({
             message: "Animal ID already exists or is in the Recycle Bin",
           });
         }
-        console.error("[Animals] Animal creation failed", error);
+        logger.error("animal.create_failed", { error });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not register animal. Try again.",
@@ -293,6 +303,7 @@ export const animalsRouter = router({
     .input(
       z.object({
         id: z.number(),
+        expectedVersion: z.number().int().positive(),
         categoryId: z.number().int().positive().optional(),
         groupId: z.number().optional(),
         statusId: z.number().optional(),
@@ -310,7 +321,7 @@ export const animalsRouter = router({
         animalIdNumber: optionalAnimalIdNumber,
       })
     )
-    .mutation(async ({ input: { id, animalIdNumber, ...data }, ctx }) => {
+    .mutation(async ({ input: { id, expectedVersion, animalIdNumber, ...data }, ctx }) => {
       const existing = await getAnimalById(id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
 
@@ -364,14 +375,7 @@ export const animalsRouter = router({
           if (!lockedAnimal || lockedAnimal.deletedAt) {
             throw new TRPCError({ code: "NOT_FOUND", message: "Animal not found" });
           }
-          const changedWhileEditing =
-            lockedAnimal.categoryId !== existing.animal.categoryId ||
-            lockedAnimal.animalId !== existing.animal.animalId ||
-            (lockedAnimal.updatedAt &&
-             existing.animal.updatedAt &&
-             new Date(lockedAnimal.updatedAt).getTime() !==
-               new Date(existing.animal.updatedAt).getTime());
-          if (changedWhileEditing) {
+          if (lockedAnimal.version !== expectedVersion) {
             throw new TRPCError({
               code: "CONFLICT",
               message: "Animal changed while editing. Reopen it and try again.",
@@ -430,14 +434,20 @@ export const animalsRouter = router({
             }, tx);
           }
 
-          await updateAnimal(id, {
+          const affected = await updateAnimal(id, {
             ...data,
             animalId: nextAnimalId,
             acquisitionDate: data.acquisitionDate as any,
             birthDate: data.birthDate as any,
             exitDate: data.exitDate as any,
             updatedAt: new Date(),
-          }, tx);
+          }, tx, expectedVersion);
+          if (affected !== 1) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Animal changed while editing. Reopen it and try again.",
+            });
+          }
 
           await createAuditEntry({
             userId: ctx.user?.id,
@@ -446,7 +456,7 @@ export const animalsRouter = router({
             entityType: "animal",
             entityId: String(id),
             oldValues: existing as any,
-            newValues: { ...data, animalId: nextAnimalId } as any,
+            newValues: { ...data, animalId: nextAnimalId, version: expectedVersion + 1 } as any,
           }, tx);
         });
       } catch (error) {
@@ -457,14 +467,14 @@ export const animalsRouter = router({
             message: "Animal ID already exists or is in the Recycle Bin",
           });
         }
-        console.error("[Animals] Animal update failed", error);
+        logger.error("animal.update_failed", { error });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not update animal. Try again.",
         });
       }
 
-      return { success: true };
+      return { success: true, version: expectedVersion + 1 };
     }),
 
   // ─── EXIT ANIMAL ────────────────────────────────────────────────────────────
@@ -472,6 +482,8 @@ export const animalsRouter = router({
     .input(
       z.object({
         id: z.number().int().positive(),
+        expectedVersion: z.number().int().positive(),
+        idempotencyKey: z.string().min(8).max(200),
         exitDate: pastOrTodayDate,
         exitReason: z.string().min(1).max(1000),
         newStatusId: z.number().int().positive(),
@@ -486,14 +498,6 @@ export const animalsRouter = router({
     .mutation(async ({ input, ctx }) => {
       const existing = await getAnimalById(input.id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
-
-      // F3 guard: refuse to re-exit an animal that is already inactive/exited.
-      if (existing.animal.isActive === false) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `${existing.animal.animalId} is already exited. Use the Sales page to edit its sale instead.`,
-        });
-      }
 
       // F4 guard: the chosen new status must actually be an exit status.
       const newStatus = await getStatusById(input.newStatusId);
@@ -521,13 +525,35 @@ export const animalsRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
       // All-or-nothing: animal update + status history + sale + audit
-      await db.transaction(async (tx) => {
-        await updateAnimal(input.id, {
+      await db.transaction(async (tx) => executeIdempotent(tx, {
+        companyId: ctx.tenant!.companyId,
+        userId: ctx.user.id,
+        key: input.idempotencyKey,
+        operation: "animals.exit",
+        body: { ...input, idempotencyKey: undefined },
+      }, async () => {
+        const lockedAnimal = await getRawAnimalForUpdate(input.id, tx);
+        if (!lockedAnimal || lockedAnimal.deletedAt) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Animal not found" });
+        }
+        if (lockedAnimal.version !== input.expectedVersion) {
+          throw new TRPCError({ code: "CONFLICT", message: "Animal changed since it was loaded. Refresh and try again." });
+        }
+        if (!lockedAnimal.isActive) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `${lockedAnimal.animalId} is already exited. Use the Sales page to edit its sale instead.`,
+          });
+        }
+        const affected = await updateAnimal(input.id, {
           statusId: input.newStatusId,
           exitDate: input.exitDate as any,
           exitReason: input.exitReason,
           isActive: false,
-        }, tx);
+        }, tx, input.expectedVersion);
+        if (affected !== 1) {
+          throw new TRPCError({ code: "CONFLICT", message: "Animal changed since it was loaded. Refresh and try again." });
+        }
 
         await recordStatusChange({
           animalId: input.id,
@@ -563,11 +589,12 @@ export const animalsRouter = router({
           entityId: String(input.id),
           // Prior state so the revert can reactivate the animal exactly.
           oldValues: { isActive: true, statusId: existing.animal.statusId, exitDate: null, exitReason: null } as any,
-          newValues: { exitDate: input.exitDate, exitReason: input.exitReason, saleId } as any,
+          newValues: { exitDate: input.exitDate, exitReason: input.exitReason, saleId, version: input.expectedVersion + 1 } as any,
         }, tx);
-      });
+        return { success: true, version: input.expectedVersion + 1 };
+      }));
 
-      return { success: true };
+      return { success: true, version: input.expectedVersion + 1 };
     }),
 
   // ─── BULK EXIT / SELL MANY ──────────────────────────────────────────────────
@@ -586,6 +613,7 @@ export const animalsRouter = router({
           .array(
             z.object({
               id: z.number().int().positive(),
+              expectedVersion: z.number().int().positive(),
               salePrice: optionalMoneyString,
               amountPaid: optionalMoneyString,
               weightAtSale: optionalWeightString,
@@ -618,6 +646,7 @@ export const animalsRouter = router({
       const prepared: Array<{
         id: number;
         existing: any;
+        expectedVersion: number;
         salePrice?: string;
         amountPaid?: string;
         weightAtSale?: string;
@@ -641,18 +670,21 @@ export const animalsRouter = router({
             parseFloat(a.amountPaid) > parseFloat(a.salePrice)) {
           throw new TRPCError({ code: "BAD_REQUEST", message: `Amount paid exceeds sale price for ${existing.animal.animalId}` });
         }
-        prepared.push({ id: a.id, existing, salePrice: a.salePrice, amountPaid: a.amountPaid, weightAtSale: a.weightAtSale });
+        prepared.push({ id: a.id, existing, salePrice: a.salePrice, amountPaid: a.amountPaid, weightAtSale: a.weightAtSale, expectedVersion: a.expectedVersion });
       }
 
       // All-or-nothing: every animal's update + history + sale + audit in one transaction.
       await db.transaction(async (tx) => {
         for (const p of prepared) {
-          await updateAnimal(p.id, {
+          const affected = await updateAnimal(p.id, {
             statusId: input.newStatusId,
             exitDate: input.exitDate as any,
             exitReason: input.exitReason,
             isActive: false,
-          }, tx);
+          }, tx, p.expectedVersion);
+          if (affected !== 1) {
+            throw new TRPCError({ code: "CONFLICT", message: `${p.existing.animal.animalId} changed since it was selected. Refresh and try again.` });
+          }
 
           await recordStatusChange({
             animalId: p.id,
@@ -710,7 +742,7 @@ export const animalsRouter = router({
   bulkUpdate: permissionProcedure("animals", "update")
     .input(
       z.object({
-        animalIds: z.array(z.number().int().positive()).min(1).max(500),
+        animals: z.array(z.object({ id: z.number().int().positive(), expectedVersion: z.number().int().positive() })).min(1).max(500),
         // Each field is optional; undefined means "leave alone".
         groupId: z.number().int().positive().nullable().optional(),
         statusId: z.number().int().positive().optional(),
@@ -724,7 +756,9 @@ export const animalsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { animalIds, ...changes } = input;
+      const { animals: selected, ...changes } = input;
+      const animalIds = selected.map(item => item.id);
+      const expectedVersionById = new Map(selected.map(item => [item.id, item.expectedVersion]));
 
       // Reject empty change sets — nothing to do.
       const changeKeys = Object.keys(changes).filter((k) => (changes as any)[k] !== undefined);
@@ -799,7 +833,11 @@ export const animalsRouter = router({
             exitReason: t.animal.exitReason,
           };
 
-          await updateAnimal(t.animal.id, updatePayload, tx);
+          const expectedVersion = expectedVersionById.get(t.animal.id)!;
+          const affected = await updateAnimal(t.animal.id, updatePayload, tx, expectedVersion);
+          if (affected !== 1) {
+            throw new TRPCError({ code: "CONFLICT", message: `${t.animal.animalId} changed since it was selected. Refresh and try again.` });
+          }
 
           // Record a status-history row when statusId actually changed.
           if (changes.statusId !== undefined && changes.statusId !== t.animal.statusId) {
@@ -819,7 +857,7 @@ export const animalsRouter = router({
             entityType: "animal",
             entityId: String(t.animal.id),
             oldValues: before,
-            newValues: updatePayload,
+            newValues: { ...updatePayload, version: expectedVersion + 1 },
           }, tx);
         }
       });
@@ -847,6 +885,7 @@ export const animalsRouter = router({
         weighDate: pastOrTodayDate,
         weightKg: weightString,
         notes: z.string().max(2000).optional(),
+        idempotencyKey: z.string().min(8).max(200),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -869,7 +908,13 @@ export const animalsRouter = router({
         staged: false,
       };
       try {
-        ({ result, stageResult } = await db.transaction(async (tx) => {
+        ({ result, stageResult } = await db.transaction(async (tx) => executeIdempotent(tx, {
+          companyId: ctx.tenant!.companyId,
+          userId: ctx.user.id,
+          key: input.idempotencyKey,
+          operation: "animals.addWeight",
+          body: { ...input, idempotencyKey: undefined },
+        }, async () => {
           const lockedAnimal = await getRawAnimalForUpdate(input.animalId, tx);
           if (!lockedAnimal || lockedAnimal.deletedAt) {
             throw new TRPCError({ code: "NOT_FOUND", message: "Animal not found" });
@@ -901,6 +946,7 @@ export const animalsRouter = router({
             // prior category/code so the revert can undo the stage as well.
             newValues: {
               ...input,
+              idempotencyKey: undefined,
               ...(staged.staged
                 ? { autoStage: { animalId: input.animalId, previousCategoryId: lockedAnimal.categoryId, previousAnimalCode: lockedAnimal.animalId } }
                 : {}),
@@ -908,10 +954,10 @@ export const animalsRouter = router({
           }, tx);
 
           return { result: created, stageResult: staged };
-        }));
+        })));
       } catch (error) {
         if (error instanceof TRPCError) throw error;
-        console.error("[Animals] Weight entry failed", error);
+        logger.error("animal.weight_create_failed", { error });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Could not record weight. Try again.",
@@ -934,7 +980,7 @@ export const animalsRouter = router({
               priority: "high",
             });
           } catch (error) {
-            console.error("[Animals] Target-weight notification failed", error);
+            logger.error("animal.target_weight_notification_failed", { error });
           }
         }
       }
@@ -944,11 +990,16 @@ export const animalsRouter = router({
 
   // ─── DELETE WEIGHT ENTRY ──────────────────────────────────────────────────
   deleteWeight: permissionProcedure("fattening", "delete")
-    .input(z.object({ id: z.number().int().positive() }))
+    .input(z.object({ id: z.number().int().positive(), expectedVersion: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
       const existing = await getWeightEntryById(input.id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Weight entry not found" });
-      await softDeleteWeightEntry(input.id, ctx.user?.id);
+      if (!await softDeleteWeightEntry(input.id, input.expectedVersion, ctx.user?.id)) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Weight entry changed since it was loaded. Refresh and try again.",
+        });
+      }
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "delete",
@@ -1030,6 +1081,7 @@ export const animalsRouter = router({
   setPhoto: permissionProcedure("animals", "update")
     .input(z.object({
       id: z.number().int().positive(),
+      expectedVersion: z.number().int().positive(),
       // data URL: "data:image/jpeg;base64,...."
       dataUrl: z.string().refine((s) => /^data:image\/(jpeg|jpg|png|webp);base64,/.test(s), "Must be a JPEG, PNG, or WebP data URL"),
     }))
@@ -1050,31 +1102,37 @@ export const animalsRouter = router({
       const ext = contentType.split("/")[1].replace("jpeg", "jpg");
       const { key } = await storagePut(`animals/${existing.animal.animalId}.${ext}`, buffer, contentType);
 
-      await updateAnimal(input.id, { photoUrl: key } as any);
+      const affected = await updateAnimal(input.id, { photoUrl: key } as any, undefined, input.expectedVersion);
+      if (affected !== 1) {
+        throw new TRPCError({ code: "CONFLICT", message: "Animal changed since it was loaded. Refresh and try again." });
+      }
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",
         ipAddress: getClientIp(ctx),
         entityType: "animal",
         entityId: String(input.id),
-        newValues: { photoUrl: key } as any,
+        newValues: { photoUrl: key, version: input.expectedVersion + 1 } as any,
       });
       return { success: true, key };
     }),
 
   removePhoto: permissionProcedure("animals", "update")
-    .input(z.object({ id: z.number().int().positive() }))
+    .input(z.object({ id: z.number().int().positive(), expectedVersion: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
       const existing = await getAnimalById(input.id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
-      await updateAnimal(input.id, { photoUrl: null } as any);
+      const affected = await updateAnimal(input.id, { photoUrl: null } as any, undefined, input.expectedVersion);
+      if (affected !== 1) {
+        throw new TRPCError({ code: "CONFLICT", message: "Animal changed since it was loaded. Refresh and try again." });
+      }
       await createAuditEntry({
         userId: ctx.user?.id,
         action: "update",
         ipAddress: getClientIp(ctx),
         entityType: "animal",
         entityId: String(input.id),
-        newValues: { photoUrl: null } as any,
+        newValues: { photoUrl: null, version: input.expectedVersion + 1 } as any,
       });
       return { success: true };
     }),

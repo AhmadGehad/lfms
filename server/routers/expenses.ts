@@ -6,7 +6,9 @@ import { toMajor, toMinor } from "../_core/money";
 import { permissionProcedure, router } from "../_core/trpc";
 import { moneyString, optionalMoneyString, pastOrTodayDate } from "../_core/validators";
 import { computeExpenseSplits } from "../expenseSplit";
-import { createExpense, deleteExpense, getCategoryHeadCountsOnDate, getDb, getExpenseById, getExpenses, updateExpense, createAuditEntry } from "../db";
+import { createExpense, deleteExpense, getCategoryHeadCountsOnDate, getDb, getExpenses, updateExpense, createAuditEntry } from "../db";
+import { rethrowVersionedWriteError } from "../concurrency/trpcVersioning";
+import { executeIdempotent } from "../platform/idempotency";
 
 export const expensesRouter = router({
   list: permissionProcedure("expenses", "view")
@@ -40,6 +42,7 @@ export const expensesRouter = router({
         headId: z.number().int().positive().optional(),
         vendorName: z.string().max(100).optional(),
         notes: z.string().max(2000).optional(),
+        idempotencyKey: z.string().min(8).max(200),
       }).superRefine((data, ctx) => {
         // B4: cross-field consistency — a head expense needs a head, a
         // category expense needs its target categories; general/herd have neither.
@@ -69,7 +72,7 @@ export const expensesRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { categoryTargets, categoryTarget, splitMode, ...shared } = input;
+      const { categoryTargets, categoryTarget, splitMode, idempotencyKey, ...shared } = input;
       const targetIds = input.targetType === "category"
         ? Array.from(new Set(categoryTargets ?? (categoryTarget ? [categoryTarget] : [])))
         : [];
@@ -87,39 +90,43 @@ export const expensesRouter = router({
 
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB not available" });
-      const insertIds: number[] = [];
-      await db.transaction(async (tx) => {
+      return db.transaction(async (tx) => executeIdempotent(tx, {
+        companyId: ctx.tenant!.companyId,
+        userId: ctx.user.id,
+        key: idempotencyKey,
+        operation: "expenses.create",
+        body: { ...shared, categoryTargets, categoryTarget, splitMode },
+      }, async () => {
+        const insertIds: number[] = [];
         for (const row of rows) {
+          const amount = toMajor(row.amountMinor).toFixed(2);
           const result = await createExpense({
             ...shared,
-            amount: toMajor(row.amountMinor).toFixed(2),
+            amount,
             categoryTarget: row.categoryTarget ?? undefined,
             expenseDate: new Date(input.expenseDate),
-            createdBy: ctx.user?.id,
+            createdBy: ctx.user.id,
           }, tx);
-          insertIds.push(Number((result as any).insertId));
+          const insertId = Number((result as any).insertId);
+          insertIds.push(insertId);
+          await createAuditEntry({
+            userId: ctx.user.id,
+            action: "create",
+            ipAddress: getClientIp(ctx),
+            entityType: "expense",
+            entityId: String(insertId),
+            newValues: { ...shared, amount, categoryTarget: row.categoryTarget ?? undefined, splitMode: rows.length > 1 ? splitMode : undefined } as any,
+          }, tx);
         }
-      });
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        await createAuditEntry({
-          userId: ctx.user?.id,
-          action: "create",
-          ipAddress: getClientIp(ctx),
-          entityType: "expense",
-          entityId: String(insertIds[i]),
-          newValues: { ...shared, amount: toMajor(row.amountMinor).toFixed(2), categoryTarget: row.categoryTarget ?? undefined, splitMode: rows.length > 1 ? splitMode : undefined } as any,
-        });
-      }
-
-      return { insertId: insertIds[0], insertIds, count: rows.length };
+        return { insertId: insertIds[0], insertIds, count: rows.length };
+      }));
     }),
 
   update: permissionProcedure("expenses", "update")
     .input(
       z.object({
         id: z.number().int().positive(),
+        expectedVersion: z.number().int().positive(),
         expenseDate: pastOrTodayDate.optional(),
         amount: optionalMoneyString,
         vendorName: z.string().max(100).optional(),
@@ -142,36 +149,32 @@ export const expensesRouter = router({
 
       })
     )
-    .mutation(async ({ input: { id, expenseDate, ...data }, ctx }) => {
-      const before = await getExpenseById(id);
+    .mutation(async ({ input: { id, expectedVersion, expenseDate, ...data }, ctx }) => {
       const updateData: Record<string, any> = { ...data };
       if (expenseDate) updateData.expenseDate = new Date(expenseDate);
-      const result = await updateExpense(id, updateData);
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "update",
-        entityType: "expense",
-        entityId: String(id),
-        oldValues: before ? { amount: before.amount, vendorName: before.vendorName, categoryId: before.categoryId, targetType: before.targetType, expenseDate: before.expenseDate } as any : undefined,
-        newValues: data as any,
-        ipAddress: getClientIp(ctx),
-      });
-      return result;
+      try {
+        return await updateExpense(id, expectedVersion, updateData, {
+          userId: ctx.user?.id,
+          ipAddress: getClientIp(ctx),
+        });
+      } catch (error) {
+        rethrowVersionedWriteError(error, "Expense");
+      }
     }),
 
   delete: permissionProcedure("expenses", "delete")
-    .input(z.object({ id: z.number() }))
+    .input(z.object({
+      id: z.number(),
+      expectedVersion: z.number().int().positive(),
+    }))
     .mutation(async ({ input, ctx }) => {
-      const before = await getExpenseById(input.id);
-      const result = await deleteExpense(input.id, ctx.user?.id);
-      await createAuditEntry({
-        userId: ctx.user?.id,
-        action: "delete",
-        entityType: "expense",
-        entityId: String(input.id),
-        oldValues: before ? { amount: before.amount, vendorName: before.vendorName } as any : undefined,
-        ipAddress: getClientIp(ctx),
-      });
-      return result;
+      try {
+        return await deleteExpense(input.id, input.expectedVersion, {
+          userId: ctx.user?.id,
+          ipAddress: getClientIp(ctx),
+        });
+      } catch (error) {
+        rethrowVersionedWriteError(error, "Expense");
+      }
     }),
 });

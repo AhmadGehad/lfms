@@ -14,6 +14,7 @@ import type {
   GetUserInfoWithJwtRequest,
   GetUserInfoWithJwtResponse,
 } from "./types/manusTypes";
+import { logger } from "../observability/logger";
 // Utility function
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.length > 0;
@@ -30,28 +31,20 @@ const GET_USER_INFO_WITH_JWT_PATH = `/webdev.v1.WebDevAuthPublicService/GetUserI
 
 class OAuthService {
   constructor(private client: ReturnType<typeof axios.create>) {
-    console.log("[OAuth] Initialized with baseURL:", ENV.oAuthServerUrl);
     if (!ENV.oAuthServerUrl) {
-      console.error(
-        "[OAuth] ERROR: OAUTH_SERVER_URL is not configured! Set OAUTH_SERVER_URL environment variable."
-      );
+      logger.error("auth.oauth_server_not_configured");
     }
-  }
-
-  private decodeState(state: string): string {
-    const redirectUri = atob(state);
-    return redirectUri;
   }
 
   async getTokenByCode(
     code: string,
-    state: string
+    redirectUri: string,
   ): Promise<ExchangeTokenResponse> {
     const payload: ExchangeTokenRequest = {
       clientId: ENV.appId,
       grantType: "authorization_code",
       code,
-      redirectUri: this.decodeState(state),
+      redirectUri,
     };
 
     const { data } = await this.client.post<ExchangeTokenResponse>(
@@ -116,13 +109,13 @@ class SDKServer {
   /**
    * Exchange OAuth authorization code for access token
    * @example
-   * const tokenResponse = await sdk.exchangeCodeForToken(code, state);
+   * const tokenResponse = await sdk.exchangeCodeForToken(code, redirectUri);
    */
   async exchangeCodeForToken(
     code: string,
-    state: string
+    redirectUri: string,
   ): Promise<ExchangeTokenResponse> {
-    return this.oauthService.getTokenByCode(code, state);
+    return this.oauthService.getTokenByCode(code, redirectUri);
   }
 
   /**
@@ -201,7 +194,7 @@ class SDKServer {
     cookieValue: string | undefined | null
   ): Promise<{ openId: string; appId: string; name: string } | null> {
     if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
+      logger.warn("auth.legacy_session_missing");
       return null;
     }
 
@@ -217,7 +210,7 @@ class SDKServer {
         !isNonEmptyString(appId) ||
         (name !== undefined && typeof name !== "string")
       ) {
-        console.warn("[Auth] Session payload missing required fields");
+        logger.warn("auth.legacy_session_invalid_payload");
         return null;
       }
 
@@ -227,7 +220,7 @@ class SDKServer {
         name: typeof name === "string" ? name : "",
       };
     } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
+      logger.warn("auth.legacy_session_verification_failed", { error });
       return null;
     }
   }
@@ -292,7 +285,7 @@ class SDKServer {
         });
         user = await db.getUserByOpenId(userInfo.openId);
       } catch (error) {
-        console.error("[Auth] Failed to sync user from OAuth:", error);
+        logger.error("auth.legacy_user_sync_failed", { error });
         throw ForbiddenError("Failed to sync user info");
       }
     }
