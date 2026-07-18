@@ -6,10 +6,18 @@ export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   oAuthPortalUrl: process.env.VITE_OAUTH_PORTAL_URL ?? "",
-  oAuthAllowedHosts: (process.env.OAUTH_ALLOWED_HOSTS ?? "")
-    .split(",")
-    .map(value => value.trim().toLowerCase())
-    .filter(Boolean),
+  oAuthAllowedHosts: (() => {
+    const explicit = (process.env.OAUTH_ALLOWED_HOSTS ?? "")
+      .split(",")
+      .map(value => value.trim().toLowerCase())
+      .filter(Boolean);
+    if (explicit.length > 0) return explicit;
+    // Auto-derive from the OAuth URLs when the env var is not explicitly set
+    const derived: string[] = [];
+    try { derived.push(new URL(process.env.OAUTH_SERVER_URL ?? "").hostname.toLowerCase()); } catch { /* ignore */ }
+    try { derived.push(new URL(process.env.VITE_OAUTH_PORTAL_URL ?? "").hostname.toLowerCase()); } catch { /* ignore */ }
+    return [...new Set(derived.filter(Boolean))];
+  })(),
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isDevelopment: process.env.NODE_ENV === "development",
   isProduction: process.env.NODE_ENV === "production",
