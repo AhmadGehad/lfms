@@ -175,14 +175,25 @@ export function validateExternalServiceUrl(
     throw new Error(`${label} must use HTTPS on the standard port in production`);
   }
   // A host is allowed on an exact match or as a subdomain of an allowlisted
-  // domain, so OAUTH_ALLOWED_HOSTS=manus.im covers api.manus.im.
+  // domain, so OAUTH_ALLOWED_HOSTS=manus.im covers api.manus.im. Entries are
+  // normalized to bare hostnames: values pasted with a scheme, path, or port
+  // (e.g. "https://api.manus.im/") still allowlist their host.
   const hostname = url.hostname.toLowerCase();
-  const hostAllowed = allowedHosts.some(allowed => {
-    const normalized = allowed.toLowerCase();
-    return hostname === normalized || hostname.endsWith(`.${normalized}`);
-  });
+  const normalizedAllowedHosts = allowedHosts.map(allowed => {
+    const entry = allowed.trim().toLowerCase();
+    try {
+      return new URL(entry.includes("://") ? entry : `https://${entry}`).hostname;
+    } catch {
+      return entry;
+    }
+  }).filter(Boolean);
+  const hostAllowed = normalizedAllowedHosts.some(allowed =>
+    hostname === allowed || hostname.endsWith(`.${allowed}`),
+  );
   if (production && !hostAllowed) {
-    throw new Error(`${label} host is not allowlisted`);
+    throw new Error(
+      `${label} host "${hostname}" is not allowlisted (allowed: ${normalizedAllowedHosts.join(", ") || "none"})`,
+    );
   }
   return url;
 }
