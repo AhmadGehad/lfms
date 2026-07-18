@@ -1,0 +1,220 @@
+{
+  "query": "SHOW TABLES LIKE 'saas_%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway06.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2Miqjapjuirru1Z.b9867fc13f8f --database boyWMBM5odtbpptCLrtK7n --execute SHOW TABLES LIKE 'saas_%';",
+  "rows": [
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_auth_identities"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_auth_rate_limits"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_authentication_tokens"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_animal_categories"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_animal_status_history"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_animal_statuses"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_animals"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_audit_log"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_birth_types"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_company_category_sequences"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_expense_categories"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_expense_sub_categories"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_expenses"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_feed_item_price_history"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_feed_items"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_feed_stock_ledger"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_groups"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_lambing_log"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_notification_receipts"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_notifications"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_owners"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_pregnancy_records"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_ration_plans"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_role_permissions"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_sales"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_species"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_system_settings"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_user_settings"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_vaccination_records"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_vaccines"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_azal_weight_log"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_background_jobs"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_companies"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_company_branding"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_company_feature_overrides"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_company_invitations"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_company_memberships"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_company_role_permissions"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_company_security_policies"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_company_subscriptions"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_deletion_requests"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_export_jobs"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_farm_memberships"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_farms"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_feature_catalog"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_idempotency_keys"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_legacy_user_links"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_mfa_credentials"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_mfa_recovery_codes"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_oauth_states"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_outbox_events"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_password_credentials"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_plan_entitlements"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_platform_administrator_roles"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_platform_administrators"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_platform_identities"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_platform_permissions"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_platform_role_permissions"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_platform_roles"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_platform_sessions"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_schema_migrations"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_security_events"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_subscription_plans"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_support_access_approvals"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_support_access_grants"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_tenant_files"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_tenant_restore_jobs"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_tenant_sessions"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_usage_counters"
+    },
+    {
+      "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)": "saas_users"
+    }
+  ],
+  "messages": [],
+  "stdout": "Tables_in_boyWMBM5odtbpptCLrtK7n (saas_%)\nsaas_auth_identities\nsaas_auth_rate_limits\nsaas_authentication_tokens\nsaas_azal_animal_categories\nsaas_azal_animal_status_history\nsaas_azal_animal_statuses\nsaas_azal_animals\nsaas_azal_audit_log\nsaas_azal_birth_types\nsaas_azal_company_category_sequences\nsaas_azal_expense_categories\nsaas_azal_expense_sub_categories\nsaas_azal_expenses\nsaas_azal_feed_item_price_history\nsaas_azal_feed_items\nsaas_azal_feed_stock_ledger\nsaas_azal_groups\nsaas_azal_lambing_log\nsaas_azal_notification_receipts\nsaas_azal_notifications\nsaas_azal_owners\nsaas_azal_pregnancy_records\nsaas_azal_ration_plans\nsaas_azal_role_permissions\nsaas_azal_sales\nsaas_azal_species\nsaas_azal_system_settings\nsaas_azal_user_settings\nsaas_azal_vaccination_records\nsaas_azal_vaccines\nsaas_azal_weight_log\nsaas_background_jobs\nsaas_companies\nsaas_company_branding\nsaas_company_feature_overrides\nsaas_company_invitations\nsaas_company_memberships\nsaas_company_role_permissions\nsaas_company_security_policies\nsaas_company_subscriptions\nsaas_deletion_requests\nsaas_export_jobs\nsaas_farm_memberships\nsaas_farms\nsaas_feature_catalog\nsaas_idempotency_keys\nsaas_legacy_user_links\nsaas_mfa_credentials\nsaas_mfa_recovery_codes\nsaas_oauth_states\nsaas_outbox_events\nsaas_password_credentials\nsaas_plan_entitlements\nsaas_platform_administrator_roles\nsaas_platform_administrators\nsaas_platform_identities\nsaas_platform_permissions\nsaas_platform_role_permissions\nsaas_platform_roles\nsaas_platform_sessions\nsaas_schema_migrations\nsaas_security_events\nsaas_subscription_plans\nsaas_support_access_approvals\nsaas_support_access_grants\nsaas_tenant_files\nsaas_tenant_restore_jobs\nsaas_tenant_sessions\nsaas_usage_counters\nsaas_users\n",
+  "stderr": "",
+  "execution_time_ms": 2980
+}
