@@ -32,6 +32,7 @@ export function serveStatic(app: Express) {
   app.use("*", (_req, res) => {
     const host = getResolvedRequestHost(res);
     const distPath = host?.surface === "platform" ? adminDistPath : tenantDistPath;
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
