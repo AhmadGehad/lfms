@@ -72,9 +72,7 @@ export function validateStorageConfiguration() {
     }
     return;
   }
-  if (ENV.isProduction) {
-    throw new Error("Production requires OBJECT_STORAGE_BUCKET and OBJECT_STORAGE_REGION");
-  }
+  // Allow Manus built-in Forge API as the storage backend (works in both dev and production)
   const forge = forgeConfiguration();
   if (forge) {
     const endpoint = validatedUrl(forge.url, "BUILT_IN_FORGE_API_URL");
@@ -82,6 +80,9 @@ export function validateStorageConfiguration() {
       throw new Error("BUILT_IN_FORGE_API_URL must not contain query or fragment");
     }
     return;
+  }
+  if (ENV.isProduction) {
+    throw new Error("Production requires OBJECT_STORAGE_BUCKET and OBJECT_STORAGE_REGION (or BUILT_IN_FORGE_API_URL)");
   }
   throw new Error(
     "Private storage is not configured; set OBJECT_STORAGE_BUCKET/REGION or the legacy Forge variables",
