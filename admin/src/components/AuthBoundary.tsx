@@ -25,10 +25,10 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
           <ShieldAlert className="mb-4 h-7 w-7 text-primary" aria-hidden="true" />
           <h1 id="admin-signin-title" className="text-lg font-semibold">Platform access required</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Use an approved workforce account with platform permissions and MFA.
+            Sign in with your Manus account. Only authorized platform administrators can access this panel.
           </p>
           <Button className="mt-5 w-full" asChild>
-            <a href={loginUrl}>Sign in to platform operations</a>
+            <a href={loginUrl}>Sign in with Manus</a>
           </Button>
         </section>
       </main>

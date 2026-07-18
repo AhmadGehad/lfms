@@ -7,7 +7,6 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
 import { ENV } from "./env";
 import {
   getOAuthStateSecret,
@@ -23,7 +22,7 @@ import {
   securityHeadersMiddleware,
 } from "./security/httpSecurity";
 import { registerPlatformApi } from "../platform/http";
-import { registerPlatformOidcRoutes } from "../platform/oidc";
+import { registerPlatformManusAuthRoutes } from "../platform/manusAuth";
 import { registerObservabilityRoutes, requestObservabilityMiddleware } from "../observability/http";
 import { logger } from "../observability/logger";
 import { validateLocalDevAuthConfiguration } from "./devAuth";
@@ -96,7 +95,7 @@ async function startServer() {
   app.use("/api/oauth", requireSurface("tenant"));
   registerOAuthRoutes(app);
   app.use("/api/platform/auth", requireSurface("platform"));
-  registerPlatformOidcRoutes(app);
+  registerPlatformManusAuthRoutes(app);
   app.use(
     "/api/platform/trpc",
     requireSurface("platform"),
@@ -121,10 +120,14 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
+  // development mode uses Vite, production mode uses static files.
+  // vite is a devDependency pruned in production, so it MUST be loaded via
+  // dynamic import to avoid ERR_MODULE_NOT_FOUND at startup.
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
+    const { serveStatic } = await import("./vite");
     serveStatic(app);
   }
 

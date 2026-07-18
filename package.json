@@ -10,7 +10,7 @@
     "build": "npm run build:tenant && npm run build:admin && npm run build:server && npm run build:worker",
     "build:tenant": "vite build",
     "build:admin": "vite build --config vite.admin.config.ts",
-    "build:server": "esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build:server": "esbuild server/_core/index.ts server/_core/vite.ts --platform=node --packages=external --bundle --format=esm --splitting --outdir=dist",
     "build:worker": "esbuild server/workers/index.ts --platform=node --packages=external --bundle --format=esm --outfile=dist/worker.js",
     "start": "NODE_ENV=production node dist/index.js",
     "start:worker": "NODE_ENV=production node dist/worker.js",

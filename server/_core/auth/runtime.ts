@@ -126,30 +126,8 @@ export function validateProductionAuthConfiguration() {
   }
   validateExternalServiceUrl(ENV.oAuthServerUrl, "OAUTH_SERVER_URL", ENV.oAuthAllowedHosts, true);
   validateExternalServiceUrl(ENV.oAuthPortalUrl, "VITE_OAUTH_PORTAL_URL", ENV.oAuthAllowedHosts, true);
-  if (
-    !ENV.adminOidcIssuer ||
-    !ENV.adminOidcClientId ||
-    !ENV.adminOidcClientSecret ||
-    !ENV.adminOidcRedirectUri
-  ) {
-    throw new Error("Platform workforce OIDC configuration is incomplete");
-  }
-  validateExternalServiceUrl(
-    ENV.adminOidcIssuer,
-    "ADMIN_OIDC_ISSUER",
-    [new URL(ENV.adminOidcIssuer).hostname],
-    true,
-  );
-  const expectedAdminOrigin = `https://admin.${ENV.baseDomain}`;
-  const adminRedirect = new URL(ENV.adminOidcRedirectUri);
-  if (
-    adminRedirect.origin !== expectedAdminOrigin ||
-    adminRedirect.pathname !== "/api/platform/auth/callback" ||
-    adminRedirect.search ||
-    adminRedirect.hash
-  ) {
-    throw new Error("ADMIN_OIDC_REDIRECT_URI must be the exact HTTPS Admin callback URL");
-  }
+  // Platform admin login now uses Manus OAuth (same provider as tenant users).
+  // No separate OIDC issuer/client credentials are required.
   validateProductionDatabaseUrl(ENV.databaseUrl);
   if (ENV.metricsBearerToken.length < 32) {
     throw new Error("METRICS_BEARER_TOKEN must contain at least 32 characters");
