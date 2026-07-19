@@ -19,8 +19,10 @@ Do not deploy until all items below are true:
 - Staging has a certificate covering `*.staging.l-fms.com`. The default
   Universal SSL wildcard does not cover this multi-level hostname; use Total
   TLS, Advanced Certificate Manager, or a custom certificate.
-- Docker BuildKit is running and can build `linux/amd64` images.
-- Node `22.23.1` and pnpm `10.34.4` are available.
+- Every name in `secrets.required` is configured as a dashboard Secret on the
+  target Worker (see "Required Secrets").
+- For manual fallback deploys only: Docker BuildKit runs `linux/amd64` builds
+  and Node `22.23.1` with pnpm `10.34.4` are available locally.
 - CI passed against `pnpm-lock.yaml`: secret scan, typecheck, tests, build, and
   dependency audit, both Docker targets, image smoke tests, and Wrangler dry
   runs.
@@ -89,17 +91,28 @@ runtime setting is added, review and update that allowlist deliberately.
 
 ## Required Secrets
 
-Authenticate without placing a token in the repository:
+Deployments are triggered by Cloudflare Workers Git integration (see
+"Build And Deploy"), so no local Wrangler login or local secrets file is
+required for a normal release.
 
-```bash
-pnpm exec wrangler login
-```
-
-Have the secret manager materialize one `.env` or JSON file outside this
-repository with mode `0600`. It must contain every name in
-`secrets.required`, including the database, independent auth keys, private R2
+Configure every name in `secrets.required` in the Cloudflare dashboard under
+**Workers & Pages → (worker) → Settings → Variables and Secrets**, with type
+**Secret**. This includes the database, independent auth keys, private R2
 credentials, Manus server key, app ID, and analytics identifiers. Production
-and staging must use different files and different databases.
+(`lfms-production`) and staging (`lfms-staging`) are separate Workers with
+separate secret sets and separate databases.
+
+Set all required secrets **before** connecting Git integration or pushing to
+the production branch: the first Git-triggered deploy starts containers
+immediately, and a container without its secrets fails readiness.
+
+Dashboard rules that matter here:
+
+- Secrets set in the dashboard persist across Git-triggered
+  `wrangler deploy` runs; they are never deleted by a deploy.
+- Do not add plain-text variables in the dashboard. Non-secret configuration
+  lives in `vars` in `wrangler.jsonc` (the source of truth) and dashboard
+  plain-text values are overwritten on every deploy.
 
 When workforce Admin MFA is enabled, also include all four core `ADMIN_OIDC_*`
 values documented in `ENV_VARIABLES.md`; add `ADMIN_OIDC_MFA_ACR_VALUES` when
@@ -110,24 +123,55 @@ The analytics values are browser-visible identifiers, not credentials. The
 production runtime never publishes a Forge API key to the browser.
 
 Do not run sequential `wrangler secret put` commands against the routed Worker:
-each command can deploy a version with only part of the configuration. The LFMS
-deploy script validates names locally and supplies all secrets to the same
-atomic Wrangler deploy.
+each command can deploy a version with only part of the configuration. Use the
+dashboard **Variables and Secrets** editor and save all changes together, or
+`wrangler versions secret bulk` from a trusted operator machine.
 
-After deployment, confirm remote names only; this does not print values:
+To confirm remote names only (does not print values), run from any
+authenticated machine:
 
 ```bash
 pnpm run check:cloudflare-secrets
 ```
-
-Wrangler also validates `secrets.required` during the real deploy. Dry runs do
-not contact Cloudflare and therefore cannot prove remote secrets exist.
 
 Generate `JWT_SECRET`, `SESSION_PEPPER`, `OAUTH_STATE_SECRET`, and
 `METRICS_BEARER_TOKEN` as independent random values of at least 32 bytes. Never
 reuse or log them. Rotating the session pepper revokes existing sessions.
 
 ## Build And Deploy
+
+### Git Integration (primary path)
+
+Production deploys through Cloudflare Workers Git integration: a push to the
+configured production branch triggers the build and deployment inside
+Cloudflare's build environment, including the container image build. No local
+Docker, local secrets file, or local Wrangler authentication is involved.
+
+Configure the Git-connected Worker in the dashboard
+(**Workers & Pages → lfms-production → Settings → Build**):
+
+- Repository: `AhmadGehad/lfms`, production branch as configured.
+- Build command: `pnpm run check:secrets && pnpm run check && pnpm run build`
+- Deploy command: `npx wrangler deploy --env "" --containers-rollout gradual`
+- Non-production branch deployments: disabled for this Worker.
+
+Connect the staging Worker (`lfms-staging`) to the same repository as a second
+Git-connected Worker with deploy command
+`npx wrangler deploy --env staging`, tracking the branch used for staging.
+
+The dependency install uses the committed `pnpm-lock.yaml` (pnpm is selected
+via `packageManager` in `package.json`). The deploy command uploads the Worker,
+static asset version, and container image atomically with the configured
+gradual rollout. All release-gate items (staging validation, secrets present,
+DNS, certificates) must be true **before** pushing to the production branch —
+the push is the deployment.
+
+### Manual deploy (fallback only)
+
+`scripts/deploy-cloudflare.mjs` remains for operator-driven deploys from a
+trusted machine (for example when Git integration is unavailable). It requires
+local Docker, `wrangler login`, and a protected secrets file; see the script
+for its provenance gates. For normal releases prefer the Git path above.
 
 Install exactly the reviewed dependency graph:
 
@@ -138,7 +182,7 @@ pnpm run check
 pnpm run build
 ```
 
-Build the exact container locally before production deployment:
+Build the exact container locally for image smoke tests:
 
 ```bash
 docker buildx build --platform linux/amd64 --target web --load -t lfms-web:release .
@@ -159,28 +203,20 @@ rejects symlinks and conflicting filenames, and verifies every HTML asset
 reference. The deploy script always runs the full build before Wrangler uploads
 the edge asset version.
 
-Deploy and test staging first:
+Release order with Git integration: push to the staging branch first, run the
+staging gates against `staging.l-fms.com`, then push (or fast-forward merge)
+the same reviewed commit to the production branch. Check rollout state with:
 
 ```bash
-CLOUDFLARE_SECRETS_FILE=/run/secrets/lfms-staging.env pnpm run cloudflare:deploy:staging
 pnpm run cloudflare:status:staging
-```
-
-`CLOUDFLARE_SECRETS_FILE` must point to the protected staging file. After all
-staging gates pass, deploy production with its separate file and explicit
-confirmation:
-
-```bash
-CLOUDFLARE_SECRETS_FILE=/run/secrets/lfms-production.env CLOUDFLARE_PRODUCTION_CONFIRM=l-fms.com CLOUDFLARE_RELEASE_SHA=<reviewed-clean-commit-sha> pnpm run cloudflare:deploy
 pnpm run cloudflare:status
 ```
 
 Do not set `VITE_ENABLE_LOCAL_DEV_AUTH=1`, use broad trusted-proxy CIDRs, bake
 an `.env` file into the image, or expose container port `3000` publicly.
-The deploy script requires a clean reviewed commit and uses the configured
-gradual container rollout. The Worker serves HTML and matching hashed assets
-from one immutable asset version, avoiding cross-version UI asset overlap.
-Keep API changes backward-compatible for the duration of the container rollout.
+The Worker serves HTML and matching hashed assets from one immutable asset
+version, avoiding cross-version UI asset overlap. Keep API changes
+backward-compatible for the duration of the container rollout.
 
 ## Background Worker
 
