@@ -80,9 +80,9 @@ if (!Array.isArray(required) || required.length === 0) {
 }
 
 const secretSource = readFileSync(secretsPath, "utf8");
-let suppliedSecrets;
+let parsedDeployEnvFile;
 try {
-  suppliedSecrets = secretsPath.endsWith(".json")
+  parsedDeployEnvFile = secretsPath.endsWith(".json")
     ? JSON.parse(secretSource)
     : parseDotenv(secretSource);
 } catch {
@@ -90,8 +90,8 @@ try {
 }
 const missing = required.filter(
   name =>
-    typeof suppliedSecrets?.[name] !== "string" ||
-    suppliedSecrets[name].length === 0
+    typeof parsedDeployEnvFile?.[name] !== "string" ||
+    parsedDeployEnvFile[name].length === 0
 );
 if (missing.length > 0) {
   throw new Error(`Secrets file is missing: ${missing.join(", ")}`);
