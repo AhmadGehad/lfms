@@ -1,9 +1,36 @@
+function boundedIntegerEnvironment(
+  name: string,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+) {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new Error(`${name} must be an integer between ${minimum} and ${maximum}`);
+  }
+  return value;
+}
+
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
   cookieSecret: process.env.JWT_SECRET ?? "",
   sessionPepper: process.env.SESSION_PEPPER ?? "",
   oAuthStateSecret: process.env.OAUTH_STATE_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
+  databasePoolConnectionLimit: boundedIntegerEnvironment(
+    "DB_POOL_CONNECTION_LIMIT",
+    5,
+    1,
+    50,
+  ),
+  databasePoolQueueLimit: boundedIntegerEnvironment(
+    "DB_POOL_QUEUE_LIMIT",
+    50,
+    0,
+    1_000,
+  ),
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   oAuthPortalUrl: process.env.VITE_OAUTH_PORTAL_URL ?? "",
   oAuthAllowedHosts: (() => {
@@ -24,7 +51,6 @@ export const ENV = {
   enableLocalDevAuth: process.env.VITE_ENABLE_LOCAL_DEV_AUTH === "1",
   baseDomain: process.env.BASE_DOMAIN ?? "localhost",
   adminOrigin: process.env.ADMIN_ORIGIN ?? "",
-  authOrigin: process.env.AUTH_ORIGIN ?? "",
   adminOidcIssuer: process.env.ADMIN_OIDC_ISSUER ?? "",
   adminOidcClientId: process.env.ADMIN_OIDC_CLIENT_ID ?? "",
   adminOidcClientSecret: process.env.ADMIN_OIDC_CLIENT_SECRET ?? "",
@@ -62,4 +88,8 @@ export const ENV = {
     .filter(Boolean),
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  isCloudflareContainer: Boolean(
+    process.env.CLOUDFLARE_APPLICATION_ID &&
+    process.env.CLOUDFLARE_DURABLE_OBJECT_ID,
+  ),
 };

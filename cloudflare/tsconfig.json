@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["./runtime.ts", "./worker.ts"],
+  "exclude": ["./*.test.ts"],
+  "compilerOptions": {
+    "lib": ["ES2022", "WebWorker"],
+    "types": ["@cloudflare/workers-types"],
+    "tsBuildInfoFile": "../node_modules/typescript/cloudflare.tsbuildinfo"
+  }
+}

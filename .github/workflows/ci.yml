@@ -11,18 +11,142 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
         with:
-          node-version: 22
-          cache: npm
-      - run: npm ci
-      - run: npm run check:secrets
-      - run: npm run check
-      - run: npm test
-      - run: npm run build
-      - run: npm audit --audit-level=high
+          version: 10.34.4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.23.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Enforce canonical lockfile
+        run: test ! -e package-lock.json
+      - run: pnpm run check:secrets
+      - run: pnpm run check
+      - run: pnpm test
+      - run: pnpm run build
+      - run: pnpm audit --audit-level=high
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Build Cloudflare web image
+        run: docker buildx build --platform linux/amd64 --target web --load --tag lfms-web:ci .
+      - name: Build background-worker image
+        run: docker buildx build --platform linux/amd64 --target worker --load --tag lfms-worker:ci .
+      - name: Validate production Wrangler bundle
+        run: pnpm exec wrangler deploy --config wrangler.jsonc --env="" --dry-run --strict --containers-rollout=none --outdir "$RUNNER_TEMP/wrangler-production"
+      - name: Validate staging Wrangler bundle
+        run: pnpm exec wrangler deploy --config wrangler.jsonc --env=staging --dry-run --strict --containers-rollout=none --outdir "$RUNNER_TEMP/wrangler-staging"
+      - name: Generate web image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: lfms-web:ci
+          format: spdx-json
+          artifact-name: lfms-web.spdx.json
+          output-file: ${{ runner.temp }}/lfms-web.spdx.json
+          syft-version: v1.42.3
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Generate worker image SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
+        with:
+          image: lfms-worker:ci
+          format: spdx-json
+          artifact-name: lfms-worker.spdx.json
+          output-file: ${{ runner.temp }}/lfms-worker.spdx.json
+          syft-version: v1.42.3
+          upload-artifact: false
+          upload-release-assets: false
+      - name: Upload image SBOMs
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: lfms-image-sboms-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/lfms-web.spdx.json
+            ${{ runner.temp }}/lfms-worker.spdx.json
+          if-no-files-found: error
+          retention-days: 30
+      - name: Scan web image for high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: lfms-web:ci
+          format: table
+          exit-code: "1"
+          ignore-unfixed: false
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          scanners: vuln
+          version: v0.70.0
+      - name: Scan worker image for high and critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: lfms-worker:ci
+          format: table
+          exit-code: "1"
+          ignore-unfixed: false
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          scanners: vuln
+          skip-setup-trivy: true
+      - name: Smoke-test web image process and static routes
+        env:
+          BASE_DOMAIN: example.test
+          DATABASE_URL: mysql://127.0.0.1:9/lfms?ssl=true
+          JWT_SECRET: ci-jwt-secret-00000000000000000000000000000000
+          METRICS_BEARER_TOKEN: ci-metrics-token-000000000000000000000000000
+          OAUTH_STATE_SECRET: ci-oauth-state-00000000000000000000000000000
+          OBJECT_STORAGE_ACCESS_KEY_ID: test-storage-access-key
+          OBJECT_STORAGE_BUCKET: test-private-bucket
+          OBJECT_STORAGE_ENDPOINT: https://storage.example.test
+          OBJECT_STORAGE_REGION: test-region-1
+          OBJECT_STORAGE_SECRET_ACCESS_KEY: test-storage-secret-key
+          SESSION_PEPPER: ci-session-pepper-0000000000000000000000000000
+        run: |
+          docker run --detach --name lfms-web-ci --publish 127.0.0.1:3000:3000 \
+            --env BASE_DOMAIN --env DATABASE_URL --env JWT_SECRET \
+            --env METRICS_BEARER_TOKEN --env OAUTH_STATE_SECRET --env SESSION_PEPPER \
+            --env OBJECT_STORAGE_ACCESS_KEY_ID --env OBJECT_STORAGE_BUCKET \
+            --env OBJECT_STORAGE_ENDPOINT --env OBJECT_STORAGE_REGION \
+            --env OBJECT_STORAGE_SECRET_ACCESS_KEY \
+            --env VITE_APP_ID=ci-app \
+            --env OAUTH_SERVER_URL=https://oauth.example.test \
+            --env VITE_OAUTH_PORTAL_URL=https://oauth.example.test \
+            --env OAUTH_ALLOWED_HOSTS=oauth.example.test \
+            --env BUILT_IN_FORGE_API_URL=https://storage.example.test \
+            --env BUILT_IN_FORGE_API_KEY=ci-storage-key \
+            --env CLOUDFLARE_APPLICATION_ID=ci \
+            --env CLOUDFLARE_DURABLE_OBJECT_ID=ci \
+            lfms-web:ci
+          trap 'docker logs lfms-web-ci; docker rm --force lfms-web-ci' EXIT
+          ready=0
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error --header 'Host: example.test' \
+              http://127.0.0.1:3000/health/live >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" = 1
+          curl --fail --silent --show-error --dump-header "$RUNNER_TEMP/tenant.headers" \
+            --output "$RUNNER_TEMP/tenant.html" --header 'Host: example.test' \
+            http://127.0.0.1:3000/
+          curl --fail --silent --show-error --dump-header "$RUNNER_TEMP/admin.headers" \
+            --output "$RUNNER_TEMP/admin.html" --header 'Host: admin.example.test' \
+            http://127.0.0.1:3000/companies
+          grep --ignore-case --quiet '^Content-Type: text/html' "$RUNNER_TEMP/tenant.headers"
+          grep --ignore-case --quiet '^Content-Type: text/html' "$RUNNER_TEMP/admin.headers"
+          ! grep --ignore-case --quiet '^Content-Disposition:.*attachment' "$RUNNER_TEMP/tenant.headers"
+          ! grep --ignore-case --quiet '^Content-Disposition:.*attachment' "$RUNNER_TEMP/admin.headers"
+      - name: Smoke-test background-worker image process
+        env:
+          DATABASE_URL: mysql://127.0.0.1:9/lfms?ssl=true
+        run: |
+          docker run --detach --name lfms-worker-ci --env DATABASE_URL lfms-worker:ci
+          trap 'docker logs lfms-worker-ci; docker rm --force lfms-worker-ci' EXIT
+          sleep 3
+          test "$(docker inspect --format '{{.State.Running}}' lfms-worker-ci)" = true
+          docker logs lfms-worker-ci 2>&1 | grep --quiet 'worker.started'

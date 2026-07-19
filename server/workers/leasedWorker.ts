@@ -59,8 +59,9 @@ function abortedJobError(signal: AbortSignal) {
 }
 
 export class LeasedWorker<TPayload = unknown> {
-  private readonly abortController = new AbortController();
+  private readonly idleAbortController = new AbortController();
   private running: Promise<void> | null = null;
+  private stopRequested = false;
   private readonly leaseMs: number;
   private readonly idleMs: number;
   private readonly logger: StructuredLogger;
@@ -79,14 +80,15 @@ export class LeasedWorker<TPayload = unknown> {
   }
 
   async stop(): Promise<void> {
-    this.abortController.abort();
+    this.stopRequested = true;
+    this.idleAbortController.abort();
     await this.running;
   }
 
   private async run() {
-    const { signal } = this.abortController;
+    const idleSignal = this.idleAbortController.signal;
     this.logger.info("worker.started");
-    while (!signal.aborted) {
+    while (!this.stopRequested) {
       let job: LeasedJob<TPayload> | null;
       try {
         job = await this.options.store.claim(
@@ -97,17 +99,15 @@ export class LeasedWorker<TPayload = unknown> {
         this.logger.error("worker.claim_failed", {
           errorName: errorName(error),
         });
-        await sleep(this.idleMs, signal);
+        await sleep(this.idleMs, idleSignal);
         continue;
       }
       if (!job) {
-        await sleep(this.idleMs, signal);
+        await sleep(this.idleMs, idleSignal);
         continue;
       }
 
       const jobAbortController = new AbortController();
-      const abortForWorkerStop = () => jobAbortController.abort(signal.reason);
-      signal.addEventListener("abort", abortForWorkerStop, { once: true });
       let leaseLost = false;
       let extending = false;
       const abandonJob = (
@@ -188,7 +188,6 @@ export class LeasedWorker<TPayload = unknown> {
         });
       } finally {
         clearInterval(heartbeat);
-        signal.removeEventListener("abort", abortForWorkerStop);
       }
     }
     this.logger.info("worker.stopped");

@@ -76,6 +76,7 @@ function configureResolver() {
         permissions,
         sessionId: principal.sessionId,
         authenticationLevel: principal.authLevel,
+        mfaRequired: administrator.mfaRequired,
         requestId: getRequestId(res),
       },
       csrfToken,

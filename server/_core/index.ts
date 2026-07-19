@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { ENV } from "./env";
 import {
   getOAuthStateSecret,
+  hasPlatformOidcConfiguration,
   validateProductionAuthConfiguration,
 } from "./auth/runtime";
 import { csrfProtectionMiddleware } from "./security/csrf";
@@ -23,9 +24,13 @@ import {
 } from "./security/httpSecurity";
 import { registerPlatformApi } from "../platform/http";
 import { registerPlatformManusAuthRoutes } from "../platform/manusAuth";
+import { registerPlatformOidcRoutes } from "../platform/oidc";
 import { registerObservabilityRoutes, requestObservabilityMiddleware } from "../observability/http";
 import { logger } from "../observability/logger";
 import { validateLocalDevAuthConfiguration } from "./devAuth";
+import { closeDatabasePool } from "../db";
+import { closeStorageBackend } from "../storageBackend";
+import { registerPublicRuntimeConfig } from "./publicRuntimeConfig";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -57,7 +62,9 @@ async function startServer() {
   const app = express();
   const trustedProxy = ENV.enableLocalDevAuth
     ? false
-    : ENV.trustedProxyCidrs.length > 0
+    : ENV.isCloudflareContainer
+      ? 1
+      : ENV.trustedProxyCidrs.length > 0
       ? ENV.trustedProxyCidrs
       : ENV.isProduction ? false : ["loopback"];
   app.set("trust proxy", trustedProxy);
@@ -65,18 +72,24 @@ async function startServer() {
   const configuredDevelopmentOrigins = parseAllowedOrigins([
     ...ENV.allowedTenantOrigins,
     ENV.adminOrigin,
-    ENV.authOrigin,
   ]);
   const allowedOrigins = ENV.isProduction
     ? new Set<string>()
     : configuredDevelopmentOrigins;
-  app.use(requestIdMiddleware());
+  app.use(requestIdMiddleware({ trustEdgeHeader: ENV.isCloudflareContainer }));
   app.use(securityHeadersMiddleware({
     isProduction: ENV.isProduction,
     analyticsEndpoint: process.env.VITE_ANALYTICS_ENDPOINT,
     scriptOrigins: ENV.cspScriptOrigins,
-    connectOrigins: ENV.cspConnectOrigins,
-    imageOrigins: ENV.cspImageOrigins,
+    connectOrigins: [
+      ...ENV.cspConnectOrigins,
+      ENV.objectStorageEndpoint,
+    ],
+    imageOrigins: [
+      ...ENV.cspImageOrigins,
+      ENV.objectStorageEndpoint,
+    ],
+    mediaOrigins: [ENV.objectStorageEndpoint],
   }));
   // Derive additional tenant hostnames from ALLOWED_TENANT_ORIGINS (strip protocol)
   // This allows the Manus internal domain (e.g. livestockms-boywmbm5.manus.space)
@@ -95,6 +108,7 @@ async function startServer() {
   }));
   app.use(requestObservabilityMiddleware());
   app.use(exactCorsMiddleware(allowedOrigins));
+  registerPublicRuntimeConfig(app);
   const server = createServer(app);
   registerObservabilityRoutes(app);
   app.use(express.json({ limit: "12mb", strict: true }));
@@ -105,7 +119,8 @@ async function startServer() {
   app.use("/api/oauth", requireSurface("tenant"));
   registerOAuthRoutes(app);
   app.use("/api/platform/auth", requireSurface("platform"));
-  registerPlatformManusAuthRoutes(app);
+  if (hasPlatformOidcConfiguration()) registerPlatformOidcRoutes(app);
+  else registerPlatformManusAuthRoutes(app);
   app.use(
     "/api/platform/trpc",
     requireSurface("platform"),
@@ -167,18 +182,32 @@ async function startServer() {
     const forceTimer = setTimeout(() => {
       logger.error("server.shutdown_forced", { signal });
       server.closeAllConnections();
-      process.exitCode = 1;
+      process.exit(1);
     }, Number(process.env.SHUTDOWN_TIMEOUT_MS ?? 30_000));
     forceTimer.unref();
 
-    server.close(error => {
-      clearTimeout(forceTimer);
-      if (error) {
-        logger.error("server.shutdown_failed", { signal, error });
+    server.close(async error => {
+      try {
+        closeStorageBackend();
+        await closeDatabasePool();
+      } catch (closeError) {
+        logger.error("server.database_shutdown_failed", {
+          signal,
+          errorName: closeError instanceof Error ? closeError.name : "NonErrorThrown",
+        });
         process.exitCode = 1;
-      } else {
-        logger.info("server.shutdown_complete", { signal });
+      } finally {
+        clearTimeout(forceTimer);
       }
+      if (error) {
+        logger.error("server.shutdown_failed", {
+          signal,
+          errorName: error.name,
+        });
+        process.exitCode = 1;
+        return;
+      }
+      logger.info("server.shutdown_complete", { signal });
     });
   };
   process.once("SIGINT", shutdown);

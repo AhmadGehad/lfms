@@ -237,6 +237,7 @@ describe("HTTP security", () => {
       scriptOrigins: ["https://maps.example.test/sdk", "http://unsafe.example.test"],
       connectOrigins: ["https://api.example.test/v1"],
       imageOrigins: ["https://images.example.test/assets"],
+      mediaOrigins: ["https://media.example.test/files"],
     });
     expect(policy).toContain(
       "script-src 'self' https://analytics.example.test https://maps.example.test",
@@ -246,6 +247,9 @@ describe("HTTP security", () => {
     );
     expect(policy).toContain(
       "img-src 'self' data: blob: https://images.example.test",
+    );
+    expect(policy).toContain(
+      "media-src 'self' blob: https://media.example.test",
     );
     expect(policy).not.toMatch(/script-src[^;]*'unsafe-inline'/);
     expect(policy).not.toMatch(/connect-src[^;]*(?:^|\s)(?:https:|wss:)(?:\s|;|$)/);
@@ -273,14 +277,14 @@ describe("HTTP security", () => {
     expect(policy).not.toContain("upgrade-insecure-requests");
   });
 
-  it("resolves only valid tenant, auth, and platform hosts", () => {
+  it("resolves only valid tenant and platform hosts", () => {
     const options = { baseDomain: "example.test", allowLegacyBareDomain: false };
     expect(resolveRequestHost("azal-farms.example.test", options)).toMatchObject({
       surface: "tenant",
       companySlug: "azal-farms",
     });
     expect(resolveRequestHost("admin.example.test", options)?.surface).toBe("platform");
-    expect(resolveRequestHost("auth.example.test", options)?.surface).toBe("auth");
+    expect(resolveRequestHost("auth.example.test", options)).toBeNull();
     expect(resolveRequestHost("admin.attacker.test", options)).toBeNull();
     expect(resolveRequestHost("bad.slug.example.test", options)).toBeNull();
   });

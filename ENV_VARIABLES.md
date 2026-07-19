@@ -11,16 +11,17 @@ has ever appeared in Git history must be rotated before production use.
 | `PORT`                             | web           | Fixed HTTP port; production never selects a fallback port                   |
 | `SHUTDOWN_TIMEOUT_MS`              | web           | Graceful HTTP drain deadline before connections are forced closed           |
 | `DATABASE_URL`                     | server        | MySQL/TiDB URL with verified TLS (`ssl=true` or `ssl-mode=VERIFY_IDENTITY`) |
+| `DB_POOL_CONNECTION_LIMIT`         | server/worker | Per-process database connection cap                                         |
+| `DB_POOL_QUEUE_LIMIT`              | server/worker | Per-process pending database request cap                                    |
+| `JWT_SECRET`                       | server        | Legacy signed-callback key; independent random value of at least 32 bytes   |
 | `SESSION_PEPPER`                   | server        | Pepper used when hashing opaque session tokens                              |
 | `OAUTH_STATE_SECRET`               | server        | HMAC key for OAuth transaction state                                        |
-| `VITE_APP_ID`                      | server/client | Manus OAuth application identifier                                          |
+| `VITE_APP_ID`                      | server        | Manus OAuth application identifier                                          |
 | `OAUTH_SERVER_URL`                 | server        | Manus OAuth API base URL                                                    |
-| `VITE_OAUTH_PORTAL_URL`            | client        | Manus sign-in portal URL                                                    |
+| `VITE_OAUTH_PORTAL_URL`            | server        | Manus sign-in portal URL used to construct validated redirects              |
 | `OAUTH_ALLOWED_HOSTS`              | server        | Exact comma-separated OAuth API and portal host allowlist                   |
 | `BASE_DOMAIN`                      | server        | Tenant base domain, for example `lfms.example.com`                          |
 | `TRUST_PROXY_CIDRS`                | server        | Exact comma-separated ingress proxy IPs/CIDRs trusted for forwarded headers |
-| `ADMIN_ORIGIN`                     | server        | Exact SaaS Admin origin                                                     |
-| `AUTH_ORIGIN`                      | server        | Exact tenant authentication-broker origin                                   |
 | `ALLOWED_TENANT_ORIGINS`           | server        | Comma-separated exact development origins; ignored in production CORS       |
 | `CSP_SCRIPT_ORIGINS`               | web           | Comma-separated exact HTTPS origins permitted to serve browser scripts      |
 | `CSP_CONNECT_ORIGINS`              | web           | Comma-separated exact HTTPS origins permitted for browser connections       |
@@ -31,48 +32,62 @@ has ever appeared in Git history must be rotated before production use.
 | `OBJECT_STORAGE_ACCESS_KEY_ID`     | server/worker | Object-storage access key from secret manager                               |
 | `OBJECT_STORAGE_SECRET_ACCESS_KEY` | server/worker | Object-storage secret from secret manager                                   |
 | `OBJECT_STORAGE_KMS_KEY_ID`        | server/worker | KMS key used for server-side encryption                                     |
-| `ADMIN_OIDC_ISSUER`                | admin server  | Workforce OIDC issuer                                                       |
-| `ADMIN_OIDC_CLIENT_ID`             | admin server  | Dedicated SaaS Admin OIDC client                                            |
-| `ADMIN_OIDC_CLIENT_SECRET`         | admin server  | Dedicated SaaS Admin OIDC secret                                            |
-| `ADMIN_OIDC_REDIRECT_URI`          | admin server  | Exact Admin OAuth callback URL                                              |
-| `ADMIN_OIDC_MFA_ACR_VALUES`        | admin server  | Comma-separated issuer ACR values accepted as MFA                           |
 | `LOG_LEVEL`                        | all services  | Structured log threshold                                                    |
-| `OTEL_EXPORTER_OTLP_ENDPOINT`      | all services  | OpenTelemetry collector endpoint                                            |
 | `METRICS_BEARER_TOKEN`             | web           | At least 32 characters; protects Prometheus metrics                         |
 | `DEPLOY_VERSION`                   | all services  | Immutable build/version identifier                                          |
 | `JOB_LEASE_MS`                     | worker        | Durable job lease duration; termination grace must exceed it                |
 | `JOB_IDLE_MS`                      | worker        | Delay between empty queue polls                                             |
+| `WORKER_SHUTDOWN_TIMEOUT_MS`       | worker        | Hard stop deadline; must exceed `JOB_LEASE_MS`                              |
 | `WORKER_ID`                        | worker        | Stable replica prefix included in unique lease-owner IDs                    |
 
-## Optional Compatibility Variables
+Cloudflare deployments must configure S3-compatible private storage, normally
+R2. Forge is not accepted as a production file-storage fallback.
 
-The following variables support local/development Manus integrations during the
-migration. The legacy Forge storage fallback is rejected in production. Keep
-them server-side unless their name starts with `VITE_`.
+## Optional Workforce Admin MFA
 
-| Variable                     | Purpose                                                                                                               |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `REDIS_URL`                  | Reserved for a future distributed cache; currently unused                                                             |
-| `VITE_ENABLE_LOCAL_DEV_AUTH` | Public boolean; explicit `1` enables direct-loopback dev login only when `NODE_ENV=development`; never deploy enabled |
-| `OWNER_OPEN_ID`              | Legacy owner mapping during the Azal Farms migration                                                                  |
-| `BUILT_IN_FORGE_API_URL`     | Legacy Forge service base URL                                                                                         |
-| `BUILT_IN_FORGE_API_KEY`     | Legacy server-side Forge credential                                                                                   |
-| `VITE_APP_TITLE`             | Browser/application title                                                                                             |
-| `VITE_APP_LOGO`              | Public logo URL                                                                                                       |
-| `VITE_SUPPORT_EMAIL`         | Public tenant support email shown on the company-suspended screen                                                     |
-| `VITE_ANALYTICS_ENDPOINT`    | Public analytics script endpoint                                                                                      |
-| `VITE_ANALYTICS_WEBSITE_ID`  | Public analytics website identifier                                                                                   |
+Admin login uses Manus by default. To enforce provider-verified MFA for an
+administrator, configure all of the following and provision that
+administrator's workforce OIDC identity. Partial OIDC configuration is invalid.
 
-Do not expose server credentials with a `VITE_` prefix. The previous
-`VITE_FRONTEND_FORGE_API_KEY` integration is deprecated and must not be used by
-new code.
+| Variable                    | Purpose                                                            |
+| --------------------------- | ------------------------------------------------------------------ |
+| `ADMIN_OIDC_ISSUER`         | Workforce OIDC issuer                                              |
+| `ADMIN_OIDC_CLIENT_ID`      | Dedicated SaaS Admin client                                        |
+| `ADMIN_OIDC_CLIENT_SECRET`  | Dedicated client secret                                            |
+| `ADMIN_OIDC_REDIRECT_URI`   | Exact `https://admin.<BASE_DOMAIN>/api/platform/auth/callback` URL |
+| `ADMIN_OIDC_MFA_ACR_VALUES` | Comma-separated issuer ACR values accepted as MFA                  |
+
+## Provider And Compatibility Variables
+
+Keep server credentials server-side unless their name starts with `VITE_`.
+
+| Variable                      | Purpose                                                                                                               |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `REDIS_URL`                   | Reserved for a future distributed cache; currently unused                                                             |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Reserved for future distributed tracing; currently unused                                                             |
+| `ADMIN_ORIGIN`                | Exact SaaS Admin origin used by development CORS; production derives same-origin from each request                    |
+| `VITE_ENABLE_LOCAL_DEV_AUTH`  | Public boolean; explicit `1` enables direct-loopback dev login only when `NODE_ENV=development`; never deploy enabled |
+| `OWNER_OPEN_ID`               | Legacy owner mapping during the Azal Farms migration                                                                  |
+| `BUILT_IN_FORGE_API_URL`      | Manus provider base URL for enabled maps, AI, notification, and data integrations                                     |
+| `BUILT_IN_FORGE_API_KEY`      | Server-side Manus provider credential                                                                                 |
+| `VITE_FRONTEND_FORGE_API_URL` | Browser-safe Manus map proxy base URL                                                                                 |
+| `VITE_APP_TITLE`              | Browser/application title                                                                                             |
+| `VITE_SUPPORT_EMAIL`          | Public tenant support email shown on suspended/landing screens; mailbox must be monitored                             |
+| `VITE_DEFAULT_DESIGN`         | Public default tenant UI version: `old` or `new`                                                                      |
+| `VITE_ANALYTICS_ENDPOINT`     | Public analytics script endpoint                                                                                      |
+| `VITE_ANALYTICS_WEBSITE_ID`   | Public analytics website identifier                                                                                   |
+
+Do not expose server credentials with a `VITE_` prefix. Production UI builds do
+not load `.env` or embed these values; the web process exposes only the
+validated public subset through `/runtime-config.js`. LFMS does not publish a
+Forge API key to the browser.
 
 ## Local Setup
 
 ```bash
 cp .env.example .env
-npm install
-npm run dev
+npx -y pnpm@10.34.4 install --frozen-lockfile
+npx -y pnpm@10.34.4 run dev
 ```
 
 Use a local/test database and test OAuth application. Never use production data

@@ -115,6 +115,9 @@ export function validateProductionAuthConfiguration() {
   if (!ENV.isProduction) return;
   getSessionPepper();
   getOAuthStateSecret();
+  if (ENV.cookieSecret.length < 32) {
+    throw new Error("JWT_SECRET must contain at least 32 characters");
+  }
   if (!ENV.baseDomain || ENV.baseDomain === "localhost") {
     throw new Error("BASE_DOMAIN must be configured for production");
   }
@@ -135,14 +138,50 @@ export function validateProductionAuthConfiguration() {
   }
   validateExternalServiceUrl(ENV.oAuthServerUrl, "OAUTH_SERVER_URL", oauthHosts, true);
   validateExternalServiceUrl(ENV.oAuthPortalUrl, "VITE_OAUTH_PORTAL_URL", oauthHosts, true);
-  // Platform admin login now uses Manus OAuth (same provider as tenant users).
-  // No separate OIDC issuer/client credentials are required.
+  const oidcValues = [
+    ENV.adminOidcIssuer,
+    ENV.adminOidcClientId,
+    ENV.adminOidcClientSecret,
+    ENV.adminOidcRedirectUri,
+  ];
+  const anyOidc = oidcValues.some(Boolean);
+  if (anyOidc && !hasPlatformOidcConfiguration()) {
+    throw new Error("Workforce Admin OIDC configuration is incomplete");
+  }
+  if (hasPlatformOidcConfiguration()) {
+    const issuer = new URL(ENV.adminOidcIssuer);
+    validateExternalServiceUrl(
+      ENV.adminOidcIssuer,
+      "ADMIN_OIDC_ISSUER",
+      [issuer.hostname],
+      true,
+    );
+    if (ENV.adminOidcClientSecret.length < 32) {
+      throw new Error("ADMIN_OIDC_CLIENT_SECRET must contain at least 32 characters");
+    }
+    const expectedRedirect = `https://admin.${ENV.baseDomain}/api/platform/auth/callback`;
+    if (ENV.adminOidcRedirectUri !== expectedRedirect) {
+      throw new Error(`ADMIN_OIDC_REDIRECT_URI must be ${expectedRedirect}`);
+    }
+  }
   validateProductionDatabaseUrl(ENV.databaseUrl);
   if (ENV.metricsBearerToken.length < 32) {
     throw new Error("METRICS_BEARER_TOKEN must contain at least 32 characters");
   }
-  validateTrustedProxyCidrs(ENV.trustedProxyCidrs);
+  validateTrustedProxyCidrs(
+    ENV.trustedProxyCidrs,
+    ENV.isCloudflareContainer,
+  );
   validateStorageConfiguration();
+}
+
+export function hasPlatformOidcConfiguration() {
+  return Boolean(
+    ENV.adminOidcIssuer &&
+      ENV.adminOidcClientId &&
+      ENV.adminOidcClientSecret &&
+      ENV.adminOidcRedirectUri,
+  );
 }
 
 export function validateProductionDatabaseUrl(value: string) {
@@ -204,8 +243,15 @@ export function validateExternalServiceUrl(
   return url;
 }
 
-export function validateTrustedProxyCidrs(values: readonly string[]) {
-  if (!ENV.isProduction) return;
+export function validateTrustedProxyCidrs(
+  values: readonly string[],
+  isCloudflareContainer = false,
+  isProduction = ENV.isProduction,
+) {
+  if (!isProduction) return;
+  // A Cloudflare Container has no public socket: the Worker is its sole HTTP
+  // peer, so index.ts trusts exactly one proxy hop instead of an IP range.
+  if (isCloudflareContainer) return;
   if (values.length === 0) {
     throw new Error("TRUST_PROXY_CIDRS must identify the production ingress proxies");
   }

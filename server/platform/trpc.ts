@@ -38,7 +38,9 @@ export function platformPermissionProcedure(permission: PlatformPermission) {
 
 export function platformMfaProcedure(permission: PlatformPermission) {
   return platformPermissionProcedure(permission).use(({ ctx, next }) => {
-    if (ctx.platform.authenticationLevel !== "mfa" && ctx.platform.authenticationLevel !== "step_up") {
+    const hasMfa = ctx.platform.authenticationLevel === "mfa" ||
+      ctx.platform.authenticationLevel === "step_up";
+    if (ctx.platform.mfaRequired !== false && !hasMfa) {
       throw new TRPCError({ code: "FORBIDDEN", message: "MFA verification required" });
     }
     return next();

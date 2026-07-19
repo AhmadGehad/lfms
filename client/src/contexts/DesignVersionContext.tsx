@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePreferences } from "@/hooks/usePreferences";
+import { publicConfig } from "@/lib/publicConfig";
 
 export type DesignVersion = "old" | "new";
 
@@ -15,7 +16,7 @@ interface DesignVersionContextType {
 const DesignVersionContext = createContext<DesignVersionContextType | undefined>(undefined);
 
 const LS_KEY = "designVersion";
-const ENV_DEFAULT = ((import.meta.env.VITE_DEFAULT_DESIGN as string) || "old") as DesignVersion;
+const ENV_DEFAULT = (publicConfig.defaultDesign || "old") as DesignVersion;
 
 function readUrlOverride(): DesignVersion | null {
   if (typeof window === "undefined") return null;

@@ -1,18 +1,27 @@
-.git
-.github
-.env
-.env.*
-!.env.example
-node_modules
-dist
-coverage
-logs
-*.log
-tmp
-temp
-graphify-out
-.playwright-mcp
-.codex
-.claude
-.agents
-.DS_Store
+# Deny by default. Only source needed by the production build enters the
+# Docker/Cloudflare builder, so local logs, backups, credentials, screenshots,
+# editor state, and agent tooling cannot be retained in build cache layers.
+**
+!.dockerignore
+!package.json
+!pnpm-lock.yaml
+!tsconfig.json
+!vite.config.ts
+!vite.admin.config.ts
+
+!patches/
+!patches/**
+!client/
+!client/**
+!admin/
+!admin/**
+!server/
+!server/**
+!shared/
+!shared/**
+!drizzle/
+!drizzle/schema.ts
+!cloudflare/
+!cloudflare/**
+!scripts/
+!scripts/prepare-cloudflare-assets.mjs

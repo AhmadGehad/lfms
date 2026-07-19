@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { NextFunction, Request, RequestHandler, Response } from "express";
+import {
+  buildContentSecurityPolicyValue,
+  type ContentSecurityPolicyOptions,
+} from "@shared/contentSecurityPolicy";
 
-export type RequestSurface = "tenant" | "auth" | "platform";
+export type RequestSurface = "tenant" | "platform";
 
 export type ResolvedRequestHost = {
   hostname: string;
@@ -39,16 +43,13 @@ function normalizeBaseDomain(value: string) {
 
 export function resolveRequestHost(
   hostname: string,
-  options: HostValidationOptions,
+  options: HostValidationOptions
 ): ResolvedRequestHost | null {
   const baseDomain = normalizeBaseDomain(options.baseDomain);
   const normalized = normalizeHostname(hostname);
 
   if (normalized === `admin.${baseDomain}`) {
     return { hostname: normalized, surface: "platform", companySlug: null };
-  }
-  if (normalized === `auth.${baseDomain}`) {
-    return { hostname: normalized, surface: "auth", companySlug: null };
   }
   if (normalized === baseDomain && options.allowLegacyBareDomain) {
     return { hostname: normalized, surface: "tenant", companySlug: null };
@@ -73,16 +74,28 @@ export function resolveRequestHost(
   const suffix = `.${baseDomain}`;
   if (!normalized.endsWith(suffix)) return null;
   const companySlug = normalized.slice(0, -suffix.length);
-  if (!HOST_LABEL.test(companySlug) || companySlug === "admin" || companySlug === "auth") {
+  if (
+    !HOST_LABEL.test(companySlug) ||
+    companySlug === "admin" ||
+    companySlug === "auth"
+  ) {
     return null;
   }
 
   return { hostname: normalized, surface: "tenant", companySlug };
 }
 
-export function requestIdMiddleware(): RequestHandler {
-  return (_req, res, next) => {
-    const requestId = randomUUID();
+export function requestIdMiddleware(
+  options: { trustEdgeHeader?: boolean } = {}
+): RequestHandler {
+  return (req, res, next) => {
+    const edgeRequestId = options.trustEdgeHeader
+      ? req.get("x-lfms-edge-request-id")
+      : undefined;
+    const requestId =
+      edgeRequestId && /^[A-Za-z0-9._:-]{1,128}$/.test(edgeRequestId)
+        ? edgeRequestId
+        : randomUUID();
     res.locals.requestId = requestId;
     res.setHeader("X-Request-Id", requestId);
     next();
@@ -94,63 +107,22 @@ export function getRequestId(res: Response) {
   return typeof requestId === "string" ? requestId : randomUUID();
 }
 
-export function buildContentSecurityPolicy(options?: {
-  isProduction?: boolean;
-  analyticsEndpoint?: string;
-  scriptOrigins?: readonly string[];
-  connectOrigins?: readonly string[];
-  imageOrigins?: readonly string[];
-}) {
-  const isProduction = options?.isProduction ?? process.env.NODE_ENV === "production";
-  const scriptSources = new Set(["'self'"]);
-  const connectSources = new Set(["'self'"]);
-  const imageSources = new Set(["'self'", "data:", "blob:"]);
-
-  const addHttpsOrigins = (target: Set<string>, values: readonly string[]) => {
-    for (const value of values) {
-      try {
-        const url = new URL(value);
-        if (url.protocol === "https:" && !url.username && !url.password) {
-          target.add(url.origin);
-        }
-      } catch {
-        // Invalid optional origins must not weaken CSP.
-      }
-    }
-  };
-
-  if (!isProduction) {
-    // Vite injects an inline React-refresh preamble and uses a plain WebSocket in development.
-    scriptSources.add("'unsafe-inline'");
-    connectSources.add("https:");
-    connectSources.add("wss:");
-    connectSources.add("ws:");
-    imageSources.add("https:");
+export function buildContentSecurityPolicy(
+  options?: Omit<ContentSecurityPolicyOptions, "isProduction"> & {
+    isProduction?: boolean;
   }
-
-  const analyticsEndpoint = options?.analyticsEndpoint ?? process.env.VITE_ANALYTICS_ENDPOINT;
-  if (analyticsEndpoint) {
-    addHttpsOrigins(scriptSources, [analyticsEndpoint]);
-    addHttpsOrigins(connectSources, [analyticsEndpoint]);
-  }
-  addHttpsOrigins(scriptSources, options?.scriptOrigins ?? []);
-  addHttpsOrigins(connectSources, options?.connectOrigins ?? []);
-  addHttpsOrigins(imageSources, options?.imageOrigins ?? []);
-
-  return [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "frame-ancestors 'none'",
-    "form-action 'self'",
-    "object-src 'none'",
-    `script-src ${[...scriptSources].join(" ")}`,
-    "style-src 'self' 'unsafe-inline'",
-    `img-src ${[...imageSources].join(" ")}`,
-    "font-src 'self' data:",
-    `connect-src ${[...connectSources].join(" ")}`,
-    "media-src 'self' blob:",
-    ...(isProduction ? ["upgrade-insecure-requests"] : []),
-  ].join("; ");
+) {
+  const isProduction =
+    options?.isProduction ?? process.env.NODE_ENV === "production";
+  return buildContentSecurityPolicyValue({
+    isProduction,
+    analyticsEndpoint:
+      options?.analyticsEndpoint ?? process.env.VITE_ANALYTICS_ENDPOINT,
+    scriptOrigins: options?.scriptOrigins,
+    connectOrigins: options?.connectOrigins,
+    imageOrigins: options?.imageOrigins,
+    mediaOrigins: options?.mediaOrigins,
+  });
 }
 
 export function securityHeadersMiddleware(options?: {
@@ -159,8 +131,10 @@ export function securityHeadersMiddleware(options?: {
   scriptOrigins?: readonly string[];
   connectOrigins?: readonly string[];
   imageOrigins?: readonly string[];
+  mediaOrigins?: readonly string[];
 }): RequestHandler {
-  const isProduction = options?.isProduction ?? process.env.NODE_ENV === "production";
+  const isProduction =
+    options?.isProduction ?? process.env.NODE_ENV === "production";
   return (_req, res, next) => {
     res.removeHeader("X-Powered-By");
     res.setHeader("X-Content-Type-Options", "nosniff");
@@ -168,7 +142,7 @@ export function securityHeadersMiddleware(options?: {
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader(
       "Permissions-Policy",
-      "camera=(), geolocation=(self), microphone=(self), payment=(), usb=()",
+      "camera=(), geolocation=(self), microphone=(self), payment=(), usb=()"
     );
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
@@ -180,12 +154,13 @@ export function securityHeadersMiddleware(options?: {
         scriptOrigins: options?.scriptOrigins,
         connectOrigins: options?.connectOrigins,
         imageOrigins: options?.imageOrigins,
-      }),
+        mediaOrigins: options?.mediaOrigins,
+      })
     );
     if (isProduction) {
       res.setHeader(
         "Strict-Transport-Security",
-        "max-age=31536000; includeSubDomains; preload",
+        "max-age=31536000; includeSubDomains; preload"
       );
     }
     next();
@@ -193,7 +168,7 @@ export function securityHeadersMiddleware(options?: {
 }
 
 export function hostValidationMiddleware(
-  options: HostValidationOptions,
+  options: HostValidationOptions
 ): RequestHandler {
   normalizeBaseDomain(options.baseDomain);
   return (req, res, next) => {
@@ -201,28 +176,42 @@ export function hostValidationMiddleware(
     try {
       const rawHost = req.get("host");
       if (!rawHost || /[\s/@\\]/.test(rawHost)) {
-        res.status(421).json({ error: "Misdirected request", requestId: getRequestId(res) });
+        res
+          .status(421)
+          .json({ error: "Misdirected request", requestId: getRequestId(res) });
         return;
       }
       const parsedHost = new URL(`http://${rawHost}`);
       const forwardedHost = req.get("x-forwarded-host");
       if (forwardedHost) {
         if (forwardedHost.includes(",")) {
-          res.status(421).json({ error: "Misdirected request", requestId: getRequestId(res) });
+          res.status(421).json({
+            error: "Misdirected request",
+            requestId: getRequestId(res),
+          });
           return;
         }
         const parsedForwardedHost = new URL(`http://${forwardedHost}`);
-        if (normalizeHostname(parsedForwardedHost.hostname) !== normalizeHostname(parsedHost.hostname)) {
-          res.status(421).json({ error: "Misdirected request", requestId: getRequestId(res) });
+        if (
+          normalizeHostname(parsedForwardedHost.hostname) !==
+          normalizeHostname(parsedHost.hostname)
+        ) {
+          res.status(421).json({
+            error: "Misdirected request",
+            requestId: getRequestId(res),
+          });
           return;
         }
       }
       const port = parsedHost.port;
-      const standardPort = port === "" ||
+      const standardPort =
+        port === "" ||
         (port === "443" && req.protocol === "https") ||
         (port === "80" && req.protocol === "http");
       if (!standardPort && !options.allowDevelopmentPorts) {
-        res.status(421).json({ error: "Misdirected request", requestId: getRequestId(res) });
+        res
+          .status(421)
+          .json({ error: "Misdirected request", requestId: getRequestId(res) });
         return;
       }
       resolved = resolveRequestHost(parsedHost.hostname, options);
@@ -256,7 +245,13 @@ export function parseAllowedOrigins(values: readonly string[]) {
   for (const value of values) {
     if (!value.trim()) continue;
     const url = new URL(value.trim());
-    if (url.pathname !== "/" || url.search || url.hash || url.username || url.password) {
+    if (
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      url.username ||
+      url.password
+    ) {
       throw new Error(`Invalid allowed origin: ${value}`);
     }
     if (url.protocol !== "https:" && url.protocol !== "http:") {
@@ -281,7 +276,7 @@ export function getRequestOrigin(req: Request) {
 
 export function isAllowedRequestOrigin(
   req: Request,
-  allowedOrigins: ReadonlySet<string>,
+  allowedOrigins: ReadonlySet<string>
 ) {
   const rawOrigin = req.get("origin");
   const expectedOrigin = getRequestOrigin(req);
@@ -307,7 +302,7 @@ export function isAllowedRequestOrigin(
 }
 
 export function exactCorsMiddleware(
-  allowedOrigins: ReadonlySet<string>,
+  allowedOrigins: ReadonlySet<string>
 ): RequestHandler {
   return (req, res, next) => {
     const rawOrigin = req.get("origin");
@@ -322,13 +317,17 @@ export function exactCorsMiddleware(
       if (rawOrigin !== parsed.origin) throw new Error("Malformed origin");
       origin = parsed.origin;
     } catch {
-      res.status(403).json({ error: "Origin not allowed", requestId: getRequestId(res) });
+      res
+        .status(403)
+        .json({ error: "Origin not allowed", requestId: getRequestId(res) });
       return;
     }
 
     const sameOrigin = origin === getRequestOrigin(req);
     if (!sameOrigin && !allowedOrigins.has(origin)) {
-      res.status(403).json({ error: "Origin not allowed", requestId: getRequestId(res) });
+      res
+        .status(403)
+        .json({ error: "Origin not allowed", requestId: getRequestId(res) });
       return;
     }
 
@@ -337,9 +336,12 @@ export function exactCorsMiddleware(
     res.setHeader("Vary", "Origin");
     res.setHeader(
       "Access-Control-Allow-Headers",
-      "Content-Type, X-LFMS-CSRF, X-LFMS-Farm, X-Request-Id, Idempotency-Key",
+      "Content-Type, X-LFMS-CSRF, X-LFMS-Farm, X-Request-Id, Idempotency-Key"
     );
-    res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.setHeader(
+      "Access-Control-Allow-Methods",
+      "GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS"
+    );
     if (req.method === "OPTIONS") {
       res.status(204).end();
       return;
@@ -349,11 +351,13 @@ export function exactCorsMiddleware(
 }
 
 export function requireSurface(
-  expected: RequestSurface,
+  expected: RequestSurface
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (_req, res, next) => {
     if (getResolvedRequestHost(res)?.surface !== expected) {
-      res.status(404).json({ error: "Not found", requestId: getRequestId(res) });
+      res
+        .status(404)
+        .json({ error: "Not found", requestId: getRequestId(res) });
       return;
     }
     next();

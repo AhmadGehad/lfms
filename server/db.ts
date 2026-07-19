@@ -23,6 +23,14 @@ const transactionStorage = new AsyncLocalStorage<DbOrTx>();
 
 function databasePoolOptions(value: string) {
   const url = new URL(value);
+  const poolOptions = {
+    uri: value,
+    waitForConnections: true,
+    connectionLimit: ENV.databasePoolConnectionLimit,
+    queueLimit: ENV.databasePoolQueueLimit,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0,
+  };
   const rawSsl = url.searchParams.get("ssl") ?? "";
   const ssl = rawSsl.toLowerCase();
   const sslMode = (url.searchParams.get("ssl-mode") ?? "").toUpperCase();
@@ -42,7 +50,7 @@ function databasePoolOptions(value: string) {
   if (ENV.isProduction && !verifiedTlsRequested) {
     throw new Error("DATABASE_URL must require verified TLS in production");
   }
-  if (!verifiedTlsRequested) return { uri: value };
+  if (!verifiedTlsRequested) return poolOptions;
 
   // mysql2 does not implement MySQL's ssl-mode URI option and interprets
   // ssl=true as a boolean profile, which it rejects. Convert the validated URI
@@ -50,6 +58,7 @@ function databasePoolOptions(value: string) {
   url.searchParams.delete("ssl");
   url.searchParams.delete("ssl-mode");
   return {
+    ...poolOptions,
     uri: url.toString(),
     ssl: { rejectUnauthorized: true, verifyIdentity: true },
   };
@@ -68,6 +77,13 @@ export async function getDb(): Promise<DbOrTx | null> {
     }
   }
   return _db;
+}
+
+export async function closeDatabasePool(): Promise<void> {
+  const pool = _pool;
+  _pool = null;
+  _db = null;
+  if (pool) await pool.end();
 }
 
 export function runWithDbTransaction<T>(transaction: DbOrTx, operation: () => T): T {

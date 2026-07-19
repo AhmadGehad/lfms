@@ -583,4 +583,3 @@ All environment variables are injected by the Manus platform. They are accessed 
 | `BUILT_IN_FORGE_API_URL` | `server/_core/llm.ts`, etc. | Manus built-in API base URL (server) |
 | `BUILT_IN_FORGE_API_KEY` | `server/_core/llm.ts`, etc. | Bearer token for built-in APIs (server) |
 | `VITE_FRONTEND_FORGE_API_URL` | Frontend | Manus built-in API URL (client) |
-| `VITE_FRONTEND_FORGE_API_KEY` | Frontend | Bearer token for built-in APIs (client) |

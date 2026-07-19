@@ -158,8 +158,20 @@ describe("multi-tenant schema foundation", () => {
     )) {
       createdTables.add(table[1]);
     }
+    const isolatedStageScript = readFileSync(
+      path.join(root, "scripts", "bootstrap-isolated-tenant-stage.mjs"),
+      "utf8"
+    );
+    for (const table of isolatedStageScript.matchAll(
+      /CREATE TABLE IF NOT EXISTS\s+(saas_azal_[a-z0-9_]+)/gi
+    )) {
+      createdTables.add(table[1]);
+    }
     expect(snapshotScript).toContain(
       "SAAS_AZAL_SNAPSHOT_CONFIRM=read-legacy-write-new"
+    );
+    expect(isolatedStageScript).toContain(
+      "ISOLATED_STAGE_CONFIRM=new-saas-tables-only"
     );
     expect([...createdTables].sort()).toEqual([...schemaTables].sort());
 

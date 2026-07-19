@@ -110,4 +110,31 @@ describe("leased worker concurrency", () => {
     await worker.stop();
     expect(store.state).toBe("processing");
   });
+
+  it("drains an active job during graceful shutdown", async () => {
+    const store = new InMemoryLeaseStore();
+    let started = false;
+    let release: (() => void) | undefined;
+    const worker = new LeasedWorker({
+      workerId: "w1",
+      idleMs: 1,
+      store,
+      handle: async (_job, signal) => {
+        started = true;
+        await new Promise<void>(resolve => {
+          release = resolve;
+        });
+        expect(signal.aborted).toBe(false);
+      },
+    });
+    void worker.start();
+    await waitFor(() => started);
+    const stopped = worker.stop();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    expect(store.state).toBe("processing");
+    release?.();
+    await stopped;
+    expect(store.state).toBe("completed");
+    expect(store.job.attempts).toBe(1);
+  });
 });

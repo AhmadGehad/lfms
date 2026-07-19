@@ -3,6 +3,20 @@ import { AsyncLocalStorage } from "node:async_hooks";
 export type LogLevel = "debug" | "info" | "warn" | "error";
 export type LogFields = Record<string, unknown>;
 
+const LOG_LEVEL_ORDER: Record<LogLevel, number> = {
+  debug: 10,
+  info: 20,
+  warn: 30,
+  error: 40,
+};
+
+export function resolveLogLevel(raw = process.env.LOG_LEVEL): LogLevel {
+  if (!raw) return process.env.NODE_ENV === "production" ? "info" : "debug";
+  const normalized = raw.toLowerCase();
+  if (normalized in LOG_LEVEL_ORDER) return normalized as LogLevel;
+  throw new Error("LOG_LEVEL must be debug, info, warn, or error");
+}
+
 type LogContext = {
   requestId?: string;
   companyId?: number | null;
@@ -87,10 +101,16 @@ export class StructuredLogger {
       else if (record.level === "warn") console.warn(line);
       else console.log(line);
     },
+    private readonly minimumLevel: LogLevel = resolveLogLevel(),
   ) {}
 
   child(bindings: LogFields): StructuredLogger {
-    return new StructuredLogger(this.service, { ...this.bindings, ...bindings }, this.sink);
+    return new StructuredLogger(
+      this.service,
+      { ...this.bindings, ...bindings },
+      this.sink,
+      this.minimumLevel,
+    );
   }
 
   debug(message: string, fields: LogFields = {}) { this.write("debug", message, fields); }
@@ -99,6 +119,7 @@ export class StructuredLogger {
   error(message: string, fields: LogFields = {}) { this.write("error", message, fields); }
 
   private write(level: LogLevel, message: string, fields: LogFields) {
+    if (LOG_LEVEL_ORDER[level] < LOG_LEVEL_ORDER[this.minimumLevel]) return;
     const record = redactLogFields({
       ...this.bindings,
       ...contextStorage.getStore(),
@@ -114,4 +135,9 @@ export class StructuredLogger {
   }
 }
 
-export const logger = new StructuredLogger("lfms");
+export const logger = new StructuredLogger(
+  "lfms",
+  process.env.DEPLOY_VERSION
+    ? { deployVersion: process.env.DEPLOY_VERSION }
+    : {},
+);

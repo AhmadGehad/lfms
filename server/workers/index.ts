@@ -26,6 +26,8 @@ import {
 } from "./lifecycleJobTypes";
 import { SqlLifecycleJobRepository } from "./sqlLifecycleJobRepository";
 import { SqlUsageSnapshotRepository } from "./sqlUsageSnapshotRepository";
+import { closeDatabasePool } from "../db";
+import { closeStorageBackend } from "../storageBackend";
 import {
   handleUsageSnapshotJob,
   scheduleUsageSnapshotJob,
@@ -35,7 +37,50 @@ import {
 
 type WorkerJobPayload = NotificationJobPayload | SubscriptionExpirationJobPayload | LifecycleJobPayload | UsageSnapshotJobPayload;
 
+function integerSetting(
+  name: string,
+  raw: string | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+) {
+  const value = raw === undefined || raw === "" ? fallback : Number(raw);
+  if (!Number.isInteger(value) || value < minimum || value > maximum) {
+    throw new Error(`${name} must be an integer between ${minimum} and ${maximum}`);
+  }
+  return value;
+}
+
+export function resolveWorkerTiming(environment: NodeJS.ProcessEnv = process.env) {
+  const leaseMs = integerSetting(
+    "JOB_LEASE_MS",
+    environment.JOB_LEASE_MS,
+    60_000,
+    10_000,
+    3_600_000,
+  );
+  const idleMs = integerSetting(
+    "JOB_IDLE_MS",
+    environment.JOB_IDLE_MS,
+    1_000,
+    100,
+    60_000,
+  );
+  const shutdownTimeoutMs = integerSetting(
+    "WORKER_SHUTDOWN_TIMEOUT_MS",
+    environment.WORKER_SHUTDOWN_TIMEOUT_MS,
+    90_000,
+    10_001,
+    3_700_000,
+  );
+  if (shutdownTimeoutMs <= leaseMs) {
+    throw new Error("WORKER_SHUTDOWN_TIMEOUT_MS must exceed JOB_LEASE_MS");
+  }
+  return { idleMs, leaseMs, shutdownTimeoutMs };
+}
+
 export async function startWorkerRuntime() {
+  const timing = resolveWorkerTiming();
   const workerId = `${process.env.WORKER_ID ?? hostname()}:${process.pid}:${randomUUID()}`;
   const notificationRepository = new SqlNotificationJobRepository();
   const subscriptionRepository = new SqlSubscriptionExpirationRepository();
@@ -51,8 +96,8 @@ export async function startWorkerRuntime() {
   const store = new SqlJobLeaseStore<WorkerJobPayload>(allowedJobTypes);
   const worker = new LeasedWorker<WorkerJobPayload>({
     workerId,
-    leaseMs: Number(process.env.JOB_LEASE_MS ?? 60_000),
-    idleMs: Number(process.env.JOB_IDLE_MS ?? 1_000),
+    leaseMs: timing.leaseMs,
+    idleMs: timing.idleMs,
     store,
     handle: async (job, signal) => {
       if (job.type === SUBSCRIPTION_EXPIRATION_JOB_TYPE) {
@@ -88,26 +133,28 @@ export async function startWorkerRuntime() {
     logger: logger.child({ process: "worker", workerId }),
   });
 
-  let scheduling = false;
-  const schedule = async () => {
-    if (scheduling) return;
-    scheduling = true;
-    try {
-      const notificationResult = await scheduleTenantNotificationJobs(notificationRepository);
-      const subscriptionInserted = await scheduleSubscriptionExpirationJob(subscriptionRepository);
-      const usageSnapshotInserted = await scheduleUsageSnapshotJob(usageRepository);
-      logger.info("worker.jobs_scheduled", {
-        notifications: notificationResult,
-        subscriptionExpirationInserted: subscriptionInserted,
-        usageSnapshotInserted,
-      });
-    } catch (error) {
-      logger.error("worker.schedule_failed", {
-        errorName: error instanceof Error ? error.name : "NonErrorThrown",
-      });
-    } finally {
-      scheduling = false;
-    }
+  let schedulePromise: Promise<void> | null = null;
+  const schedule = () => {
+    if (schedulePromise) return schedulePromise;
+    schedulePromise = (async () => {
+      try {
+        const notificationResult = await scheduleTenantNotificationJobs(notificationRepository);
+        const subscriptionInserted = await scheduleSubscriptionExpirationJob(subscriptionRepository);
+        const usageSnapshotInserted = await scheduleUsageSnapshotJob(usageRepository);
+        logger.info("worker.jobs_scheduled", {
+          notifications: notificationResult,
+          subscriptionExpirationInserted: subscriptionInserted,
+          usageSnapshotInserted,
+        });
+      } catch (error) {
+        logger.error("worker.schedule_failed", {
+          errorName: error instanceof Error ? error.name : "NonErrorThrown",
+        });
+      }
+    })().finally(() => {
+      schedulePromise = null;
+    });
+    return schedulePromise;
   };
 
   await schedule();
@@ -117,10 +164,48 @@ export async function startWorkerRuntime() {
     if (stopping) return;
     stopping = true;
     clearInterval(scheduleTimer);
-    await worker.stop();
+    const forceTimer = setTimeout(() => {
+      logger.error("worker.shutdown_forced");
+      process.exit(1);
+    }, timing.shutdownTimeoutMs);
+    forceTimer.unref();
+    const failures: unknown[] = [];
+    const drains = await Promise.allSettled([
+      worker.stop(),
+      schedulePromise ?? Promise.resolve(),
+    ]);
+    for (const result of drains) {
+      if (result.status === "rejected") failures.push(result.reason);
+    }
+    try {
+      closeStorageBackend();
+    } catch (error) {
+      failures.push(error);
+    }
+    try {
+      await closeDatabasePool();
+    } catch (error) {
+      failures.push(error);
+    }
+    try {
+      if (failures.length > 0) {
+        throw new AggregateError(failures, "Worker shutdown failed");
+      }
+      logger.info("worker.shutdown_complete");
+    } finally {
+      clearTimeout(forceTimer);
+    }
   };
-  process.once("SIGINT", () => { void stop(); });
-  process.once("SIGTERM", () => { void stop(); });
+  const requestStop = () => {
+    void stop().catch(error => {
+      logger.error("worker.shutdown_failed", {
+        errorName: error instanceof Error ? error.name : "NonErrorThrown",
+      });
+      process.exit(1);
+    });
+  };
+  process.once("SIGINT", requestStop);
+  process.once("SIGTERM", requestStop);
 
   await worker.start();
 }

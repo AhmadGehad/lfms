@@ -3,11 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { publicConfig } from "@/lib/publicConfig";
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const supportEmail =
-  import.meta.env.VITE_SUPPORT_EMAIL?.trim() || "support@lfms.app";
+  publicConfig.supportEmail?.trim() || "support@l-fms.com";
 const contactHref = `mailto:${encodeURIComponent(supportEmail)}?subject=${encodeURIComponent("LFMS walkthrough for my farm")}`;
 
 // ─── Palette ─────────────────────────────────────────────────────────────────

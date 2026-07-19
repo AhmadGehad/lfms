@@ -52,7 +52,7 @@ create a separately approved identity instead of reactivating one. The service
 refuses any change that would remove the last active administrator with
 platform management authority.
 
-Use `npm run admin:bootstrap` only for documented recovery. The selected
+Use `pnpm run admin:bootstrap` only for documented recovery. The selected
 `ADMIN_BOOTSTRAP_ROLE` replaces all previous roles transactionally. A changed
 role set increments the administrator auth version and revokes active sessions.
 The command refuses a role replacement that would leave no active holder of

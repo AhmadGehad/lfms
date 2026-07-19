@@ -3,7 +3,7 @@ import type { Express, RequestHandler } from "express";
 import { ENV } from "../_core/env";
 import { getRequestId, getResolvedRequestHost } from "../_core/security/httpSecurity";
 import { getPlatformHealth, ensureHealthChecks } from "../platform/services/health";
-import { healthRegistry } from "./health";
+import { healthRegistry, publicReadiness } from "./health";
 import { logger, withLogContext } from "./logger";
 
 type MetricKey = `${string}|${string}|${number}`;
@@ -78,7 +78,9 @@ export function registerObservabilityRoutes(app: Express) {
   app.get("/health/live", (_req, res) => res.json(healthRegistry.liveness()));
   app.get("/health/ready", async (_req, res) => {
     const snapshot = await getPlatformHealth();
-    res.status(snapshot.status === "unavailable" ? 503 : 200).json(snapshot);
+    res
+      .status(snapshot.status === "unavailable" ? 503 : 200)
+      .json(publicReadiness(snapshot));
   });
   app.get("/metrics", (req, res) => {
     const expected = ENV.metricsBearerToken;

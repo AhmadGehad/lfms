@@ -70,6 +70,7 @@ export type PlatformContext = Readonly<{
   permissions: ReadonlySet<PlatformPermission>;
   sessionId: number;
   authenticationLevel: AuthenticationLevel;
+  mfaRequired?: boolean;
   requestId: string;
 }>;
 

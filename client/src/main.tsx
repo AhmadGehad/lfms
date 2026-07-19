@@ -9,7 +9,10 @@ import { toast } from "sonner";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import { getStoredFarmPublicId } from "./lib/farmSelection";
+import { initializePublicBrowserServices } from "./lib/publicConfig";
 import "./index.css";
+
+initializePublicBrowserServices();
 
 const queryClient = new QueryClient();
 

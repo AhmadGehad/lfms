@@ -41,4 +41,21 @@ describe("structured logger", () => {
       apiKey: "[REDACTED]",
     });
   });
+
+  it("filters records below the configured level", () => {
+    const records: Array<Record<string, unknown>> = [];
+    const logger = new StructuredLogger(
+      "test",
+      {},
+      record => records.push(record),
+      "warn",
+    );
+
+    logger.debug("debug");
+    logger.info("info");
+    logger.warn("warn");
+    logger.error("error");
+
+    expect(records.map(record => record.message)).toEqual(["warn", "error"]);
+  });
 });

@@ -52,6 +52,16 @@ describe("platform API boundary", () => {
     await expect(caller.companies.create(companyInput)).rejects.toMatchObject({ code: "FORBIDDEN", message: "MFA verification required" });
   });
 
+  it("allows explicitly non-MFA administrators past the MFA gate", async () => {
+    const caller = platformRouter.createCaller(context(principal({
+      permissions: new Set(["companies.write"]),
+      mfaRequired: false,
+    })));
+    await expect(caller.companies.create(companyInput)).rejects.not.toMatchObject({
+      message: "MFA verification required",
+    });
+  });
+
   it("validates CSRF before mutation authorization", async () => {
     const requireCsrf = vi.fn(() => { throw new Error("csrf denied"); });
     const caller = platformRouter.createCaller(context(principal({ permissions: new Set(["companies.write"]), authenticationLevel: "mfa" }), requireCsrf));

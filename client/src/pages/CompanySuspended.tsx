@@ -1,11 +1,12 @@
 import { CirclePause, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { publicConfig } from "@/lib/publicConfig";
 
-const fallbackSupportEmail = "support@lfms.app";
+const fallbackSupportEmail = "support@l-fms.com";
 
 export default function CompanySuspended() {
   const supportEmail =
-    import.meta.env.VITE_SUPPORT_EMAIL?.trim() || fallbackSupportEmail;
+    publicConfig.supportEmail?.trim() || fallbackSupportEmail;
   const supportHref = `mailto:${encodeURIComponent(supportEmail)}?subject=${encodeURIComponent("LFMS company access suspended")}`;
 
   return (

@@ -289,6 +289,18 @@ export function registerPlatformManusAuthRoutes(app: Express) {
         res.status(403).json({ error: "Platform access denied. Your account is not authorized as a platform administrator." });
         return;
       }
+      if (administrator.mfaRequired) {
+        await auditLogin(req, res, {
+          platformAdministratorId: administrator.administratorId,
+          userId: administrator.userId,
+          outcome: "denied",
+          reason: "workforce_mfa_required",
+        });
+        res.status(403).json({
+          error: "This administrator requires the workforce MFA login provider",
+        });
+        return;
+      }
 
       // Issue platform session
       const session = await getPlatformSessionManager().issue({

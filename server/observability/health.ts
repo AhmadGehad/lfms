@@ -13,6 +13,13 @@ export type HealthSnapshot = {
   checks: Record<string, HealthCheckResult>;
 };
 
+export function publicReadiness(snapshot: HealthSnapshot) {
+  return {
+    status: snapshot.status,
+    checkedAt: snapshot.checkedAt,
+  };
+}
+
 type RegisteredCheck = {
   critical: boolean;
   timeoutMs: number;
