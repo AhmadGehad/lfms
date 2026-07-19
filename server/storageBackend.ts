@@ -78,12 +78,8 @@ export function validateStorageConfiguration() {
     }
     return;
   }
-  if (ENV.isProduction) {
-    throw new Error(
-      "Production requires private S3-compatible object storage",
-    );
-  }
-  // Local compatibility only. Production files must use private object storage.
+  // Without S3 configuration, file storage uses the Manus Forge fallback.
+  // In production the Forge URL must pass the HTTPS/public-host checks below.
   const forge = forgeConfiguration();
   if (forge) {
     const endpoint = validatedUrl(forge.url, "BUILT_IN_FORGE_API_URL");

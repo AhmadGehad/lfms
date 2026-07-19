@@ -40,8 +40,10 @@ has ever appeared in Git history must be rotated before production use.
 | `WORKER_SHUTDOWN_TIMEOUT_MS`       | worker        | Hard stop deadline; must exceed `JOB_LEASE_MS`                              |
 | `WORKER_ID`                        | worker        | Stable replica prefix included in unique lease-owner IDs                    |
 
-Cloudflare deployments must configure S3-compatible private storage, normally
-R2. Forge is not accepted as a production file-storage fallback.
+Without `OBJECT_STORAGE_BUCKET`, file storage uses the Manus Forge fallback
+through `BUILT_IN_FORGE_API_URL`/`BUILT_IN_FORGE_API_KEY`; in production the
+Forge URL must be HTTPS on a public host. Configure the `OBJECT_STORAGE_*`
+variables to switch to S3-compatible private storage (for example R2).
 
 ## Optional Workforce Admin MFA
 
