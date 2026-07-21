@@ -60,13 +60,21 @@ async function startServer() {
     logger.info("auth.owner_recovery_enabled");
   }
   const app = express();
+  // Trust proxy configuration:
+  // - Cloudflare Container: trust 1 hop (Cloudflare edge is the immediate upstream)
+  // - Cloud Run production: trust 1 hop (Google's internal LB is the immediate upstream,
+  //   which preserves X-Forwarded-Host from the Cloudflare dispatcher)
+  // - Development with CIDRs: use CIDR list for testing
+  // - Local dev auth: disabled
   const trustedProxy = ENV.enableLocalDevAuth
     ? false
     : ENV.isCloudflareContainer
       ? 1
+      : ENV.isProduction
+      ? 1
       : ENV.trustedProxyCidrs.length > 0
       ? ENV.trustedProxyCidrs
-      : ENV.isProduction ? false : ["loopback"];
+      : ["loopback"];
   app.set("trust proxy", trustedProxy);
   app.disable("x-powered-by");
   const configuredDevelopmentOrigins = parseAllowedOrigins([
