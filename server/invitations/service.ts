@@ -752,7 +752,7 @@ export async function activateInvitationWithPassword(input: {
         });
       }
     } else {
-      const openId = `password:${createHash("sha256").update(normalizedEmail).digest("hex")}`;
+      const openId = `password:${createHash("sha256").update(normalizedEmail).digest("hex").slice(0, 48)}`;
       const [inserted] = await tx.insert(users).values({
         publicId: generatePublicId(),
         openId,

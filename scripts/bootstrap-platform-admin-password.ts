@@ -24,7 +24,7 @@
  */
 import "dotenv/config";
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import {
   auditLog,
   passwordCredentials,
@@ -63,7 +63,7 @@ const password = providedPassword ?? generatedPassword!;
 if (!isPasswordStrongEnough(password)) {
   throw new Error("ADMIN_BOOTSTRAP_PASSWORD does not meet the minimum requirements (>= 12 characters)");
 }
-const openId = `password:${createHash("sha256").update(email).digest("hex")}`;
+const openId = `password:${createHash("sha256").update(email).digest("hex").slice(0, 48)}`;
 
 const db = await getDb();
 if (!db) throw new Error("DATABASE_URL is required");
@@ -78,12 +78,13 @@ const result = await db.transaction(async tx => {
     .limit(1);
   if (!role) throw new Error(`Platform role not found: ${roleCode}. Run SaaS migrations first.`);
 
-  let [user] = await tx
+  const matchingUsers = await tx
     .select()
     .from(users)
-    .where(eq(users.openId, openId))
-    .for("update")
-    .limit(1);
+    .where(or(eq(users.openId, openId), eq(users.normalizedEmail, email)))
+    .for("update");
+  if (matchingUsers.length > 1) throw new Error("Bootstrap email conflicts with more than one existing user");
+  let [user] = matchingUsers;
 
   if (!user) {
     const [inserted] = await tx.insert(users).values({
