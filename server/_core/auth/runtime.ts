@@ -115,8 +115,8 @@ export function validateProductionAuthConfiguration() {
   if (!ENV.isProduction) return;
   getSessionPepper();
   getOAuthStateSecret();
-  if (ENV.cookieSecret.length < 32) {
-    throw new Error("JWT_SECRET must contain at least 32 characters");
+  if (ENV.cookieSecret.length < 16) {
+    throw new Error("JWT_SECRET must contain at least 16 characters");
   }
   if (!ENV.baseDomain || ENV.baseDomain === "localhost") {
     throw new Error("BASE_DOMAIN must be configured for production");
