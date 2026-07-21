@@ -138,14 +138,16 @@ export function validateProductionAuthConfiguration() {
   }
   validateExternalServiceUrl(ENV.oAuthServerUrl, "OAUTH_SERVER_URL", oauthHosts, true);
   validateExternalServiceUrl(ENV.oAuthPortalUrl, "VITE_OAUTH_PORTAL_URL", oauthHosts, true);
-  const oidcValues = [
+  // Only consider OIDC "partially configured" if any of the functional values
+  // (issuer, client_id, client_secret) are set. The redirect_uri alone is often
+  // pre-populated by the platform and should not trigger the incomplete error.
+  const functionalOidcValues = [
     ENV.adminOidcIssuer,
     ENV.adminOidcClientId,
     ENV.adminOidcClientSecret,
-    ENV.adminOidcRedirectUri,
   ];
-  const anyOidc = oidcValues.some(Boolean);
-  if (anyOidc && !hasPlatformOidcConfiguration()) {
+  const anyFunctionalOidc = functionalOidcValues.some(Boolean);
+  if (anyFunctionalOidc && !hasPlatformOidcConfiguration()) {
     throw new Error("Workforce Admin OIDC configuration is incomplete");
   }
   if (hasPlatformOidcConfiguration()) {
