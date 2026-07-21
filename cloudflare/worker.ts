@@ -57,7 +57,52 @@ type WorkerBindings = {
   LFMS_WEB: DurableObjectNamespace<LfmsWebContainer>;
   BASE_DOMAIN?: string;
   CF_VERSION_METADATA?: WorkerVersionMetadata;
+  EMAIL?: SendEmail;
+  INTERNAL_API_SECRET?: string;
 } & Record<string, unknown>;
+
+const INTERNAL_SEND_EMAIL_PATH = "/__internal/send-email";
+
+async function handleInternalSendEmail(
+  request: Request,
+  env: WorkerBindings
+): Promise<Response> {
+  if (request.method !== "POST") {
+    return new Response("Not found", { status: 404 });
+  }
+  const secret = env.INTERNAL_API_SECRET;
+  const provided = request.headers.get("authorization");
+  if (!secret || provided !== `Bearer ${secret}`) {
+    return new Response("Not found", { status: 404 });
+  }
+  if (!env.EMAIL) {
+    return Response.json({ error: "Email binding is not configured" }, { status: 503 });
+  }
+  let body: { from?: string; to?: string; subject?: string; text?: string; html?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
+  }
+  if (!body.from || !body.to || !body.subject || (!body.text && !body.html)) {
+    return Response.json({ error: "Missing required email fields" }, { status: 400 });
+  }
+  try {
+    await env.EMAIL.send({
+      from: body.from,
+      to: body.to,
+      subject: body.subject,
+      text: body.text,
+      html: body.html,
+    });
+    return Response.json({ success: true });
+  } catch (error) {
+    console.error("LFMS internal send-email failed", {
+      errorName: error instanceof Error ? error.name : "NonErrorThrown",
+    });
+    return Response.json({ error: "Email send failed" }, { status: 502 });
+  }
+}
 
 export default {
   async fetch(request: Request, env: WorkerBindings): Promise<Response> {
@@ -97,6 +142,9 @@ export default {
         env,
         requestId
       );
+    }
+    if (url.pathname === INTERNAL_SEND_EMAIL_PATH) {
+      return handleInternalSendEmail(request, env);
     }
     if (hostname === `auth.${baseDomain}`) {
       return secureEdgeResponse(

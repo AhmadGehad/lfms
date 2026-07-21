@@ -94,6 +94,7 @@ export const ENV = {
   smtpPassword: process.env.SMTP_PASSWORD ?? "",
   smtpFrom: process.env.SMTP_FROM ?? "",
   smtpSecure: process.env.SMTP_SECURE === "1",
+  internalApiSecret: process.env.INTERNAL_API_SECRET ?? "",
   isCloudflareContainer: Boolean(
     process.env.CLOUDFLARE_APPLICATION_ID &&
     process.env.CLOUDFLARE_DURABLE_OBJECT_ID,
