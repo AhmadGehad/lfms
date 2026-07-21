@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { cursorPageInputSchema } from "../../../shared/platformApi";
 import { listAdministratorRecords, listPlatformRoleRecords } from "../repositories/administrators";
-import { createPlatformAdministrator, updatePlatformAdministrator } from "../services/administrators";
+import {
+  createPlatformAdministrator,
+  sendAdministratorPasswordReset,
+  setAdministratorPassword,
+  updatePlatformAdministrator,
+} from "../services/administrators";
 import { platformAuditActor, platformMfaProcedure, platformPermissionProcedure, platformRouterFactory } from "../trpc";
 
 const publicId = z.string().regex(/^[0-9A-HJKMNP-TV-Z]{26}$/);
@@ -28,4 +33,10 @@ export const platformAdministratorsRouter = platformRouterFactory({
   }).refine(value => value.status !== undefined || value.roleCodes !== undefined, {
     message: "At least one administrator change is required",
   })).mutation(({ input, ctx }) => updatePlatformAdministrator(input, platformAuditActor(ctx))),
+  setPassword: platformMfaProcedure("administrators.write").input(z.object({
+    publicId,
+    password: z.string().min(12).max(512),
+  })).mutation(({ input, ctx }) => setAdministratorPassword(input, platformAuditActor(ctx))),
+  sendPasswordReset: platformMfaProcedure("administrators.write").input(z.object({ publicId }))
+    .mutation(({ input, ctx }) => sendAdministratorPasswordReset(input, platformAuditActor(ctx))),
 });

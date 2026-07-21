@@ -88,6 +88,12 @@ export const ENV = {
     .filter(Boolean),
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  smtpHost: process.env.SMTP_HOST ?? "",
+  smtpPort: boundedIntegerEnvironment("SMTP_PORT", 587, 1, 65_535),
+  smtpUser: process.env.SMTP_USER ?? "",
+  smtpPassword: process.env.SMTP_PASSWORD ?? "",
+  smtpFrom: process.env.SMTP_FROM ?? "",
+  smtpSecure: process.env.SMTP_SECURE === "1",
   isCloudflareContainer: Boolean(
     process.env.CLOUDFLARE_APPLICATION_ID &&
     process.env.CLOUDFLARE_DURABLE_OBJECT_ID,

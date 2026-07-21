@@ -5,6 +5,7 @@ import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import { AdminShell } from "./components/AdminShell";
 import { AuthBoundary } from "./components/AuthBoundary";
+import { ResetPassword } from "./pages/ResetPassword";
 
 const OverviewPage = lazy(() => import("./pages/OverviewPage").then(module => ({ default: module.OverviewPage })));
 const CompaniesPage = lazy(() => import("./pages/CompaniesPage").then(module => ({ default: module.CompaniesPage })));
@@ -22,6 +23,14 @@ const LifecyclePage = lazy(() => import("./pages/LifecyclePage").then(module => 
 const AdministratorsPage = lazy(() => import("./pages/AdministratorsPage").then(module => ({ default: module.AdministratorsPage })));
 
 export function AdminApp() {
+  if (window.location.pathname === "/reset-password") {
+    return (
+      <TooltipProvider>
+        <Toaster richColors position="top-right" />
+        <ResetPassword />
+      </TooltipProvider>
+    );
+  }
   return (
     <TooltipProvider>
       <Toaster richColors position="top-right" />

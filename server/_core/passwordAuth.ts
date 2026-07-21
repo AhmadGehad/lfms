@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from "node:crypto";
 import type { Express, Request, Response } from "express";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import {
@@ -15,7 +14,10 @@ import {
 import { recordOAuthIdentity } from "./auth/sqlStores";
 import { setOpaqueSessionCookie } from "./auth/cookies";
 import { hashPassword, isPasswordStrongEnough, verifyPassword } from "./auth/password";
+import { hashResetToken, issuePasswordResetToken } from "./auth/passwordReset";
+import { isEmailConfigured, sendEmail } from "./email";
 import { setCsrfCookie } from "./security/csrf";
+import { getRequestOrigin } from "./security/httpSecurity";
 import {
   createRateLimitMiddleware,
   getClientAddress,
@@ -24,8 +26,6 @@ import { logger } from "../observability/logger";
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1_000;
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1_000;
-const RESET_TOKEN_BYTES = 32;
 const GENERIC_LOGIN_ERROR = "Invalid email or password";
 const GENERIC_RESET_MESSAGE = "If that email has an account, a password reset link has been sent.";
 
@@ -35,14 +35,6 @@ function normalizeEmail(value: unknown) {
 
 function driverBinary(value: Buffer) {
   return value as unknown as string;
-}
-
-function hashResetToken(token: string) {
-  return createHash("sha256").update(token).digest();
-}
-
-function resetToken() {
-  return randomBytes(RESET_TOKEN_BYTES).toString("base64url");
 }
 
 async function requireDb() {
@@ -184,21 +176,21 @@ export function registerPasswordAuthRoutes(app: Express) {
       }
       const user = await findActiveUserByEmail(normalizedEmail);
       if (user) {
-        const token = resetToken();
-        const database = await requireDb();
-        await database.insert(authenticationTokens).values({
-          userId: user.id,
-          purpose: "reset_password",
-          tokenHash: driverBinary(hashResetToken(token)),
-          targetValue: normalizedEmail,
-          expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
-        });
-        // No email transport is wired up yet; log the reset link so an operator
-        // can relay it manually until a real mail provider is configured.
-        logger.info("auth.password_reset_requested", {
-          userId: user.id,
-          resetToken: token,
-        });
+        const token = await issuePasswordResetToken(user.id, normalizedEmail);
+        const origin = getRequestOrigin(req);
+        const resetLink = `${origin ?? ""}/reset-password?token=${encodeURIComponent(token)}`;
+        if (isEmailConfigured()) {
+          await sendEmail({
+            to: normalizedEmail,
+            subject: "Reset your LFMS password",
+            text: `Set a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
+          });
+        } else {
+          logger.info("auth.password_reset_requested", {
+            userId: user.id,
+            resetToken: token,
+          });
+        }
       }
       res.status(200).json({ message: GENERIC_RESET_MESSAGE });
     } catch (error) {

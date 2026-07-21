@@ -59,6 +59,21 @@ administrator's workforce OIDC identity. Partial OIDC configuration is invalid.
 | `ADMIN_OIDC_REDIRECT_URI`   | Exact `https://admin.<BASE_DOMAIN>/api/platform/auth/callback` URL |
 | `ADMIN_OIDC_MFA_ACR_VALUES` | Comma-separated issuer ACR values accepted as MFA                  |
 
+## Optional Email (Password Reset)
+
+Without these, forgot-password/reset flows still work but the reset link is
+only written to server logs instead of emailed — configure all of the
+following to send real reset emails via SMTP.
+
+| Variable        | Purpose                                                  |
+| ---------------- | --------------------------------------------------------- |
+| `SMTP_HOST`     | SMTP relay hostname                                      |
+| `SMTP_PORT`     | SMTP port (default `587`)                                |
+| `SMTP_USER`     | SMTP auth username                                       |
+| `SMTP_PASSWORD` | SMTP auth password                                       |
+| `SMTP_FROM`     | From address used for outgoing password-reset emails     |
+| `SMTP_SECURE`   | Set to `1` for implicit TLS (typically with port `465`)  |
+
 ## Provider And Compatibility Variables
 
 Keep server credentials server-side unless their name starts with `VITE_`.
