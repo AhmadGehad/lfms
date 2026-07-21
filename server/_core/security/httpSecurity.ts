@@ -326,10 +326,12 @@ export function parseAllowedOrigins(values: readonly string[]) {
 }
 
 export function getRequestOrigin(req: Request) {
-  const host = req.get("host");
-  if (!host) return null;
+  // Use req.hostname (trust-proxy-aware: reads X-Forwarded-Host when behind a trusted proxy)
+  // rather than the raw Host header, which on Cloud Run is the internal *.a.run.app hostname.
+  const hostname = getEffectiveHostname(req);
+  if (!hostname) return null;
   try {
-    const url = new URL(`${req.protocol}://${host}`);
+    const url = new URL(`${req.protocol}://${hostname}`);
     if (url.username || url.password) return null;
     return url.origin;
   } catch {
