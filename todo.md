@@ -701,3 +701,11 @@
 - [ ] Existing production data migrated into default company without loss
 - [ ] TypeScript: 0 errors; security review passed; pen test scheduled
 
+
+## Phase 33: Fix Production 404/421 (Host Validation)
+- [x] Fix hostValidationMiddleware: use Express trust-proxy-aware req.hostname instead of raw Host header
+- [x] Root cause: middleware rejected proxied requests where Host=*.a.run.app but X-Forwarded-Host=valid tenant
+- [x] Add getEffectiveHostname() helper with safe fallback for test mocks
+- [x] Add comprehensive tests (proxied accepted, invalid rejected, spoofed XFH rejected, direct unchanged, edge cases)
+- [x] All 21 security tests pass, build succeeds
+- [x] Save checkpoint
