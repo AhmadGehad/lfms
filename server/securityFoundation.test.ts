@@ -358,28 +358,273 @@ describe("HTTP security", () => {
     expect(isAllowedRequestOrigin(request, allowed)).toBe(false);
   });
 
-  it("rejects a forwarded host that disagrees with the validated Host header", () => {
+  it("accepts proxied request: Host=*.a.run.app with trusted X-Forwarded-Host=<valid tenant>", () => {
+    // Simulates the dispatcher → Cloud Run → application path.
+    // Express's req.hostname returns X-Forwarded-Host when trust proxy is configured.
+    // The middleware uses req.hostname (trust-proxy-aware) for validation.
+    const middleware = hostValidationMiddleware({
+      baseDomain: "example.test",
+      allowLegacyBareDomain: true,
+      allowDevelopmentPorts: false,
+      additionalTenantHostnames: ["livestockms-abc123.manus.space"],
+    });
+
+    // Case 1: X-Forwarded-Host is a valid tenant subdomain
+    const locals1: Record<string, unknown> = {};
+    const next1 = vi.fn();
+    middleware({
+      protocol: "https",
+      // Simulate Express req.hostname returning the X-Forwarded-Host value
+      // (as it does when trust proxy is configured and request is from trusted IP)
+      hostname: "azal-farms.example.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "abc123-hash.a.run.app",
+          "x-forwarded-host": "azal-farms.example.test",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals1, status: vi.fn(() => ({ json: vi.fn() })) } as any, next1);
+    expect(next1).toHaveBeenCalledOnce();
+    expect(locals1.requestHost).toMatchObject({ surface: "tenant", companySlug: "azal-farms" });
+
+    // Case 2: X-Forwarded-Host is the base domain (bare domain)
+    const locals2: Record<string, unknown> = {};
+    const next2 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "example.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "abc123-hash.a.run.app",
+          "x-forwarded-host": "example.test",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals2, status: vi.fn(() => ({ json: vi.fn() })) } as any, next2);
+    expect(next2).toHaveBeenCalledOnce();
+    expect(locals2.requestHost).toMatchObject({ surface: "tenant" });
+
+    // Case 3: X-Forwarded-Host is an additional tenant hostname
+    const locals3: Record<string, unknown> = {};
+    const next3 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "livestockms-abc123.manus.space",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "abc123-hash.a.run.app",
+          "x-forwarded-host": "livestockms-abc123.manus.space",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals3, status: vi.fn(() => ({ json: vi.fn() })) } as any, next3);
+    expect(next3).toHaveBeenCalledOnce();
+    expect(locals3.requestHost).toMatchObject({ surface: "tenant" });
+  });
+
+  it("rejects invalid tenant domain with 421", () => {
     const middleware = hostValidationMiddleware({
       baseDomain: "example.test",
       allowLegacyBareDomain: false,
       allowDevelopmentPorts: false,
     });
-    const req = {
+
+    // Case 1: Direct request with invalid Host
+    const json1 = vi.fn();
+    const status1 = vi.fn(() => ({ json: json1 }));
+    const next1 = vi.fn();
+    middleware({
       protocol: "https",
+      hostname: "attacker.evil.test",
       get(name: string) {
         const headers: Record<string, string> = {
-          host: "alpha.example.test",
-          "x-forwarded-host": "bravo.example.test",
+          host: "attacker.evil.test",
         };
         return headers[name.toLowerCase()];
       },
-    };
+    } as any, { status: status1, locals: {} } as any, next1);
+    expect(status1).toHaveBeenCalledWith(421);
+    expect(next1).not.toHaveBeenCalled();
+
+    // Case 2: Proxied request where X-Forwarded-Host is also invalid
+    const json2 = vi.fn();
+    const status2 = vi.fn(() => ({ json: json2 }));
+    const next2 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "attacker.evil.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "abc123-hash.a.run.app",
+          "x-forwarded-host": "attacker.evil.test",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { status: status2, locals: {} } as any, next2);
+    expect(status2).toHaveBeenCalledWith(421);
+    expect(next2).not.toHaveBeenCalled();
+  });
+
+  it("spoofed X-Forwarded-Host from untrusted source does not bypass validation", () => {
+    // When trust proxy is NOT configured (or request is from untrusted IP),
+    // Express's req.hostname returns the raw Host header value, ignoring X-Forwarded-Host.
+    // The middleware uses req.hostname, so the spoofed header has no effect.
+    const middleware = hostValidationMiddleware({
+      baseDomain: "example.test",
+      allowLegacyBareDomain: false,
+      allowDevelopmentPorts: false,
+    });
+
+    // Simulate untrusted request: req.hostname returns the raw Host (not X-Forwarded-Host)
+    // because Express does not trust the proxy.
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
     const next = vi.fn();
-    middleware(req as any, { status, locals: {} } as any, next);
+    middleware({
+      protocol: "https",
+      // Express returns raw Host hostname when proxy is untrusted
+      hostname: "evil-internal.a.run.app",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "evil-internal.a.run.app",
+          // Attacker injects X-Forwarded-Host but Express ignores it
+          "x-forwarded-host": "azal-farms.example.test",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { status, locals: {} } as any, next);
+    // The middleware validates against req.hostname ("evil-internal.a.run.app")
+    // which is NOT a valid tenant domain, so it rejects with 421.
     expect(status).toHaveBeenCalledWith(421);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("direct request with valid Host continues to work unchanged", () => {
+    // Direct request (no proxy) where Host is itself a valid tenant domain.
+    const middleware = hostValidationMiddleware({
+      baseDomain: "example.test",
+      allowLegacyBareDomain: true,
+      allowDevelopmentPorts: false,
+      additionalTenantHostnames: ["livestockms-abc123.manus.space"],
+    });
+
+    // Case 1: Valid tenant subdomain as direct Host
+    const locals1: Record<string, unknown> = {};
+    const next1 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "azal-farms.example.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "azal-farms.example.test",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals1, status: vi.fn(() => ({ json: vi.fn() })) } as any, next1);
+    expect(next1).toHaveBeenCalledOnce();
+    expect(locals1.requestHost).toMatchObject({ surface: "tenant", companySlug: "azal-farms" });
+
+    // Case 2: Admin domain as direct Host
+    const locals2: Record<string, unknown> = {};
+    const next2 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "admin.example.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "admin.example.test",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals2, status: vi.fn(() => ({ json: vi.fn() })) } as any, next2);
+    expect(next2).toHaveBeenCalledOnce();
+    expect(locals2.requestHost).toMatchObject({ surface: "platform" });
+
+    // Case 3: Additional tenant hostname as direct Host
+    const locals3: Record<string, unknown> = {};
+    const next3 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "livestockms-abc123.manus.space",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "livestockms-abc123.manus.space",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals3, status: vi.fn(() => ({ json: vi.fn() })) } as any, next3);
+    expect(next3).toHaveBeenCalledOnce();
+    expect(locals3.requestHost).toMatchObject({ surface: "tenant" });
+  });
+
+  it("handles edge cases: ports, case normalization, multiple forwarded-host values", () => {
+    const middleware = hostValidationMiddleware({
+      baseDomain: "example.test",
+      allowLegacyBareDomain: true,
+      allowDevelopmentPorts: false,
+    });
+
+    // Case 1: Standard port (443) is accepted
+    const locals1: Record<string, unknown> = {};
+    const next1 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "azal-farms.example.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "azal-farms.example.test:443",
+          "x-forwarded-host": "azal-farms.example.test:443",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals1, status: vi.fn(() => ({ json: vi.fn() })) } as any, next1);
+    expect(next1).toHaveBeenCalledOnce();
+
+    // Case 2: Case normalization — uppercase hostname is accepted
+    const locals2: Record<string, unknown> = {};
+    const next2 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "azal-farms.example.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "AZAL-FARMS.EXAMPLE.TEST",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { locals: locals2, status: vi.fn(() => ({ json: vi.fn() })) } as any, next2);
+    expect(next2).toHaveBeenCalledOnce();
+    expect(locals2.requestHost).toMatchObject({ surface: "tenant", companySlug: "azal-farms" });
+
+    // Case 3: Non-standard port is rejected in production mode
+    const json3 = vi.fn();
+    const status3 = vi.fn(() => ({ json: json3 }));
+    const next3 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: "azal-farms.example.test",
+      get(name: string) {
+        const headers: Record<string, string> = {
+          host: "azal-farms.example.test:8080",
+        };
+        return headers[name.toLowerCase()];
+      },
+    } as any, { status: status3, locals: {} } as any, next3);
+    expect(status3).toHaveBeenCalledWith(421);
+    expect(next3).not.toHaveBeenCalled();
+
+    // Case 4: Missing Host header is rejected
+    const json4 = vi.fn();
+    const status4 = vi.fn(() => ({ json: json4 }));
+    const next4 = vi.fn();
+    middleware({
+      protocol: "https",
+      hostname: undefined as any,
+      get(_name: string) { return undefined; },
+    } as any, { status: status4, locals: {} } as any, next4);
+    expect(status4).toHaveBeenCalledWith(421);
+    expect(next4).not.toHaveBeenCalled();
   });
 
   it("binds CSRF tokens to audience and session", () => {

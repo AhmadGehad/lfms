@@ -167,6 +167,49 @@ export function securityHeadersMiddleware(options?: {
   };
 }
 
+/**
+ * Safely resolve the effective hostname from an Express request.
+ *
+ * Express's `req.hostname` getter respects the `trust proxy` setting:
+ * - When the request comes through a trusted reverse proxy (e.g. Cloudflare → Cloud Run),
+ *   it returns the value from `X-Forwarded-Host` (the original tenant domain).
+ * - When the request is direct or from an untrusted source, it returns
+ *   the raw `Host` header hostname (without port).
+ *
+ * This function safely accesses `req.hostname` and falls back to parsing
+ * the raw Host header if the getter is unavailable (e.g. in test mocks).
+ */
+function getEffectiveHostname(req: Request): string | undefined {
+  try {
+    // req.hostname is a getter that requires this.app and this.connection.
+    // In real Express requests this always works. In minimal test mocks it may throw.
+    const hostname = req.hostname;
+    if (hostname) return hostname;
+  } catch {
+    // Fall through to manual extraction from Host header
+  }
+  // Fallback: extract hostname from the raw Host header (strips port)
+  const rawHost = req.get("host");
+  if (!rawHost) return undefined;
+  return extractHostname(rawHost);
+}
+
+/**
+ * Host validation middleware.
+ *
+ * Uses Express's trust-proxy-aware hostname resolution:
+ * - When the request comes through a trusted reverse proxy (dispatcher → Cloud Run),
+ *   the effective hostname is derived from `X-Forwarded-Host` (the original tenant domain),
+ *   NOT the internal *.a.run.app Host header.
+ * - When the request is direct or from an untrusted source, the effective hostname
+ *   is the raw `Host` header value.
+ *
+ * This ensures that:
+ * 1. Proxied requests are validated against the original tenant domain.
+ * 2. Untrusted clients cannot spoof X-Forwarded-Host because Express only trusts
+ *    forwarding headers from IPs matching the configured `trust proxy` CIDRs.
+ * 3. Direct requests where Host is itself a valid tenant domain continue to work.
+ */
 export function hostValidationMiddleware(
   options: HostValidationOptions
 ): RequestHandler {
@@ -174,47 +217,50 @@ export function hostValidationMiddleware(
   return (req, res, next) => {
     let resolved: ResolvedRequestHost | null = null;
     try {
-      const rawHost = req.get("host");
-      if (!rawHost || /[\s/@\\]/.test(rawHost)) {
+      // Resolve the effective hostname using Express's trust proxy mechanism.
+      // This is the same pattern used by req.ip (see audit.ts) — we rely on
+      // Express's trust proxy rather than reading forwarding headers directly.
+      const effectiveHostname = getEffectiveHostname(req);
+
+      if (!effectiveHostname || /[\s/@\\]/.test(effectiveHostname)) {
         res
           .status(421)
           .json({ error: "Misdirected request", requestId: getRequestId(res) });
         return;
       }
-      const parsedHost = new URL(`http://${rawHost}`);
+
+      // Port validation: check the effective host for non-standard ports.
+      // In a proxied scenario the port comes from X-Forwarded-Host (via trust proxy);
+      // in a direct scenario it comes from the raw Host header.
+      const rawHost = req.get("host") ?? "";
       const forwardedHost = req.get("x-forwarded-host");
-      if (forwardedHost) {
-        if (forwardedHost.includes(",")) {
-          res.status(421).json({
-            error: "Misdirected request",
-            requestId: getRequestId(res),
-          });
-          return;
-        }
-        const parsedForwardedHost = new URL(`http://${forwardedHost}`);
-        if (
-          normalizeHostname(parsedForwardedHost.hostname) !==
-          normalizeHostname(parsedHost.hostname)
-        ) {
-          res.status(421).json({
-            error: "Misdirected request",
-            requestId: getRequestId(res),
-          });
-          return;
+      // Determine which host value carries the port information.
+      // When Express trusts the proxy (effective hostname differs from raw Host hostname),
+      // the port check should use the forwarded host source.
+      const rawHostname = extractHostname(rawHost);
+      const isTrustedProxy = effectiveHostname !== rawHostname && !!forwardedHost;
+      const portSource = isTrustedProxy ? forwardedHost! : rawHost;
+
+      if (portSource) {
+        try {
+          const parsed = new URL(`http://${portSource}`);
+          const port = parsed.port;
+          const standardPort =
+            port === "" ||
+            (port === "443" && req.protocol === "https") ||
+            (port === "80" && req.protocol === "http");
+          if (!standardPort && !options.allowDevelopmentPorts) {
+            res
+              .status(421)
+              .json({ error: "Misdirected request", requestId: getRequestId(res) });
+            return;
+          }
+        } catch {
+          // Malformed port source — let hostname validation below handle it
         }
       }
-      const port = parsedHost.port;
-      const standardPort =
-        port === "" ||
-        (port === "443" && req.protocol === "https") ||
-        (port === "80" && req.protocol === "http");
-      if (!standardPort && !options.allowDevelopmentPorts) {
-        res
-          .status(421)
-          .json({ error: "Misdirected request", requestId: getRequestId(res) });
-        return;
-      }
-      resolved = resolveRequestHost(parsedHost.hostname, options);
+
+      resolved = resolveRequestHost(effectiveHostname, options);
     } catch (error) {
       res.status(421).json({
         error: "Misdirected request",
@@ -233,6 +279,23 @@ export function hostValidationMiddleware(
     res.locals.requestHost = resolved;
     next();
   };
+}
+
+/** Extract hostname from a host:port string without using URL parsing. */
+function extractHostname(hostHeader: string): string {
+  const trimmed = hostHeader.trim().toLowerCase();
+  // IPv6 bracket notation
+  if (trimmed.startsWith("[")) {
+    const bracketEnd = trimmed.indexOf("]");
+    if (bracketEnd !== -1) return trimmed.slice(1, bracketEnd);
+  }
+  // Regular host:port
+  const colonIndex = trimmed.lastIndexOf(":");
+  if (colonIndex === -1) return trimmed;
+  // Check if what follows the colon is a valid port number
+  const afterColon = trimmed.slice(colonIndex + 1);
+  if (/^\d{1,5}$/.test(afterColon)) return trimmed.slice(0, colonIndex);
+  return trimmed;
 }
 
 export function getResolvedRequestHost(res: Response) {
