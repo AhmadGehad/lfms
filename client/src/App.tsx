@@ -18,6 +18,8 @@ function isBareHost(hostname: string): boolean {
   const host = hostname.toLowerCase();
   if (host === "localhost" || /^[0-9.]+$/.test(host) || host.includes(":")) return true;
   if (host.endsWith(".localhost")) return false;
+  // The Manus internal domain (*.manus.space) is treated as bare host (landing page)
+  if (host.endsWith(".manus.space")) return true;
   const labels = host.split(".");
   if (labels[0] === "www") return true;
   return labels.length <= 2;
