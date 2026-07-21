@@ -7,6 +7,9 @@ import { DesignVersionProvider } from "./contexts/DesignVersionContext";
 import { DesignRouter } from "./designs/DesignRouter";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import CompanySuspended from "./pages/CompanySuspended";
+import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import { trpc } from "./lib/trpc";
 import { lazy, Suspense } from "react";
 
@@ -26,8 +29,11 @@ function isBareHost(hostname: string): boolean {
 function TenantSurface() {
   const bareHost = isBareHost(window.location.hostname);
   const acceptingInvitation = window.location.pathname === "/accept-invitation";
+  const path = window.location.pathname;
+  const unauthenticatedRoute = acceptingInvitation ||
+    path === "/login" || path === "/forgot-password" || path === "/reset-password";
   const suspension = trpc.auth.suspensionStatus.useQuery(undefined, {
-    enabled: !acceptingInvitation && !bareHost,
+    enabled: !unauthenticatedRoute && !bareHost,
     staleTime: 30_000,
     retry: false,
   });
@@ -38,6 +44,9 @@ function TenantSurface() {
         <Landing />
       </Suspense>
     );
+  if (path === "/login") return <Login />;
+  if (path === "/forgot-password") return <ForgotPassword />;
+  if (path === "/reset-password") return <ResetPassword />;
   if (acceptingInvitation) return <AcceptInvitation />;
   if (suspension.data?.suspended) return <CompanySuspended />;
   if (suspension.isLoading)

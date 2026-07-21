@@ -31,7 +31,8 @@
     "db:push": "node scripts/refuse-legacy-schema-write.mjs",
     "db:rehearse-tenancy": "node scripts/rehearse-tenancy-migration.mjs",
     "db:migrate-tenancy": "MIGRATION_MODE=production node scripts/rehearse-tenancy-migration.mjs",
-    "admin:bootstrap": "tsx scripts/bootstrap-platform-admin.ts"
+    "admin:bootstrap": "tsx scripts/bootstrap-platform-admin.ts",
+    "admin:bootstrap:password": "tsx scripts/bootstrap-platform-admin-password.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1090.0",
@@ -70,6 +71,7 @@
     "@trpc/react-query": "^11.18.0",
     "@trpc/server": "^11.18.0",
     "axios": "^1.18.1",
+    "better-auth": "^1.6.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

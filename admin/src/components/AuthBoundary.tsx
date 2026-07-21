@@ -1,13 +1,42 @@
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ShieldAlert, LoaderCircle } from "lucide-react";
-import type { ReactNode } from "react";
+import { FormEvent, type ReactNode, useState } from "react";
 import { setPlatformCsrfToken } from "@admin/lib/csrf";
 import { platformTrpc } from "@admin/lib/trpc";
 
-const loginUrl = "/api/platform/auth/login";
-
 export function AuthBoundary({ children }: { children: ReactNode }) {
   const session = platformTrpc.auth.me.useQuery(undefined, { retry: false });
+  const utils = platformTrpc.useUtils();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      const response = await fetch("/api/platform/auth/login", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        setError(body?.error ?? "Sign-in failed");
+        return;
+      }
+      await utils.auth.me.invalidate();
+    } catch {
+      setError("Sign-in failed. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (session.isLoading) {
     return (
@@ -36,12 +65,36 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
             Platform access required
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Sign in with your Manus account. Only authorized platform
-            administrators can access this panel.
+            Only authorized platform administrators can access this panel.
           </p>
-          <Button className="mt-5 w-full" asChild>
-            <a href={loginUrl}>Sign in with Manus</a>
-          </Button>
+          <form className="mt-5 grid gap-3" onSubmit={onSubmit}>
+            <div className="grid gap-1.5">
+              <Label htmlFor="admin-email">Email</Label>
+              <Input
+                id="admin-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={event => setEmail(event.target.value)}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="admin-password">Password</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={event => setPassword(event.target.value)}
+              />
+            </div>
+            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+            <Button type="submit" className="w-full" disabled={submitting}>
+              {submitting ? "Signing in..." : "Sign in"}
+            </Button>
+          </form>
         </section>
       </main>
     );

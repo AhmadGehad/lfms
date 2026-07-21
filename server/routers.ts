@@ -11,7 +11,7 @@ import {
 } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { companies, farms } from "../drizzle/schema";
+import { companies, farms, users } from "../drizzle/schema";
 import { getDb } from "./db";
 import { configRouter } from "./routers/config";
 import { animalsRouter } from "./routers/animals";
@@ -34,7 +34,8 @@ import { pregnancyRouter } from "./routers/pregnancy";
 import { permissionsRouter } from "./routers/permissions";
 import { preferencesRouter } from "./routers/preferences";
 import { capitalRouter } from "./routers/capital";
-import { acceptInvitation, previewInvitation } from "./invitations/service";
+import { acceptInvitation, activateInvitationWithPassword, previewInvitation } from "./invitations/service";
+import { issueTenantSessionForUser } from "./_core/passwordAuth";
 import { getTenantCompanyBranding } from "./tenancy/branding";
 import { getResolvedRequestHost } from "./_core/security/httpSecurity";
 import { getClientIp } from "./_core/audit";
@@ -185,6 +186,28 @@ export const appRouter = router({
           }
         )
       ),
+    activateWithPassword: publicProcedure
+      .input(z.object({ token: invitationTokenSchema, password: z.string().min(1).max(512) }))
+      .mutation(async ({ input, ctx }) => {
+        const outcome = await activateInvitationWithPassword(
+          { token: input.token, companySlug: invitationCompanySlug(ctx), password: input.password },
+          {
+            requestId: ctx.requestId ?? "unknown",
+            ipAddress: getClientIp(ctx),
+            userAgent: ctx.req.get("user-agent") ?? null,
+          }
+        );
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        }
+        const [user] = await db.select().from(users).where(eq(users.id, outcome.userId)).limit(1);
+        if (!user) {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Account was not created" });
+        }
+        await issueTenantSessionForUser(ctx.req, ctx.res, user);
+        return outcome;
+      }),
   }),
 
   config: configRouter,

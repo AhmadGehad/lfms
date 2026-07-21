@@ -10,11 +10,13 @@ import {
   companySubscriptions,
   farmMemberships,
   farms,
+  passwordCredentials,
   users,
 } from "../../drizzle/schema";
 import type { AppRole } from "../../shared/permissions";
 import { decodeCursor } from "../../shared/platformApi";
 import { assertWithinLimit, getEffectiveLimit, lockCompanyQuota } from "../entitlements/limits";
+import { hashPassword, isPasswordStrongEnough } from "../_core/auth/password";
 import { redactLogFields } from "../observability/logger";
 import { generatePublicId } from "../tenancy/publicIds";
 import { executeIdempotent } from "../platform/idempotency";
@@ -24,6 +26,8 @@ import { appendPlatformAudit, type PlatformAuditActor } from "../platform/reposi
 import { affectedRows, publicCursorPage, requirePlatformDb, type PlatformDb } from "../platform/repositories/db";
 import { findCompanyByPublicId } from "../platform/repositories/companies";
 import { rethrowPlatformWriteError } from "../platform/services/errors";
+
+const INVITATION_PROVIDER = "password";
 
 const INVITATION_TOKEN_BYTES = 32;
 const DEFAULT_EXPIRY_HOURS = 72;
@@ -219,7 +223,7 @@ export async function createPlatformInvitation(input: {
         operation: "platform.invitations.create",
         body: {
           companyPublicId: company.publicId,
-          provider: "manus",
+          provider: INVITATION_PROVIDER,
           normalizedEmail,
           role: input.role,
           farmAccessMode: input.farmAccessMode,
@@ -251,7 +255,7 @@ export async function createPlatformInvitation(input: {
           companyPublicId: company.publicId,
           companySlug: company.slug,
           normalizedEmail,
-          provider: "manus",
+          provider: INVITATION_PROVIDER,
           role: input.role,
           farmAccessMode: input.farmAccessMode,
           farmPublicIds,
@@ -696,4 +700,92 @@ export async function acceptInvitation(input: {
   if (outcome.kind === "company_unavailable") invalidLifecycle("Company is unavailable");
   if (outcome.kind === "already_member") invalidLifecycle("User already has a membership in this company");
   invalidLifecycle("Invitation is no longer available");
+}
+
+/**
+ * Unauthenticated counterpart to acceptInvitation: creates the invited user
+ * (or attaches a password credential to a pre-existing, password-less user)
+ * from the invitation's own email binding, then delegates to acceptInvitation
+ * for the membership/seat/activation logic.
+ */
+export async function activateInvitationWithPassword(input: {
+  token: string;
+  companySlug: string;
+  password: string;
+}, actor: {
+  requestId: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}) {
+  if (!isPasswordStrongEnough(input.password)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Password does not meet the minimum requirements" });
+  }
+  const db = await requirePlatformDb();
+  const tokenHash = hashInvitationToken(input.token);
+  const userId = await db.transaction(async tx => {
+    const [row] = await tx.select({
+      invitation: companyInvitations,
+    }).from(companyInvitations)
+      .innerJoin(companies, eq(companyInvitations.companyId, companies.id))
+      .where(and(
+        eq(companyInvitations.tokenHash, driverBinary(tokenHash)),
+        eq(companies.slug, input.companySlug),
+      ))
+      .limit(1);
+    if (!row) notFound("Invitation");
+    const record = row.invitation;
+    if (record.status !== "pending" || record.expiresAt <= new Date()) {
+      invalidLifecycle("Invitation is no longer available");
+    }
+    const normalizedEmail = record.normalizedEmail;
+    const [existingUser] = await tx.select().from(users)
+      .where(eq(users.normalizedEmail, normalizedEmail)).limit(1).for("update");
+    let user = existingUser;
+    if (user) {
+      if (user.status !== "active") invalidLifecycle("Account is not available");
+      const [existingCredential] = await tx.select({ userId: passwordCredentials.userId })
+        .from(passwordCredentials).where(eq(passwordCredentials.userId, user.id)).limit(1);
+      if (existingCredential) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This account already has a password; sign in and accept the invitation instead",
+        });
+      }
+    } else {
+      const openId = `password:${createHash("sha256").update(normalizedEmail).digest("hex")}`;
+      const [inserted] = await tx.insert(users).values({
+        publicId: generatePublicId(),
+        openId,
+        name: null,
+        email: normalizedEmail,
+        normalizedEmail,
+        loginMethod: "password",
+        role: "user",
+        status: "active",
+      });
+      [user] = await tx.select().from(users)
+        .where(eq(users.id, Number(inserted.insertId))).limit(1);
+    }
+    if (!user) throw new Error("Invitee user was not persisted");
+    const passwordHash = await hashPassword(input.password);
+    await tx.insert(passwordCredentials).values({ userId: user.id, passwordHash });
+    const now = new Date();
+    await tx.insert(authIdentities).values({
+      userId: user.id,
+      provider: INVITATION_PROVIDER,
+      providerSubject: normalizedEmail,
+      providerEmail: normalizedEmail,
+      providerEmailVerified: true,
+      linkedAt: now,
+      lastUsedAt: now,
+    });
+    return user.id;
+  });
+  const outcome = await acceptInvitation({ token: input.token, companySlug: input.companySlug }, {
+    userId,
+    requestId: actor.requestId,
+    ipAddress: actor.ipAddress,
+    userAgent: actor.userAgent,
+  });
+  return { ...outcome, userId };
 }
