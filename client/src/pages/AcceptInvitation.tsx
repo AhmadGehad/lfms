@@ -1,8 +1,9 @@
-import { AlertTriangle, CheckCircle2, Leaf, LogIn } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Leaf } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getLoginUrl } from "@/const";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const INVITATION_STORAGE_KEY = "lfms.pendingInvitation";
 
@@ -34,8 +35,20 @@ export default function AcceptInvitation() {
       window.location.replace("/");
     },
   });
+  const activateWithPassword = trpc.invitations.activateWithPassword.useMutation({
+    onSuccess: () => {
+      sessionStorage.removeItem(INVITATION_STORAGE_KEY);
+      window.location.replace("/");
+    },
+  });
+  const [password, setPassword] = useState("");
   const invitation = preview.data;
   const unavailable = !validToken || preview.isError || (invitation && !invitation.canAccept);
+
+  function onSetPassword(event: FormEvent) {
+    event.preventDefault();
+    activateWithPassword.mutate({ token, password });
+  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -65,10 +78,27 @@ export default function AcceptInvitation() {
             </div>
 
             {!identity.data ? (
-              <div className="grid gap-3">
-                <p className="text-sm text-muted-foreground">Sign in with the verified email invited to this company.</p>
-                <Button onClick={() => { window.location.href = getLoginUrl(); }}><LogIn className="h-4 w-4" />Sign in to accept</Button>
-              </div>
+              <form className="grid gap-3" onSubmit={onSetPassword}>
+                <p className="text-sm text-muted-foreground">Set a password for {invitation.email} to activate this account.</p>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="invite-password">Password</Label>
+                  <Input
+                    id="invite-password"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={12}
+                    required
+                    value={password}
+                    onChange={event => setPassword(event.target.value)}
+                  />
+                </div>
+                {activateWithPassword.isError && (
+                  <p role="alert" className="text-sm text-destructive">{activateWithPassword.error.message}</p>
+                )}
+                <Button type="submit" disabled={activateWithPassword.isPending}>
+                  {activateWithPassword.isPending ? "Activating..." : "Set password and join"}
+                </Button>
+              </form>
             ) : (
               <div className="grid gap-3">
                 <div className="flex items-start gap-3 text-sm"><CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" /><p>Signed in as <strong>{identity.data.email || identity.data.name || "authenticated user"}</strong>. Acceptance is allowed only when the verified account email matches the invitation.</p></div>

@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, ShieldCheck } from "lucide-react";
+import { KeyRound, Mail, Plus, ShieldCheck } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 import { toast } from "sonner";
 import { ListToolbar } from "@admin/components/ListToolbar";
@@ -46,6 +46,8 @@ export function AdministratorsPage() {
   const [editRow, setEditRow] = useState<Row | null>(null);
   const [editRoleCodes, setEditRoleCodes] = useState<string[]>([]);
   const [pendingStatus, setPendingStatus] = useState<{ row: Row; status: MutableStatus } | null>(null);
+  const [passwordRow, setPasswordRow] = useState<Row | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   const create = platformTrpc.administrators.create.useMutation({
     onSuccess: async () => {
@@ -66,6 +68,18 @@ export function AdministratorsPage() {
     },
     onError: error => toast.error(error.message),
   });
+  const setPassword = platformTrpc.administrators.setPassword.useMutation({
+    onSuccess: () => {
+      toast.success("Password set");
+      setPasswordRow(null);
+      setNewPassword("");
+    },
+    onError: error => toast.error(error.message),
+  });
+  const sendPasswordReset = platformTrpc.administrators.sendPasswordReset.useMutation({
+    onSuccess: result => toast.success(result.sent ? "Reset email sent" : "Reset token issued, but no email transport is configured — check server logs"),
+    onError: error => toast.error(error.message),
+  });
 
   const toggleRole = (code: string, current: string[], set: (value: string[]) => void) => {
     set(current.includes(code) ? current.filter(value => value !== code) : [...current, code]);
@@ -80,7 +94,7 @@ export function AdministratorsPage() {
     { key: "status", label: "Status", render: row => canWrite && row.status !== "revoked" && row.publicId !== session.data?.publicId ? <Select value={row.status} onValueChange={value => setPendingStatus({ row, status: value as MutableStatus })}><SelectTrigger className="h-8 w-32 border-0 bg-transparent px-0 shadow-none"><SelectValue><StatusBadge value={row.status} /></SelectValue></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="suspended">Suspended</SelectItem><SelectItem value="revoked">Revoked</SelectItem></SelectContent></Select> : <StatusBadge value={row.status} /> },
     { key: "mfa", label: "MFA", render: row => <span className="inline-flex items-center gap-1 text-xs"><ShieldCheck className="h-3.5 w-3.5" />{row.mfaRequired ? "Required" : "Optional"}</span> },
     { key: "last", label: "Last sign-in", render: row => <span className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(row.lastSignedIn)}</span> },
-    { key: "actions", label: "", className: "text-right", render: row => canWrite && row.status !== "revoked" && row.publicId !== session.data?.publicId ? <Button variant="outline" size="sm" onClick={() => openRoleEditor(row)}>Edit roles</Button> : null },
+    { key: "actions", label: "", className: "text-right", render: row => canWrite && row.status !== "revoked" && row.publicId !== session.data?.publicId ? <div className="flex justify-end gap-1"><Button variant="outline" size="sm" onClick={() => openRoleEditor(row)}>Edit roles</Button><Button variant="ghost" size="icon" title="Set password" aria-label={`Set password for ${row.name || row.email}`} onClick={() => { setPasswordRow(row); setNewPassword(""); }}><KeyRound className="h-4 w-4" /></Button><Button variant="ghost" size="icon" title="Send reset email" aria-label={`Send password reset email to ${row.name || row.email}`} disabled={sendPasswordReset.isPending} onClick={() => sendPasswordReset.mutate({ publicId: row.publicId })}><Mail className="h-4 w-4" /></Button></div> : null },
   ];
 
   return <>
@@ -91,5 +105,7 @@ export function AdministratorsPage() {
     <Dialog open={Boolean(editRow)} onOpenChange={open => !open && setEditRow(null)}><DialogContent><DialogHeader><DialogTitle>Replace platform roles</DialogTitle><DialogDescription>Saving replaces every current role and revokes all active sessions for {editRow?.name || editRow?.email}.</DialogDescription></DialogHeader><div className="max-h-64 overflow-auto border p-2">{roles.data?.map(role => <label key={role.code} className="flex items-start gap-2 py-1.5 text-sm"><Checkbox checked={editRoleCodes.includes(role.code)} onCheckedChange={() => toggleRole(role.code, editRoleCodes, setEditRoleCodes)} /><span><span className="block font-medium">{role.name}</span><span className="block text-xs text-muted-foreground">{role.permissionCount} permissions</span></span></label>)}</div><DialogFooter><Button variant="outline" onClick={() => setEditRow(null)}>Cancel</Button><Button disabled={!editRow || editRoleCodes.length === 0 || update.isPending} onClick={() => editRow && update.mutate({ publicId: editRow.publicId, roleCodes: editRoleCodes, expectedVersion: editRow.version })}>Replace roles</Button></DialogFooter></DialogContent></Dialog>
 
     <AlertDialog open={Boolean(pendingStatus)} onOpenChange={open => !open && setPendingStatus(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Change administrator status</AlertDialogTitle><AlertDialogDescription>This sets {pendingStatus?.row.name || pendingStatus?.row.email} to {pendingStatus?.status} and immediately revokes all active platform sessions. Revocation is permanent.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => { if (pendingStatus) update.mutate({ publicId: pendingStatus.row.publicId, status: pendingStatus.status, expectedVersion: pendingStatus.row.version }); setPendingStatus(null); }}>Confirm status change</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+
+    <Dialog open={Boolean(passwordRow)} onOpenChange={open => { if (!open) setPasswordRow(null); }}><DialogContent><DialogHeader><DialogTitle>Set password</DialogTitle><DialogDescription>Sets a new password directly for {passwordRow?.name || passwordRow?.email} and revokes their active platform sessions.</DialogDescription></DialogHeader><div className="grid gap-1.5"><Label htmlFor="admin-new-password">New password</Label><Input id="admin-new-password" type="password" minLength={12} value={newPassword} onChange={event => setNewPassword(event.target.value)} /></div><DialogFooter><Button variant="outline" onClick={() => setPasswordRow(null)}>Cancel</Button><Button disabled={newPassword.length < 12 || setPassword.isPending} onClick={() => passwordRow && setPassword.mutate({ publicId: passwordRow.publicId, password: newPassword })}>Set password</Button></DialogFooter></DialogContent></Dialog>
   </>;
 }

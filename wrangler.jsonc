@@ -40,6 +40,12 @@
       },
     ],
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "remote": true,
+    },
+  ],
   "migrations": [
     {
       "tag": "v1",
@@ -127,6 +133,12 @@
           },
         ],
       },
+      "send_email": [
+        {
+          "name": "EMAIL",
+          "remote": true,
+        },
+      ],
       "observability": {
         "enabled": true,
       },
@@ -169,6 +181,6 @@
           "VITE_ANALYTICS_WEBSITE_ID",
         ],
       },
-    },
+    },"": {"name":"lfms"},
   },
 }

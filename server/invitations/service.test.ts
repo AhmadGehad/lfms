@@ -136,7 +136,7 @@ describe("secure company invitations", () => {
     const inserted = transaction.writes.find(write => write.kind === "insert" && write.table === companyInvitations)?.value as Record<string, unknown>;
     expect(Buffer.isBuffer(inserted.tokenHash)).toBe(true);
     expect(inserted.tokenHash).toEqual(hashInvitationToken(result.invitationToken!));
-    expect(inserted.providerSubjectHash).toEqual(hashProviderSubject("manus", "email:invitee@example.test"));
+    expect(inserted.providerSubjectHash).toEqual(hashProviderSubject("password", "email:invitee@example.test"));
     expect(JSON.stringify(inserted)).not.toContain(result.invitationToken!);
     expect(JSON.stringify(mocks.appendPlatformAudit.mock.calls)).not.toContain(result.invitationToken!);
   });

@@ -59,6 +59,38 @@ administrator's workforce OIDC identity. Partial OIDC configuration is invalid.
 | `ADMIN_OIDC_REDIRECT_URI`   | Exact `https://admin.<BASE_DOMAIN>/api/platform/auth/callback` URL |
 | `ADMIN_OIDC_MFA_ACR_VALUES` | Comma-separated issuer ACR values accepted as MFA                  |
 
+## Optional Email (Password Reset)
+
+Without any of this configured, forgot-password/reset flows still work but
+the reset link is only written to server logs instead of emailed. Two
+delivery paths are supported; the Cloudflare path takes priority when both
+are configured.
+
+**Cloudflare Email Routing (`send_email` binding, `wrangler.jsonc`'s `EMAIL`
+binding)** — the container has no direct access to Worker bindings, so it
+calls back into the Worker over HTTPS at `/__internal/send-email`, guarded
+by a shared secret.
+
+| Variable              | Purpose                                                                          |
+| ---------------------- | ----------------------------------------------------------------------------- |
+| `INTERNAL_API_SECRET` | Shared secret between the container and the Worker's internal send-email route |
+| `SMTP_FROM`           | Also used as the Cloudflare-sent "from" address (e.g. `noreply@l-fms.com`)      |
+
+The zone's Email Routing must be enabled with `SMTP_FROM`'s domain verified
+for outbound sending, or Cloudflare will reject the send.
+
+**SMTP relay (fallback / alternative)** — used when `INTERNAL_API_SECRET`
+isn't set.
+
+| Variable        | Purpose                                                  |
+| ---------------- | --------------------------------------------------------- |
+| `SMTP_HOST`     | SMTP relay hostname                                      |
+| `SMTP_PORT`     | SMTP port (default `587`)                                |
+| `SMTP_USER`     | SMTP auth username                                       |
+| `SMTP_PASSWORD` | SMTP auth password                                       |
+| `SMTP_FROM`     | From address used for outgoing password-reset emails     |
+| `SMTP_SECURE`   | Set to `1` for implicit TLS (typically with port `465`)  |
+
 ## Provider And Compatibility Variables
 
 Keep server credentials server-side unless their name starts with `VITE_`.

@@ -1,6 +1,10 @@
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import { companies, companyMemberships, farmMemberships, farms, users } from "../../../drizzle/schema";
+import { companies, companyMemberships, farmMemberships, farms, passwordCredentials, users } from "../../../drizzle/schema";
 import type { AppRole } from "../../../shared/permissions";
+import { ENV } from "../../_core/env";
+import { hashPassword, isPasswordStrongEnough } from "../../_core/auth/password";
+import { issuePasswordResetToken } from "../../_core/auth/passwordReset";
+import { isEmailConfigured, sendEmail } from "../../_core/email";
 import { invalidLifecycle, notFound, versionConflict } from "../errors";
 import { appendPlatformAudit, type PlatformAuditActor } from "../repositories/audit";
 import { affectedRows, requirePlatformDb } from "../repositories/db";
@@ -152,4 +156,76 @@ export async function inspectMembership(publicId: string, actor: PlatformAuditAc
     });
     return { ...detail, assignedFarms };
   });
+}
+
+export async function setMembershipPassword(input: {
+  publicId: string;
+  password: string;
+}, actor: PlatformAuditActor) {
+  if (!isPasswordStrongEnough(input.password)) {
+    invalidLifecycle("Password does not meet the minimum requirements");
+  }
+  const db = await requirePlatformDb();
+  return db.transaction(async tx => {
+    const membership = await findMembershipByPublicId(input.publicId, tx);
+    if (!membership) notFound("Membership");
+    const passwordHash = await hashPassword(input.password);
+    const [existing] = await tx.select({ userId: passwordCredentials.userId })
+      .from(passwordCredentials).where(eq(passwordCredentials.userId, membership.userId)).limit(1);
+    if (existing) {
+      await tx.update(passwordCredentials).set({
+        passwordHash,
+        passwordChangedAt: new Date(),
+        passwordNeedsRehash: false,
+      }).where(eq(passwordCredentials.userId, membership.userId));
+    } else {
+      await tx.insert(passwordCredentials).values({ userId: membership.userId, passwordHash });
+    }
+    await tx.update(users).set({
+      authVersion: sql`${users.authVersion} + 1`,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      lastPasswordChange: new Date(),
+    }).where(eq(users.id, membership.userId));
+    await appendPlatformAudit(tx, actor, {
+      action: "membership.password_set",
+      actionCategory: "membership",
+      entityType: "company_membership",
+      entityId: membership.publicId,
+      companyId: membership.companyId,
+      metadata: { setBy: "platform_admin" },
+    });
+    return { publicId: membership.publicId };
+  });
+}
+
+export async function sendMembershipPasswordReset(input: {
+  publicId: string;
+}, actor: PlatformAuditActor) {
+  const db = await requirePlatformDb();
+  const membership = await findMembershipByPublicId(input.publicId, db);
+  if (!membership) notFound("Membership");
+  const [row] = await db.select({ email: users.normalizedEmail, companySlug: companies.slug })
+    .from(users).innerJoin(companies, eq(companies.id, membership.companyId))
+    .where(eq(users.id, membership.userId)).limit(1);
+  if (!row?.email) invalidLifecycle("User has no email on file");
+  const token = await issuePasswordResetToken(membership.userId, row.email);
+  const resetLink = `https://${row.companySlug}.${ENV.baseDomain}/reset-password?token=${encodeURIComponent(token)}`;
+  const sent = isEmailConfigured();
+  if (sent) {
+    await sendEmail({
+      to: row.email,
+      subject: "Reset your LFMS password",
+      text: `An administrator triggered a password reset for your LFMS account.\n\nSet a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't expect this, contact your administrator.`,
+    });
+  }
+  await appendPlatformAudit(db, actor, {
+    action: "membership.password_reset_sent",
+    actionCategory: "membership",
+    entityType: "company_membership",
+    entityId: membership.publicId,
+    companyId: membership.companyId,
+    metadata: { emailSent: sent },
+  });
+  return { sent };
 }

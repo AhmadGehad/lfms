@@ -31,7 +31,8 @@
     "db:push": "node scripts/refuse-legacy-schema-write.mjs",
     "db:rehearse-tenancy": "node scripts/rehearse-tenancy-migration.mjs",
     "db:migrate-tenancy": "MIGRATION_MODE=production node scripts/rehearse-tenancy-migration.mjs",
-    "admin:bootstrap": "tsx scripts/bootstrap-platform-admin.ts"
+    "admin:bootstrap": "tsx scripts/bootstrap-platform-admin.ts",
+    "admin:bootstrap:password": "tsx scripts/bootstrap-platform-admin-password.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1090.0",
@@ -70,6 +71,7 @@
     "@trpc/react-query": "^11.18.0",
     "@trpc/server": "^11.18.0",
     "axios": "^1.18.1",
+    "better-auth": "^1.6.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -92,6 +94,7 @@
     "mysql2": "^3.15.0",
     "nanoid": "^5.1.5",
     "next-themes": "^0.4.6",
+    "nodemailer": "^9.0.3",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.1",
@@ -116,6 +119,7 @@
     "@types/express": "4.17.21",
     "@types/google.maps": "^3.58.1",
     "@types/node": "^24.7.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
     "@vitejs/plugin-react": "^5.0.4",

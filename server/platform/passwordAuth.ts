@@ -1,0 +1,364 @@
+/**
+ * Platform admin authentication via self-hosted email + password.
+ *
+ * Mirrors manusAuth.ts's authorization model: after verifying credentials the
+ * server checks whether the user is listed in `platformAdministrators` with
+ * status = "active". Only those users receive a platform session cookie.
+ *
+ * Route surface: admin.<BASE_DOMAIN>  (/api/platform/auth/*)
+ */
+import type { Express, Request, Response } from "express";
+import { and, eq, gt, isNull } from "drizzle-orm";
+import { authenticationTokens, passwordCredentials, platformAdministrators, securityEvents, users } from "../../drizzle/schema";
+import { getDb } from "../db";
+import { setOpaqueSessionCookie } from "../_core/auth/cookies";
+import {
+  getOAuthStateSecret,
+  getPlatformSessionManager,
+  getRateLimitStore,
+} from "../_core/auth/runtime";
+import { burnPasswordVerificationTime, hashPassword, isPasswordStrongEnough, verifyPassword } from "../_core/auth/password";
+import { hashResetToken, issuePasswordResetToken } from "../_core/auth/passwordReset";
+import { isEmailConfigured, sendEmail } from "../_core/email";
+import { ENV } from "../_core/env";
+import { setCsrfCookie } from "../_core/security/csrf";
+import { getRequestId } from "../_core/security/httpSecurity";
+import {
+  createRateLimitMiddleware,
+  getClientAddress,
+} from "../_core/security/rateLimit";
+import { generatePublicId } from "../tenancy/publicIds";
+import { logger } from "../observability/logger";
+
+const GENERIC_LOGIN_ERROR = "Invalid email or password";
+const GENERIC_RESET_MESSAGE = "If that email has a platform administrator account, a password reset link has been sent.";
+const MAX_FAILED_LOGIN_ATTEMPTS = 10;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1_000;
+
+function normalizeEmail(value: unknown) {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function driverBinary(value: Buffer) {
+  return value as unknown as string;
+}
+
+async function auditLogin(
+  req: Request,
+  res: Response,
+  input: {
+    platformAdministratorId?: number;
+    userId?: number;
+    outcome: "success" | "denied" | "error";
+    reason: string;
+  },
+) {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(securityEvents).values({
+      publicId: generatePublicId(),
+      actorType: input.platformAdministratorId ? "platform_admin" : "anonymous",
+      platformAdministratorId: input.platformAdministratorId ?? null,
+      userId: input.userId ?? null,
+      eventType: "platform.authentication",
+      severity: input.outcome === "success" ? "info" : "warning",
+      outcome: input.outcome,
+      requestId: getRequestId(res),
+      ipAddress: (req.ip || req.socket.remoteAddress || "").slice(0, 45) || null,
+      userAgent: req.get("user-agent")?.slice(0, 500) ?? null,
+      metadata: { reason: input.reason },
+    });
+  } catch (err) {
+    logger.error("platform.audit_login_failed", { err });
+  }
+}
+
+async function findAdministratorByEmail(normalizedEmail: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const [row] = await db
+    .select({
+      administratorId: platformAdministrators.id,
+      administratorStatus: platformAdministrators.status,
+      authVersion: platformAdministrators.authVersion,
+      mfaRequired: platformAdministrators.mfaRequired,
+      userId: users.id,
+      userStatus: users.status,
+      userFailedAttempts: users.failedLoginAttempts,
+      userLockedUntil: users.lockedUntil,
+      passwordHash: passwordCredentials.passwordHash,
+      passwordNeedsRehash: passwordCredentials.passwordNeedsRehash,
+    })
+    .from(users)
+    .innerJoin(platformAdministrators, eq(platformAdministrators.userId, users.id))
+    .innerJoin(passwordCredentials, eq(passwordCredentials.userId, users.id))
+    .where(and(eq(users.normalizedEmail, normalizedEmail), eq(users.status, "active")))
+    .limit(1);
+  return row ?? null;
+}
+
+export function registerPlatformPasswordAuthRoutes(app: Express) {
+  const loginLimit = createRateLimitMiddleware({
+    namespace: "platform-password-login",
+    secret: getOAuthStateSecret(),
+    store: getRateLimitStore(),
+    maximumRequests: 20,
+    windowMs: 10 * 60 * 1_000,
+    key: getClientAddress,
+  });
+  const resetLimit = createRateLimitMiddleware({
+    namespace: "platform-reset-password",
+    secret: getOAuthStateSecret(),
+    store: getRateLimitStore(),
+    maximumRequests: 20,
+    windowMs: 15 * 60 * 1_000,
+    key: getClientAddress,
+  });
+  const forgotLimit = createRateLimitMiddleware({
+    namespace: "platform-forgot-password",
+    secret: getOAuthStateSecret(),
+    store: getRateLimitStore(),
+    maximumRequests: 10,
+    windowMs: 15 * 60 * 1_000,
+    key: getClientAddress,
+  });
+
+  app.post("/api/platform/auth/login", loginLimit, async (req: Request, res: Response) => {
+    try {
+      const normalizedEmail = normalizeEmail(req.body?.email);
+      const password = typeof req.body?.password === "string" ? req.body.password : "";
+      if (!normalizedEmail || !password) {
+        await auditLogin(req, res, { outcome: "denied", reason: "missing_credentials" });
+        res.status(400).json({ error: GENERIC_LOGIN_ERROR });
+        return;
+      }
+      const administrator = await findAdministratorByEmail(normalizedEmail);
+      if (!administrator) {
+        await burnPasswordVerificationTime();
+        await auditLogin(req, res, { outcome: "denied", reason: "administrator_not_found" });
+        res.status(401).json({ error: GENERIC_LOGIN_ERROR });
+        return;
+      }
+      if (administrator.userLockedUntil && administrator.userLockedUntil.getTime() > Date.now()) {
+        await auditLogin(req, res, {
+          userId: administrator.userId,
+          outcome: "denied",
+          reason: "account_locked",
+        });
+        res.status(403).json({ error: "Account temporarily locked. Try again later." });
+        return;
+      }
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const valid = await verifyPassword(administrator.passwordHash, password);
+      if (!valid) {
+        const failedAttempts = administrator.userFailedAttempts + 1;
+        const lockedUntil = failedAttempts >= MAX_FAILED_LOGIN_ATTEMPTS
+          ? new Date(Date.now() + LOCKOUT_DURATION_MS)
+          : null;
+        await db.update(users).set({
+          failedLoginAttempts: failedAttempts,
+          lockedUntil,
+        }).where(eq(users.id, administrator.userId));
+        await auditLogin(req, res, {
+          userId: administrator.userId,
+          outcome: "denied",
+          reason: "invalid_password",
+        });
+        res.status(401).json({ error: GENERIC_LOGIN_ERROR });
+        return;
+      }
+      if (administrator.administratorStatus !== "active" || administrator.userStatus !== "active") {
+        await auditLogin(req, res, {
+          userId: administrator.userId,
+          outcome: "denied",
+          reason: "administrator_not_authorized",
+        });
+        res.status(403).json({ error: "Platform access denied. Your account is not authorized as a platform administrator." });
+        return;
+      }
+      if (administrator.mfaRequired) {
+        await auditLogin(req, res, {
+          platformAdministratorId: administrator.administratorId,
+          userId: administrator.userId,
+          outcome: "denied",
+          reason: "workforce_mfa_required",
+        });
+        res.status(403).json({
+          error: "This administrator requires the workforce MFA login provider",
+        });
+        return;
+      }
+      if (administrator.userFailedAttempts > 0 || administrator.userLockedUntil) {
+        await db.update(users).set({
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+        }).where(eq(users.id, administrator.userId));
+      }
+      if (administrator.passwordNeedsRehash) {
+        const rehashed = await hashPassword(password);
+        await db.update(passwordCredentials).set({
+          passwordHash: rehashed,
+          passwordNeedsRehash: false,
+          passwordChangedAt: new Date(),
+        }).where(eq(passwordCredentials.userId, administrator.userId));
+      }
+      const session = await getPlatformSessionManager().issue({
+        subjectId: administrator.administratorId,
+        authVersion: administrator.authVersion,
+        authLevel: "primary",
+        authenticationMethods: ["password"],
+        mfaVerifiedAt: null,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+      setOpaqueSessionCookie(req, res, "platform", session.token, session.absoluteExpiresAt);
+      setCsrfCookie(
+        req,
+        res,
+        { audience: "platform", secret: getOAuthStateSecret() },
+        session.token,
+      );
+      await auditLogin(req, res, {
+        platformAdministratorId: administrator.administratorId,
+        userId: administrator.userId,
+        outcome: "success",
+        reason: "password",
+      });
+      res.setHeader("Cache-Control", "no-store");
+      res.status(200).json({ success: true });
+    } catch (err) {
+      logger.error("platform.password_auth_login_failed", { err });
+      await auditLogin(req, res, { outcome: "error", reason: "password_auth_login_failed" });
+      res.status(500).json({ error: "Platform authentication failed" });
+    }
+  });
+
+  app.post("/api/platform/auth/forgot-password", forgotLimit, async (req: Request, res: Response) => {
+    try {
+      const normalizedEmail = normalizeEmail(req.body?.email);
+      if (!normalizedEmail) {
+        res.status(200).json({ message: GENERIC_RESET_MESSAGE });
+        return;
+      }
+      const administrator = await findAdministratorByEmail(normalizedEmail);
+      if (administrator && administrator.administratorStatus === "active" && administrator.userStatus === "active") {
+        const token = await issuePasswordResetToken(administrator.userId, normalizedEmail);
+        const resetLink = `https://admin.${ENV.baseDomain}/reset-password?token=${encodeURIComponent(token)}`;
+        if (isEmailConfigured()) {
+          await sendEmail({
+            to: normalizedEmail,
+            subject: "Reset your LFMS platform admin password",
+            text: `Set a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
+          });
+        } else {
+          logger.info("platform.password_reset_requested", {
+            userId: administrator.userId,
+            resetToken: token,
+          });
+        }
+      }
+      res.status(200).json({ message: GENERIC_RESET_MESSAGE });
+    } catch (err) {
+      logger.error("platform.forgot_password_failed", { err });
+      res.status(200).json({ message: GENERIC_RESET_MESSAGE });
+    }
+  });
+
+  app.post("/api/platform/auth/reset-password", resetLimit, async (req: Request, res: Response) => {
+    try {
+      const token = typeof req.body?.token === "string" ? req.body.token : "";
+      const password = typeof req.body?.password === "string" ? req.body.password : "";
+      if (!token || !isPasswordStrongEnough(password)) {
+        res.status(400).json({ error: "Invalid token or password does not meet requirements" });
+        return;
+      }
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const tokenHash = hashResetToken(token);
+      const outcome = await db.transaction(async tx => {
+        const [record] = await tx.select({
+          id: authenticationTokens.id,
+          userId: authenticationTokens.userId,
+        }).from(authenticationTokens).where(and(
+          eq(authenticationTokens.tokenHash, driverBinary(tokenHash)),
+          eq(authenticationTokens.purpose, "reset_password"),
+          isNull(authenticationTokens.usedAt),
+          gt(authenticationTokens.expiresAt, new Date()),
+        )).limit(1).for("update");
+        if (!record) return null;
+        await tx.update(authenticationTokens).set({ usedAt: new Date() })
+          .where(eq(authenticationTokens.id, record.id));
+        const [administrator] = await tx.select({
+          administratorId: platformAdministrators.id,
+          administratorStatus: platformAdministrators.status,
+          authVersion: platformAdministrators.authVersion,
+          userStatus: users.status,
+        }).from(users)
+          .innerJoin(platformAdministrators, eq(platformAdministrators.userId, users.id))
+          .where(eq(users.id, record.userId))
+          .limit(1).for("update");
+        if (!administrator || administrator.administratorStatus !== "active" || administrator.userStatus !== "active") {
+          return null;
+        }
+        const newHash = await hashPassword(password);
+        const [existingCredential] = await tx.select({ userId: passwordCredentials.userId })
+          .from(passwordCredentials).where(eq(passwordCredentials.userId, record.userId)).limit(1);
+        if (existingCredential) {
+          await tx.update(passwordCredentials).set({
+            passwordHash: newHash,
+            passwordChangedAt: new Date(),
+            passwordNeedsRehash: false,
+          }).where(eq(passwordCredentials.userId, record.userId));
+        } else {
+          await tx.insert(passwordCredentials).values({
+            userId: record.userId,
+            passwordHash: newHash,
+          });
+        }
+        await tx.update(users).set({
+          failedLoginAttempts: 0,
+          lockedUntil: null,
+          lastPasswordChange: new Date(),
+        }).where(eq(users.id, record.userId));
+        await tx.update(platformAdministrators).set({
+          authVersion: administrator.authVersion + 1,
+        }).where(eq(platformAdministrators.id, administrator.administratorId));
+        return {
+          administratorId: administrator.administratorId,
+          authVersion: administrator.authVersion + 1,
+          userId: record.userId,
+        };
+      });
+      if (!outcome) {
+        await auditLogin(req, res, { outcome: "denied", reason: "invalid_or_expired_reset_token" });
+        res.status(400).json({ error: "Invalid or expired reset token" });
+        return;
+      }
+      const session = await getPlatformSessionManager().issue({
+        subjectId: outcome.administratorId,
+        authVersion: outcome.authVersion,
+        authLevel: "primary",
+        authenticationMethods: ["password"],
+        mfaVerifiedAt: null,
+        ipAddress: req.ip,
+        userAgent: req.get("user-agent"),
+      });
+      setOpaqueSessionCookie(req, res, "platform", session.token, session.absoluteExpiresAt);
+      setCsrfCookie(req, res, { audience: "platform", secret: getOAuthStateSecret() }, session.token);
+      await auditLogin(req, res, {
+        platformAdministratorId: outcome.administratorId,
+        userId: outcome.userId,
+        outcome: "success",
+        reason: "password_reset",
+      });
+      res.setHeader("Cache-Control", "no-store");
+      res.status(200).json({ success: true });
+    } catch (err) {
+      logger.error("platform.reset_password_failed", { err });
+      await auditLogin(req, res, { outcome: "error", reason: "reset_password_failed" });
+      res.status(500).json({ error: "Password reset failed" });
+    }
+  });
+}

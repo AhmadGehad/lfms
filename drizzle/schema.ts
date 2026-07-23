@@ -403,6 +403,7 @@ export const tenantSessions = mysqlTable("saas_tenant_sessions", {
   lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
   idleExpiresAt: timestamp("idleExpiresAt").notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
+  idleTimeoutMs: int("idleTimeoutMs"),
   revokedAt: timestamp("revokedAt"),
   revokedReason: varchar("revokedReason", { length: 200 }),
   ipAddress: varchar("ipAddress", { length: 45 }),
@@ -939,11 +940,13 @@ export const tenantFiles = mysqlTable("saas_tenant_files", {
 export const companyBranding = mysqlTable("saas_company_branding", {
   companyId: int("companyId").primaryKey(),
   logoTenantFileId: int("logoTenantFileId"),
+  faviconTenantFileId: int("faviconTenantFileId"),
   version: int("version").default(1).notNull(),
   updatedByMembershipId: int("updatedByMembershipId"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => ({
   logoFileIdx: index("company_branding_logo_file_idx").on(table.logoTenantFileId),
+  faviconFileIdx: index("company_branding_favicon_file_idx").on(table.faviconTenantFileId),
   companyFk: foreignKey({
     name: "company_branding_company_fk",
     columns: [table.companyId],
@@ -952,6 +955,11 @@ export const companyBranding = mysqlTable("saas_company_branding", {
   logoFileFk: foreignKey({
     name: "company_branding_logo_file_fk",
     columns: [table.companyId, table.logoTenantFileId],
+    foreignColumns: [tenantFiles.companyId, tenantFiles.id],
+  }).onDelete("restrict"),
+  faviconFileFk: foreignKey({
+    name: "company_branding_favicon_file_fk",
+    columns: [table.companyId, table.faviconTenantFileId],
     foreignColumns: [tenantFiles.companyId, tenantFiles.id],
   }).onDelete("restrict"),
   updatedByFk: foreignKey({

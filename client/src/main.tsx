@@ -54,7 +54,11 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
 
-  const isUnauthorized = error.message === UNAUTHED_ERR_MSG;
+  // Check the error code, not just the exact legacy message: any procedure
+  // built on requireUser can throw UNAUTHORIZED with a different message
+  // (e.g. a tenant-resolution failure), and that must redirect too, not just
+  // this one hardcoded string.
+  const isUnauthorized = error.data?.code === "UNAUTHORIZED" || error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
 
