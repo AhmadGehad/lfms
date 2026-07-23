@@ -12,8 +12,10 @@ import { getClientIp } from "../_core/audit";
 import { storageGetSignedUrl, storagePut } from "../storage";
 import {
   getTenantCompanyBranding,
+  removeTenantCompanyFavicon,
   removeTenantCompanyLogo,
   updateTenantCompanyName,
+  uploadTenantCompanyFavicon,
   uploadTenantCompanyLogo,
 } from "../tenancy/branding";
 import {
@@ -527,6 +529,39 @@ export const configRouter = router({
   removeCompanyBrandingLogo: adminProcedure
     .input(z.object({ expectedVersion: expectedVersionSchema }))
     .mutation(({ input, ctx }) => removeTenantCompanyLogo(input, {
+      userId: ctx.user.id,
+      ipAddress: getClientIp(ctx),
+    })),
+
+  uploadCompanyBrandingFavicon: adminProcedure
+    .input(z.object({
+      dataUrl: z.string().max(MAX_COMPANY_LOGO_DATA_URL_LENGTH, "Favicon is too large (max 2MB)")
+        .refine(value => /^data:image\/(jpeg|jpg|png|webp);base64,/.test(value), "Favicon must be a JPEG, PNG, or WebP image"),
+      expectedVersion: expectedVersionSchema,
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const match = input.dataUrl.match(/^data:(image\/(?:jpeg|jpg|png|webp));base64,([A-Za-z0-9+/]+=*)$/);
+      if (!match) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid favicon image" });
+      const contentType = match[1].toLowerCase() === "image/jpg" ? "image/jpeg" : match[1].toLowerCase();
+      const bytes = Buffer.from(match[2], "base64");
+      if (bytes.length === 0 || bytes.length > MAX_COMPANY_LOGO_BYTES || bytes.toString("base64") !== match[2]) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid favicon image" });
+      }
+      const extension = contentType === "image/jpeg" ? "jpg" : contentType.split("/")[1];
+      return uploadTenantCompanyFavicon({
+        bytes,
+        contentType,
+        extension,
+        expectedVersion: input.expectedVersion,
+      }, {
+        userId: ctx.user.id,
+        ipAddress: getClientIp(ctx),
+      });
+    }),
+
+  removeCompanyBrandingFavicon: adminProcedure
+    .input(z.object({ expectedVersion: expectedVersionSchema }))
+    .mutation(({ input, ctx }) => removeTenantCompanyFavicon(input, {
       userId: ctx.user.id,
       ipAddress: getClientIp(ctx),
     })),

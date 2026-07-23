@@ -17,7 +17,8 @@ import { hashPassword, isPasswordStrongEnough, verifyPassword } from "./auth/pas
 import { hashResetToken, issuePasswordResetToken } from "./auth/passwordReset";
 import { isEmailConfigured, sendEmail } from "./email";
 import { setCsrfCookie } from "./security/csrf";
-import { getRequestOrigin } from "./security/httpSecurity";
+import { getRequestOrigin, getResolvedRequestHost } from "./security/httpSecurity";
+import { getCompanySessionIdleTimeoutMs } from "../tenancy/companySettings";
 import {
   createRateLimitMiddleware,
   getClientAddress,
@@ -65,6 +66,10 @@ async function issueTenantSessionForUser(
     providerEmail: user.email,
     providerEmailVerified: true,
   });
+  const host = getResolvedRequestHost(res);
+  const idleTimeoutMs = host?.surface === "tenant" && host.companySlug
+    ? await getCompanySessionIdleTimeoutMs(host.companySlug) ?? undefined
+    : undefined;
   const session = await getTenantSessionManager().issue({
     subjectId: user.id,
     authVersion: user.authVersion,
@@ -72,6 +77,7 @@ async function issueTenantSessionForUser(
     authenticationMethods: ["password"],
     ipAddress: req.ip,
     userAgent: req.get("user-agent"),
+    idleTimeoutMs,
   });
   setOpaqueSessionCookie(req, res, "tenant", session.token, session.absoluteExpiresAt);
   setCsrfCookie(req, res, { audience: "tenant", secret: getOAuthStateSecret() }, session.token);

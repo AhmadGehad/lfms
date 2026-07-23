@@ -118,6 +118,7 @@ function tenantRecord(
     lastSeenAt: row.lastSeenAt,
     idleExpiresAt: row.idleExpiresAt,
     absoluteExpiresAt: row.expiresAt,
+    idleTimeoutMs: row.idleTimeoutMs,
     revokedAt: row.revokedAt,
     revokedReason: row.revokedReason,
     ipAddress: row.ipAddress,
@@ -142,6 +143,7 @@ function platformRecord(
     lastSeenAt: row.lastSeenAt,
     idleExpiresAt: row.idleExpiresAt,
     absoluteExpiresAt: row.expiresAt,
+    idleTimeoutMs: null,
     revokedAt: row.revokedAt,
     revokedReason: row.revokedReason,
     ipAddress: row.ipAddress,
@@ -165,6 +167,7 @@ export class SqlTenantSessionStore implements OpaqueSessionStore {
       lastSeenAt: record.lastSeenAt,
       idleExpiresAt: record.idleExpiresAt,
       expiresAt: record.absoluteExpiresAt,
+      idleTimeoutMs: record.idleTimeoutMs,
       ipAddress: record.ipAddress,
       userAgent: record.userAgent,
     });

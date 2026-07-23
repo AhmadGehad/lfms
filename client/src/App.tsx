@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { trpc } from "./lib/trpc";
+import { useFavicon } from "./lib/favicon";
 import { lazy, Suspense } from "react";
 
 const Landing = lazy(() => import("./pages/Landing"));
@@ -37,6 +38,11 @@ function TenantSurface() {
     staleTime: 30_000,
     retry: false,
   });
+  const branding = trpc.tenancy.publicBranding.useQuery(undefined, {
+    enabled: !bareHost,
+    staleTime: 5 * 60_000,
+  });
+  useFavicon(branding.data?.hasFavicon);
 
   if (bareHost)
     return (
