@@ -1,8 +1,11 @@
 import { TRPCError } from "@trpc/server";
+import type { Express } from "express";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { companies, companyBranding, tenantFiles } from "../../drizzle/schema";
 import { createAuditEntry, getDb } from "../db";
 import { retireCompanyAsset, storagePutCompanyAsset } from "../storage";
+import { getPrivateObjectUrl } from "../storageBackend";
+import { getResolvedRequestHost } from "../_core/security/httpSecurity";
 import { requireTenantUserContext } from "./runtime";
 
 type BrandingActor = {
@@ -27,6 +30,76 @@ export type TenantCompanyBranding = {
   version: number;
   logoUrl: string | null;
 };
+
+export type PublicTenantBranding = {
+  name: string;
+  hasLogo: boolean;
+};
+
+/**
+ * Unauthenticated lookup for the login page: only the company display name
+ * and whether a logo exists. Never exposes the storage key or any other
+ * company data — the logo bytes themselves are served separately via
+ * /public/company-logo, scoped to the resolved tenant hostname the same way.
+ */
+export async function getPublicTenantBranding(companySlug: string): Promise<PublicTenantBranding | null> {
+  const db = await requireDb();
+  const [row] = await db.select({
+    name: companies.name,
+    logoStorageKey: tenantFiles.storageKey,
+  }).from(companies)
+    .leftJoin(companyBranding, eq(companyBranding.companyId, companies.id))
+    .leftJoin(tenantFiles, and(
+      eq(tenantFiles.companyId, companies.id),
+      eq(tenantFiles.id, companyBranding.logoTenantFileId),
+      eq(tenantFiles.status, "clean"),
+      isNull(tenantFiles.deletedAt),
+    ))
+    .where(and(eq(companies.slug, companySlug), isNull(companies.deletedAt)))
+    .limit(1);
+  if (!row) return null;
+  return { name: row.name, hasLogo: Boolean(row.logoStorageKey) };
+}
+
+/**
+ * Unauthenticated redirect to the current tenant's branding logo, scoped to
+ * the resolved hostname the same way as everything else on the tenant
+ * surface. Used on the pre-login page, so it cannot go through the
+ * session-gated /manus-storage proxy.
+ */
+export function registerPublicCompanyLogoRoute(app: Express) {
+  app.get("/public/company-logo", async (req, res) => {
+    const host = getResolvedRequestHost(res);
+    if (host?.surface !== "tenant" || !host.companySlug) {
+      res.status(404).end();
+      return;
+    }
+    try {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const [row] = await db.select({ storageKey: tenantFiles.storageKey })
+        .from(companies)
+        .leftJoin(companyBranding, eq(companyBranding.companyId, companies.id))
+        .leftJoin(tenantFiles, and(
+          eq(tenantFiles.companyId, companies.id),
+          eq(tenantFiles.id, companyBranding.logoTenantFileId),
+          eq(tenantFiles.status, "clean"),
+          isNull(tenantFiles.deletedAt),
+        ))
+        .where(and(eq(companies.slug, host.companySlug), isNull(companies.deletedAt)))
+        .limit(1);
+      if (!row?.storageKey) {
+        res.status(404).end();
+        return;
+      }
+      const url = await getPrivateObjectUrl(row.storageKey);
+      res.setHeader("Cache-Control", "private, max-age=300");
+      res.redirect(302, url);
+    } catch {
+      res.status(503).end();
+    }
+  });
+}
 
 /** Public branding is always read under the authenticated tenant context. */
 export async function getTenantCompanyBranding(): Promise<TenantCompanyBranding> {

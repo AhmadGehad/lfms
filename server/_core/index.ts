@@ -33,6 +33,7 @@ import { validateLocalDevAuthConfiguration } from "./devAuth";
 import { closeDatabasePool } from "../db";
 import { closeStorageBackend } from "../storageBackend";
 import { registerPublicRuntimeConfig } from "./publicRuntimeConfig";
+import { registerPublicCompanyLogoRoute } from "../tenancy/branding";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -111,6 +112,7 @@ async function startServer() {
   app.use(requestObservabilityMiddleware());
   app.use(exactCorsMiddleware(allowedOrigins));
   registerPublicRuntimeConfig(app);
+  registerPublicCompanyLogoRoute(app);
   const server = createServer(app);
   registerObservabilityRoutes(app);
   app.use(express.json({ limit: "12mb", strict: true }));

@@ -36,6 +36,7 @@ import { preferencesRouter } from "./routers/preferences";
 import { capitalRouter } from "./routers/capital";
 import { acceptInvitation, activateInvitationWithPassword, previewInvitation } from "./invitations/service";
 import { issueTenantSessionForUser } from "./_core/passwordAuth";
+import { getPublicTenantBranding } from "./tenancy/branding";
 import { getTenantCompanyBranding } from "./tenancy/branding";
 import { getResolvedRequestHost } from "./_core/security/httpSecurity";
 import { getClientIp } from "./_core/audit";
@@ -208,6 +209,14 @@ export const appRouter = router({
         await issueTenantSessionForUser(ctx.req, ctx.res, user);
         return outcome;
       }),
+  }),
+
+  tenancy: router({
+    publicBranding: publicProcedure.query(({ ctx }) => {
+      const host = getResolvedRequestHost(ctx.res);
+      if (host?.surface !== "tenant" || !host.companySlug) return null;
+      return getPublicTenantBranding(host.companySlug);
+    }),
   }),
 
   config: configRouter,
