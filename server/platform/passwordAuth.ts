@@ -18,7 +18,9 @@ import {
   getRateLimitStore,
 } from "../_core/auth/runtime";
 import { burnPasswordVerificationTime, hashPassword, isPasswordStrongEnough, verifyPassword } from "../_core/auth/password";
-import { hashResetToken } from "../_core/auth/passwordReset";
+import { hashResetToken, issuePasswordResetToken } from "../_core/auth/passwordReset";
+import { isEmailConfigured, sendEmail } from "../_core/email";
+import { ENV } from "../_core/env";
 import { setCsrfCookie } from "../_core/security/csrf";
 import { getRequestId } from "../_core/security/httpSecurity";
 import {
@@ -29,6 +31,7 @@ import { generatePublicId } from "../tenancy/publicIds";
 import { logger } from "../observability/logger";
 
 const GENERIC_LOGIN_ERROR = "Invalid email or password";
+const GENERIC_RESET_MESSAGE = "If that email has a platform administrator account, a password reset link has been sent.";
 const MAX_FAILED_LOGIN_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1_000;
 
@@ -109,6 +112,14 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
     secret: getOAuthStateSecret(),
     store: getRateLimitStore(),
     maximumRequests: 20,
+    windowMs: 15 * 60 * 1_000,
+    key: getClientAddress,
+  });
+  const forgotLimit = createRateLimitMiddleware({
+    namespace: "platform-forgot-password",
+    secret: getOAuthStateSecret(),
+    store: getRateLimitStore(),
+    maximumRequests: 10,
     windowMs: 15 * 60 * 1_000,
     key: getClientAddress,
   });
@@ -221,6 +232,37 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
       logger.error("platform.password_auth_login_failed", { err });
       await auditLogin(req, res, { outcome: "error", reason: "password_auth_login_failed" });
       res.status(500).json({ error: "Platform authentication failed" });
+    }
+  });
+
+  app.post("/api/platform/auth/forgot-password", forgotLimit, async (req: Request, res: Response) => {
+    try {
+      const normalizedEmail = normalizeEmail(req.body?.email);
+      if (!normalizedEmail) {
+        res.status(200).json({ message: GENERIC_RESET_MESSAGE });
+        return;
+      }
+      const administrator = await findAdministratorByEmail(normalizedEmail);
+      if (administrator && administrator.administratorStatus === "active" && administrator.userStatus === "active") {
+        const token = await issuePasswordResetToken(administrator.userId, normalizedEmail);
+        const resetLink = `https://admin.${ENV.baseDomain}/reset-password?token=${encodeURIComponent(token)}`;
+        if (isEmailConfigured()) {
+          await sendEmail({
+            to: normalizedEmail,
+            subject: "Reset your LFMS platform admin password",
+            text: `Set a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
+          });
+        } else {
+          logger.info("platform.password_reset_requested", {
+            userId: administrator.userId,
+            resetToken: token,
+          });
+        }
+      }
+      res.status(200).json({ message: GENERIC_RESET_MESSAGE });
+    } catch (err) {
+      logger.error("platform.forgot_password_failed", { err });
+      res.status(200).json({ message: GENERIC_RESET_MESSAGE });
     }
   });
 

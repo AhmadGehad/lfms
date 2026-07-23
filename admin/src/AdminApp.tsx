@@ -5,6 +5,7 @@ import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import { AdminShell } from "./components/AdminShell";
 import { AuthBoundary } from "./components/AuthBoundary";
+import { ForgotPassword } from "./pages/ForgotPassword";
 import { ResetPassword } from "./pages/ResetPassword";
 
 const OverviewPage = lazy(() => import("./pages/OverviewPage").then(module => ({ default: module.OverviewPage })));
@@ -28,6 +29,14 @@ export function AdminApp() {
       <TooltipProvider>
         <Toaster richColors position="top-right" />
         <ResetPassword />
+      </TooltipProvider>
+    );
+  }
+  if (window.location.pathname === "/forgot-password") {
+    return (
+      <TooltipProvider>
+        <Toaster richColors position="top-right" />
+        <ForgotPassword />
       </TooltipProvider>
     );
   }
