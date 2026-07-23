@@ -90,7 +90,7 @@ const DEFAULTS: Record<
   >
 > = {
   tenant: {
-    idleTimeoutMs: 30 * 60 * 1_000,
+    idleTimeoutMs: 8 * 60 * 60 * 1_000,
     absoluteTimeoutMs: 7 * 24 * 60 * 60 * 1_000,
     maximumActiveSessions: 5,
   },
