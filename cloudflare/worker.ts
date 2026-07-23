@@ -63,6 +63,20 @@ type WorkerBindings = {
 
 const INTERNAL_SEND_EMAIL_PATH = "/__internal/send-email";
 
+// Constant-time comparison so guessing INTERNAL_API_SECRET can't be sped up
+// by measuring how many leading bytes of the Authorization header matched.
+function timingSafeStringEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const bufferA = encoder.encode(a);
+  const bufferB = encoder.encode(b);
+  const length = Math.max(bufferA.length, bufferB.length, 1);
+  let mismatch = bufferA.length === bufferB.length ? 0 : 1;
+  for (let index = 0; index < length; index++) {
+    mismatch |= (bufferA[index] ?? 0) ^ (bufferB[index] ?? 0);
+  }
+  return mismatch === 0;
+}
+
 async function handleInternalSendEmail(
   request: Request,
   env: WorkerBindings
@@ -72,7 +86,7 @@ async function handleInternalSendEmail(
   }
   const secret = env.INTERNAL_API_SECRET;
   const provided = request.headers.get("authorization");
-  if (!secret || provided !== `Bearer ${secret}`) {
+  if (!secret || !provided || !timingSafeStringEqual(provided, `Bearer ${secret}`)) {
     return new Response("Not found", { status: 404 });
   }
   if (!env.EMAIL) {

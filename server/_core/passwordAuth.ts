@@ -13,7 +13,7 @@ import {
 } from "./auth/runtime";
 import { recordOAuthIdentity } from "./auth/sqlStores";
 import { setOpaqueSessionCookie } from "./auth/cookies";
-import { hashPassword, isPasswordStrongEnough, verifyPassword } from "./auth/password";
+import { burnPasswordVerificationTime, hashPassword, isPasswordStrongEnough, verifyPassword } from "./auth/password";
 import { hashResetToken, issuePasswordResetToken } from "./auth/passwordReset";
 import { isEmailConfigured, sendEmail } from "./email";
 import { setCsrfCookie } from "./security/csrf";
@@ -119,6 +119,7 @@ export function registerPasswordAuthRoutes(app: Express) {
       }
       const user = await findActiveUserByEmail(normalizedEmail);
       if (!user) {
+        await burnPasswordVerificationTime();
         res.status(401).json({ error: GENERIC_LOGIN_ERROR });
         return;
       }
@@ -133,6 +134,7 @@ export function registerPasswordAuthRoutes(app: Express) {
         .where(eq(passwordCredentials.userId, user.id))
         .limit(1);
       if (!credential) {
+        await burnPasswordVerificationTime();
         res.status(401).json({ error: GENERIC_LOGIN_ERROR });
         return;
       }

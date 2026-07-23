@@ -17,7 +17,7 @@ import {
   getPlatformSessionManager,
   getRateLimitStore,
 } from "../_core/auth/runtime";
-import { hashPassword, isPasswordStrongEnough, verifyPassword } from "../_core/auth/password";
+import { burnPasswordVerificationTime, hashPassword, isPasswordStrongEnough, verifyPassword } from "../_core/auth/password";
 import { hashResetToken } from "../_core/auth/passwordReset";
 import { setCsrfCookie } from "../_core/security/csrf";
 import { getRequestId } from "../_core/security/httpSecurity";
@@ -124,6 +124,7 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
       }
       const administrator = await findAdministratorByEmail(normalizedEmail);
       if (!administrator) {
+        await burnPasswordVerificationTime();
         await auditLogin(req, res, { outcome: "denied", reason: "administrator_not_found" });
         res.status(401).json({ error: GENERIC_LOGIN_ERROR });
         return;
