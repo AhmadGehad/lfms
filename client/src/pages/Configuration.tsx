@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CompanyBrandingSettings } from "@/components/CompanyBrandingSettings";
+import { NotificationPreferencesSettings } from "@/components/NotificationPreferencesSettings";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 // ── Reusable inline edit dialog ───────────────────────────────────────────────
@@ -1093,6 +1094,8 @@ function SettingsTab() {
       <h3 className="font-semibold">{t("config.systemSettings")}</h3>
 
       <CompanyBrandingSettings className="border-b border-border pb-6" />
+
+      <NotificationPreferencesSettings className="border-b border-border pb-6" />
 
       <div className="space-y-1.5">
         <Label>{t("config.currencyCode")}</Label>

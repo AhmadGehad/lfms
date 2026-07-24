@@ -26,7 +26,13 @@ import { TRPCError } from "@trpc/server";
 import { companyMemberships } from "../../drizzle/schema";
 import { and, eq } from "drizzle-orm";
 import { tenantScope } from "../tenancy/scope";
+import { requireTenantUserContext } from "../tenancy/runtime";
 import { executeIdempotent } from "../platform/idempotency";
+import {
+  getMembershipNotificationPreferences,
+  NOTIFICATION_CATEGORIES,
+  updateMembershipNotificationPreferences,
+} from "../notifications/preferences";
 
 export const dashboardRouter = router({
   // ─── KPIs ───────────────────────────────────────────────────────────────────
@@ -140,6 +146,30 @@ export const notificationsRouter = router({
       })
     )
     .mutation(({ input }) => createNotification(input)),
+
+  preferences: router({
+    get: permissionProcedure("notifications", "view").query(async () => {
+      const tenant = requireTenantUserContext();
+      return getMembershipNotificationPreferences(tenant.membershipId);
+    }),
+
+    set: permissionProcedure("notifications", "update")
+      .input(z.object({
+        preferences: z.object(
+          Object.fromEntries(
+            NOTIFICATION_CATEGORIES.map(category => [
+              category,
+              z.object({ inApp: z.boolean(), email: z.boolean() }).optional(),
+            ]),
+          ),
+        ),
+      }))
+      .mutation(async ({ input }) => {
+        const tenant = requireTenantUserContext();
+        await updateMembershipNotificationPreferences(tenant.membershipId, input.preferences);
+        return { success: true } as const;
+      }),
+  }),
 });
 
 export const salesRouter = router({

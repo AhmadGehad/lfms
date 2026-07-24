@@ -21,6 +21,7 @@ import {
 import { tenantScope } from "../tenancy/scope";
 import { rethrowVersionedWriteError } from "../concurrency/trpcVersioning";
 import { executeIdempotent } from "../platform/idempotency";
+import { notifyOperationalAlertByEmail } from "../notifications/emailFanout";
 
 function timingHeaderValue(timings: Record<string, number>) {
   return JSON.stringify(timings);
@@ -232,23 +233,41 @@ export const feedRouter = router({
         for (const item of stockStatus) {
           if (item.feedItemId === data.feedItemId) {
             if (item.status === "critical") {
+              const title = "Critical Feed Stock";
+              const message = `${item.feedItemName} stock is critically low — only ${item.daysRemaining} days remaining (${item.stockOnHand} ${item.unit})`;
               await createNotification({
                 alertType: "low_feed_stock",
-                title: "Critical Feed Stock",
-                message: `${item.feedItemName} stock is critically low — only ${item.daysRemaining} days remaining (${item.stockOnHand} ${item.unit})`,
+                title,
+                message,
                 relatedEntityType: "feed_item",
                 relatedEntityId: String(item.feedItemId),
                 priority: "critical",
               }, tx);
+              void notifyOperationalAlertByEmail({
+                companyId: ctx.tenant!.companyId,
+                alertType: "low_feed_stock",
+                title,
+                message,
+                priority: "critical",
+              });
             } else if (item.status === "low") {
+              const title = "Low Feed Stock";
+              const message = `${item.feedItemName} stock is running low — ${item.daysRemaining} days remaining (${item.stockOnHand} ${item.unit})`;
               await createNotification({
                 alertType: "low_feed_stock",
-                title: "Low Feed Stock",
-                message: `${item.feedItemName} stock is running low — ${item.daysRemaining} days remaining (${item.stockOnHand} ${item.unit})`,
+                title,
+                message,
                 relatedEntityType: "feed_item",
                 relatedEntityId: String(item.feedItemId),
                 priority: "high",
               }, tx);
+              void notifyOperationalAlertByEmail({
+                companyId: ctx.tenant!.companyId,
+                alertType: "low_feed_stock",
+                title,
+                message,
+                priority: "high",
+              });
             }
           }
         }

@@ -10,6 +10,7 @@ import { optionalAnimalIdNumber, optionalMoneyString, optionalWeightString, weig
 import { storagePut, storageGetSignedUrl } from "../storage";
 import { logger } from "../observability/logger";
 import { executeIdempotent } from "../platform/idempotency";
+import { notifyOperationalAlertByEmail } from "../notifications/emailFanout";
 import {
   checkAndStageAnimal,
   createAnimal,
@@ -969,18 +970,54 @@ export const animalsRouter = router({
       if (animal?.targetWeightKg) {
         const target = parseFloat(String(animal.targetWeightKg));
         const current = parseFloat(input.weightKg);
+        const animalLabel = stageResult.newAnimalId ?? animal.animal.animalId;
         if (current >= target) {
           try {
+            const title = "Target Weight Reached";
+            const message = `Animal ${animalLabel} has reached target weight of ${target}kg (current: ${current}kg)`;
             await createNotification({
               alertType: "target_weight_reached",
-              title: "Target Weight Reached",
-              message: `Animal ${stageResult.newAnimalId ?? animal.animal.animalId} has reached target weight of ${target}kg (current: ${current}kg)`,
+              title,
+              message,
               relatedEntityType: "animal",
               relatedEntityId: String(input.animalId),
               priority: "high",
             });
+            void notifyOperationalAlertByEmail({
+              companyId: ctx.tenant!.companyId,
+              alertType: "target_weight_reached",
+              title,
+              message,
+              priority: "high",
+            });
           } catch (error) {
             logger.error("animal.target_weight_notification_failed", { error });
+          }
+        } else if (animal.readyToSellThreshold) {
+          const thresholdPercent = parseFloat(String(animal.readyToSellThreshold));
+          const readyToSellWeight = target * (thresholdPercent / 100);
+          if (current >= readyToSellWeight) {
+            try {
+              const title = "Ready to Sell";
+              const message = `Animal ${animalLabel} has reached ${thresholdPercent}% of target weight (current: ${current}kg, target: ${target}kg) and may be ready to sell`;
+              await createNotification({
+                alertType: "ready_to_sell",
+                title,
+                message,
+                relatedEntityType: "animal",
+                relatedEntityId: String(input.animalId),
+                priority: "high",
+              });
+              void notifyOperationalAlertByEmail({
+                companyId: ctx.tenant!.companyId,
+                alertType: "ready_to_sell",
+                title,
+                message,
+                priority: "high",
+              });
+            } catch (error) {
+              logger.error("animal.ready_to_sell_notification_failed", { error });
+            }
           }
         }
       }

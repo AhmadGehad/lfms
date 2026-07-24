@@ -15,7 +15,9 @@ import { recordOAuthIdentity } from "./auth/sqlStores";
 import { setOpaqueSessionCookie } from "./auth/cookies";
 import { burnPasswordVerificationTime, hashPassword, isPasswordStrongEnough, verifyPassword } from "./auth/password";
 import { hashResetToken, issuePasswordResetToken } from "./auth/passwordReset";
-import { getEmailConfigurationStatus, isEmailConfigured, sendEmail } from "./email";
+import { getEmailConfigurationStatus, isEmailConfigured } from "./email";
+import { passwordChangedEmail, passwordResetEmail } from "./emailTemplates";
+import { sendTemplatedEmail } from "./sendTemplatedEmail";
 import { setCsrfCookie } from "./security/csrf";
 import { getRequestOrigin, getResolvedRequestHost } from "./security/httpSecurity";
 import { getCompanySessionIdleTimeoutMs } from "../tenancy/companySettings";
@@ -188,10 +190,13 @@ export function registerPasswordAuthRoutes(app: Express) {
         const origin = getRequestOrigin(req);
         const resetLink = `${origin ?? ""}/reset-password?token=${encodeURIComponent(token)}`;
         if (isEmailConfigured()) {
-          await sendEmail({
+          const email = passwordResetEmail({ resetUrl: resetLink, expiresInMinutes: 60 });
+          await sendTemplatedEmail({
+            template: "password_reset",
             to: normalizedEmail,
-            subject: "Reset your LFMS password",
-            text: `Set a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
+            subject: email.subject,
+            text: email.text,
+            html: email.html,
           });
         } else {
           logger.info("auth.password_reset_requested", {
@@ -265,6 +270,16 @@ export function registerPasswordAuthRoutes(app: Express) {
       await issueTenantSessionForUser(req, res, outcome);
       res.setHeader("Cache-Control", "no-store");
       res.status(200).json({ success: true });
+      if (isEmailConfigured() && outcome.email) {
+        const email = passwordChangedEmail();
+        void sendTemplatedEmail({
+          template: "password_changed",
+          to: outcome.email,
+          subject: email.subject,
+          text: email.text,
+          html: email.html,
+        });
+      }
     } catch (error) {
       logger.error("auth.reset_password_failed", { error });
       res.status(500).json({ error: "Password reset failed" });

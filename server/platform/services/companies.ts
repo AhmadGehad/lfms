@@ -9,6 +9,11 @@ import { affectedRows, requirePlatformDb } from "../repositories/db";
 import { findPlanByPublicId } from "../repositories/plans";
 import { rethrowPlatformWriteError } from "./errors";
 import { insertPlatformInvitation } from "../../invitations/service";
+import { getCompanyOwnerEmail } from "../repositories/companies";
+import { ENV } from "../../_core/env";
+import { isEmailConfigured } from "../../_core/email";
+import { companyReactivatedEmail, companySuspendedEmail, ownerInvitationEmail } from "../../_core/emailTemplates";
+import { sendTemplatedEmail } from "../../_core/sendTemplatedEmail";
 
 type Lifecycle = typeof companies.$inferSelect.lifecycleStatus;
 const transitions: Record<Lifecycle, readonly Lifecycle[]> = {
@@ -31,6 +36,7 @@ export async function createCompany(input: {
 }, actor: PlatformAuditActor) {
   const db = await requirePlatformDb();
   let issuedOwnerInvitationCredential: string | null = null;
+  let ownerInvitationEmailContext: { companyName: string; companySlug: string; normalizedEmail: string; companyId: number } | null = null;
   try {
     const response = await db.transaction(async tx => {
       const companyName = input.name.trim();
@@ -76,13 +82,14 @@ export async function createCompany(input: {
         companyPublicId: publicId,
         companySlug,
         normalizedEmail,
-        provider: "manus",
+        provider: "password",
         role: "owner",
         farmAccessMode: "all",
         farmPublicIds: [],
         expiresAt: new Date(Date.now() + 72 * 60 * 60 * 1_000),
       }, actor);
       issuedOwnerInvitationCredential = ownerInvitation.token;
+      ownerInvitationEmailContext = { companyName, companySlug, normalizedEmail, companyId };
 
       if (input.planPublicId) {
         const plan = await findPlanByPublicId(input.planPublicId, tx);
@@ -141,6 +148,28 @@ export async function createCompany(input: {
       };
       });
     });
+    const emailContext = ownerInvitationEmailContext as {
+      companyName: string;
+      companySlug: string;
+      normalizedEmail: string;
+      companyId: number;
+    } | null;
+    if (issuedOwnerInvitationCredential && emailContext && isEmailConfigured()) {
+      const acceptUrl = `https://${emailContext.companySlug}.${ENV.baseDomain}/accept-invitation#token=${issuedOwnerInvitationCredential}`;
+      const email = ownerInvitationEmail({
+        companyName: emailContext.companyName,
+        acceptUrl,
+        expiresInDays: 3,
+      });
+      void sendTemplatedEmail({
+        template: "owner_invitation",
+        to: emailContext.normalizedEmail,
+        companyId: emailContext.companyId,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+    }
     return { ...response, ownerInvitationToken: issuedOwnerInvitationCredential };
   } catch (error) {
     rethrowPlatformWriteError(error);
@@ -154,7 +183,7 @@ export async function changeCompanyLifecycle(input: {
   reason?: string;
 }, actor: PlatformAuditActor) {
   const db = await requirePlatformDb();
-  return db.transaction(async tx => {
+  const outcome = await db.transaction(async tx => {
     const [company] = await tx.select().from(companies)
       .where(eq(companies.publicId, input.publicId))
       .for("update");
@@ -223,6 +252,36 @@ export async function changeCompanyLifecycle(input: {
       before: { status: company.lifecycleStatus, version: company.version },
       after: { status: input.status, version: company.version + 1, reason: input.reason },
     });
-    return { publicId: company.publicId, status: input.status, version: company.version + 1 };
+    return {
+      publicId: company.publicId,
+      status: input.status,
+      version: company.version + 1,
+      companyId: company.id,
+      companyName: company.name,
+      companySlug: company.slug,
+      previousStatus: company.lifecycleStatus,
+      suspendedReason: input.status === "suspended" ? input.reason?.trim() ?? null : null,
+    };
   });
+  const isReactivation = outcome.status === "active" && outcome.previousStatus === "suspended";
+  if (isEmailConfigured() && (outcome.status === "suspended" || isReactivation)) {
+    const ownerEmail = await getCompanyOwnerEmail(outcome.companyId);
+    if (ownerEmail) {
+      const email = outcome.status === "suspended"
+        ? companySuspendedEmail({ companyName: outcome.companyName, reason: outcome.suspendedReason })
+        : companyReactivatedEmail({
+            companyName: outcome.companyName,
+            dashboardUrl: `https://${outcome.companySlug}.${ENV.baseDomain}/`,
+          });
+      void sendTemplatedEmail({
+        template: outcome.status === "suspended" ? "company_suspended" : "company_reactivated",
+        to: ownerEmail,
+        companyId: outcome.companyId,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+    }
+  }
+  return { publicId: outcome.publicId, status: outcome.status, version: outcome.version };
 }

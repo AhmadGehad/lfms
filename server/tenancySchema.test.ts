@@ -84,6 +84,7 @@ describe("multi-tenant schema foundation", () => {
       "0032_saas_legacy_user_links.sql",
       "0037_saas_company_branding.sql",
       "0038_saas_company_branding_favicon.sql",
+      "0040_saas_email_log.sql",
     ]
       .map(file => readFileSync(path.join(root, "drizzle", file), "utf8"))
       .join("\n");

@@ -17,6 +17,10 @@ import type { AppRole } from "../../shared/permissions";
 import { decodeCursor } from "../../shared/platformApi";
 import { assertWithinLimit, getEffectiveLimit, lockCompanyQuota } from "../entitlements/limits";
 import { hashPassword, isPasswordStrongEnough } from "../_core/auth/password";
+import { ENV } from "../_core/env";
+import { isEmailConfigured } from "../_core/email";
+import { membershipInvitationEmail, welcomeEmail } from "../_core/emailTemplates";
+import { sendTemplatedEmail } from "../_core/sendTemplatedEmail";
 import { redactLogFields } from "../observability/logger";
 import { generatePublicId } from "../tenancy/publicIds";
 import { executeIdempotent } from "../platform/idempotency";
@@ -210,12 +214,19 @@ export async function createPlatformInvitation(input: {
 }, actor: PlatformAuditActor) {
   const db = await requirePlatformDb();
   let issuedCredential: string | null = null;
+  let invitationEmailContext: { companyName: string; companySlug: string; normalizedEmail: string; companyId: number } | null = null;
   try {
     const response = await db.transaction(async tx => {
       const company = await findCompanyByPublicId(input.companyPublicId, tx);
       if (!company || company.deletedAt) notFound("Company");
       const normalizedEmail = normalizeEmail(input.email);
       const farmPublicIds = uniquePublicIds(input.farmPublicIds);
+      invitationEmailContext = {
+        companyName: company.name,
+        companySlug: company.slug,
+        normalizedEmail,
+        companyId: company.id,
+      };
       return executeIdempotent(tx, {
         companyId: company.id,
         userId: actor.userId,
@@ -266,6 +277,28 @@ export async function createPlatformInvitation(input: {
         return storedResponse;
       });
     });
+    const emailContext = invitationEmailContext as {
+      companyName: string;
+      companySlug: string;
+      normalizedEmail: string;
+      companyId: number;
+    } | null;
+    if (issuedCredential && emailContext && isEmailConfigured()) {
+      const acceptUrl = `https://${emailContext.companySlug}.${ENV.baseDomain}/accept-invitation#token=${issuedCredential}`;
+      const email = membershipInvitationEmail({
+        companyName: emailContext.companyName,
+        acceptUrl,
+        expiresInDays: Math.ceil((input.expiresInHours ?? DEFAULT_EXPIRY_HOURS) / 24),
+      });
+      void sendTemplatedEmail({
+        template: "membership_invitation",
+        to: emailContext.normalizedEmail,
+        companyId: emailContext.companyId,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+    }
     return { ...response, invitationToken: issuedCredential };
   } catch (error) {
     rethrowPlatformWriteError(error);
@@ -725,6 +758,7 @@ export async function activateInvitationWithPassword(input: {
   const userId = await db.transaction(async tx => {
     const [row] = await tx.select({
       invitation: companyInvitations,
+      companyName: companies.name,
     }).from(companyInvitations)
       .innerJoin(companies, eq(companyInvitations.companyId, companies.id))
       .where(and(
@@ -779,13 +813,26 @@ export async function activateInvitationWithPassword(input: {
       linkedAt: now,
       lastUsedAt: now,
     });
-    return user.id;
+    return { userId: user.id, companyName: row.companyName, normalizedEmail };
   });
   const outcome = await acceptInvitation({ token: input.token, companySlug: input.companySlug }, {
-    userId,
+    userId: userId.userId,
     requestId: actor.requestId,
     ipAddress: actor.ipAddress,
     userAgent: actor.userAgent,
   });
-  return { ...outcome, userId };
+  if (isEmailConfigured()) {
+    const email = welcomeEmail({
+      companyName: userId.companyName,
+      dashboardUrl: `https://${input.companySlug}.${ENV.baseDomain}/`,
+    });
+    void sendTemplatedEmail({
+      template: "welcome",
+      to: userId.normalizedEmail,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
+    });
+  }
+  return { ...outcome, userId: userId.userId };
 }

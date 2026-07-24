@@ -92,7 +92,15 @@ async function handleInternalSendEmail(
   if (!env.EMAIL) {
     return Response.json({ error: "Email binding is not configured" }, { status: 503 });
   }
-  let body: { from?: string; to?: string; subject?: string; text?: string; html?: string };
+  let body: {
+    from?: string;
+    fromName?: string;
+    to?: string;
+    subject?: string;
+    text?: string;
+    html?: string;
+    replyTo?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -103,11 +111,12 @@ async function handleInternalSendEmail(
   }
   try {
     await env.EMAIL.send({
-      from: body.from,
+      from: body.fromName ? { name: body.fromName, email: body.from } : body.from,
       to: body.to,
       subject: body.subject,
       text: body.text,
       html: body.html,
+      replyTo: body.replyTo,
     });
     return Response.json({ success: true });
   } catch (error) {

@@ -50,6 +50,21 @@ class FakeRepository implements SubscriptionExpirationRepository {
     this.expired.add(input.candidate.id);
     return true;
   }
+
+  trialNotified = new Set<number>();
+
+  async listTrialsEndingSoon(now: Date, limit: number) {
+    return this.candidates
+      .filter(row => row.status === "trialing" && row.trialEndsAt && row.trialEndsAt.getTime() > now.getTime()
+        && row.trialEndsAt.getTime() <= now.getTime() + 3 * 24 * 60 * 60 * 1_000)
+      .slice(0, limit);
+  }
+
+  async notifyTrialEndingIfDue(input: Parameters<SubscriptionExpirationRepository["notifyTrialEndingIfDue"]>[0]) {
+    if (this.trialNotified.has(input.candidate.id)) return false;
+    this.trialNotified.add(input.candidate.id);
+    return true;
+  }
 }
 
 function job(companyId: number | null = null): LeasedJob<SubscriptionExpirationJobPayload> {

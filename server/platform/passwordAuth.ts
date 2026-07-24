@@ -19,7 +19,9 @@ import {
 } from "../_core/auth/runtime";
 import { burnPasswordVerificationTime, hashPassword, isPasswordStrongEnough, verifyPassword } from "../_core/auth/password";
 import { hashResetToken, issuePasswordResetToken } from "../_core/auth/passwordReset";
-import { isEmailConfigured, sendEmail } from "../_core/email";
+import { isEmailConfigured } from "../_core/email";
+import { platformPasswordChangedEmail, platformPasswordResetEmail } from "../_core/emailTemplates";
+import { sendTemplatedEmail } from "../_core/sendTemplatedEmail";
 import { ENV } from "../_core/env";
 import { setCsrfCookie } from "../_core/security/csrf";
 import { getRequestId } from "../_core/security/httpSecurity";
@@ -247,10 +249,13 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
         const token = await issuePasswordResetToken(administrator.userId, normalizedEmail);
         const resetLink = `https://admin.${ENV.baseDomain}/reset-password?token=${encodeURIComponent(token)}`;
         if (isEmailConfigured()) {
-          await sendEmail({
+          const email = platformPasswordResetEmail({ resetUrl: resetLink, expiresInMinutes: 60 });
+          await sendTemplatedEmail({
+            template: "platform_password_reset",
             to: normalizedEmail,
-            subject: "Reset your LFMS platform admin password",
-            text: `Set a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't request this, ignore this email.`,
+            subject: email.subject,
+            text: email.text,
+            html: email.html,
           });
         } else {
           logger.info("platform.password_reset_requested", {
@@ -295,6 +300,7 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
           administratorStatus: platformAdministrators.status,
           authVersion: platformAdministrators.authVersion,
           userStatus: users.status,
+          userEmail: users.email,
         }).from(users)
           .innerJoin(platformAdministrators, eq(platformAdministrators.userId, users.id))
           .where(eq(users.id, record.userId))
@@ -329,6 +335,7 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
           administratorId: administrator.administratorId,
           authVersion: administrator.authVersion + 1,
           userId: record.userId,
+          userEmail: administrator.userEmail,
         };
       });
       if (!outcome) {
@@ -355,6 +362,16 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
       });
       res.setHeader("Cache-Control", "no-store");
       res.status(200).json({ success: true });
+      if (isEmailConfigured() && outcome.userEmail) {
+        const email = platformPasswordChangedEmail();
+        void sendTemplatedEmail({
+          template: "platform_password_changed",
+          to: outcome.userEmail,
+          subject: email.subject,
+          text: email.text,
+          html: email.html,
+        });
+      }
     } catch (err) {
       logger.error("platform.reset_password_failed", { err });
       await auditLogin(req, res, { outcome: "error", reason: "reset_password_failed" });

@@ -14,7 +14,9 @@ import {
 import { ENV } from "../../_core/env";
 import { hashPassword, isPasswordStrongEnough } from "../../_core/auth/password";
 import { issuePasswordResetToken } from "../../_core/auth/passwordReset";
-import { isEmailConfigured, sendEmail } from "../../_core/email";
+import { isEmailConfigured } from "../../_core/email";
+import { platformPasswordResetEmail } from "../../_core/emailTemplates";
+import { sendTemplatedEmail } from "../../_core/sendTemplatedEmail";
 import { generatePublicId } from "../../tenancy/publicIds";
 import { invalidLifecycle, notFound, versionConflict } from "../errors";
 import { executeIdempotent } from "../idempotency";
@@ -317,10 +319,13 @@ export async function sendAdministratorPasswordReset(input: {
   const resetLink = `https://admin.${ENV.baseDomain}/reset-password?token=${encodeURIComponent(token)}`;
   const sent = isEmailConfigured();
   if (sent) {
-    await sendEmail({
+    const email = platformPasswordResetEmail({ resetUrl: resetLink, expiresInMinutes: 60, triggeredByAdmin: true });
+    await sendTemplatedEmail({
+      template: "platform_password_reset_admin_triggered",
       to: user.email,
-      subject: "Reset your LFMS platform admin password",
-      text: `An administrator triggered a password reset for your platform admin account.\n\nSet a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't expect this, contact your administrator.`,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
     });
   }
   await appendPlatformAudit(db, actor, {

@@ -1,5 +1,5 @@
 import { and, desc, eq, isNull, like, lt, or, sql, type SQL } from "drizzle-orm";
-import { companies, companyMemberships, companySubscriptions, farms, subscriptionPlans } from "../../../drizzle/schema";
+import { companies, companyMemberships, companySubscriptions, farms, subscriptionPlans, users } from "../../../drizzle/schema";
 import { decodeCursor } from "../../../shared/platformApi";
 import { publicCursorPage, requirePlatformDb, type PlatformDb } from "./db";
 
@@ -47,6 +47,32 @@ export async function findCompanyByPublicId(publicId: string, db?: PlatformDb) {
   const handle = db ?? await requirePlatformDb();
   const [company] = await handle.select().from(companies).where(eq(companies.publicId, publicId)).limit(1);
   return company ?? null;
+}
+
+/** The schema enforces at most one active owner per company (ownerGuardUnique). */
+export async function getCompanyOwner(
+  companyId: number,
+  db?: PlatformDb,
+): Promise<{ userId: number; email: string; companySlug: string } | null> {
+  const handle = db ?? await requirePlatformDb();
+  const [owner] = await handle.select({ userId: users.id, email: users.email, companySlug: companies.slug })
+    .from(companyMemberships)
+    .innerJoin(users, eq(companyMemberships.userId, users.id))
+    .innerJoin(companies, eq(companyMemberships.companyId, companies.id))
+    .where(and(
+      eq(companyMemberships.companyId, companyId),
+      eq(companyMemberships.role, "owner"),
+      eq(companyMemberships.status, "active"),
+      eq(users.status, "active"),
+    ))
+    .limit(1);
+  if (!owner || !owner.email) return null;
+  return { userId: owner.userId, email: owner.email, companySlug: owner.companySlug };
+}
+
+export async function getCompanyOwnerEmail(companyId: number, db?: PlatformDb): Promise<string | null> {
+  const owner = await getCompanyOwner(companyId, db);
+  return owner?.email ?? null;
 }
 
 export async function getCompanyRecord(publicId: string) {

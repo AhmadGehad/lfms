@@ -46,7 +46,12 @@ type SendEmailInput = {
   subject: string;
   text: string;
   html?: string;
+  replyTo?: string;
 };
+
+function formatFromHeader() {
+  return `LFMS <${ENV.smtpFrom}>`;
+}
 
 async function sendViaCloudflareBridge(input: SendEmailInput) {
   const response = await fetch(`https://${ENV.baseDomain}/__internal/send-email`, {
@@ -57,10 +62,12 @@ async function sendViaCloudflareBridge(input: SendEmailInput) {
     },
     body: JSON.stringify({
       from: ENV.smtpFrom,
+      fromName: "LFMS",
       to: input.to,
       subject: input.subject,
       text: input.text,
       html: input.html,
+      replyTo: input.replyTo ?? ENV.supportEmail,
     }),
   });
   if (!response.ok) {
@@ -71,11 +78,12 @@ async function sendViaCloudflareBridge(input: SendEmailInput) {
 async function sendViaSmtp(input: SendEmailInput) {
   const client = getTransporter();
   await client.sendMail({
-    from: ENV.smtpFrom,
+    from: formatFromHeader(),
     to: input.to,
     subject: input.subject,
     text: input.text,
     html: input.html,
+    replyTo: input.replyTo ?? ENV.supportEmail,
   });
 }
 

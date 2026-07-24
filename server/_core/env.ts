@@ -95,6 +95,7 @@ export const ENV = {
   smtpFrom: process.env.SMTP_FROM ?? "",
   smtpSecure: process.env.SMTP_SECURE === "1",
   internalApiSecret: process.env.INTERNAL_API_SECRET ?? "",
+  supportEmail: process.env.VITE_SUPPORT_EMAIL ?? "support@l-fms.com",
   isCloudflareContainer: Boolean(
     process.env.CLOUDFLARE_APPLICATION_ID &&
     process.env.CLOUDFLARE_DURABLE_OBJECT_ID,

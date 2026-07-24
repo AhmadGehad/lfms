@@ -29,6 +29,11 @@ export interface SubscriptionExpirationRepository {
     jobId: number;
     jobPublicId: string;
   }): Promise<boolean>;
+  listTrialsEndingSoon(now: Date, limit: number): Promise<readonly DueSubscription[]>;
+  notifyTrialEndingIfDue(input: {
+    candidate: DueSubscription;
+    now: Date;
+  }): Promise<boolean>;
 }
 
 function hourBucket(now: Date) {
@@ -88,9 +93,17 @@ export async function handleSubscriptionExpirationJob(
     if (candidates.length < limit) break;
   }
 
+  let trialEndingNotified = 0;
+  const trialCandidates = await repository.listTrialsEndingSoon(now, BATCH_SIZE);
+  for (const candidate of trialCandidates) {
+    if (signal.aborted) throw new Error("JOB_ABORTED");
+    if (await repository.notifyTrialEndingIfDue({ candidate, now })) trialEndingNotified += 1;
+  }
+
   return {
     scanned,
     expired,
+    trialEndingNotified,
     truncated: scanned >= MAX_SUBSCRIPTIONS_PER_JOB,
   };
 }

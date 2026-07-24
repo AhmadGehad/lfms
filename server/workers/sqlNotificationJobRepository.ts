@@ -19,6 +19,7 @@ import type {
   VaccinationDueRow,
 } from "../notifications/decisions";
 import { insertNotificationOnce } from "../notifications/repository";
+import { notifyOperationalAlertByEmail } from "../notifications/emailFanout";
 import { generatePublicId } from "../tenancy/publicIds";
 import type { NotificationJobRepository } from "./notificationJobs";
 
@@ -330,6 +331,16 @@ export class SqlNotificationJobRepository implements NotificationJobRepository {
   ) {
     if (!await this.isActiveTenantFarm(companyId, farmId)) return false;
     const db = await requireDb();
-    return insertNotificationOnce(db, { companyId, farmId }, candidate, bucket);
+    const inserted = await insertNotificationOnce(db, { companyId, farmId }, candidate, bucket);
+    if (inserted) {
+      void notifyOperationalAlertByEmail({
+        companyId,
+        alertType: candidate.alertType,
+        title: candidate.title,
+        message: candidate.message,
+        priority: candidate.priority,
+      });
+    }
+    return inserted;
   }
 }

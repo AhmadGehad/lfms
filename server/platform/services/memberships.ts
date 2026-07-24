@@ -4,7 +4,9 @@ import type { AppRole } from "../../../shared/permissions";
 import { ENV } from "../../_core/env";
 import { hashPassword, isPasswordStrongEnough } from "../../_core/auth/password";
 import { issuePasswordResetToken } from "../../_core/auth/passwordReset";
-import { isEmailConfigured, sendEmail } from "../../_core/email";
+import { isEmailConfigured } from "../../_core/email";
+import { passwordResetEmail } from "../../_core/emailTemplates";
+import { sendTemplatedEmail } from "../../_core/sendTemplatedEmail";
 import { invalidLifecycle, notFound, versionConflict } from "../errors";
 import { appendPlatformAudit, type PlatformAuditActor } from "../repositories/audit";
 import { affectedRows, requirePlatformDb } from "../repositories/db";
@@ -213,10 +215,14 @@ export async function sendMembershipPasswordReset(input: {
   const resetLink = `https://${row.companySlug}.${ENV.baseDomain}/reset-password?token=${encodeURIComponent(token)}`;
   const sent = isEmailConfigured();
   if (sent) {
-    await sendEmail({
+    const email = passwordResetEmail({ resetUrl: resetLink, expiresInMinutes: 60, triggeredByAdmin: true });
+    await sendTemplatedEmail({
+      template: "password_reset_admin_triggered",
       to: row.email,
-      subject: "Reset your LFMS password",
-      text: `An administrator triggered a password reset for your LFMS account.\n\nSet a new password: ${resetLink}\n\nThis link expires in 1 hour. If you didn't expect this, contact your administrator.`,
+      companyId: membership.companyId,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
     });
   }
   await appendPlatformAudit(db, actor, {
