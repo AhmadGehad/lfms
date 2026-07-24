@@ -95,6 +95,9 @@
     ],
   },
   "env": {
+    "": {
+      "name": "lfms",
+    },
     "staging": {
       "name": "lfms-staging",
       "workers_dev": false,
