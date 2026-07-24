@@ -15,6 +15,20 @@ export function isEmailConfigured() {
   return hasCloudflareEmailBridge() || hasSmtpConfiguration();
 }
 
+/** Presence-only booleans for diagnostics — never logs actual secret values. */
+export function getEmailConfigurationStatus() {
+  return {
+    hasInternalApiSecret: Boolean(ENV.internalApiSecret),
+    hasSmtpFrom: Boolean(ENV.smtpFrom),
+    hasBaseDomain: Boolean(ENV.baseDomain),
+    hasSmtpHost: Boolean(ENV.smtpHost),
+    hasSmtpUser: Boolean(ENV.smtpUser),
+    hasSmtpPassword: Boolean(ENV.smtpPassword),
+    cloudflareBridgeReady: hasCloudflareEmailBridge(),
+    smtpReady: hasSmtpConfiguration(),
+  };
+}
+
 function getTransporter() {
   if (transporter) return transporter;
   if (!hasSmtpConfiguration()) throw new Error("SMTP is not configured");

@@ -15,7 +15,7 @@ import { recordOAuthIdentity } from "./auth/sqlStores";
 import { setOpaqueSessionCookie } from "./auth/cookies";
 import { burnPasswordVerificationTime, hashPassword, isPasswordStrongEnough, verifyPassword } from "./auth/password";
 import { hashResetToken, issuePasswordResetToken } from "./auth/passwordReset";
-import { isEmailConfigured, sendEmail } from "./email";
+import { getEmailConfigurationStatus, isEmailConfigured, sendEmail } from "./email";
 import { setCsrfCookie } from "./security/csrf";
 import { getRequestOrigin, getResolvedRequestHost } from "./security/httpSecurity";
 import { getCompanySessionIdleTimeoutMs } from "../tenancy/companySettings";
@@ -197,6 +197,7 @@ export function registerPasswordAuthRoutes(app: Express) {
           logger.info("auth.password_reset_requested", {
             userId: user.id,
             resetToken: token,
+            emailConfigStatus: getEmailConfigurationStatus(),
           });
         }
       }
