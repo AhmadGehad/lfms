@@ -17,6 +17,11 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { TRPCClient } from "@trpc/client";
 import type { AppRouter } from "../../../../server/routers";
+import {
+  applyOptimisticRow,
+  rollbackOptimisticRows,
+  type OptimisticSnapshot,
+} from "./optimistic";
 
 /** Dot-paths of the procedures that may be queued offline. */
 export const OFFLINE_MUTATION_PATHS = [
@@ -81,6 +86,17 @@ export function registerOfflineMutationDefaults(
       networkMode: "offlineFirst",
       retry: 3,
       retryDelay: attempt => Math.min(1_000 * 2 ** attempt, 30_000),
+      // Show the record straight away, so an offline entry is visibly saved
+      // rather than appearing to vanish.
+      onMutate: input => applyOptimisticRow(queryClient, path, input),
+      onError: (_error, _input, snapshot) => {
+        rollbackOptimisticRows(queryClient, (snapshot as OptimisticSnapshot) ?? []);
+      },
+      onSuccess: () => {
+        // Replace the provisional row with the server's record. Components that
+        // define their own onSuccess override this and invalidate themselves.
+        void queryClient.invalidateQueries({ queryKey: [path.split(".")[0]] });
+      },
     });
   }
 }

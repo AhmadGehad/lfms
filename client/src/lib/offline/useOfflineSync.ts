@@ -16,6 +16,7 @@ import {
   type OfflineIdentity,
 } from "./identity";
 import { bucketForIdentity, pruneOtherBuckets } from "./persister";
+import { prefetchOfflineReadSet } from "./prefetch";
 import {
   countBlocked,
   countUnsynced,
@@ -33,28 +34,40 @@ export function useIsOnline() {
 }
 
 /**
- * Records the active identity so the next launch restores the right cache.
+ * Records the active identity so the next launch restores the right cache, and
+ * warms the offline read set for the selected farm.
  *
  * Only runs when both queries have resolved — writing a partial identity would
  * name a bucket that never matches again, silently disabling offline reads.
  */
 export function useOfflineIdentity() {
+  const queryClient = useQueryClient();
+  const trpcClient = trpc.useUtils().client;
+  const isOnline = useIsOnline();
   const me = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
   const tenant = trpc.auth.tenantContext.useQuery(undefined, { retry: false });
 
   const userId = me.data?.id;
   const companyId = tenant.data?.company.publicId;
   const farmPublicId = tenant.data?.selectedFarmPublicId ?? null;
+  const ready = typeof userId === "number" && Boolean(companyId);
 
   useEffect(() => {
-    if (typeof userId !== "number" || !companyId) return;
+    if (!ready || !companyId || typeof userId !== "number") return;
     const identity: OfflineIdentity = { userId, companyId, farmPublicId };
     if (!identityChanged(readOfflineIdentity(), identity)) return;
     writeOfflineIdentity(identity);
     // Switching farm or user leaves the previous bucket behind; on iOS those
     // orphans bring forward eviction of the bucket actually in use.
     void pruneOtherBuckets(bucketForIdentity(identity));
-  }, [userId, companyId, farmPublicId]);
+  }, [ready, userId, companyId, farmPublicId]);
+
+  // Warm the read set once signed in, and again after reconnecting or switching
+  // farm, so screens not yet opened still work when the signal drops.
+  useEffect(() => {
+    if (!ready || !isOnline) return;
+    void prefetchOfflineReadSet(queryClient, trpcClient);
+  }, [ready, isOnline, farmPublicId, queryClient, trpcClient]);
 }
 
 export type OfflineSyncState = {
