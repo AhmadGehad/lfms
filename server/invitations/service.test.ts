@@ -7,7 +7,10 @@ import {
   companyMemberships,
   companySubscriptions,
   farms,
+  passwordCredentials,
+  users,
 } from "../../drizzle/schema";
+import { createFakeDb, type RowQueues } from "../testing/fakeDb";
 
 const mocks = vi.hoisted(() => ({
   appendPlatformAudit: vi.fn(),
@@ -15,6 +18,9 @@ const mocks = vi.hoisted(() => ({
   getEffectiveLimit: vi.fn(),
   lockCompanyQuota: vi.fn(),
   requirePlatformDb: vi.fn(),
+  isEmailConfigured: vi.fn(),
+  sendTemplatedEmail: vi.fn(),
+  hashPassword: vi.fn(),
 }));
 
 vi.mock("../platform/repositories/audit", () => ({
@@ -38,9 +44,18 @@ vi.mock("../entitlements/limits", async importOriginal => {
 vi.mock("../platform/idempotency", () => ({
   executeIdempotent: (_tx: unknown, _input: unknown, operation: () => Promise<unknown>) => operation(),
 }));
+vi.mock("../_core/email", () => ({ isEmailConfigured: mocks.isEmailConfigured }));
+vi.mock("../_core/sendTemplatedEmail", () => ({ sendTemplatedEmail: mocks.sendTemplatedEmail }));
+// `isPasswordStrongEnough` stays real (it is the policy under test); scrypt is
+// stubbed so activation tests do not pay for a real hash.
+vi.mock("../_core/auth/password", async importOriginal => {
+  const original = await importOriginal<typeof import("../_core/auth/password")>();
+  return { ...original, hashPassword: mocks.hashPassword };
+});
 
 import {
   acceptInvitation,
+  activateInvitationWithPassword,
   createPlatformInvitation,
   hashInvitationToken,
   hashProviderSubject,
@@ -56,42 +71,16 @@ const actor = {
   requestId: "invitation-service-test",
 };
 
-type QueueMap = Map<unknown, unknown[][]>;
+type QueueMap = RowQueues;
 
 function makeTransaction(queues: QueueMap = new Map(), updateAffectedRows = 1) {
-  const writes: Array<{ kind: "insert" | "update"; table: unknown; value: unknown }> = [];
-  const take = (table: unknown) => queues.get(table)?.shift() ?? [];
-  const terminal = (table: unknown) => {
-    const builder: Record<string, unknown> = {};
-    const chain = () => builder;
-    builder.innerJoin = chain;
-    builder.leftJoin = chain;
-    builder.where = chain;
-    builder.orderBy = chain;
-    builder.limit = chain;
-    builder.for = async () => take(table);
-    builder.then = (resolve: (rows: unknown[]) => unknown, reject: (error: unknown) => unknown) =>
-      Promise.resolve(take(table)).then(resolve, reject);
-    return builder;
-  };
-  const tx = {
-    select: () => ({ from: (table: unknown) => terminal(table) }),
-    insert: (table: unknown) => ({
-      values: async (value: unknown) => {
-        writes.push({ kind: "insert", table, value });
-        return [{ insertId: table === companyMemberships ? 901 : 801 }];
-      },
-    }),
-    update: (table: unknown) => ({
-      set: (value: unknown) => ({
-        where: async () => {
-          writes.push({ kind: "update", table, value });
-          return [{ affectedRows: updateAffectedRows }];
-        },
-      }),
-    }),
-  };
-  return { tx, writes };
+  const fake = createFakeDb({
+    rows: queues,
+    updateAffectedRows,
+    insertIds: new Map([[companyMemberships, 901]]),
+    defaultInsertId: 801,
+  });
+  return { tx: fake.db, writes: fake.writes };
 }
 
 function useTransaction(transaction: ReturnType<typeof makeTransaction>) {
@@ -106,6 +95,9 @@ describe("secure company invitations", () => {
     mocks.appendPlatformAudit.mockResolvedValue(undefined);
     mocks.getEffectiveLimit.mockResolvedValue(100);
     mocks.lockCompanyQuota.mockResolvedValue(undefined);
+    mocks.isEmailConfigured.mockReturnValue(false);
+    mocks.sendTemplatedEmail.mockResolvedValue(undefined);
+    mocks.hashPassword.mockResolvedValue("hashed:new");
     mocks.findCompanyByPublicId.mockResolvedValue({
       id: 101,
       publicId: "01J00000000000000000000001",
@@ -341,5 +333,183 @@ describe("secure company invitations", () => {
       expectedVersion: 2,
     }, actor)).rejects.toMatchObject({ code: "CONFLICT" });
     expect(mocks.appendPlatformAudit).not.toHaveBeenCalled();
+  });
+});
+
+describe("activating an invitation with a password", () => {
+  const token = "D".repeat(43);
+  const activationActor = { requestId: "activate-request", ipAddress: "127.0.0.1", userAgent: "test" };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.appendPlatformAudit.mockResolvedValue(undefined);
+    mocks.getEffectiveLimit.mockResolvedValue(100);
+    mocks.lockCompanyQuota.mockResolvedValue(undefined);
+    mocks.isEmailConfigured.mockReturnValue(true);
+    mocks.sendTemplatedEmail.mockResolvedValue(undefined);
+    mocks.hashPassword.mockResolvedValue("hashed:new");
+  });
+
+  const pendingInvitation = (overrides: Record<string, unknown> = {}) => ({
+    id: 503,
+    publicId: "01J00000000000000000000005",
+    companyId: 101,
+    normalizedEmail: "owner@example.test",
+    role: "owner" as const,
+    farmAccessMode: "all" as const,
+    farmPublicIds: [],
+    // Owner invitations are issued for the password provider; a "manus" value
+    // here is what made every owner invitation unactivatable before the fix.
+    provider: "password",
+    providerSubjectHash: hashProviderSubject("password", "email:owner@example.test"),
+    status: "pending" as const,
+    expiresAt: new Date(Date.now() + 60_000),
+    version: 1,
+    ...overrides,
+  });
+
+  /** Queues both the activation transaction and the acceptInvitation follow-up. */
+  function activationQueues(invitation: ReturnType<typeof pendingInvitation>, existingUser: unknown[] = []) {
+    const newUser = {
+      id: 801,
+      normalizedEmail: invitation.normalizedEmail,
+      status: "active",
+      openId: "password:abc",
+    };
+    return new Map<unknown, unknown[][]>([
+      [companyInvitations, [
+        // 1. activation lookup
+        [{ invitation, companyName: "Example Company" }],
+        // 2. acceptInvitation lookup
+        [{
+          invitation,
+          providerSubjectHashHex: (invitation.providerSubjectHash as Buffer).toString("hex"),
+          companyPublicId: "01J00000000000000000000001",
+          companySlug: "example-company",
+          companyStatus: "provisioning",
+        }],
+      ]],
+      [users, [existingUser, [newUser]]],
+      [passwordCredentials, [[]]],
+      [authIdentities, [[{
+        providerSubject: invitation.normalizedEmail,
+        providerEmail: invitation.normalizedEmail,
+        providerEmailVerified: true,
+        userStatus: "active",
+        normalizedEmail: invitation.normalizedEmail,
+        openId: "password:abc",
+      }]]],
+      [companyMemberships, [[{ count: 0 }], []]],
+      [farms, [[{ id: 301 }]]],
+      [companySubscriptions, [[{ id: 401 }]]],
+    ]);
+  }
+
+  it("creates the account with the password provider and sends the welcome email", async () => {
+    const transaction = makeTransaction(activationQueues(pendingInvitation()));
+    useTransaction(transaction);
+
+    const result = await activateInvitationWithPassword({
+      token,
+      companySlug: "example-company",
+      password: "correct-horse-battery",
+    }, activationActor);
+
+    expect(result).toMatchObject({ kind: "accepted" });
+
+    // The provider on the identity must match the invitation's provider, or
+    // acceptInvitation's identity lookup can never find it.
+    const identity = transaction.writes.find(
+      write => write.kind === "insert" && write.table === authIdentities,
+    )?.value as Record<string, unknown>;
+    expect(identity).toMatchObject({ provider: "password", providerEmailVerified: true });
+
+    const credential = transaction.writes.find(
+      write => write.kind === "insert" && write.table === passwordCredentials,
+    )?.value as Record<string, unknown>;
+    expect(credential).toMatchObject({ userId: 801, passwordHash: "hashed:new" });
+
+    expect(transaction.writes.some(write => write.kind === "insert" && write.table === companyMemberships)).toBe(true);
+    expect(mocks.sendTemplatedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ template: "welcome", to: "owner@example.test" }),
+    );
+  });
+
+  it("rejects a weak password before touching the database", async () => {
+    const transaction = makeTransaction(activationQueues(pendingInvitation()));
+    useTransaction(transaction);
+
+    await expect(activateInvitationWithPassword({
+      token,
+      companySlug: "example-company",
+      password: "short",
+    }, activationActor)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+
+    expect(transaction.writes).toHaveLength(0);
+    expect(mocks.sendTemplatedEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invitation that is no longer pending", async () => {
+    const transaction = makeTransaction(activationQueues(pendingInvitation({ status: "accepted" })));
+    useTransaction(transaction);
+
+    await expect(activateInvitationWithPassword({
+      token,
+      companySlug: "example-company",
+      password: "correct-horse-battery",
+    }, activationActor)).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(transaction.writes.some(write => write.table === passwordCredentials)).toBe(false);
+    expect(transaction.writes.some(write => write.table === authIdentities)).toBe(false);
+    expect(mocks.sendTemplatedEmail).not.toHaveBeenCalled();
+  });
+
+  it("rejects an expired invitation", async () => {
+    const transaction = makeTransaction(
+      activationQueues(pendingInvitation({ expiresAt: new Date(Date.now() - 60_000) })),
+    );
+    useTransaction(transaction);
+
+    await expect(activateInvitationWithPassword({
+      token,
+      companySlug: "example-company",
+      password: "correct-horse-battery",
+    }, activationActor)).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
+
+    expect(transaction.writes.some(write => write.table === passwordCredentials)).toBe(false);
+  });
+
+  it("refuses to overwrite a password on an account that already has one", async () => {
+    const queues = activationQueues(pendingInvitation(), [{
+      id: 44,
+      normalizedEmail: "owner@example.test",
+      status: "active",
+    }]);
+    queues.set(passwordCredentials, [[{ userId: 44 }]]);
+    const transaction = makeTransaction(queues);
+    useTransaction(transaction);
+
+    await expect(activateInvitationWithPassword({
+      token,
+      companySlug: "example-company",
+      password: "correct-horse-battery",
+    }, activationActor)).rejects.toMatchObject({ code: "CONFLICT" });
+
+    expect(transaction.writes.some(write => write.kind === "insert" && write.table === passwordCredentials)).toBe(false);
+  });
+
+  it("does not send a welcome email when email is unconfigured", async () => {
+    mocks.isEmailConfigured.mockReturnValue(false);
+    const transaction = makeTransaction(activationQueues(pendingInvitation()));
+    useTransaction(transaction);
+
+    const result = await activateInvitationWithPassword({
+      token,
+      companySlug: "example-company",
+      password: "correct-horse-battery",
+    }, activationActor);
+
+    expect(result).toMatchObject({ kind: "accepted" });
+    expect(mocks.sendTemplatedEmail).not.toHaveBeenCalled();
   });
 });

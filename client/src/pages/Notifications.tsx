@@ -1,12 +1,22 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
+import { formatAlertType, priorityTone, type NotificationTone } from "@shared/notifications";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bell, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+
+type NotificationRow = RouterOutputs["notifications"]["list"][number];
+
+const TONE_CLASSES: Record<NotificationTone, string> = {
+  danger: "bg-red-100 text-red-800 border-red-200",
+  warning: "bg-amber-100 text-amber-800 border-amber-200",
+  info: "bg-blue-100 text-blue-800 border-blue-200",
+  neutral: "bg-slate-100 text-slate-800 border-slate-200",
+};
 
 export default function Notifications() {
   const { t } = useTranslation();
@@ -36,13 +46,8 @@ export default function Notifications() {
     onError: (e) => toast.error(e.message),
   });
 
-  const unreadCount = (notifications ?? []).filter((n: any) => !n.isRead).length;
-
-  const severityColor = (severity: string) => {
-    if (severity === "critical" || severity === "red") return "bg-red-100 text-red-800 border-red-200";
-    if (severity === "warning" || severity === "amber") return "bg-amber-100 text-amber-800 border-amber-200";
-    return "bg-blue-100 text-blue-800 border-blue-200";
-  };
+  const rows: NotificationRow[] = notifications ?? [];
+  const unreadCount = rows.filter(n => !n.isRead).length;
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -67,7 +72,7 @@ export default function Notifications() {
       <div className="space-y-3">
         {isLoading ? (
           <p className="text-center text-muted-foreground py-8">{t("common.loading")}</p>
-        ) : (notifications ?? []).length === 0 ? (
+        ) : rows.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
               <Bell className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
@@ -75,7 +80,7 @@ export default function Notifications() {
             </CardContent>
           </Card>
         ) : (
-          (notifications ?? []).map((n: any) => (
+          rows.map(n => (
             <Card
               key={n.id}
               className={`transition-colors ${canUpdate && !n.isRead ? "cursor-pointer" : ""} ${!n.isRead ? "border-primary/30 bg-primary/5" : ""}`}
@@ -84,8 +89,8 @@ export default function Notifications() {
               <CardContent className="py-4 flex items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <Badge className={`text-xs ${severityColor(n.severity ?? "info")}`}>
-                      {n.alertType?.replace(/_/g, " ") ?? "Alert"}
+                    <Badge className={`text-xs ${TONE_CLASSES[priorityTone(n.priority)]}`}>
+                      {formatAlertType(n.alertType)}
                     </Badge>
                     {!n.isRead && <Badge className="bg-primary text-primary-foreground text-xs">{t("common.active")}</Badge>}
                   </div>
