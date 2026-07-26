@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { InstallAppBanner } from "./components/InstallAppBanner";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { OwnerFilterProvider } from "./contexts/OwnerFilterContext";
 import { DesignVersionProvider } from "./contexts/DesignVersionContext";
@@ -61,6 +62,7 @@ function TenantSurface() {
   return (
     <>
       <OfflineIdentityTracker />
+      <InstallAppBanner />
       <DesignRouter />
     </>
   );
