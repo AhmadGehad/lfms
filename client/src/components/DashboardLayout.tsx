@@ -56,6 +56,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { OwnerFilterSelect } from "./OwnerFilterSelect";
+import { OfflineSyncIndicator } from "./OfflineSyncIndicator";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { DesignSwitch } from "./DesignSwitch";
 import { FarmSwitcher } from "./FarmSwitcher";
@@ -493,6 +494,7 @@ function DashboardLayoutContent({
               <span className="truncate font-semibold text-sm">{activeLabel}</span>
             </div>
             <div className={`flex shrink-0 items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
+              <OfflineSyncIndicator />
               <DesignSwitch compact />
               <FarmSwitcher className="hidden w-36 sm:flex" />
               <OwnerFilterSelect className="hidden w-32 sm:block" />
@@ -515,6 +517,7 @@ function DashboardLayoutContent({
           <div className={`flex border-b h-12 items-center justify-between bg-background/95 px-4 md:px-6 backdrop-blur sticky top-0 z-40 ${isAr ? "flex-row-reverse" : ""}`}>
             <span className="font-semibold text-sm text-muted-foreground">{activeLabel}</span>
             <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
+              <OfflineSyncIndicator />
               <DesignSwitch />
               <FarmSwitcher />
               <span className="text-xs text-muted-foreground hidden lg:inline">{t("owners.filterByOwner")}</span>

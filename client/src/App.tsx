@@ -12,6 +12,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { trpc } from "./lib/trpc";
 import { useFavicon } from "./lib/favicon";
+import { OfflineIdentityTracker } from "./lib/offline/OfflineIdentityTracker";
 import { lazy, Suspense } from "react";
 
 const Landing = lazy(() => import("./pages/Landing"));
@@ -57,7 +58,12 @@ function TenantSurface() {
   if (suspension.data?.suspended) return <CompanySuspended />;
   if (suspension.isLoading)
     return <main className="min-h-dvh bg-background" aria-busy="true" />;
-  return <DesignRouter />;
+  return (
+    <>
+      <OfflineIdentityTracker />
+      <DesignRouter />
+    </>
+  );
 }
 
 function App() {

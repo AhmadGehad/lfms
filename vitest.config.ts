@@ -18,6 +18,8 @@ export default defineConfig({
       "server/**/*.test.ts",
       "server/**/*.spec.ts",
       "shared/**/*.test.ts",
+      "scripts/**/*.test.ts",
+      "client/src/lib/**/*.test.ts",
       "cloudflare/**/*.test.ts",
     ],
   },

@@ -1,6 +1,12 @@
 {
   "include": ["client/src/**/*", "admin/src/**/*", "shared/**/*", "server/**/*", "vite.admin.config.ts"],
-  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/*.test.ts",
+    "client/src/sw.ts"
+  ],
   "compilerOptions": {
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",

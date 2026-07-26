@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { VitePWA } from "vite-plugin-pwa";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -149,6 +150,50 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
+/**
+ * Emits the generated PWA icons.
+ *
+ * They cannot live in client/public: `publicDir` is disabled for production
+ * builds (that directory holds dev-only Manus tooling), so a static file there
+ * would never reach dist. Emitting them keeps one source of truth and serves
+ * the identical bytes from the dev server.
+ */
+function vitePluginPwaIcons(): Plugin {
+  return {
+    name: "lfms-pwa-icons",
+
+    async buildStart() {
+      // Nothing to do: icons are produced in generateBundle so a watch rebuild
+      // always re-emits them.
+    },
+
+    async generateBundle() {
+      const { buildPwaIcons } = await import("./scripts/pwaIcons.mjs");
+      for (const icon of buildPwaIcons()) {
+        this.emitFile({
+          type: "asset",
+          fileName: icon.fileName,
+          source: icon.contents,
+        });
+      }
+    },
+
+    async configureServer(server: ViteDevServer) {
+      const { buildPwaIcons } = await import("./scripts/pwaIcons.mjs");
+      const icons = new Map(
+        buildPwaIcons().map(icon => [`/${icon.fileName}`, icon.contents]),
+      );
+      server.middlewares.use((req, res, next) => {
+        const contents = req.url ? icons.get(req.url.split("?")[0]) : undefined;
+        if (!contents) return next();
+        res.setHeader("Content-Type", "image/png");
+        res.setHeader("Cache-Control", "no-cache");
+        res.end(contents);
+      });
+    },
+  };
+}
+
 export default defineConfig(({ command }) => {
   const isDevelopmentServer = command === "serve";
 
@@ -156,6 +201,56 @@ export default defineConfig(({ command }) => {
     plugins: [
       react(),
       tailwindcss(),
+      vitePluginPwaIcons(),
+      VitePWA({
+        // Hand-written service worker: the caching rules depend on how the edge
+        // serves this app (see client/src/sw.ts).
+        strategies: "injectManifest",
+        srcDir: "src",
+        filename: "sw.ts",
+        // main.tsx registers the worker itself so it can prompt before
+        // activating a new version.
+        injectRegister: null,
+        manifestFilename: "manifest.webmanifest",
+        devOptions: { enabled: false },
+        injectManifest: {
+          globDirectory: path.resolve(import.meta.dirname, "dist/public"),
+          globPatterns: ["index.html", "assets/**/*.{js,css,woff2}"],
+          // The shell is built as index.html but served at "/" — the edge
+          // renames it to tenant.html and has no /index.html route. Precaching
+          // the built name would 404 on install in production.
+          manifestTransforms: [
+            manifest => ({
+              manifest: manifest.map(entry =>
+                entry.url === "index.html" ? { ...entry, url: "/" } : entry,
+              ),
+              warnings: [],
+            }),
+          ],
+        },
+        manifest: {
+          name: "LFMS — Livestock Farm Management",
+          short_name: "LFMS",
+          description:
+            "Record weights, vaccinations, feed and new animals in the field, even with no network.",
+          start_url: "/",
+          scope: "/",
+          display: "standalone",
+          orientation: "portrait",
+          background_color: "#F7F5EE",
+          theme_color: "#182619",
+          icons: [
+            { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
+            { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
+            {
+              src: "/pwa-maskable-512.png",
+              sizes: "512x512",
+              type: "image/png",
+              purpose: "maskable",
+            },
+          ],
+        },
+      }),
       ...(isDevelopmentServer
         ? [vitePluginManusRuntime(), vitePluginManusDebugCollector()]
         : []),
@@ -166,6 +261,15 @@ export default defineConfig(({ command }) => {
         "@shared": path.resolve(import.meta.dirname, "shared"),
         "@assets": path.resolve(import.meta.dirname, "attached_assets"),
       },
+    },
+    // Busts the persisted React Query cache when a new bundle ships, so a
+    // deploy that changes a response shape cannot hydrate stale structures.
+    // A `define` rather than an env var because envPrefix is disabled for
+    // production builds (config is served at runtime instead).
+    define: {
+      "import.meta.env.LFMS_BUILD_ID": JSON.stringify(
+        isDevelopmentServer ? "dev" : String(Date.now())
+      ),
     },
     envDir: isDevelopmentServer ? path.resolve(import.meta.dirname) : false,
     envPrefix: isDevelopmentServer ? "VITE_" : "LFMS_BUILD_DISABLED_",

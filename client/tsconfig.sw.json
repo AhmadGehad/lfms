@@ -1,0 +1,17 @@
+{
+  // The service worker needs the WebWorker lib, which conflicts with the DOM
+  // lib used by the rest of the client (duplicate global declarations). It is
+  // therefore excluded from the root tsconfig and checked in its own program.
+  "extends": "../tsconfig.json",
+  "include": ["src/sw.ts"],
+  // The inherited exclude list resolves relative to this file and would drop
+  // the one input we want, so it is replaced rather than extended.
+  "exclude": ["../node_modules", "../dist"],
+  "compilerOptions": {
+    "lib": ["esnext", "webworker"],
+    "types": [],
+    "jsx": "preserve",
+    "noEmit": true,
+    "tsBuildInfoFile": "../node_modules/typescript/tsbuildinfo.sw"
+  }
+}
