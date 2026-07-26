@@ -52,18 +52,30 @@ function TenantSurface() {
         <Landing />
       </Suspense>
     );
-  if (path === "/login") return <Login />;
-  if (path === "/forgot-password") return <ForgotPassword />;
-  if (path === "/reset-password") return <ResetPassword />;
-  if (acceptingInvitation) return <AcceptInvitation />;
-  if (suspension.data?.suspended) return <CompanySuspended />;
-  if (suspension.isLoading)
-    return <main className="min-h-dvh bg-background" aria-busy="true" />;
+
+  const surface = () => {
+    if (path === "/login") return <Login />;
+    if (path === "/forgot-password") return <ForgotPassword />;
+    if (path === "/reset-password") return <ResetPassword />;
+    if (acceptingInvitation) return <AcceptInvitation />;
+    if (suspension.data?.suspended) return <CompanySuspended />;
+    if (suspension.isLoading)
+      return <main className="min-h-dvh bg-background" aria-busy="true" />;
+    return (
+      <>
+        <OfflineIdentityTracker />
+        <DesignRouter />
+      </>
+    );
+  };
+
   return (
     <>
-      <OfflineIdentityTracker />
+      {surface()}
+      {/* Outside the authenticated branch on purpose: someone who has not signed
+          in yet is exactly who still needs to install the app, and offering it
+          only after login is how this went unnoticed on Android. */}
       <InstallAppBanner />
-      <DesignRouter />
     </>
   );
 }

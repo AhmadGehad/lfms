@@ -71,6 +71,7 @@ describe("resolveInstallMethod", () => {
     mobile: true,
     ios: false,
     hasBrowserPrompt: false,
+    waitedForPrompt: false,
     dismissedAt: null,
     now: 1_000_000_000,
   };
@@ -85,8 +86,22 @@ describe("resolveInstallMethod", () => {
     expect(resolveInstallMethod({ ...base, ios: true })).toBe("manual");
   });
 
-  it("stays silent on a browser that can neither prompt nor be instructed", () => {
+  it("stays quiet while the browser prompt may still be coming", () => {
+    // Chrome fires beforeinstallprompt almost immediately when it fires at all,
+    // so showing instructions before the wait elapses would flash the wrong UI.
     expect(resolveInstallMethod(base)).toBe("none");
+  });
+
+  it("falls back to instructions when Chrome never fires the event", () => {
+    // The reported bug: an Android user saw no way to install. Chrome withholds
+    // the event for reasons we cannot detect, so after the wait we instruct.
+    expect(resolveInstallMethod({ ...base, waitedForPrompt: true })).toBe("manual");
+  });
+
+  it("prefers the real prompt over instructions once the event arrives", () => {
+    expect(
+      resolveInstallMethod({ ...base, waitedForPrompt: true, hasBrowserPrompt: true }),
+    ).toBe("prompt");
   });
 
   it("never nags someone already running the installed app", () => {

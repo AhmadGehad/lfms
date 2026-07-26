@@ -62,15 +62,27 @@ export function isDismissActive(dismissedAt: number | null, now: number): boolea
 }
 
 /**
+ * How long to wait for `beforeinstallprompt` before falling back to manual
+ * instructions. Chrome fires it almost immediately when it fires at all, so a
+ * few seconds is enough to tell "not yet" from "never".
+ */
+export const PROMPT_WAIT_MS = 3_000;
+
+/**
  * Decides which invitation, if any, to show.
  *
  * `hasBrowserPrompt` is whether a `beforeinstallprompt` event has been captured.
+ * `waitedForPrompt` is whether PROMPT_WAIT_MS has elapsed without one arriving —
+ * Chrome withholds the event for reasons we cannot detect (engagement
+ * heuristics, an earlier dismissal, an unsupported browser), and in that case
+ * instructions are still better than showing the user nothing at all.
  */
 export function resolveInstallMethod(input: {
   installed: boolean;
   mobile: boolean;
   ios: boolean;
   hasBrowserPrompt: boolean;
+  waitedForPrompt: boolean;
   dismissedAt: number | null;
   now: number;
 }): InstallMethod {
@@ -78,5 +90,7 @@ export function resolveInstallMethod(input: {
   if (!input.mobile) return "none";
   if (isDismissActive(input.dismissedAt, input.now)) return "none";
   if (input.hasBrowserPrompt) return "prompt";
-  return input.ios ? "manual" : "none";
+  // iOS never fires the event, so it needs no waiting period.
+  if (input.ios) return "manual";
+  return input.waitedForPrompt ? "manual" : "none";
 }

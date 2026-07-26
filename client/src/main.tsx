@@ -17,11 +17,17 @@ import {
 } from "./lib/offline/offlineMutations";
 import { bucketForIdentity, createOfflinePersister } from "./lib/offline/persister";
 import { registerServiceWorker } from "./lib/offline/registerServiceWorker";
+import { captureInstallPrompt } from "./lib/pwa/installPromptBuffer";
 import { isAuthExpiredError } from "./lib/offline/syncQueue";
 import { initializePublicBrowserServices } from "./lib/publicConfig";
 import "./index.css";
 
 initializePublicBrowserServices();
+
+// Before any rendering: Chrome fires beforeinstallprompt as soon as the page
+// qualifies for installation, and the event neither replays nor can be
+// re-requested. Attaching this from a component effect would miss it.
+captureInstallPrompt();
 
 /** A week: long enough to survive a stretch in the field with no signal. */
 const OFFLINE_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1_000;

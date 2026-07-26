@@ -11,12 +11,12 @@
  */
 import { Button } from "@/components/ui/button";
 import { useInstallPrompt } from "@/lib/pwa/useInstallPrompt";
-import { Download, Share, X } from "lucide-react";
+import { Download, MoreVertical, Share, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 export function InstallAppBanner() {
   const { t } = useTranslation();
-  const { method, install, dismiss } = useInstallPrompt();
+  const { method, isIosDevice, install, dismiss } = useInstallPrompt();
 
   if (method === "none") return null;
 
@@ -44,7 +44,7 @@ export function InstallAppBanner() {
                 )
               : t(
                   "install.bodyManual",
-                  "Tap Share, then “Add to Home Screen”, to record weights and vaccinations even with no network.",
+                  "Add it to your home screen to record weights and vaccinations even with no network.",
                 )}
           </p>
 
@@ -54,11 +54,17 @@ export function InstallAppBanner() {
               {t("install.action", "Install app")}
             </Button>
           ) : (
-            // iOS gives no programmatic install, so all we can do is point at
-            // the share sheet.
+            // No programmatic install available: iOS has no such API, and Chrome
+            // sometimes withholds the event. Point at the browser's own menu.
             <p className="mt-2 flex items-center gap-1.5 text-xs font-medium">
-              <Share className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-              {t("install.iosHint", "Share → Add to Home Screen")}
+              {isIosDevice ? (
+                <Share className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              ) : (
+                <MoreVertical className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              )}
+              {isIosDevice
+                ? t("install.iosHint", "Share → Add to Home Screen")
+                : t("install.androidHint", "Browser menu (⋮) → Add to Home screen")}
             </p>
           )}
         </div>

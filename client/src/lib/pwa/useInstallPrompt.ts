@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
+  PROMPT_WAIT_MS,
   isIos,
   isMobileDevice,
   isRunningInstalled,
@@ -8,57 +9,54 @@ import {
   writeDismissedAt,
   type InstallMethod,
 } from "./installEligibility";
-
-/** Not in the standard DOM lib — Chromium-only. */
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
+import {
+  consumeInstallPrompt,
+  getBufferedInstallPrompt,
+  subscribeInstallPrompt,
+  wasInstalledThisSession,
+} from "./installPromptBuffer";
 
 export type InstallPromptState = {
   method: InstallMethod;
+  /** True on iOS; the instructions differ per platform. */
+  isIosDevice: boolean;
   /** Triggers the browser's install dialog. Only meaningful when method is "prompt". */
   install: () => Promise<void>;
   dismiss: () => void;
 };
 
 export function useInstallPrompt(): InstallPromptState {
-  const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
+  // Read from the buffer populated at entry-point time: Chrome fires
+  // beforeinstallprompt before React mounts, so a listener added here would
+  // already have missed it.
+  const deferred = useSyncExternalStore(
+    subscribeInstallPrompt,
+    getBufferedInstallPrompt,
+    () => null,
+  );
+  const installedThisSession = useSyncExternalStore(
+    subscribeInstallPrompt,
+    wasInstalledThisSession,
+    () => false,
+  );
+
   const [dismissedAt, setDismissedAt] = useState<number | null>(() =>
     typeof window === "undefined" ? null : readDismissedAt(window.localStorage),
   );
-  const [installed, setInstalled] = useState(() =>
-    typeof window === "undefined" ? true : isRunningInstalled(window),
-  );
+  const [waitedForPrompt, setWaitedForPrompt] = useState(false);
 
+  // Chrome may withhold the event entirely; after a short wait, fall back to
+  // instructions rather than leaving the user with no way to install.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const onBeforeInstallPrompt = (event: Event) => {
-      // Suppressing the default keeps Chrome's own mini-infobar from competing
-      // with ours; the captured event is what our button triggers instead.
-      event.preventDefault();
-      setDeferred(event as BeforeInstallPromptEvent);
-    };
-    const onInstalled = () => {
-      setInstalled(true);
-      setDeferred(null);
-    };
-
-    window.addEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-    window.addEventListener("appinstalled", onInstalled);
-    return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
-      window.removeEventListener("appinstalled", onInstalled);
-    };
+    const timer = setTimeout(() => setWaitedForPrompt(true), PROMPT_WAIT_MS);
+    return () => clearTimeout(timer);
   }, []);
 
   const install = useCallback(async () => {
     if (!deferred) return;
     await deferred.prompt();
     const choice = await deferred.userChoice;
-    // A dismissed native dialog cannot be reopened with the same event.
-    setDeferred(null);
+    consumeInstallPrompt();
     if (choice.outcome === "dismissed") {
       const now = Date.now();
       writeDismissedAt(window.localStorage, now);
@@ -73,14 +71,18 @@ export function useInstallPrompt(): InstallPromptState {
   }, []);
 
   const userAgent = typeof navigator === "undefined" ? "" : navigator.userAgent;
+  const iosDevice = isIos(userAgent);
   const method = resolveInstallMethod({
-    installed,
+    installed:
+      installedThisSession ||
+      (typeof window === "undefined" ? true : isRunningInstalled(window)),
     mobile: isMobileDevice(userAgent),
-    ios: isIos(userAgent),
+    ios: iosDevice,
     hasBrowserPrompt: deferred !== null,
+    waitedForPrompt,
     dismissedAt,
     now: Date.now(),
   });
 
-  return { method, install, dismiss };
+  return { method, isIosDevice: iosDevice, install, dismiss };
 }
