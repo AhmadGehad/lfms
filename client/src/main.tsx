@@ -41,7 +41,9 @@ const queryClient = new QueryClient({
       gcTime: OFFLINE_CACHE_MAX_AGE_MS,
       staleTime: 30_000,
     },
-    mutations: { networkMode: "offlineFirst" },
+    // Offline-capable mutations get "online" from their registered defaults so
+    // they pause instead of firing a doomed request; see offlineMutations.ts.
+    mutations: { networkMode: "online" },
   },
 });
 

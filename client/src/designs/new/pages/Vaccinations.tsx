@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { toast } from "sonner";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -243,6 +244,7 @@ export default function NewVaccinations() {
   const [editForm, setEditForm] = useState({ vaccinationDate: today(), batchNumber: "", veterinarian: "", notes: "", isCompleted: false });
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
 
+  const queuedSubmit = useQueuedSubmit();
   const add = trpc.vaccination.addVaccinationRecord.useMutation({
     onSuccess: () => { utils.vaccination.getVaccinationRecords.invalidate(); toast.success(t("vaccine.recorded", "Vaccination recorded")); setCreateIdempotencyKey(crypto.randomUUID()); },
     onError: e => toast.error(e.message),
@@ -260,7 +262,8 @@ export default function NewVaccinations() {
 
   const submit = (again: boolean) => {
     if (!form.animalId || !form.vaccineId) { toast.error(t("vaccine.pickAnimalVaccine", "Pick an animal and a vaccine")); return; }
-    add.mutate(
+    queuedSubmit(
+      add,
       {
         animalId: Number(form.animalId),
         vaccineId: Number(form.vaccineId),
@@ -272,7 +275,16 @@ export default function NewVaccinations() {
         notifyBeforeBooster: form.notifyBeforeBooster ? Number(form.notifyBeforeBooster) : undefined,
         idempotencyKey: createIdempotencyKey,
       },
-      { onSuccess: () => (again ? setForm({ ...blank }) : setOpen(false)) }
+      {
+        onOnlineSuccess: () => (again ? setForm({ ...blank }) : setOpen(false)),
+        // The mutation's own onSuccess only runs once the record syncs, so the
+        // form has to be cleared and closed here too.
+        whenQueued: () => {
+          setCreateIdempotencyKey(crypto.randomUUID());
+          if (again) setForm({ ...blank });
+          else setOpen(false);
+        },
+      }
     );
   };
 
@@ -408,8 +420,8 @@ export default function NewVaccinations() {
           </FormSection>
           <FormFooter>
             <button onClick={() => setOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
-            <button disabled={add.isPending} onClick={() => submit(true)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface disabled:opacity-50">{t("common.saveAddAnother", "Save & add another")}</button>
-            <button disabled={add.isPending} onClick={() => submit(false)} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{t("common.save", "Save")}</button>
+            <button disabled={isMutationWorking(add)} onClick={() => submit(true)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface disabled:opacity-50">{t("common.saveAddAnother", "Save & add another")}</button>
+            <button disabled={isMutationWorking(add)} onClick={() => submit(false)} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{t("common.save", "Save")}</button>
           </FormFooter>
         </DialogContent>
       </Dialog>

@@ -19,6 +19,13 @@ export function registerServiceWorker(onUpdateAvailable?: UpdatePrompt) {
   // worker is only built for production.
   if (import.meta.env.DEV) return;
 
+  // Whether this page was already under a worker's control. On a first-ever
+  // visit `clientsClaim()` makes the brand-new worker take over mid-session,
+  // which fires controllerchange; reloading on that would bounce the user
+  // immediately after their first load. Only an actual *update* warrants a
+  // reload, and that only happens when a controller was already present.
+  const hadController = navigator.serviceWorker.controller !== null;
+
   window.addEventListener("load", () => {
     void navigator.serviceWorker
       .register(SERVICE_WORKER_URL, { scope: "/" })
@@ -45,7 +52,7 @@ export function registerServiceWorker(onUpdateAvailable?: UpdatePrompt) {
 
   let reloading = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloading) return;
+    if (!hadController || reloading) return;
     reloading = true;
     window.location.reload();
   });

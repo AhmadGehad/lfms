@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { Scale, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -44,6 +45,7 @@ function RecordWeightDialog({
   const [weight, setWeight] = useState("");
   const utils = trpc.useUtils();
 
+  const queuedSubmit = useQueuedSubmit();
   const addWeight = trpc.animals.addWeight.useMutation({
     onSuccess: (result: any) => {
       if (result?.autoStaged && result?.newAnimalId) {
@@ -106,10 +108,10 @@ function RecordWeightDialog({
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
           <Button
-            onClick={() => addWeight.mutate({ animalId: Number(animalId), weighDate: date, weightKg: weight, idempotencyKey: crypto.randomUUID() })}
-            disabled={!animalId || !weight || addWeight.isPending}
+            onClick={() => queuedSubmit(addWeight, { animalId: Number(animalId), weighDate: date, weightKg: weight, idempotencyKey: crypto.randomUUID() }, { whenQueued: () => setWeight("") })}
+            disabled={!animalId || !weight || isMutationWorking(addWeight)}
           >
-            {addWeight.isPending ? "Saving..." : "Save"}
+            {isMutationWorking(addWeight) ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

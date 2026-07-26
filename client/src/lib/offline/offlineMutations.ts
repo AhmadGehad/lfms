@@ -81,11 +81,15 @@ export function registerOfflineMutationDefaults(
     const mutate = resolveMutate(client, path);
     queryClient.setMutationDefaults(mutationKeyForPath(path) as unknown as unknown[], {
       mutationFn: input => mutate(input),
-      // offlineFirst: attempt immediately when we think we are online, but pause
-      // instead of failing when the request cannot leave the device.
-      networkMode: "offlineFirst",
-      retry: 3,
-      retryDelay: attempt => Math.min(1_000 * 2 ** attempt, 30_000),
+      // "online" rather than "offlineFirst": with no network the write pauses
+      // immediately instead of firing a request that is certain to fail, so the
+      // form is never left spinning on a doomed attempt. Paused writes resume
+      // automatically on reconnect.
+      networkMode: "online",
+      // Kept short. A paused write resumes on reconnect anyway, so long backoff
+      // only prolongs how long a form looks busy when the network is flaky.
+      retry: 2,
+      retryDelay: attempt => Math.min(1_000 * 2 ** attempt, 5_000),
       // Show the record straight away, so an offline entry is visibly saved
       // rather than appearing to vanish.
       onMutate: input => applyOptimisticRow(queryClient, path, input),

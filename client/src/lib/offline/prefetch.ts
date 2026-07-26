@@ -22,6 +22,13 @@ import type { AppRouter } from "../../../../server/routers";
 
 /** Procedures whose pages call `useQuery()` with no input. */
 const NO_INPUT_QUERIES = [
+  // Boot-critical. TenantSurface renders a loading state until suspensionStatus
+  // resolves and the shells need `me`, so without cached copies an offline
+  // launch can sit on a near-empty screen.
+  "auth.me",
+  "auth.suspensionStatus",
+  "auth.tenantContext",
+  "tenancy.publicBranding",
   // Reference data — every offline form needs these to render its selects.
   "config.getSpecies",
   "config.getCategories",

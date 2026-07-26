@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, DollarSign, Leaf, Scale, Search, ShoppingCart } from "lucide-react";
 import { FormField, FormFooter, FormSection } from "./FormLayout";
 import { ExpenseFormFields, blankExpenseForm, expenseFormToPayload, validateExpenseForm, type ExpenseForm } from "./ExpenseFormFields";
@@ -92,8 +93,8 @@ export function QuickExpenseDialog({
           <ExpenseFormFields form={form} setForm={setForm} />
           <FormFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel", "Cancel")}</Button>
-            <Button type="button" variant="outline" disabled={create.isPending} onClick={() => submit(true)}>{t("common.saveAddAnother", "Save & add another")}</Button>
-            <Button type="button" disabled={create.isPending} onClick={() => submit(false)}>{create.isPending ? t("common.saving", "Saving...") : t("common.save", "Save")}</Button>
+            <Button type="button" variant="outline" disabled={isMutationWorking(create)} onClick={() => submit(true)}>{t("common.saveAddAnother", "Save & add another")}</Button>
+            <Button type="button" disabled={isMutationWorking(create)} onClick={() => submit(false)}>{isMutationWorking(create) ? t("common.saving", "Saving...") : t("common.save", "Save")}</Button>
           </FormFooter>
         </div>
       </DialogContent>
@@ -138,6 +139,7 @@ export function AnimalCreateDialog({
   const { data: owners } = trpc.config.getOwnerOptions.useQuery();
   const selectedCategory = ((categories as any[]) ?? []).find(c => String(c.id) === form.categoryId);
   const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
+  const queuedSubmit = useQueuedSubmit();
   const create = trpc.animals.create.useMutation({
     onSuccess: () => {
       toast.success(t("animals.registered", "Animal registered"));
@@ -163,7 +165,8 @@ export function AnimalCreateDialog({
       toast.error(t("common.required", "Fill required fields"));
       return;
     }
-    create.mutate(
+    queuedSubmit(
+      create,
       {
         speciesId: Number(form.speciesId),
         categoryId: Number(form.categoryId),
@@ -179,7 +182,23 @@ export function AnimalCreateDialog({
         animalIdNumber: form.animalIdNumber || undefined,
         idempotencyKey: createIdempotencyKey,
       },
-      { onSuccess: () => addAnother && onOpenChange(true) }
+      {
+        onOnlineSuccess: () => addAnother && onOpenChange(true),
+        // Queued offline: the server assigns the animal ID on sync. The
+        // mutation's own onSuccess will not run until then, so mirror it here.
+        whenQueued: () => {
+          setCreateIdempotencyKey(crypto.randomUUID());
+          setForm(f => ({
+            ...f,
+            categoryId: "",
+            groupId: "",
+            animalIdNumber: "",
+            purchaseCost: "",
+            weightAtAcquisition: "",
+          }));
+          if (!addAnother) onOpenChange(false);
+        },
+      },
     );
   };
 
@@ -276,8 +295,8 @@ export function AnimalCreateDialog({
         </div>
         <FormFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel", "Cancel")}</Button>
-          <Button type="button" variant="outline" disabled={create.isPending} onClick={() => submit(true)}>{t("common.saveAddAnother", "Save & Add Another")}</Button>
-          <Button type="button" disabled={create.isPending} onClick={() => submit(false)}>{create.isPending ? t("common.saving", "Saving...") : t("common.save", "Save")}</Button>
+          <Button type="button" variant="outline" disabled={isMutationWorking(create)} onClick={() => submit(true)}>{t("common.saveAddAnother", "Save & Add Another")}</Button>
+          <Button type="button" disabled={isMutationWorking(create)} onClick={() => submit(false)}>{isMutationWorking(create) ? t("common.saving", "Saving...") : t("common.save", "Save")}</Button>
         </FormFooter>
       </DialogContent>
     </Dialog>
@@ -330,6 +349,7 @@ export function WeighInSessionDialog({
   const progress = target > 0 ? Math.min(100, Math.round((latest / target) * 100)) : 0;
   const newWeight = num(weight);
   const gain = newWeight > 0 && latest > 0 ? newWeight - latest : 0;
+  const queuedSubmit = useQueuedSubmit();
   const addWeight = trpc.animals.addWeight.useMutation({
     onSuccess: (result: any) => {
       if (result?.autoStaged && result?.newAnimalId) {
@@ -345,12 +365,23 @@ export function WeighInSessionDialog({
     onError: e => toast.error(e.message),
   });
 
+  /** Same follow-up as onSuccess, for a write that was queued offline. */
+  const advanceAfterSave = () => {
+    setWeight("");
+    if (index < activeAnimals.length - 1) setIndex(i => i + 1);
+    else onOpenChange(false);
+  };
+
   const save = () => {
     if (!current?.animal?.id || !(newWeight > 0)) {
       toast.error(t("weight.required", "Enter weight"));
       return;
     }
-    addWeight.mutate({ animalId: current.animal.id, weighDate: date, weightKg: weight, idempotencyKey: crypto.randomUUID() });
+    queuedSubmit(
+      addWeight,
+      { animalId: current.animal.id, weighDate: date, weightKg: weight, idempotencyKey: crypto.randomUUID() },
+      { whenQueued: advanceAfterSave },
+    );
   };
 
   return (
@@ -474,14 +505,14 @@ export function WeighInSessionDialog({
         )}
 
         <DialogFooter className="border-t border-border bg-card px-6 py-4">
-          <Button type="button" variant="outline" disabled={index === 0 || addWeight.isPending} onClick={() => { setIndex(i => Math.max(0, i - 1)); setWeight(""); }}>
+          <Button type="button" variant="outline" disabled={index === 0 || isMutationWorking(addWeight)} onClick={() => { setIndex(i => Math.max(0, i - 1)); setWeight(""); }}>
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             {t("common.back", "Back")}
           </Button>
-          <Button type="button" variant="outline" disabled={index >= activeAnimals.length - 1 || addWeight.isPending} onClick={() => { setIndex(i => Math.min(activeAnimals.length - 1, i + 1)); setWeight(""); }}>
+          <Button type="button" variant="outline" disabled={index >= activeAnimals.length - 1 || isMutationWorking(addWeight)} onClick={() => { setIndex(i => Math.min(activeAnimals.length - 1, i + 1)); setWeight(""); }}>
             {t("common.skip", "Skip")}
           </Button>
-          <Button type="button" disabled={addWeight.isPending || !current || !(newWeight > 0)} onClick={save}>
+          <Button type="button" disabled={isMutationWorking(addWeight) || !current || !(newWeight > 0)} onClick={save}>
             {index >= activeAnimals.length - 1 ? t("common.finish", "Finish") : t("weight.nextAnimal", "Next Animal")}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </Button>
@@ -679,8 +710,8 @@ export function RecordSaleDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>{t("common.back", "Back")}</Button>
-            <Button type="button" variant="destructive" disabled={exitAnimal.isPending || (loss && typed !== "SELL")} onClick={submit}>
-              {exitAnimal.isPending ? t("common.saving", "Saving...") : t("sales.confirmSale", "Confirm Sale")}
+            <Button type="button" variant="destructive" disabled={isMutationWorking(exitAnimal) || (loss && typed !== "SELL")} onClick={submit}>
+              {isMutationWorking(exitAnimal) ? t("common.saving", "Saving...") : t("sales.confirmSale", "Confirm Sale")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -965,8 +996,8 @@ export function BulkRecordSaleDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>{t("common.back", "Back")}</Button>
-            <Button type="button" variant="destructive" disabled={bulkExit.isPending} onClick={submit}>
-              {bulkExit.isPending ? t("common.saving", "Saving…") : t("sales.confirmSale", "Confirm Sale")}
+            <Button type="button" variant="destructive" disabled={isMutationWorking(bulkExit)} onClick={submit}>
+              {isMutationWorking(bulkExit) ? t("common.saving", "Saving…") : t("sales.confirmSale", "Confirm Sale")}
             </Button>
           </DialogFooter>
         </DialogContent>

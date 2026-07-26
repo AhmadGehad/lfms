@@ -58,7 +58,8 @@ describe("offline mutation registry", () => {
       expect(defaults?.mutationFn, `no mutationFn registered for ${path}`).toBeTypeOf(
         "function",
       );
-      expect(defaults?.networkMode).toBe("offlineFirst");
+      // networkMode is asserted in queuedSubmit.test.ts, next to the reason it
+      // has to be "online".
     }
 
     // The registered function must actually reach the procedure it names.

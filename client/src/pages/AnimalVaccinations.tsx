@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { AlertTriangle, CalendarDays, Pencil, Syringe, Trash2, CheckCircle2, Users } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -282,6 +283,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
   const { data: vaccines } = trpc.config.getVaccines.useQuery();
   const utils = trpc.useUtils();
 
+  const queuedSubmit = useQueuedSubmit();
   const addMutation = trpc.vaccination.addVaccinationRecord.useMutation({
     onSuccess: () => {
       toast.success(t("vaccine.vaccinationSaved"));
@@ -319,17 +321,28 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
         isCompleted: form.isCompleted,
       });
     } else {
-      addMutation.mutate({
-        animalId: parseInt(form.animalId),
-        vaccineId: parseInt(form.vaccineId),
-        vaccinationDate: form.vaccinationDate,
-        batchNumber: form.batchNumber || undefined,
-        notes: form.notes || undefined,
-        veterinarian: form.veterinarian || undefined,
-        notifyBeforeNext: form.notifyBeforeNext ? parseInt(form.notifyBeforeNext) : undefined,
-        notifyBeforeBooster: form.notifyBeforeBooster ? parseInt(form.notifyBeforeBooster) : undefined,
-        idempotencyKey,
-      });
+      queuedSubmit(
+        addMutation,
+        {
+          animalId: parseInt(form.animalId),
+          vaccineId: parseInt(form.vaccineId),
+          vaccinationDate: form.vaccinationDate,
+          batchNumber: form.batchNumber || undefined,
+          notes: form.notes || undefined,
+          veterinarian: form.veterinarian || undefined,
+          notifyBeforeNext: form.notifyBeforeNext ? parseInt(form.notifyBeforeNext) : undefined,
+          notifyBeforeBooster: form.notifyBeforeBooster ? parseInt(form.notifyBeforeBooster) : undefined,
+          idempotencyKey,
+        },
+        {
+          // Queued offline: the mutation's own onSuccess waits for the sync.
+          whenQueued: () => {
+            setOpen(false);
+            setIdempotencyKey(crypto.randomUUID());
+            onSuccess();
+          },
+        },
+      );
     }
   };
 
@@ -416,7 +429,7 @@ function VaccinationRecordFormDialog({ record, onSuccess }: { record?: any; onSu
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSubmit} disabled={addMutation.isPending || updateMutation.isPending}>{t("common.save")}</Button>
+          <Button onClick={handleSubmit} disabled={isMutationWorking(addMutation) || updateMutation.isPending}>{t("common.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

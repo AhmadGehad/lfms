@@ -59,8 +59,21 @@ function TenantSurface() {
     if (path === "/reset-password") return <ResetPassword />;
     if (acceptingInvitation) return <AcceptInvitation />;
     if (suspension.data?.suspended) return <CompanySuspended />;
+    // A visible indicator rather than an empty <main>: on a slow or offline
+    // launch this used to render as an indistinguishable blank page.
     if (suspension.isLoading)
-      return <main className="min-h-dvh bg-background" aria-busy="true" />;
+      return (
+        <main
+          className="grid min-h-dvh place-items-center bg-background"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+            <span className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span className="text-sm">Loading…</span>
+          </div>
+        </main>
+      );
     return (
       <>
         <OfflineIdentityTracker />

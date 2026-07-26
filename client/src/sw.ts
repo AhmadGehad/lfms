@@ -27,6 +27,30 @@ declare const self: ServiceWorkerGlobalScope & {
 /** The shell URL, matching the `manifestTransforms` rewrite in vite.config.ts. */
 const SHELL_URL = "/";
 
+const RUNTIME_CONFIG_URL = "/runtime-config.js";
+const RUNTIME_CONFIG_CACHE = "lfms-runtime-config";
+
+/**
+ * index.html loads /runtime-config.js before the app boots, and the server sends
+ * it with `Cache-Control: no-store`. It is served by the container rather than
+ * from static assets, so it is not in the precache manifest — meaning the only
+ * copy would be whatever a NetworkFirst fetch happened to store while the worker
+ * was already controlling the page. On a first visit the worker is not yet in
+ * control, so that copy may never exist and the next offline launch has no
+ * config at all. Fetching it during install closes that gap.
+ */
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches
+      .open(RUNTIME_CONFIG_CACHE)
+      .then(cache => cache.add(new Request(RUNTIME_CONFIG_URL, { cache: "reload" })))
+      .catch(() => {
+        // Offline at install time, or the endpoint is unavailable: the runtime
+        // route below will populate it on the next successful load.
+      }),
+  );
+});
+
 /** Paths that must always hit the network — dynamic, authenticated, or both. */
 const NEVER_CACHED = [/^\/api\//, /^\/manus-storage\//, /^\/health\b/, /^\/metrics$/];
 
@@ -38,9 +62,9 @@ registerRoute(
 );
 
 registerRoute(
-  ({ url }) => url.pathname === "/runtime-config.js",
+  ({ url }) => url.pathname === RUNTIME_CONFIG_URL,
   new NetworkFirst({
-    cacheName: "lfms-runtime-config",
+    cacheName: RUNTIME_CONFIG_CACHE,
     networkTimeoutSeconds: 5,
   }),
 );

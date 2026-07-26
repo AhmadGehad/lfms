@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign, Pencil, Syringe } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -110,6 +111,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const utils = trpc.useUtils();
   const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
+  const queuedSubmit = useQueuedSubmit();
   const createAnimal = trpc.animals.create.useMutation({
     onSuccess: () => {
       toast.success(t("animals.title") + " registered");
@@ -130,7 +132,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       toast.error(t("common.required"));
       return;
     }
-    createAnimal.mutate({
+    queuedSubmit(createAnimal, {
       speciesId: Number(data.speciesId),
       categoryId: Number(data.categoryId),
       groupId: Number(data.groupId),
@@ -144,6 +146,15 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       ownerId: (data.ownerId && data.ownerId !== "none") ? Number(data.ownerId) : undefined,
       animalIdNumber: data.animalIdNumber || undefined,
       idempotencyKey: createIdempotencyKey,
+    }, {
+      // Queued offline: mirror the mutation's own onSuccess, which will not run
+      // until the animal reaches the server and is assigned its real ID.
+      whenQueued: () => {
+        setOpen(false);
+        reset();
+        setCreateIdempotencyKey(crypto.randomUUID());
+        onSuccess();
+      },
     });
   };
 
@@ -297,8 +308,8 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-            <Button type="submit" disabled={createAnimal.isPending}>
-              {createAnimal.isPending ? "Registering..." : t("animals.addAnimal")}
+            <Button type="submit" disabled={isMutationWorking(createAnimal)}>
+              {isMutationWorking(createAnimal) ? "Registering..." : t("animals.addAnimal")}
             </Button>
           </DialogFooter>
         </form>

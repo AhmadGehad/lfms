@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { useLocation, useSearch } from "wouter";
 import { Egg, Plus, Trash2, AlertTriangle, ExternalLink, Pencil } from "lucide-react";
 import {
@@ -135,6 +136,7 @@ function RecordBirthDialog() {
   );
 
   const utils = trpc.useUtils();
+  const queuedSubmit = useQueuedSubmit();
   const recordBirth = trpc.breeding.recordBirth.useMutation({
     onSuccess: () => {
       toast.success(t("breeding.birthRecorded"));
@@ -152,7 +154,7 @@ function RecordBirthDialog() {
       toast.error(t("breeding.birthRequiredFields"));
       return;
     }
-    recordBirth.mutate({
+    queuedSubmit(recordBirth, {
       birthDate: data.birthDate,
       speciesId: Number(data.speciesId),
       categoryId: Number(data.categoryId),
@@ -166,6 +168,12 @@ function RecordBirthDialog() {
       notes: data.notes || undefined,
       lambIdNumber: data.lambIdNumber || undefined,
       idempotencyKey,
+    }, {
+      whenQueued: () => {
+        setOpen(false);
+        setIdempotencyKey(crypto.randomUUID());
+        reset();
+      },
     });
   };
 
@@ -329,8 +337,8 @@ function RecordBirthDialog() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-            <Button type="submit" disabled={recordBirth.isPending}>
-              {recordBirth.isPending ? t("breeding.recording") : t("breeding.recordBirth")}
+            <Button type="submit" disabled={isMutationWorking(recordBirth)}>
+              {isMutationWorking(recordBirth) ? t("breeding.recording") : t("breeding.recordBirth")}
             </Button>
           </DialogFooter>
         </form>

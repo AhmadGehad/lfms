@@ -13,6 +13,7 @@ import { FarmMapPreview } from "@/components/FarmMapPreview";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { readMapShape } from "@/lib/farmMap";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { ArrowLeft, DollarSign, Egg, ExternalLink, FileDown, GitBranch, MapPinned, Maximize2, Pencil, Plus, Scale, ShoppingCart, TrendingUp, Trash2, Syringe } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { generateAnimalPnLPdf } from "@/lib/pdfReports";
@@ -288,6 +289,7 @@ function WeightChart({ animalId }: { animalId: number }) {
   const [weight, setWeight] = useState("");
   const utils = trpc.useUtils();
 
+  const queuedSubmit = useQueuedSubmit();
   const addWeight = trpc.animals.addWeight.useMutation({
     onSuccess: (result: any) => {
       setWeightIdempotencyKey(crypto.randomUUID());
@@ -359,7 +361,7 @@ function WeightChart({ animalId }: { animalId: number }) {
               </div>
             </div>
             <DialogFooter>
-              <Button onClick={() => addWeight.mutate({ animalId, weighDate: date, weightKg: weight, idempotencyKey: weightIdempotencyKey })} disabled={!weight || addWeight.isPending}>
+              <Button onClick={() => queuedSubmit(addWeight, { animalId, weighDate: date, weightKg: weight, idempotencyKey: weightIdempotencyKey }, { whenQueued: () => { setOpen(false); setWeight(""); } })} disabled={!weight || isMutationWorking(addWeight)}>
                 {t("common.save")}
               </Button>
             </DialogFooter>
