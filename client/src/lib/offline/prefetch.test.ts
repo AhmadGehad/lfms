@@ -110,6 +110,48 @@ describe("prefetchOfflineReadSet", () => {
     expect(calls).not.toContain("feed.getStockStatus");
   });
 
+  it("prefetches profile data for every cached animal, within the cap", async () => {
+    const { ANIMAL_DETAIL_QUERIES, ANIMAL_DETAIL_PREFETCH_LIMIT } = await import("./prefetch");
+    const queryClient = new QueryClient();
+    const detailPaths = ANIMAL_DETAIL_QUERIES.map(query => query.path);
+    const { client } = fakeTrpcClient([...OFFLINE_PREFETCH_PATHS, ...detailPaths]);
+
+    // The list query is what supplies the ids for the detail pass.
+    const detailCalls: unknown[] = [];
+    client.animals.list.query = vi.fn(async () => [
+      { animal: { id: 7 } },
+      { animal: { id: 9 } },
+    ]);
+    client.animals.getById.query = vi.fn(async (input: unknown) => {
+      detailCalls.push(["getById", input]);
+      return {};
+    });
+    client.animals.getWeightLog.query = vi.fn(async (input: unknown) => {
+      detailCalls.push(["getWeightLog", input]);
+      return [];
+    });
+
+    await prefetchOfflineReadSet(queryClient, client);
+
+    // A profile opened for the first time while offline needs these cached —
+    // the field workflow is "walk to the animal, open it, record a weight".
+    expect(detailCalls).toContainEqual(["getById", { id: 7 }]);
+    expect(detailCalls).toContainEqual(["getById", { id: 9 }]);
+    expect(detailCalls).toContainEqual(["getWeightLog", { animalId: 7 }]);
+    expect(detailCalls).toContainEqual(["getWeightLog", { animalId: 9 }]);
+    expect(ANIMAL_DETAIL_PREFETCH_LIMIT).toBeGreaterThan(0);
+  });
+
+  it("skips the detail pass entirely when the animal list could not be fetched", async () => {
+    const queryClient = new QueryClient();
+    const { client } = fakeTrpcClient(OFFLINE_PREFETCH_PATHS);
+    client.animals.list.query = vi.fn(async () => {
+      throw new Error("unreachable");
+    });
+
+    await expect(prefetchOfflineReadSet(queryClient, client)).resolves.toBeUndefined();
+  });
+
   it("ignores a procedure that no longer exists rather than throwing at startup", async () => {
     const queryClient = new QueryClient();
     const { client } = fakeTrpcClient(

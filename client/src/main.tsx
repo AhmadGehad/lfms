@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import App from "./App";
 import { getLoginUrl } from "./const";
 import { getStoredFarmPublicId } from "./lib/farmSelection";
+import { instrumentFetch } from "./lib/offline/connectivity";
 import { readOfflineIdentity } from "./lib/offline/identity";
 import {
   isOfflineMutationPath,
@@ -63,6 +64,11 @@ function readCsrfCookie() {
   return decodeURIComponent(entry.slice(entry.indexOf("=") + 1));
 }
 
+// Timed out + connectivity-instrumented: a dead link must fail in seconds and
+// flip the app to offline mode, not leave forms hanging on a request that will
+// never answer (navigator.onLine happily reports "online" on dead wifi).
+const instrumentedFetch = instrumentFetch(globalThis.fetch.bind(globalThis));
+
 function authenticatedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
@@ -73,7 +79,7 @@ function authenticatedFetch(
   if (csrfToken) headers.set("X-LFMS-CSRF", csrfToken);
   const farmPublicId = includeFarm ? getStoredFarmPublicId() : null;
   if (farmPublicId) headers.set("X-LFMS-Farm", farmPublicId);
-  return globalThis.fetch(input, {
+  return instrumentedFetch(input, {
     ...(init ?? {}),
     credentials: "include",
     headers,

@@ -114,6 +114,35 @@ async function warm(
 }
 
 /**
+ * Per-animal queries the profile page needs. Prefetched for every cached animal
+ * (capped) because a profile opened for the first time while offline otherwise
+ * has nothing at all — the field workflow is exactly "walk to the animal, open
+ * its profile, record a weight".
+ */
+export const ANIMAL_DETAIL_QUERIES = [
+  { path: "animals.getById", input: (id: number) => ({ id }) },
+  { path: "animals.getWeightLog", input: (id: number) => ({ animalId: id }) },
+  { path: "animals.getPnL", input: (id: number) => ({ animalId: id }) },
+] as const;
+
+/**
+ * Bound on how many animals get their profile data prefetched. These queries go
+ * through httpBatchLink, so a batch of them collapses into one HTTP request —
+ * but an unbounded farm would still turn the warm-up into a hammering.
+ */
+export const ANIMAL_DETAIL_PREFETCH_LIMIT = 200;
+
+/** Ids from the already-cached unfiltered animal list. */
+function cachedAnimalIds(queryClient: QueryClient): number[] {
+  const rows = queryClient.getQueryData(queryKey("animals.list", {}) as unknown[]);
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map(row => (row as { animal?: { id?: unknown } }).animal?.id)
+    .filter((id): id is number => typeof id === "number")
+    .slice(0, ANIMAL_DETAIL_PREFETCH_LIMIT);
+}
+
+/**
  * Fetches the offline read set into the cache.
  *
  * Deliberately sequential in small batches rather than all at once: this runs on
@@ -134,6 +163,21 @@ export async function prefetchOfflineReadSet(
   for (let index = 0; index < jobs.length; index += BATCH) {
     await Promise.all(
       jobs.slice(index, index + BATCH).map(job => warm(queryClient, client, job.path, job.input)),
+    );
+  }
+
+  // Second pass, after the list is cached: profile data per animal. A larger
+  // batch is fine here because the batch link folds each group into a single
+  // HTTP request.
+  const detailJobs = cachedAnimalIds(queryClient).flatMap(id =>
+    ANIMAL_DETAIL_QUERIES.map(query => ({ path: query.path, input: query.input(id) })),
+  );
+  const DETAIL_BATCH = 15;
+  for (let index = 0; index < detailJobs.length; index += DETAIL_BATCH) {
+    await Promise.all(
+      detailJobs
+        .slice(index, index + DETAIL_BATCH)
+        .map(job => warm(queryClient, client, job.path, job.input)),
     );
   }
 }

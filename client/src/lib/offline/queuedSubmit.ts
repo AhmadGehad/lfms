@@ -8,10 +8,10 @@
  * but nothing in the UI says so. These two helpers are the fix, and every
  * offline-capable form uses them.
  */
+import { onlineManager, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useIsOnline } from "./useOfflineSync";
 
 /**
  * Whether a spinner is warranted.
@@ -27,14 +27,19 @@ export function isMutationWorking(mutation: {
 }
 
 /**
- * Fires a mutation and, when there is no network, immediately runs the same
- * follow-up the success path would (close the dialog, clear the form) plus a
- * toast making clear the record is stored on the device.
+ * Fires a mutation and, if it ends up queued rather than delivered, runs the
+ * same follow-up the success path would (close the dialog, clear the form) plus
+ * a toast making clear the record is stored on the device.
  *
- * Safe to call when online: it simply defers to the mutation's own `onSuccess`.
+ * "Queued" is detected by watching the mutation itself become paused — NOT by
+ * checking `navigator.onLine` up front. A phone on dead wifi or one bar of
+ * signal reports online while every request fails; in that state the write
+ * fires, times out, and only *then* pauses. Watching the pause covers both the
+ * instant case (known offline: pauses immediately) and the lying-network case
+ * (pauses after the timed-out attempt), so the form always gets released.
  */
 export function useQueuedSubmit() {
-  const isOnline = useIsOnline();
+  const queryClient = useQueryClient();
   const { t } = useTranslation();
 
   return useCallback(
@@ -62,16 +67,55 @@ export function useQueuedSubmit() {
         variables,
         callbacks?.onOnlineSuccess ? { onSuccess: callbacks.onOnlineSuccess } : undefined,
       );
-      if (isOnline) return false;
-      toast.success(
-        t(
-          "offline.savedLocally",
-          "Saved on this device. It will sync when you are back online.",
-        ),
-      );
-      callbacks?.whenQueued?.();
-      return true;
+
+      // `mutate` builds its cache entry synchronously, so the newest mutation
+      // in the cache is the one just fired.
+      const cache = queryClient.getMutationCache();
+      const mine = cache
+        .getAll()
+        .reduce<{ mutationId: number; state: { isPaused: boolean } } | null>(
+          (newest, candidate) =>
+            !newest || candidate.mutationId > newest.mutationId ? candidate : newest,
+          null,
+        );
+
+      let settled = false;
+      let unsubscribe = () => {};
+      const queuedNow = () => {
+        if (settled) return;
+        settled = true;
+        unsubscribe();
+        toast.success(
+          t(
+            "offline.savedLocally",
+            "Saved on this device. It will sync when you are back online.",
+          ),
+        );
+        callbacks?.whenQueued?.();
+      };
+
+      if (mine) {
+        unsubscribe = cache.subscribe(event => {
+          const changed = "mutation" in event ? event.mutation : undefined;
+          if (!changed || changed.mutationId !== mine.mutationId) return;
+          if (changed.state.isPaused) {
+            queuedNow();
+          } else if (
+            changed.state.status === "success" ||
+            changed.state.status === "error"
+          ) {
+            // Delivered or genuinely failed — the mutation's own handlers own
+            // the UI from here.
+            settled = true;
+            unsubscribe();
+          }
+        });
+      }
+
+      // Fast path: already known to be offline, no need to wait for the pause.
+      if (mine?.state.isPaused || !onlineManager.isOnline()) queuedNow();
+      return settled;
     },
-    [isOnline, t],
+    [queryClient, t],
   );
 }
