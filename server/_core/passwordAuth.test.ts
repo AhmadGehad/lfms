@@ -1,5 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { authenticationTokens, passwordCredentials, users } from "../../drizzle/schema";
+import {
+  authenticationTokens,
+  companies,
+  companyMemberships,
+  passwordCredentials,
+  users,
+} from "../../drizzle/schema";
 import { createFakeDb, type FakeDb } from "../testing/fakeDb";
 import { createFakeExpress, type FakeExpress } from "../testing/fakeExpress";
 
@@ -84,6 +90,16 @@ function activeUser(overrides: Record<string, unknown> = {}) {
     lastSignedIn: null,
     ...overrides,
   };
+}
+
+/**
+ * `getResolvedRequestHost` defaults to `companySlug: "azal-farms"` for every
+ * test in this file, so any test whose login is expected to succeed must
+ * queue a matching row here — `hasActiveMembership` joins on `companyMemberships`
+ * (the fake keys queued rows by the `.from()` table, ignoring the join).
+ */
+function queueActiveMembership(fakeDb: FakeDb, overrides: Record<string, unknown> = {}) {
+  fakeDb.queue(companyMemberships, [{ id: 501, ...overrides }]);
 }
 
 let fake: FakeDb;
@@ -177,6 +193,7 @@ describe("POST /api/auth/login", () => {
   it("issues a session and clears the failure counters on success", async () => {
     fake.queue(users, [activeUser({ failedLoginAttempts: 4, lockedUntil: new Date(Date.now() - 1_000) })]);
     fake.queue(passwordCredentials, [{ userId: 42, passwordHash: "hashed:old", passwordNeedsRehash: false }]);
+    queueActiveMembership(fake);
 
     const response = await login({ email: "farmer@azal-farms.test", password: "correct-horse-battery" });
 
@@ -195,6 +212,7 @@ describe("POST /api/auth/login", () => {
   it("rehashes a legacy credential during a successful login", async () => {
     fake.queue(users, [activeUser()]);
     fake.queue(passwordCredentials, [{ userId: 42, passwordHash: "hashed:legacy", passwordNeedsRehash: true }]);
+    queueActiveMembership(fake);
 
     await login({ email: "farmer@azal-farms.test", password: "correct-horse-battery" });
 
@@ -206,8 +224,56 @@ describe("POST /api/auth/login", () => {
   it("normalises the submitted email before lookup", async () => {
     fake.queue(users, [activeUser()]);
     fake.queue(passwordCredentials, [{ userId: 42, passwordHash: "hashed:old", passwordNeedsRehash: false }]);
+    queueActiveMembership(fake);
     const response = await login({ email: "  FARMER@Azal-Farms.test  ", password: "correct-horse-battery" });
     expect(response.statusCode).toBe(200);
+  });
+
+  it("refuses a correct password on a subdomain the user has no membership in, without locking the account", async () => {
+    // Also covers "the only membership is in a deleted company": the real
+    // query excludes deleted companies at the SQL level (ne(lifecycleStatus,
+    // "deleted")), which this fake — no WHERE evaluation, just queued rows —
+    // models the same way as no membership at all: an empty result.
+    //
+    // The password is right — this is a wrong-tenant attempt, not a
+    // credential-guessing one, so no failedLoginAttempts increment.
+    fake.queue(users, [activeUser({ failedLoginAttempts: 2 })]);
+    fake.queue(passwordCredentials, [{ userId: 42, passwordHash: "hashed:old", passwordNeedsRehash: false }]);
+    fake.queue(companyMemberships, []);
+
+    const response = await login({ email: "farmer@azal-farms.test", password: "correct-horse-battery" });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body).toEqual({ error: GENERIC_LOGIN_ERROR });
+    expect(mocks.issueSession).not.toHaveBeenCalled();
+    expect(fake.writesFor(users)).toHaveLength(0);
+  });
+
+  it("still logs in a member of a suspended company", async () => {
+    // Suspension is surfaced post-login via the existing CompanySuspended
+    // screen, not as a login failure — mirrors resolveTenantContext, which
+    // treats only a deleted company as "not found", not a suspended one.
+    fake.queue(users, [activeUser()]);
+    fake.queue(passwordCredentials, [{ userId: 42, passwordHash: "hashed:old", passwordNeedsRehash: false }]);
+    queueActiveMembership(fake);
+
+    const response = await login({ email: "farmer@azal-farms.test", password: "correct-horse-battery" });
+
+    expect(response.statusCode).toBe(200);
+    expect(mocks.issueSession).toHaveBeenCalledOnce();
+  });
+
+  it("treats a request with no resolvable company slug as no membership", async () => {
+    mocks.getResolvedRequestHost.mockReturnValue({ surface: "tenant", companySlug: null });
+    fake.queue(users, [activeUser()]);
+    fake.queue(passwordCredentials, [{ userId: 42, passwordHash: "hashed:old", passwordNeedsRehash: false }]);
+
+    const response = await login({ email: "farmer@azal-farms.test", password: "correct-horse-battery" });
+
+    expect(response.statusCode).toBe(401);
+    expect(mocks.issueSession).not.toHaveBeenCalled();
+    // A null slug is rejected before any membership query runs.
+    expect(fake.writesFor(companyMemberships)).toHaveLength(0);
   });
 });
 

@@ -1,7 +1,9 @@
 import type { Express, Request, Response } from "express";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, ne } from "drizzle-orm";
 import {
   authenticationTokens,
+  companies,
+  companyMemberships,
   passwordCredentials,
   users,
 } from "../../drizzle/schema";
@@ -54,6 +56,37 @@ async function findActiveUserByEmail(normalizedEmail: string) {
     .where(and(eq(users.normalizedEmail, normalizedEmail), eq(users.status, "active")))
     .limit(1);
   return user ?? null;
+}
+
+/**
+ * Whether `userId` is an active member of the company the request's subdomain
+ * resolved to. Login must check this: credentials are stored globally by
+ * email, with no scoping to a company, so without this a valid email/password
+ * from one company's account would also authenticate on any other company's
+ * subdomain (a session gets issued, then every tenant query fails afterward
+ * for lack of a membership row — confusing, and defeats the point of the
+ * subdomain being part of login at all).
+ *
+ * Mirrors resolveTenantContext's rule (server/tenancy/resolveTenantContext.ts):
+ * a suspended company is NOT "not found" here, only a missing or deleted one
+ * is — suspension is surfaced later via the existing post-login
+ * CompanySuspended screen, not as a login failure.
+ */
+async function hasActiveMembership(companySlug: string | null, userId: number) {
+  if (!companySlug) return false;
+  const database = await requireDb();
+  const [membership] = await database
+    .select({ id: companyMemberships.id })
+    .from(companyMemberships)
+    .innerJoin(companies, eq(companies.id, companyMemberships.companyId))
+    .where(and(
+      eq(companies.slug, companySlug),
+      ne(companies.lifecycleStatus, "deleted"),
+      eq(companyMemberships.userId, userId),
+      eq(companyMemberships.status, "active"),
+    ))
+    .limit(1);
+  return Boolean(membership);
 }
 
 async function issueTenantSessionForUser(
@@ -150,6 +183,19 @@ export function registerPasswordAuthRoutes(app: Express) {
           failedLoginAttempts: failedAttempts,
           lockedUntil,
         }).where(eq(users.id, user.id));
+        res.status(401).json({ error: GENERIC_LOGIN_ERROR });
+        return;
+      }
+      const host = getResolvedRequestHost(res);
+      if (!(await hasActiveMembership(host?.companySlug ?? null, user.id))) {
+        // The password was correct — this is a wrong-subdomain attempt, not a
+        // credential-guessing signal — so no failedLoginAttempts increment or
+        // lockout. Logged distinctly since "right password, wrong tenant" is
+        // worth being able to see.
+        logger.info("auth.tenant_login_wrong_company", {
+          userId: user.id,
+          companySlug: host?.companySlug ?? null,
+        });
         res.status(401).json({ error: GENERIC_LOGIN_ERROR });
         return;
       }

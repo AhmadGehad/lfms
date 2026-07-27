@@ -8,6 +8,7 @@ import { DesignVersionProvider } from "./contexts/DesignVersionContext";
 import { DesignRouter } from "./designs/DesignRouter";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import CompanySuspended from "./pages/CompanySuspended";
+import WorkspaceNotFound from "./pages/WorkspaceNotFound";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -43,6 +44,7 @@ function TenantSurface() {
   const branding = trpc.tenancy.publicBranding.useQuery(undefined, {
     enabled: !bareHost,
     staleTime: 5 * 60_000,
+    retry: false,
   });
   useFavicon(branding.data?.hasFavicon);
 
@@ -53,7 +55,34 @@ function TenantSurface() {
       </Suspense>
     );
 
+  // A subdomain with no matching company used to render the exact same login
+  // form as a real one — nothing checked existence first. `publicBranding` is
+  // already fetched above (for the favicon) and already resolves to `null`
+  // for a slug with no company row, so this reuses that instead of adding a
+  // new endpoint. Checked on `isSuccess` specifically, not just "not loading",
+  // so a real fetch error doesn't get mistaken for "workspace doesn't exist".
+  const workspaceNotFound = branding.isSuccess && branding.data === null;
+
+  const loadingIndicator = (
+    <main
+      className="grid min-h-dvh place-items-center bg-background"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
+        <span className="text-sm">Loading…</span>
+      </div>
+    </main>
+  );
+
   const surface = () => {
+    // Wait for the existence check before rendering *any* route on this
+    // subdomain — including /login — so a bad subdomain can never flash the
+    // login form before swapping to "not found". Repeat visits are instant
+    // (branding is cached for 5 minutes); only a cold session pays this.
+    if (branding.isLoading) return loadingIndicator;
+    if (workspaceNotFound) return <WorkspaceNotFound />;
     if (path === "/login") return <Login />;
     if (path === "/forgot-password") return <ForgotPassword />;
     if (path === "/reset-password") return <ResetPassword />;
@@ -61,19 +90,7 @@ function TenantSurface() {
     if (suspension.data?.suspended) return <CompanySuspended />;
     // A visible indicator rather than an empty <main>: on a slow or offline
     // launch this used to render as an indistinguishable blank page.
-    if (suspension.isLoading)
-      return (
-        <main
-          className="grid min-h-dvh place-items-center bg-background"
-          aria-busy="true"
-          aria-live="polite"
-        >
-          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-            <span className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            <span className="text-sm">Loading…</span>
-          </div>
-        </main>
-      );
+    if (suspension.isLoading) return loadingIndicator;
     return (
       <>
         <OfflineIdentityTracker />
