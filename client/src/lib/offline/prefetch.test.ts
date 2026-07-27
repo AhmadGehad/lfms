@@ -142,6 +142,36 @@ describe("prefetchOfflineReadSet", () => {
     expect(ANIMAL_DETAIL_PREFETCH_LIMIT).toBeGreaterThan(0);
   });
 
+  it("covers every profile tab, not just the summary", async () => {
+    // "do all deeper tabs" — sales, lineage, expenses, feed, status history,
+    // vaccinations and pregnancy must all be readable offline.
+    const { ANIMAL_DETAIL_QUERIES } = await import("./prefetch");
+    const paths = ANIMAL_DETAIL_QUERIES.map(query => query.path);
+    for (const required of [
+      "animals.getAnimalSales",
+      "animals.getLineage",
+      "animals.getStatusHistory",
+      "animals.getExpenseHistory",
+      "animals.getFeedHistory",
+      "vaccination.getVaccinationRecords",
+      "pregnancy.byAnimal",
+      "pregnancy.reproductiveHistory",
+    ]) {
+      expect(paths).toContain(required);
+    }
+    // Input keys must match the pages exactly: getById/getPhotoUrl take {id},
+    // everything else {animalId}. A mismatch caches entries no page reads.
+    for (const query of ANIMAL_DETAIL_QUERIES) {
+      const input = query.input(5) as Record<string, unknown>;
+      const expectedKey =
+        query.path === "animals.getById" || query.path === "animals.getPhotoUrl"
+          ? "id"
+          : "animalId";
+      expect(Object.keys(input), query.path).toEqual([expectedKey]);
+      expect(input[expectedKey]).toBe(5);
+    }
+  });
+
   it("skips the detail pass entirely when the animal list could not be fetched", async () => {
     const queryClient = new QueryClient();
     const { client } = fakeTrpcClient(OFFLINE_PREFETCH_PATHS);

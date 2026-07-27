@@ -114,15 +114,29 @@ async function warm(
 }
 
 /**
- * Per-animal queries the profile page needs. Prefetched for every cached animal
- * (capped) because a profile opened for the first time while offline otherwise
- * has nothing at all — the field workflow is exactly "walk to the animal, open
- * its profile, record a weight".
+ * Per-animal queries the profile page needs — the full set both designs render,
+ * every tab included. Prefetched for every cached animal (capped) because a
+ * profile opened for the first time while offline otherwise has nothing at all —
+ * the field workflow is exactly "walk to the animal, open its profile, record a
+ * weight".
+ *
+ * Note on photos: `getPhotoUrl` caches the storage URL, but the image bytes are
+ * a cross-origin fetch the service worker does not cache, so the picture itself
+ * may still be missing offline unless the browser's own cache has it.
  */
 export const ANIMAL_DETAIL_QUERIES = [
   { path: "animals.getById", input: (id: number) => ({ id }) },
+  { path: "animals.getPhotoUrl", input: (id: number) => ({ id }) },
   { path: "animals.getWeightLog", input: (id: number) => ({ animalId: id }) },
   { path: "animals.getPnL", input: (id: number) => ({ animalId: id }) },
+  { path: "animals.getLineage", input: (id: number) => ({ animalId: id }) },
+  { path: "animals.getAnimalSales", input: (id: number) => ({ animalId: id }) },
+  { path: "animals.getStatusHistory", input: (id: number) => ({ animalId: id }) },
+  { path: "animals.getExpenseHistory", input: (id: number) => ({ animalId: id }) },
+  { path: "animals.getFeedHistory", input: (id: number) => ({ animalId: id }) },
+  { path: "vaccination.getVaccinationRecords", input: (id: number) => ({ animalId: id }) },
+  { path: "pregnancy.byAnimal", input: (id: number) => ({ animalId: id }) },
+  { path: "pregnancy.reproductiveHistory", input: (id: number) => ({ animalId: id }) },
 ] as const;
 
 /**
