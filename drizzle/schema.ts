@@ -1790,6 +1790,12 @@ export const animals = mysqlTable("saas_azal_animals", {
   ownerId: int("ownerId"),
   photoUrl: varchar("photoUrl", { length: 500 }),
   purchaseCost: decimal("purchaseCost", { precision: 10, scale: 2 }).default("0"),
+  // NULL = unclassified (every pre-existing row, and every "born" animal —
+  // a birth has no purchase to fund). Treated identically to "investment" in
+  // every calculation: only "revenue" deducts from Net Revenue on the Animal
+  // P&L page. Editable any time via animals.update, so historical purchases
+  // can be reclassified after the fact.
+  purchaseFundingSource: mysqlEnum("purchaseFundingSource", ["revenue", "investment"]),
   weightAtAcquisition: decimal("weightAtAcquisition", { precision: 8, scale: 2 }),
   exitDate: date("exitDate"),
   exitReason: text("exitReason"),

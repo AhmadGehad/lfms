@@ -8,8 +8,9 @@ import { AnimalCostDetailsDialog } from "@/components/AnimalCostDetailsDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, BarChart3, Banknote, Leaf, ReceiptText, Search, TrendingDown, TrendingUp, Wheat } from "lucide-react";
+import { Activity, BarChart3, Banknote, Leaf, ReceiptText, RefreshCcw, Search, TrendingDown, TrendingUp, Wheat } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { sumReinvestedRevenue } from "@shared/animalPnl";
 import { PageHeader } from "../components/PageHeader";
 import { KpiCard } from "../components/KpiCard";
 import { DataTable, type Column } from "../components/DataTable";
@@ -62,10 +63,14 @@ export default function NewPnL() {
     const totalCost = closed.reduce((s, a) => s + (a.totalCost ?? 0), 0);
     const capitalOnHoof = active.reduce((s, a) => s + (a.purchaseCost ?? 0), 0);
     const operatingCostActive = active.reduce((s, a) => s + ((a.totalCost ?? 0) - (a.purchaseCost ?? 0)), 0);
+    const reinvestedRevenue = sumReinvestedRevenue(rows);
+    const netRevenue = totalRevenue - reinvestedRevenue;
     return {
       activeCount: active.length,
       closedCount: closed.length,
       totalRevenue,
+      netRevenue,
+      reinvestedRevenue,
       realisedNet: totalRevenue - totalCost,
       profitableCount: closed.filter(a => a.netPnL > 0).length,
       lossCount: closed.filter(a => a.netPnL < 0).length,
@@ -74,8 +79,9 @@ export default function NewPnL() {
       feedCostMonthly: active.reduce((s, a) => s + (a.feedCostPerMonth ?? 0), 0),
       capitalOnHoof,
       animalOperatingCost: rows.reduce((s, a) => s + (a.animalOperatingCost ?? 0), 0),
-      // Revenue realised + capital on hoof - operating spend on the active herd
-      currentAccountValue: totalRevenue + capitalOnHoof - operatingCostActive,
+      // Net (not gross) revenue + capital on hoof - operating spend on the
+      // active herd, so reinvested cash isn't counted twice.
+      currentAccountValue: netRevenue + capitalOnHoof - operatingCostActive,
     };
   }, [rows]);
 
@@ -87,7 +93,25 @@ export default function NewPnL() {
     { id: "category", header: t("animals.category", "Category"), cell: r => r.categoryName ?? "—", sortValue: r => r.categoryName, hideable: true, mobileLabel: t("animals.category", "Category") },
     { id: "status", header: t("animals.status", "Status"), cell: r => <StatusBadge tone={r.isActive ? "success" : "neutral"}>{r.statusName}</StatusBadge>, sortValue: r => r.statusName, hideable: true, mobileLabel: t("animals.status", "Status") },
     { id: "days", header: t("pnl.daysOnFarm", "Days"), cell: r => r.daysOnFarm ?? 0, sortValue: r => r.daysOnFarm, align: "end", hideable: true, defaultHidden: true, mobileLabel: t("pnl.daysOnFarm", "Days") },
-    { id: "purchase", header: t("animals.purchaseCost", "Purchase"), cell: r => cost(Number(r.purchaseCost ?? 0)), sortValue: r => Number(r.purchaseCost ?? 0), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("animals.purchaseCost", "Purchase") },
+    {
+      id: "purchase",
+      header: t("animals.purchaseCost", "Purchase"),
+      cell: r => (
+        <span className="inline-flex items-center gap-1.5">
+          {cost(Number(r.purchaseCost ?? 0))}
+          {r.purchaseFundingSource && (
+            <StatusBadge tone={r.purchaseFundingSource === "revenue" ? "info" : "neutral"} icon={false}>
+              {r.purchaseFundingSource === "revenue" ? t("pnl.fundingRevenue", "Revenue") : t("pnl.fundingInvestment", "Investment")}
+            </StatusBadge>
+          )}
+        </span>
+      ),
+      sortValue: r => Number(r.purchaseCost ?? 0),
+      align: "end",
+      hideable: true,
+      defaultHidden: true,
+      mobileLabel: t("animals.purchaseCost", "Purchase"),
+    },
     { id: "feed", header: t("pnl.feedCost", "Feed"), cell: r => cost(Number(r.feedCost ?? 0)), sortValue: r => Number(r.feedCost ?? 0), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("pnl.feedCost", "Feed") },
     { id: "directExp", header: t("pnl.directExp", "Direct exp."), cell: r => cost(Number(r.directExpenseTotal ?? 0)), sortValue: r => Number(r.directExpenseTotal ?? 0), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("pnl.directExp", "Direct exp.") },
     { id: "catExp", header: t("pnl.catExp", "Category exp."), cell: r => cost(Number(r.categoryExpenseAllocation ?? 0)), sortValue: r => Number(r.categoryExpenseAllocation ?? 0), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("pnl.catExp", "Category exp.") },
@@ -122,6 +146,12 @@ export default function NewPnL() {
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard label={t("pnl.realisedRevenue", "Realised revenue")} value={fmt(stats.totalRevenue)} icon={TrendingUp} hint={t("pnl.fromSold", "From sold animals")} />
         <KpiCard
+          label={t("pnl.netRevenue", "Net revenue (after reinvestment)")}
+          value={fmt(stats.netRevenue)}
+          icon={RefreshCcw}
+          hint={t("pnl.netRevenueSub", "Realised revenue minus what's been reinvested into new stock")}
+        />
+        <KpiCard
           label={t("pnl.realisedNet", "Realised net P&L")}
           value={<span className={stats.realisedNet >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.realisedNet)}</span>}
           icon={Activity}
@@ -135,7 +165,7 @@ export default function NewPnL() {
           label={t("pnl.currentAccountValue", "Current account value")}
           value={<span className={stats.currentAccountValue >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.currentAccountValue)}</span>}
           icon={Banknote}
-          hint={t("pnl.currentAccountValueSub", "Revenue + capital − operating spend")}
+          hint={t("pnl.currentAccountValueSub", "Net revenue + capital − operating spend")}
         />
         <KpiCard label={t("pnl.animalOperatingCost", "Animal operating cost")} value={fmt(stats.animalOperatingCost)} icon={TrendingDown} hint={t("pnl.animalOperatingCostSub", "Feed + expenses across herd")} />
       </div>

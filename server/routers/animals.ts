@@ -187,6 +187,7 @@ export const animalsRouter = router({
         sireId: z.number().int().positive().optional(),
         ownerId: z.number().int().positive().optional(),
         purchaseCost: optionalMoneyString,
+        purchaseFundingSource: z.enum(["revenue", "investment"]).optional(),
         weightAtAcquisition: optionalWeightString,
         notes: z.string().max(2000).optional(),
         animalIdNumber: optionalAnimalIdNumber,
@@ -196,7 +197,15 @@ export const animalsRouter = router({
         { message: "Birth date cannot be after acquisition date", path: ["birthDate"] }
       )
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input: rawInput, ctx }) => {
+      // A birth has no purchase to fund — force null regardless of what was
+      // sent, rather than trusting the client to omit it.
+      const input = {
+        ...rawInput,
+        purchaseFundingSource: rawInput.acquisitionType === "purchased"
+          ? rawInput.purchaseFundingSource
+          : null,
+      };
       const cats = await getAllCategories(input.speciesId);
       const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
       if (!cat || cat.speciesId !== input.speciesId || !cat.isActive) {
@@ -313,6 +322,7 @@ export const animalsRouter = router({
         acquisitionDate: pastOrTodayDate.optional(),
         birthDate: pastOrTodayDate.optional(),
         purchaseCost: optionalMoneyString,
+        purchaseFundingSource: z.enum(["revenue", "investment"]).nullable().optional(),
         notes: z.string().max(2000).optional(),
         exitDate: pastOrTodayDate.optional(),
         exitReason: z.string().max(1000).optional(),
@@ -325,6 +335,13 @@ export const animalsRouter = router({
     .mutation(async ({ input: { id, expectedVersion, animalIdNumber, ...data }, ctx }) => {
       const existing = await getAnimalById(id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // A birth has no purchase to fund — force null regardless of what was
+      // sent, matching the same guard on create. acquisitionType itself isn't
+      // editable here, so the existing record is authoritative.
+      if (existing.animal.acquisitionType === "born") {
+        data.purchaseFundingSource = null;
+      }
 
       const cats = await getAllCategories();
       const currentCat = cats.find((cat: any) => cat.id === existing.animal.categoryId);

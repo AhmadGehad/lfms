@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -123,6 +124,7 @@ export function AnimalCreateDialog({
     acquisitionDate: today(),
     birthDate: today(),
     purchaseCost: "",
+    purchaseFundingSource: "",
     weightAtAcquisition: "",
     ownerId: "none",
     animalIdNumber: "",
@@ -153,6 +155,7 @@ export function AnimalCreateDialog({
         groupId: "",
         animalIdNumber: "",
         purchaseCost: "",
+        purchaseFundingSource: "",
         weightAtAcquisition: "",
       }));
     },
@@ -163,6 +166,13 @@ export function AnimalCreateDialog({
   const submit = (addAnother: boolean) => {
     if (!form.speciesId || !form.categoryId || !form.groupId || !form.statusId || !form.sex || !form.acquisitionType) {
       toast.error(t("common.required", "Fill required fields"));
+      return;
+    }
+    // Required only for a purchase — a birth has no funding to classify. No
+    // default is pre-selected: this choice has a real effect on the Animal
+    // P&L page's Net Revenue figure, so it must be an active decision.
+    if (form.acquisitionType === "purchased" && !form.purchaseFundingSource) {
+      toast.error(t("pnl.fundingSourceRequired", "Choose how this purchase was funded"));
       return;
     }
     queuedSubmit(
@@ -177,6 +187,9 @@ export function AnimalCreateDialog({
         acquisitionDate: form.acquisitionDate,
         birthDate: form.birthDate,
         purchaseCost: form.purchaseCost || undefined,
+        purchaseFundingSource: form.acquisitionType === "purchased"
+          ? (form.purchaseFundingSource as "revenue" | "investment")
+          : undefined,
         weightAtAcquisition: form.weightAtAcquisition || undefined,
         ownerId: form.ownerId !== "none" ? Number(form.ownerId) : undefined,
         animalIdNumber: form.animalIdNumber || undefined,
@@ -194,6 +207,7 @@ export function AnimalCreateDialog({
             groupId: "",
             animalIdNumber: "",
             purchaseCost: "",
+            purchaseFundingSource: "",
             weightAtAcquisition: "",
           }));
           if (!addAnother) onOpenChange(false);
@@ -279,6 +293,25 @@ export function AnimalCreateDialog({
             <FormField label={t("animals.purchaseCost", "Purchase Cost")} htmlFor="new-purchase-cost">
               <Input id="new-purchase-cost" name="purchaseCost" type="number" inputMode="decimal" autoComplete="off" placeholder="0.00" value={form.purchaseCost} onChange={e => set("purchaseCost", e.target.value)} />
             </FormField>
+            {form.acquisitionType === "purchased" && (
+              <FormField label={t("pnl.fundingSource", "Funding source")} htmlFor="new-funding-source" required full>
+                <RadioGroup
+                  id="new-funding-source"
+                  value={form.purchaseFundingSource}
+                  onValueChange={value => set("purchaseFundingSource", value)}
+                  className="grid-flow-col justify-start gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="revenue" id="new-funding-revenue" />
+                    <Label htmlFor="new-funding-revenue" className="font-normal">{t("pnl.fundingSourceRevenueLabel", "Farm revenue")}</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="investment" id="new-funding-investment" />
+                    <Label htmlFor="new-funding-investment" className="font-normal">{t("pnl.fundingSourceInvestmentLabel", "New investment")}</Label>
+                  </div>
+                </RadioGroup>
+              </FormField>
+            )}
             <FormField label={t("animals.weightAtAcquisition", "Start Weight")} htmlFor="new-start-weight">
               <Input id="new-start-weight" name="weightAtAcquisition" type="number" inputMode="decimal" autoComplete="off" placeholder="0.0" value={form.weightAtAcquisition} onChange={e => set("weightAtAcquisition", e.target.value)} />
             </FormField>

@@ -506,6 +506,12 @@ export default function NewAnimalProfile() {
           ) : (
             <dl className="grid grid-cols-2 gap-3">
               <Stat label={t("pnl.purchaseCost", "Purchase cost")} value={fmt(parseFloat(p?.purchaseCost ?? 0))} />
+              {p?.purchaseFundingSource && (
+                <Stat
+                  label={t("pnl.fundingSource", "Funding source")}
+                  value={p.purchaseFundingSource === "revenue" ? t("pnl.fundingSourceRevenueLabel", "Farm revenue") : t("pnl.fundingSourceInvestmentLabel", "New investment")}
+                />
+              )}
               <Stat label={t("pnl.feedCost", "Feed cost")} value={fmt(parseFloat(p?.feedCost ?? 0))} />
               <Stat label={t("pnl.directExpenses", "Direct expenses")} value={fmt(parseFloat(p?.directExpenseTotal ?? 0))} />
               <Stat label={t("pnl.allocatedCatExpenses", "Category expenses")} value={fmt(parseFloat(p?.categoryExpenseAllocation ?? 0))} />

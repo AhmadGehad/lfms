@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -89,6 +90,10 @@ export function EditAnimalDialog({
       purchaseCost: animal.animal.purchaseCost != null
         ? String(animal.animal.purchaseCost)
         : "",
+      // Empty = unclassified — the normal state for anything created before
+      // this feature existed. Not required here, unlike at purchase time:
+      // a historical animal may legitimately stay unclassified.
+      purchaseFundingSource: animal.animal.purchaseFundingSource ?? "",
       notes: animal.animal.notes ?? "",
       exitDate: animal.animal.exitDate
         ? new Date(animal.animal.exitDate).toISOString().split("T")[0]
@@ -129,6 +134,10 @@ export function EditAnimalDialog({
       acquisitionDate: data.acquisitionDate || undefined,
       birthDate: data.birthDate || undefined,
       purchaseCost: data.purchaseCost !== "" ? data.purchaseCost : undefined,
+      purchaseFundingSource:
+        data.purchaseFundingSource === "revenue" || data.purchaseFundingSource === "investment"
+          ? data.purchaseFundingSource
+          : null,
       notes: data.notes || undefined,
       exitDate: data.exitDate || undefined,
       exitReason: data.exitReason || undefined,
@@ -236,6 +245,23 @@ export function EditAnimalDialog({
                   <Input id="edit-animal-purchase-cost" type="number" step="0.01" inputMode="decimal" {...field} />
                 )} />
               </div>
+              {animal.animal.acquisitionType === "purchased" && (
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>{t("pnl.fundingSource", "Funding source")}</Label>
+                  <Controller name="purchaseFundingSource" control={control} render={({ field }) => (
+                    <RadioGroup value={field.value} onValueChange={field.onChange} className="grid-flow-col justify-start gap-6">
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="revenue" id="edit-funding-revenue" />
+                        <Label htmlFor="edit-funding-revenue" className="font-normal">{t("pnl.fundingSourceRevenueLabel", "Farm revenue")}</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="investment" id="edit-funding-investment" />
+                        <Label htmlFor="edit-funding-investment" className="font-normal">{t("pnl.fundingSourceInvestmentLabel", "New investment")}</Label>
+                      </div>
+                    </RadioGroup>
+                  )} />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="edit-animal-birth-date">{t("animals.birthDate")}</Label>
                 <Controller name="birthDate" control={control} render={({ field }) => (
