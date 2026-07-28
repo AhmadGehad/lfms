@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { trpc } from "@/lib/trpc";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { Activity, BarChart3, ReceiptText, Search, TrendingDown, TrendingUp } from "lucide-react";
+import { sumReinvestedRevenue } from "@shared/animalPnl";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -70,8 +71,10 @@ export default function PnL() {
   // operatingCostActive = running costs excluding purchase price (feed + expenses)
   const operatingCostActive = activeAnimals.reduce((s: number, a: any) => s + ((a.totalCost ?? 0) - (a.purchaseCost ?? 0)), 0);
   const totalAnimalOperatingCost = filtered.reduce((s: number, a: any) => s + (a.animalOperatingCost ?? 0), 0);
-  // Current Account Value = Revenue realised + Capital on hoof - Operating expenses spent on active herd
-  const currentAccountValue = totalRevenue + capitalMoney - operatingCostActive;
+  const reinvestedRevenue = sumReinvestedRevenue(filtered);
+  const netRevenue = totalRevenue - reinvestedRevenue;
+  // Current Account Value = Net revenue + Capital on hoof - Operating expenses spent on active herd
+  const currentAccountValue = netRevenue + capitalMoney - operatingCostActive;
 
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6">
@@ -98,6 +101,13 @@ export default function PnL() {
               <p className="text-xs text-muted-foreground">{t("pnl.realisedRevenue")}</p>
               <p className="text-xl sm:text-2xl font-bold text-green-600">{fmt(totalRevenue)}</p>
               <p className="text-xs text-muted-foreground mt-1">{t("pnl.fromSold")}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-4">
+              <p className="text-xs text-muted-foreground">{t("pnl.netRevenue", "Net revenue (after reinvestment)")}</p>
+              <p className="text-xl sm:text-2xl font-bold text-green-600">{fmt(netRevenue)}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t("pnl.netRevenueSub", "Realised revenue minus what's been reinvested into new stock")}</p>
             </CardContent>
           </Card>
           <Card>
@@ -287,7 +297,14 @@ export default function PnL() {
                             {a.daysOnFarm}
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-red-600">
-                            {a.purchaseCost > 0 ? fmt(a.purchaseCost) : "—"}
+                            <span className="inline-flex items-center gap-1.5">
+                              {a.purchaseCost > 0 ? fmt(a.purchaseCost) : "—"}
+                              {a.purchaseFundingSource && (
+                                <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground">
+                                  {a.purchaseFundingSource === "revenue" ? t("pnl.fundingRevenue", "Revenue") : t("pnl.fundingInvestment", "Investment")}
+                                </Badge>
+                              )}
+                            </span>
                           </TableCell>
                           <TableCell className="text-right tabular-nums text-red-600">
                             {a.feedCost > 0 ? fmt(a.feedCost) : "—"}

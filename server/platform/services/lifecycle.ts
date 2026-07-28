@@ -26,7 +26,11 @@ import { invalidLifecycle, notFound, versionConflict } from "../errors";
 import { executeIdempotent } from "../idempotency";
 import { appendPlatformAudit, type PlatformAuditActor } from "../repositories/audit";
 import { affectedRows, requirePlatformDb, type PlatformDb } from "../repositories/db";
+import { getCompanyOwnerEmail } from "../repositories/companies";
 import { rethrowPlatformWriteError } from "./errors";
+import { isEmailConfigured } from "../../_core/email";
+import { deletionCanceledEmail, deletionRequestedEmail } from "../../_core/emailTemplates";
+import { sendTemplatedEmail } from "../../_core/sendTemplatedEmail";
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
 const CHECKPOINT_MAX_AGE_MS = DAY_MS;
@@ -326,8 +330,9 @@ export async function requestCompanyDeletion(input: {
     invalidLifecycle(`Deletion retention must be ${MIN_DELETION_RETENTION_DAYS}-${MAX_DELETION_RETENTION_DAYS} days`);
   }
   const db = await requirePlatformDb();
+  let deletionRequestedEmailContext: { companyName: string; companyId: number; retentionUntil: Date } | null = null;
   try {
-    return await db.transaction(async tx => {
+    const response = await db.transaction(async tx => {
       const company = await lockCompany(tx, input.companyPublicId);
       return executeIdempotent(tx, {
         companyId: company.id,
@@ -393,6 +398,7 @@ export async function requestCompanyDeletion(input: {
             reason: input.reason,
           },
         });
+        deletionRequestedEmailContext = { companyName: company.name, companyId: company.id, retentionUntil };
         return {
           publicId,
           status: "requested" as const,
@@ -402,6 +408,30 @@ export async function requestCompanyDeletion(input: {
         };
       });
     });
+    const emailContext = deletionRequestedEmailContext as {
+      companyName: string;
+      companyId: number;
+      retentionUntil: Date;
+    } | null;
+    if (emailContext && isEmailConfigured()) {
+      const ownerEmail = await getCompanyOwnerEmail(emailContext.companyId);
+      if (ownerEmail) {
+        const email = deletionRequestedEmail({
+          companyName: emailContext.companyName,
+          gracePeriodEndsAt: emailContext.retentionUntil,
+          supportUrl: "mailto:support@l-fms.com",
+        });
+        void sendTemplatedEmail({
+          template: "deletion_requested",
+          to: ownerEmail,
+          companyId: emailContext.companyId,
+          subject: email.subject,
+          text: email.text,
+          html: email.html,
+        });
+      }
+    }
+    return response;
   } catch (error) {
     rethrowPlatformWriteError(error);
   }
@@ -478,7 +508,7 @@ export async function cancelCompanyDeletion(input: {
   reason: string;
 }, actor: PlatformAuditActor) {
   const db = await requirePlatformDb();
-  return db.transaction(async tx => {
+  const outcome = await db.transaction(async tx => {
     const [requestSnapshot] = await tx.select({
       id: deletionRequests.id,
       companyId: deletionRequests.companyId,
@@ -542,8 +572,31 @@ export async function cancelCompanyDeletion(input: {
       version: request.version + 1,
       companyStatus: "suspended" as const,
       companyVersion: company.version + 1,
+      companyId: company.id,
+      companyName: company.name,
     };
   });
+  if (isEmailConfigured()) {
+    const ownerEmail = await getCompanyOwnerEmail(outcome.companyId);
+    if (ownerEmail) {
+      const email = deletionCanceledEmail({ companyName: outcome.companyName, supportUrl: "mailto:support@l-fms.com" });
+      void sendTemplatedEmail({
+        template: "deletion_canceled",
+        to: ownerEmail,
+        companyId: outcome.companyId,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+    }
+  }
+  return {
+    publicId: outcome.publicId,
+    status: outcome.status,
+    version: outcome.version,
+    companyStatus: outcome.companyStatus,
+    companyVersion: outcome.companyVersion,
+  };
 }
 
 export async function requestTenantRestore(input: {

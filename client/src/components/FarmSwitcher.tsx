@@ -6,6 +6,7 @@ import {
   getStoredFarmPublicId,
   setStoredFarmPublicId,
 } from "@/lib/farmSelection";
+import { useOfflineSync } from "@/lib/offline/useOfflineSync";
 import {
   Select,
   SelectContent,
@@ -19,10 +20,26 @@ const ALL_FARMS = "all";
 export function FarmSwitcher({ className }: { className?: string }) {
   const { t } = useTranslation();
   const [storedFarm, setStoredFarm] = useState(() => getStoredFarmPublicId());
+  const { isOnline, pendingCount } = useOfflineSync();
   const { data } = trpc.auth.tenantContext.useQuery(undefined, {
     staleTime: 60_000,
     retry: false,
   });
+
+  /**
+   * Switching farm reloads into a different dataset. Offline that dataset was
+   * never cached (only the active farm is persisted), so the user would land on
+   * empty screens; and queued writes were made under the previous farm's
+   * context, so they must reach the server before the context changes.
+   */
+  const switchBlockedReason = !isOnline
+    ? t("farm.switchOffline", "Connect to the internet to switch farms.")
+    : pendingCount > 0
+      ? t(
+          "farm.switchPendingSync",
+          "Wait for your saved records to finish syncing before switching farms.",
+        )
+      : null;
 
   useEffect(() => {
     if (!data || !storedFarm) return;
@@ -46,7 +63,9 @@ export function FarmSwitcher({ className }: { className?: string }) {
   return (
     <Select
       value={storedFarm ?? ALL_FARMS}
+      disabled={switchBlockedReason !== null}
       onValueChange={value => {
+        if (switchBlockedReason) return;
         const publicId = value === ALL_FARMS ? null : value;
         setStoredFarmPublicId(publicId);
         setStoredFarm(publicId);
@@ -56,6 +75,7 @@ export function FarmSwitcher({ className }: { className?: string }) {
       <SelectTrigger
         className={`h-8 min-w-32 max-w-48 gap-1.5 text-xs ${storedFarm ? "border-primary text-primary" : ""} ${className ?? ""}`}
         aria-label={t("farm.select", "Select farm")}
+        title={switchBlockedReason ?? undefined}
       >
         <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <SelectValue placeholder={t("farm.select", "Select farm")} />

@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { usePermissions } from "@/hooks/usePermissions";
 import { CompanyBrandingSettings } from "@/components/CompanyBrandingSettings";
+import { NotificationPreferencesSettings } from "@/components/NotificationPreferencesSettings";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -294,6 +295,7 @@ function SettingsTab({ canEdit }: { canEdit: boolean }) {
   return (
     <div className="max-w-md space-y-4 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
       <CompanyBrandingSettings className="border-b border-border pb-4" />
+      <NotificationPreferencesSettings className="border-b border-border pb-4" />
       <div className="space-y-1.5">
         <label htmlFor="config-currency" className="text-sm font-medium">{t("config.currency", "Currency")}</label>
         <Input id="config-currency" value={curVal} onChange={e => setCurrency(e.target.value)} disabled={!canEdit} />

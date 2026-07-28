@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { toast } from "sonner";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -204,6 +205,7 @@ export default function NewFeed() {
     utils.feed.getStockStatus.invalidate();
     utils.feed.getStockLedger.invalidate();
   };
+  const queuedSubmit = useQueuedSubmit();
   const addStock = trpc.feed.addStockEntry.useMutation({
     onSuccess: () => { invalidateStock(); toast.success(t("feed.stockAdded", "Stock entry added")); setStockOpen(false); setStockIdempotencyKey(crypto.randomUUID()); },
     onError: e => toast.error(e.message),
@@ -222,17 +224,28 @@ export default function NewFeed() {
     const computedTotal = stockForm.qty && stockForm.unitCost
       ? (parseFloat(stockForm.qty) * parseFloat(stockForm.unitCost)).toFixed(2)
       : stockForm.totalCost;
-    addStock.mutate({
-      feedItemId: Number(stockForm.feedItemId),
-      transactionDate: stockForm.transactionDate,
-      transactionType: stockForm.transactionType as any,
-      qty: stockForm.qty,
-      unitCost: stockForm.unitCost || undefined,
-      totalCost: computedTotal || undefined,
-      supplierName: stockForm.supplierName || undefined,
-      notes: stockForm.notes || undefined,
-      idempotencyKey: stockIdempotencyKey,
-    } as any);
+    queuedSubmit(
+      addStock,
+      {
+        feedItemId: Number(stockForm.feedItemId),
+        transactionDate: stockForm.transactionDate,
+        transactionType: stockForm.transactionType as any,
+        qty: stockForm.qty,
+        unitCost: stockForm.unitCost || undefined,
+        totalCost: computedTotal || undefined,
+        supplierName: stockForm.supplierName || undefined,
+        notes: stockForm.notes || undefined,
+        idempotencyKey: stockIdempotencyKey,
+      } as any,
+      // Queued offline: mirror the mutation's own onSuccess, which will not run
+      // until the entry reaches the server.
+      {
+        whenQueued: () => {
+          setStockOpen(false);
+          setStockIdempotencyKey(crypto.randomUUID());
+        },
+      },
+    );
   };
   const startEditEntry = (e: any) => {
     setEditStockForm({
@@ -639,7 +652,7 @@ export default function NewFeed() {
           <FormFooter>
             <button onClick={() => setStockOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button
-              disabled={addStock.isPending || !stockForm.feedItemId || !(parseFloat(stockForm.qty) > 0)}
+              disabled={isMutationWorking(addStock) || !stockForm.feedItemId || !(parseFloat(stockForm.qty) > 0)}
               onClick={submitStock}
               className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >

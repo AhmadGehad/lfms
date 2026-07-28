@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { Eye, Leaf, Plus, Search, Trash2, AlertTriangle, DollarSign, Pencil, Syringe } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -86,6 +88,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       acquisitionDate: new Date().toISOString().split("T")[0],
       birthDate: new Date().toISOString().split("T")[0],
       purchaseCost: "",
+      purchaseFundingSource: "",
       weightAtAcquisition: "",
       ownerId: "none",
       animalIdNumber: "",
@@ -94,6 +97,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const selectedSpeciesId = watch("speciesId");
   const selectedCategoryId = watch("categoryId");
+  const selectedAcquisitionType = watch("acquisitionType");
 
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: categories } = trpc.config.getCategories.useQuery(
@@ -110,6 +114,7 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const utils = trpc.useUtils();
   const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
+  const queuedSubmit = useQueuedSubmit();
   const createAnimal = trpc.animals.create.useMutation({
     onSuccess: () => {
       toast.success(t("animals.title") + " registered");
@@ -130,7 +135,14 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       toast.error(t("common.required"));
       return;
     }
-    createAnimal.mutate({
+    // Required only for a purchase — a birth has no funding to classify. No
+    // default is pre-selected: this choice has a real effect on the Animal
+    // P&L page's Net Revenue figure, so it must be an active decision.
+    if (data.acquisitionType === "purchased" && !data.purchaseFundingSource) {
+      toast.error(t("pnl.fundingSourceRequired", "Choose how this purchase was funded"));
+      return;
+    }
+    queuedSubmit(createAnimal, {
       speciesId: Number(data.speciesId),
       categoryId: Number(data.categoryId),
       groupId: Number(data.groupId),
@@ -140,10 +152,22 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
       acquisitionDate: data.acquisitionDate,
       birthDate: data.birthDate,
       purchaseCost: data.purchaseCost || undefined,
+      purchaseFundingSource: data.acquisitionType === "purchased"
+        ? (data.purchaseFundingSource as "revenue" | "investment")
+        : undefined,
       weightAtAcquisition: data.weightAtAcquisition || undefined,
       ownerId: (data.ownerId && data.ownerId !== "none") ? Number(data.ownerId) : undefined,
       animalIdNumber: data.animalIdNumber || undefined,
       idempotencyKey: createIdempotencyKey,
+    }, {
+      // Queued offline: mirror the mutation's own onSuccess, which will not run
+      // until the animal reaches the server and is assigned its real ID.
+      whenQueued: () => {
+        setOpen(false);
+        reset();
+        setCreateIdempotencyKey(crypto.randomUUID());
+        onSuccess();
+      },
     });
   };
 
@@ -274,6 +298,23 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
                 <Input type="number" placeholder="0.00" {...field} />
               )} />
             </div>
+            {selectedAcquisitionType === "purchased" && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label>{t("pnl.fundingSource", "Funding source")} *</Label>
+                <Controller name="purchaseFundingSource" control={control} render={({ field }) => (
+                  <RadioGroup value={field.value} onValueChange={field.onChange} className="grid-flow-col justify-start gap-6">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="revenue" id="add-funding-revenue" />
+                      <Label htmlFor="add-funding-revenue" className="font-normal">{t("pnl.fundingSourceRevenueLabel", "Farm revenue")}</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="investment" id="add-funding-investment" />
+                      <Label htmlFor="add-funding-investment" className="font-normal">{t("pnl.fundingSourceInvestmentLabel", "New investment")}</Label>
+                    </div>
+                  </RadioGroup>
+                )} />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label>{t("common.weight")} ({t("common.kg")})</Label>
               <Controller name="weightAtAcquisition" control={control} render={({ field }) => (
@@ -297,8 +338,8 @@ function AddAnimalDialog({ onSuccess }: { onSuccess: () => void }) {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-            <Button type="submit" disabled={createAnimal.isPending}>
-              {createAnimal.isPending ? "Registering..." : t("animals.addAnimal")}
+            <Button type="submit" disabled={isMutationWorking(createAnimal)}>
+              {isMutationWorking(createAnimal) ? "Registering..." : t("animals.addAnimal")}
             </Button>
           </DialogFooter>
         </form>

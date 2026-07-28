@@ -27,7 +27,7 @@ export const getLoginUrl = () => {
     return url.toString();
   }
 
-  const url = new URL("/api/oauth/start", window.location.origin);
+  const url = new URL("/login", window.location.origin);
   url.searchParams.set(
     "returnTo",
     `${window.location.pathname}${window.location.search}${window.location.hash}`,

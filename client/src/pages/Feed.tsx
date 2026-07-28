@@ -20,6 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { AlertTriangle, CalendarDays, Pencil, Wheat, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
@@ -52,6 +53,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
   const { data: feedItems } = trpc.config.getFeedItems.useQuery();
   const utils = trpc.useUtils();
 
+  const queuedSubmit = useQueuedSubmit();
   const addStock = trpc.feed.addStockEntry.useMutation({
     onSuccess: () => {
       toast.success(t("feed.stockRecorded"));
@@ -70,7 +72,7 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = () => {
     if (!form.feedItemId || !form.qty) return toast.error(t("feed.feedItemQtyRequired"));
-    addStock.mutate({
+    queuedSubmit(addStock, {
       feedItemId: parseInt(form.feedItemId),
       transactionDate: form.transactionDate,
       transactionType: form.transactionType as any,
@@ -80,6 +82,12 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
       supplierName: form.supplierName || undefined,
       notes: form.notes || undefined,
       idempotencyKey,
+    }, {
+      whenQueued: () => {
+        setOpen(false);
+        setIdempotencyKey(crypto.randomUUID());
+        onSuccess();
+      },
     });
   };
 
@@ -147,8 +155,8 @@ function AddStockDialog({ onSuccess }: { onSuccess: () => void }) {
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
-          <Button onClick={handleSubmit} disabled={addStock.isPending}>
-            {addStock.isPending ? "Saving..." : "Save Entry"}
+          <Button onClick={handleSubmit} disabled={isMutationWorking(addStock)}>
+            {isMutationWorking(addStock) ? "Saving..." : "Save Entry"}
           </Button>
         </DialogFooter>
       </DialogContent>

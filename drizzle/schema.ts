@@ -136,6 +136,7 @@ export const companyMemberships = mysqlTable("saas_company_memberships", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   ownerCompanyGuard: int("ownerCompanyGuard")
     .generatedAlwaysAs(() => sql`CASE WHEN \`role\` = 'owner' AND \`status\` = 'active' THEN \`companyId\` ELSE NULL END`, { mode: "stored" }),
+  notificationPreferences: json("notificationPreferences"),
 }, table => ({
   companyIdUnique: uniqueIndex("company_memberships_company_id_id_unique").on(table.companyId, table.id),
   companyUserUnique: uniqueIndex("company_memberships_company_user_unique").on(table.companyId, table.userId),
@@ -403,6 +404,7 @@ export const tenantSessions = mysqlTable("saas_tenant_sessions", {
   lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
   idleExpiresAt: timestamp("idleExpiresAt").notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
+  idleTimeoutMs: int("idleTimeoutMs"),
   revokedAt: timestamp("revokedAt"),
   revokedReason: varchar("revokedReason", { length: 200 }),
   ipAddress: varchar("ipAddress", { length: 45 }),
@@ -939,11 +941,13 @@ export const tenantFiles = mysqlTable("saas_tenant_files", {
 export const companyBranding = mysqlTable("saas_company_branding", {
   companyId: int("companyId").primaryKey(),
   logoTenantFileId: int("logoTenantFileId"),
+  faviconTenantFileId: int("faviconTenantFileId"),
   version: int("version").default(1).notNull(),
   updatedByMembershipId: int("updatedByMembershipId"),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => ({
   logoFileIdx: index("company_branding_logo_file_idx").on(table.logoTenantFileId),
+  faviconFileIdx: index("company_branding_favicon_file_idx").on(table.faviconTenantFileId),
   companyFk: foreignKey({
     name: "company_branding_company_fk",
     columns: [table.companyId],
@@ -952,6 +956,11 @@ export const companyBranding = mysqlTable("saas_company_branding", {
   logoFileFk: foreignKey({
     name: "company_branding_logo_file_fk",
     columns: [table.companyId, table.logoTenantFileId],
+    foreignColumns: [tenantFiles.companyId, tenantFiles.id],
+  }).onDelete("restrict"),
+  faviconFileFk: foreignKey({
+    name: "company_branding_favicon_file_fk",
+    columns: [table.companyId, table.faviconTenantFileId],
     foreignColumns: [tenantFiles.companyId, tenantFiles.id],
   }).onDelete("restrict"),
   updatedByFk: foreignKey({
@@ -1781,6 +1790,12 @@ export const animals = mysqlTable("saas_azal_animals", {
   ownerId: int("ownerId"),
   photoUrl: varchar("photoUrl", { length: 500 }),
   purchaseCost: decimal("purchaseCost", { precision: 10, scale: 2 }).default("0"),
+  // NULL = unclassified (every pre-existing row, and every "born" animal —
+  // a birth has no purchase to fund). Treated identically to "investment" in
+  // every calculation: only "revenue" deducts from Net Revenue on the Animal
+  // P&L page. Editable any time via animals.update, so historical purchases
+  // can be reclassified after the fact.
+  purchaseFundingSource: mysqlEnum("purchaseFundingSource", ["revenue", "investment"]),
   weightAtAcquisition: decimal("weightAtAcquisition", { precision: 8, scale: 2 }),
   exitDate: date("exitDate"),
   exitReason: text("exitReason"),
@@ -2278,6 +2293,24 @@ export const notificationReceipts = mysqlTable("saas_azal_notification_receipts"
   }).onDelete("cascade"),
 }));
 
+export const emailLog = mysqlTable("saas_email_log", {
+  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+  template: varchar("template", { length: 100 }).notNull(),
+  recipientEmail: varchar("recipientEmail", { length: 254 }).notNull(),
+  companyId: int("companyId"),
+  status: mysqlEnum("status", ["sent", "failed", "skipped_unconfigured"]).notNull(),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => ({
+  templateTimeIdx: index("email_log_template_time_idx").on(table.template, table.createdAt, table.id),
+  recipientTimeIdx: index("email_log_recipient_time_idx").on(table.recipientEmail, table.createdAt, table.id),
+  companyFk: foreignKey({
+    name: "email_log_company_fk",
+    columns: [table.companyId],
+    foreignColumns: [companies.id],
+  }).onDelete("set null"),
+}));
+
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 
 export const auditLog = mysqlTable("saas_azal_audit_log", {
@@ -2393,3 +2426,4 @@ export type OutboxEvent = typeof outboxEvents.$inferSelect;
 export type ExportJob = typeof exportJobs.$inferSelect;
 export type DeletionRequest = typeof deletionRequests.$inferSelect;
 export type TenantRestoreJob = typeof tenantRestoreJobs.$inferSelect;
+export type EmailLog = typeof emailLog.$inferSelect;

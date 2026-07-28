@@ -47,6 +47,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { OwnerFilterSelect } from "@/components/OwnerFilterSelect";
+import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
 import { DesignSwitch } from "@/components/DesignSwitch";
 import { FarmSwitcher } from "@/components/FarmSwitcher";
@@ -412,6 +413,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
+            <OfflineSyncIndicator />
             <DesignSwitch className="hidden sm:inline-flex" />
             <QuickAdd className="hidden sm:flex" />
             {perms.can("notifications", "view") && (

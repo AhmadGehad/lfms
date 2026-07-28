@@ -10,6 +10,7 @@ import { optionalAnimalIdNumber, optionalMoneyString, optionalWeightString, weig
 import { storagePut, storageGetSignedUrl } from "../storage";
 import { logger } from "../observability/logger";
 import { executeIdempotent } from "../platform/idempotency";
+import { notifyOperationalAlertByEmail } from "../notifications/emailFanout";
 import {
   checkAndStageAnimal,
   createAnimal,
@@ -186,6 +187,7 @@ export const animalsRouter = router({
         sireId: z.number().int().positive().optional(),
         ownerId: z.number().int().positive().optional(),
         purchaseCost: optionalMoneyString,
+        purchaseFundingSource: z.enum(["revenue", "investment"]).optional(),
         weightAtAcquisition: optionalWeightString,
         notes: z.string().max(2000).optional(),
         animalIdNumber: optionalAnimalIdNumber,
@@ -195,7 +197,15 @@ export const animalsRouter = router({
         { message: "Birth date cannot be after acquisition date", path: ["birthDate"] }
       )
     )
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input: rawInput, ctx }) => {
+      // A birth has no purchase to fund — force null regardless of what was
+      // sent, rather than trusting the client to omit it.
+      const input = {
+        ...rawInput,
+        purchaseFundingSource: rawInput.acquisitionType === "purchased"
+          ? rawInput.purchaseFundingSource
+          : null,
+      };
       const cats = await getAllCategories(input.speciesId);
       const cat = cats.find((c: { id: number; idPrefix: string }) => c.id === input.categoryId);
       if (!cat || cat.speciesId !== input.speciesId || !cat.isActive) {
@@ -312,6 +322,7 @@ export const animalsRouter = router({
         acquisitionDate: pastOrTodayDate.optional(),
         birthDate: pastOrTodayDate.optional(),
         purchaseCost: optionalMoneyString,
+        purchaseFundingSource: z.enum(["revenue", "investment"]).nullable().optional(),
         notes: z.string().max(2000).optional(),
         exitDate: pastOrTodayDate.optional(),
         exitReason: z.string().max(1000).optional(),
@@ -324,6 +335,13 @@ export const animalsRouter = router({
     .mutation(async ({ input: { id, expectedVersion, animalIdNumber, ...data }, ctx }) => {
       const existing = await getAnimalById(id);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // A birth has no purchase to fund — force null regardless of what was
+      // sent, matching the same guard on create. acquisitionType itself isn't
+      // editable here, so the existing record is authoritative.
+      if (existing.animal.acquisitionType === "born") {
+        data.purchaseFundingSource = null;
+      }
 
       const cats = await getAllCategories();
       const currentCat = cats.find((cat: any) => cat.id === existing.animal.categoryId);
@@ -969,18 +987,54 @@ export const animalsRouter = router({
       if (animal?.targetWeightKg) {
         const target = parseFloat(String(animal.targetWeightKg));
         const current = parseFloat(input.weightKg);
+        const animalLabel = stageResult.newAnimalId ?? animal.animal.animalId;
         if (current >= target) {
           try {
+            const title = "Target Weight Reached";
+            const message = `Animal ${animalLabel} has reached target weight of ${target}kg (current: ${current}kg)`;
             await createNotification({
               alertType: "target_weight_reached",
-              title: "Target Weight Reached",
-              message: `Animal ${stageResult.newAnimalId ?? animal.animal.animalId} has reached target weight of ${target}kg (current: ${current}kg)`,
+              title,
+              message,
               relatedEntityType: "animal",
               relatedEntityId: String(input.animalId),
               priority: "high",
             });
+            void notifyOperationalAlertByEmail({
+              companyId: ctx.tenant!.companyId,
+              alertType: "target_weight_reached",
+              title,
+              message,
+              priority: "high",
+            });
           } catch (error) {
             logger.error("animal.target_weight_notification_failed", { error });
+          }
+        } else if (animal.readyToSellThreshold) {
+          const thresholdPercent = parseFloat(String(animal.readyToSellThreshold));
+          const readyToSellWeight = target * (thresholdPercent / 100);
+          if (current >= readyToSellWeight) {
+            try {
+              const title = "Ready to Sell";
+              const message = `Animal ${animalLabel} has reached ${thresholdPercent}% of target weight (current: ${current}kg, target: ${target}kg) and may be ready to sell`;
+              await createNotification({
+                alertType: "ready_to_sell",
+                title,
+                message,
+                relatedEntityType: "animal",
+                relatedEntityId: String(input.animalId),
+                priority: "high",
+              });
+              void notifyOperationalAlertByEmail({
+                companyId: ctx.tenant!.companyId,
+                alertType: "ready_to_sell",
+                title,
+                message,
+                priority: "high",
+              });
+            } catch (error) {
+              logger.error("animal.ready_to_sell_notification_failed", { error });
+            }
           }
         }
       }

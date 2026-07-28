@@ -3,11 +3,27 @@ import fs from "fs";
 import { type Server } from "http";
 import { nanoid } from "nanoid";
 import path from "path";
-import { createServer as createViteServer } from "vite";
-import viteConfig from "../../vite.config";
-import adminViteConfig from "../../vite.admin.config";
+import { createServer as createViteServer, type UserConfigExport } from "vite";
+import viteConfigExport from "../../vite.config";
+import adminViteConfigExport from "../../vite.admin.config";
 import { getResolvedRequestHost } from "./security/httpSecurity";
 import { setHtmlDocumentHeaders } from "./htmlResponse";
+
+/**
+ * Both configs are `defineConfig(({ command }) => ({...}))` — a function, not
+ * an object. `defineConfig` returns that function unchanged, so spreading the
+ * import directly (`{...viteConfig}`) silently discarded every alias, plugin,
+ * and build setting: it copies a function's own enumerable properties, which
+ * is none. Dev-mode `@/` imports resolved to nothing and every request fell
+ * through to the SPA fallback — this is what actually caused the blank page,
+ * not anything in the PWA/offline work.
+ */
+async function resolveViteConfig(config: UserConfigExport) {
+  const resolved = typeof config === "function"
+    ? await config({ command: "serve", mode: "development" })
+    : await config;
+  return resolved;
+}
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -16,6 +32,7 @@ export async function setupVite(app: Express, server: Server) {
     allowedHosts: true as const,
   };
 
+  const viteConfig = await resolveViteConfig(viteConfigExport);
   const vite = await createViteServer({
     ...viteConfig,
     configFile: false,
@@ -26,6 +43,7 @@ export async function setupVite(app: Express, server: Server) {
   // The Admin portal is a separate SPA. Serve it on the platform surface
   // (admin.<BASE_DOMAIN>) so the dev server matches production routing;
   // a distinct HMR websocket path keeps the two Vite instances apart.
+  const adminViteConfig = await resolveViteConfig(adminViteConfigExport);
   const adminVite = await createViteServer({
     ...adminViteConfig,
     configFile: false,

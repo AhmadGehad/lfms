@@ -8,6 +8,7 @@ import {
 } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { PWA_ROOT_ASSETS } from "./pwaAssets.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tenantDirectory = path.join(root, "dist", "public");
@@ -87,6 +88,14 @@ async function assertHtmlAssetReferences(htmlPath, html) {
   }
 }
 
+async function copyTenantRootAssets() {
+  for (const fileName of PWA_ROOT_ASSETS) {
+    const sourcePath = path.join(tenantDirectory, fileName);
+    await assertRegularFile(sourcePath);
+    await copyFile(sourcePath, path.join(outputDirectory, fileName));
+  }
+}
+
 const tenantHtmlPath = path.join(tenantDirectory, "index.html");
 const adminHtmlPath = path.join(adminDirectory, "index.html");
 await Promise.all([
@@ -110,6 +119,7 @@ await Promise.all([
   copyFile(tenantHtmlPath, path.join(outputDirectory, "tenant.html")),
   copyFile(adminHtmlPath, path.join(outputDirectory, "admin.html")),
 ]);
+await copyTenantRootAssets();
 await copyAssetTree(
   path.join(tenantDirectory, "assets"),
   path.join(outputDirectory, "assets")

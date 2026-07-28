@@ -4,6 +4,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
+import { registerPasswordAuthRoutes } from "./passwordAuth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -25,12 +26,14 @@ import {
 import { registerPlatformApi } from "../platform/http";
 import { registerPlatformManusAuthRoutes } from "../platform/manusAuth";
 import { registerPlatformOidcRoutes } from "../platform/oidc";
+import { registerPlatformPasswordAuthRoutes } from "../platform/passwordAuth";
 import { registerObservabilityRoutes, requestObservabilityMiddleware } from "../observability/http";
 import { logger } from "../observability/logger";
 import { validateLocalDevAuthConfiguration } from "./devAuth";
 import { closeDatabasePool } from "../db";
 import { closeStorageBackend } from "../storageBackend";
 import { registerPublicRuntimeConfig } from "./publicRuntimeConfig";
+import { registerPublicCompanyLogoRoute } from "../tenancy/branding";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -117,6 +120,7 @@ async function startServer() {
   app.use(requestObservabilityMiddleware());
   app.use(exactCorsMiddleware(allowedOrigins));
   registerPublicRuntimeConfig(app);
+  registerPublicCompanyLogoRoute(app);
   const server = createServer(app);
   registerObservabilityRoutes(app);
   app.use(express.json({ limit: "12mb", strict: true }));
@@ -126,9 +130,12 @@ async function startServer() {
   app.use("/api/dev", requireSurface("tenant"));
   app.use("/api/oauth", requireSurface("tenant"));
   registerOAuthRoutes(app);
+  app.use("/api/auth", requireSurface("tenant"));
+  registerPasswordAuthRoutes(app);
   app.use("/api/platform/auth", requireSurface("platform"));
   if (hasPlatformOidcConfiguration()) registerPlatformOidcRoutes(app);
   else registerPlatformManusAuthRoutes(app);
+  registerPlatformPasswordAuthRoutes(app);
   app.use(
     "/api/platform/trpc",
     requireSurface("platform"),

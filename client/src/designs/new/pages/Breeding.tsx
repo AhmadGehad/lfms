@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { trpc } from "@/lib/trpc";
+import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { extractAnimalIdNumber } from "@shared/animalIds";
 import { Baby, Egg, ExternalLink, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -244,6 +245,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     utils.breeding.summary.invalidate();
   };
 
+  const queuedSubmit = useQueuedSubmit();
   const recordBirth = trpc.breeding.recordBirth.useMutation({
     onSuccess: () => {
       invalidate();
@@ -324,7 +326,8 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       toast.error(t("breeding.fillRequired", "Species, category, birth date and birth type are required"));
       return;
     }
-    recordBirth.mutate(
+    queuedSubmit(
+      recordBirth,
       {
         speciesId: Number(birth.speciesId),
         categoryId: Number(birth.categoryId),
@@ -341,7 +344,16 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
         count: Number(birth.count) || 1,
         idempotencyKey: birthIdempotencyKey,
       },
-      { onSuccess: () => (again ? setBirth({ ...blankBirth }) : setBirthOpen(false)) }
+      {
+        onOnlineSuccess: () => (again ? setBirth({ ...blankBirth }) : setBirthOpen(false)),
+        // Queued offline: the mutation's own onSuccess waits for the sync, so
+        // reset and close here as well.
+        whenQueued: () => {
+          setBirthIdempotencyKey(crypto.randomUUID());
+          if (again) setBirth({ ...blankBirth });
+          else setBirthOpen(false);
+        },
+      }
     );
   };
 
@@ -607,8 +619,8 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
           </FormSection>
           <FormFooter>
             <button type="button" onClick={() => setBirthOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
-            <button type="button" disabled={recordBirth.isPending} onClick={() => submitBirth(true)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface disabled:opacity-50">{t("common.saveAddAnother", "Save & add another")}</button>
-            <button type="button" disabled={recordBirth.isPending} onClick={() => submitBirth(false)} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{t("common.save", "Save")}</button>
+            <button type="button" disabled={isMutationWorking(recordBirth)} onClick={() => submitBirth(true)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface disabled:opacity-50">{t("common.saveAddAnother", "Save & add another")}</button>
+            <button type="button" disabled={isMutationWorking(recordBirth)} onClick={() => submitBirth(false)} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{t("common.save", "Save")}</button>
           </FormFooter>
         </DialogContent>
       </Dialog>

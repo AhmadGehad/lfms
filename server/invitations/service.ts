@@ -10,11 +10,17 @@ import {
   companySubscriptions,
   farmMemberships,
   farms,
+  passwordCredentials,
   users,
 } from "../../drizzle/schema";
 import type { AppRole } from "../../shared/permissions";
 import { decodeCursor } from "../../shared/platformApi";
 import { assertWithinLimit, getEffectiveLimit, lockCompanyQuota } from "../entitlements/limits";
+import { hashPassword, isPasswordStrongEnough } from "../_core/auth/password";
+import { ENV } from "../_core/env";
+import { isEmailConfigured } from "../_core/email";
+import { membershipInvitationEmail, welcomeEmail } from "../_core/emailTemplates";
+import { sendTemplatedEmail } from "../_core/sendTemplatedEmail";
 import { redactLogFields } from "../observability/logger";
 import { generatePublicId } from "../tenancy/publicIds";
 import { executeIdempotent } from "../platform/idempotency";
@@ -24,6 +30,8 @@ import { appendPlatformAudit, type PlatformAuditActor } from "../platform/reposi
 import { affectedRows, publicCursorPage, requirePlatformDb, type PlatformDb } from "../platform/repositories/db";
 import { findCompanyByPublicId } from "../platform/repositories/companies";
 import { rethrowPlatformWriteError } from "../platform/services/errors";
+
+const INVITATION_PROVIDER = "password";
 
 const INVITATION_TOKEN_BYTES = 32;
 const DEFAULT_EXPIRY_HOURS = 72;
@@ -206,12 +214,19 @@ export async function createPlatformInvitation(input: {
 }, actor: PlatformAuditActor) {
   const db = await requirePlatformDb();
   let issuedCredential: string | null = null;
+  let invitationEmailContext: { companyName: string; companySlug: string; normalizedEmail: string; companyId: number } | null = null;
   try {
     const response = await db.transaction(async tx => {
       const company = await findCompanyByPublicId(input.companyPublicId, tx);
       if (!company || company.deletedAt) notFound("Company");
       const normalizedEmail = normalizeEmail(input.email);
       const farmPublicIds = uniquePublicIds(input.farmPublicIds);
+      invitationEmailContext = {
+        companyName: company.name,
+        companySlug: company.slug,
+        normalizedEmail,
+        companyId: company.id,
+      };
       return executeIdempotent(tx, {
         companyId: company.id,
         userId: actor.userId,
@@ -219,7 +234,7 @@ export async function createPlatformInvitation(input: {
         operation: "platform.invitations.create",
         body: {
           companyPublicId: company.publicId,
-          provider: "manus",
+          provider: INVITATION_PROVIDER,
           normalizedEmail,
           role: input.role,
           farmAccessMode: input.farmAccessMode,
@@ -251,7 +266,7 @@ export async function createPlatformInvitation(input: {
           companyPublicId: company.publicId,
           companySlug: company.slug,
           normalizedEmail,
-          provider: "manus",
+          provider: INVITATION_PROVIDER,
           role: input.role,
           farmAccessMode: input.farmAccessMode,
           farmPublicIds,
@@ -262,6 +277,28 @@ export async function createPlatformInvitation(input: {
         return storedResponse;
       });
     });
+    const emailContext = invitationEmailContext as {
+      companyName: string;
+      companySlug: string;
+      normalizedEmail: string;
+      companyId: number;
+    } | null;
+    if (issuedCredential && emailContext && isEmailConfigured()) {
+      const acceptUrl = `https://${emailContext.companySlug}.${ENV.baseDomain}/accept-invitation#token=${issuedCredential}`;
+      const email = membershipInvitationEmail({
+        companyName: emailContext.companyName,
+        acceptUrl,
+        expiresInDays: Math.ceil((input.expiresInHours ?? DEFAULT_EXPIRY_HOURS) / 24),
+      });
+      void sendTemplatedEmail({
+        template: "membership_invitation",
+        to: emailContext.normalizedEmail,
+        companyId: emailContext.companyId,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+    }
     return { ...response, invitationToken: issuedCredential };
   } catch (error) {
     rethrowPlatformWriteError(error);
@@ -696,4 +733,106 @@ export async function acceptInvitation(input: {
   if (outcome.kind === "company_unavailable") invalidLifecycle("Company is unavailable");
   if (outcome.kind === "already_member") invalidLifecycle("User already has a membership in this company");
   invalidLifecycle("Invitation is no longer available");
+}
+
+/**
+ * Unauthenticated counterpart to acceptInvitation: creates the invited user
+ * (or attaches a password credential to a pre-existing, password-less user)
+ * from the invitation's own email binding, then delegates to acceptInvitation
+ * for the membership/seat/activation logic.
+ */
+export async function activateInvitationWithPassword(input: {
+  token: string;
+  companySlug: string;
+  password: string;
+}, actor: {
+  requestId: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}) {
+  if (!isPasswordStrongEnough(input.password)) {
+    throw new TRPCError({ code: "BAD_REQUEST", message: "Password does not meet the minimum requirements" });
+  }
+  const db = await requirePlatformDb();
+  const tokenHash = hashInvitationToken(input.token);
+  const userId = await db.transaction(async tx => {
+    const [row] = await tx.select({
+      invitation: companyInvitations,
+      companyName: companies.name,
+    }).from(companyInvitations)
+      .innerJoin(companies, eq(companyInvitations.companyId, companies.id))
+      .where(and(
+        eq(companyInvitations.tokenHash, driverBinary(tokenHash)),
+        eq(companies.slug, input.companySlug),
+      ))
+      .limit(1);
+    if (!row) notFound("Invitation");
+    const record = row.invitation;
+    if (record.status !== "pending" || record.expiresAt <= new Date()) {
+      invalidLifecycle("Invitation is no longer available");
+    }
+    const normalizedEmail = record.normalizedEmail;
+    const [existingUser] = await tx.select().from(users)
+      .where(eq(users.normalizedEmail, normalizedEmail)).limit(1).for("update");
+    let user = existingUser;
+    if (user) {
+      if (user.status !== "active") invalidLifecycle("Account is not available");
+      const [existingCredential] = await tx.select({ userId: passwordCredentials.userId })
+        .from(passwordCredentials).where(eq(passwordCredentials.userId, user.id)).limit(1);
+      if (existingCredential) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "This account already has a password; sign in and accept the invitation instead",
+        });
+      }
+    } else {
+      const openId = `password:${createHash("sha256").update(normalizedEmail).digest("hex").slice(0, 48)}`;
+      const [inserted] = await tx.insert(users).values({
+        publicId: generatePublicId(),
+        openId,
+        name: null,
+        email: normalizedEmail,
+        normalizedEmail,
+        loginMethod: "password",
+        role: "user",
+        status: "active",
+      });
+      [user] = await tx.select().from(users)
+        .where(eq(users.id, Number(inserted.insertId))).limit(1);
+    }
+    if (!user) throw new Error("Invitee user was not persisted");
+    const passwordHash = await hashPassword(input.password);
+    await tx.insert(passwordCredentials).values({ userId: user.id, passwordHash });
+    const now = new Date();
+    await tx.insert(authIdentities).values({
+      userId: user.id,
+      provider: INVITATION_PROVIDER,
+      providerSubject: normalizedEmail,
+      providerEmail: normalizedEmail,
+      providerEmailVerified: true,
+      linkedAt: now,
+      lastUsedAt: now,
+    });
+    return { userId: user.id, companyName: row.companyName, normalizedEmail };
+  });
+  const outcome = await acceptInvitation({ token: input.token, companySlug: input.companySlug }, {
+    userId: userId.userId,
+    requestId: actor.requestId,
+    ipAddress: actor.ipAddress,
+    userAgent: actor.userAgent,
+  });
+  if (isEmailConfigured()) {
+    const email = welcomeEmail({
+      companyName: userId.companyName,
+      dashboardUrl: `https://${input.companySlug}.${ENV.baseDomain}/`,
+    });
+    void sendTemplatedEmail({
+      template: "welcome",
+      to: userId.normalizedEmail,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
+    });
+  }
+  return { ...outcome, userId: userId.userId };
 }

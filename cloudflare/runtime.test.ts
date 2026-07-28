@@ -153,6 +153,34 @@ describe("Cloudflare container boundary", () => {
     expect(resolveEdgeAssetPath("/favicon.ico", false)).toBe("/favicon.ico");
   });
 
+  // The PWA depends on these being served from their exact root URLs: a service
+  // worker's scope is capped by its own path, and the manifest link is absolute.
+  // If a future routing change rewrote them to the SPA shell, installability and
+  // offline support would break in production only.
+  it("serves the PWA service worker and manifest from their root paths", () => {
+    expect(resolveEdgeAssetPath("/sw.js", false)).toBe("/sw.js");
+    expect(resolveEdgeAssetPath("/manifest.webmanifest", false)).toBe(
+      "/manifest.webmanifest"
+    );
+    expect(resolveEdgeAssetPath("/pwa-192.png", false)).toBe("/pwa-192.png");
+    expect(resolveEdgeAssetPath("/apple-touch-icon-180.png", false)).toBe(
+      "/apple-touch-icon-180.png"
+    );
+  });
+
+  it("keeps the service worker out of the container proxy so it is cacheable", () => {
+    expect(
+      shouldProxyToContainer(new Request("https://azal-farms.l-fms.com/sw.js"))
+    ).toBe(false);
+    // The app cannot boot offline without this file, and it is container-served,
+    // so the service worker has to cache it rather than treat it as an asset.
+    expect(
+      shouldProxyToContainer(
+        new Request("https://azal-farms.l-fms.com/runtime-config.js")
+      )
+    ).toBe(true);
+  });
+
   it("adds hardened HTML headers and storage origins at the edge", () => {
     const response = secureEdgeResponse(
       new Response("<html></html>", {

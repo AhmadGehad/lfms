@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import {
+  passwordCredentials,
   platformAdministratorRoles,
   platformAdministrators,
   platformIdentities,
@@ -11,6 +12,11 @@ import {
   users,
 } from "../../../drizzle/schema";
 import { ENV } from "../../_core/env";
+import { hashPassword, isPasswordStrongEnough } from "../../_core/auth/password";
+import { issuePasswordResetToken } from "../../_core/auth/passwordReset";
+import { isEmailConfigured } from "../../_core/email";
+import { platformPasswordResetEmail } from "../../_core/emailTemplates";
+import { sendTemplatedEmail } from "../../_core/sendTemplatedEmail";
 import { generatePublicId } from "../../tenancy/publicIds";
 import { invalidLifecycle, notFound, versionConflict } from "../errors";
 import { executeIdempotent } from "../idempotency";
@@ -256,4 +262,78 @@ export async function updatePlatformAdministrator(input: {
     });
     return { publicId: administrator.publicId, status: nextStatus, version: administrator.version + 1 };
   });
+}
+
+export async function setAdministratorPassword(input: {
+  publicId: string;
+  password: string;
+}, actor: PlatformAuditActor) {
+  if (!isPasswordStrongEnough(input.password)) {
+    invalidLifecycle("Password does not meet the minimum requirements");
+  }
+  const db = await requirePlatformDb();
+  return db.transaction(async tx => {
+    const administrator = await findAdministratorByPublicId(input.publicId, tx);
+    if (!administrator) notFound("Platform administrator");
+    const passwordHash = await hashPassword(input.password);
+    const [existing] = await tx.select({ userId: passwordCredentials.userId })
+      .from(passwordCredentials).where(eq(passwordCredentials.userId, administrator.userId)).limit(1);
+    if (existing) {
+      await tx.update(passwordCredentials).set({
+        passwordHash,
+        passwordChangedAt: new Date(),
+        passwordNeedsRehash: false,
+      }).where(eq(passwordCredentials.userId, administrator.userId));
+    } else {
+      await tx.insert(passwordCredentials).values({ userId: administrator.userId, passwordHash });
+    }
+    await tx.update(users).set({
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      lastPasswordChange: new Date(),
+    }).where(eq(users.id, administrator.userId));
+    await tx.update(platformAdministrators).set({
+      authVersion: sql`${platformAdministrators.authVersion} + 1`,
+    }).where(eq(platformAdministrators.id, administrator.id));
+    await appendPlatformAudit(tx, actor, {
+      action: "platform_administrator.password_set",
+      actionCategory: "security",
+      entityType: "platform_administrator",
+      entityId: administrator.publicId,
+      metadata: { setBy: "platform_admin" },
+    });
+    return { publicId: administrator.publicId };
+  });
+}
+
+export async function sendAdministratorPasswordReset(input: {
+  publicId: string;
+}, actor: PlatformAuditActor) {
+  const db = await requirePlatformDb();
+  const administrator = await findAdministratorByPublicId(input.publicId, db);
+  if (!administrator) notFound("Platform administrator");
+  const [user] = await db.select({ email: users.normalizedEmail })
+    .from(users).where(eq(users.id, administrator.userId)).limit(1);
+  if (!user?.email) invalidLifecycle("Administrator has no email on file");
+  const token = await issuePasswordResetToken(administrator.userId, user.email);
+  const resetLink = `https://admin.${ENV.baseDomain}/reset-password?token=${encodeURIComponent(token)}`;
+  const sent = isEmailConfigured();
+  if (sent) {
+    const email = platformPasswordResetEmail({ resetUrl: resetLink, expiresInMinutes: 60, triggeredByAdmin: true });
+    await sendTemplatedEmail({
+      template: "platform_password_reset_admin_triggered",
+      to: user.email,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
+    });
+  }
+  await appendPlatformAudit(db, actor, {
+    action: "platform_administrator.password_reset_sent",
+    actionCategory: "security",
+    entityType: "platform_administrator",
+    entityId: administrator.publicId,
+    metadata: { emailSent: sent },
+  });
+  return { sent };
 }

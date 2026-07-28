@@ -682,6 +682,58 @@ describe("animals.create", () => {
       idempotencyKey: "animal-create-duplicate-1",
     })).rejects.toThrow(/already exists|Recycle Bin/i);
   });
+
+  // Regression guard for the Animal P&L "Net Revenue" fix: a purchase's
+  // funding source is what tells that calculation whether to deduct the
+  // purchase from realised revenue, so it must reach storage exactly as sent.
+  it("stores 'revenue' as sent for a purchased animal", async () => {
+    const { dbModule } = await mockTransactionDb();
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.animals.create({
+      categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
+      sex: "male", acquisitionType: "purchased",
+      acquisitionDate: "2024-01-15", birthDate: "2024-01-10",
+      purchaseFundingSource: "revenue",
+      idempotencyKey: "animal-create-funding-revenue",
+    });
+    expect(vi.mocked(dbModule.createAnimal)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ purchaseFundingSource: "revenue" }),
+      expect.anything(),
+    );
+  });
+
+  it("stores 'investment' as sent for a purchased animal", async () => {
+    const { dbModule } = await mockTransactionDb();
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.animals.create({
+      categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
+      sex: "male", acquisitionType: "purchased",
+      acquisitionDate: "2024-01-15", birthDate: "2024-01-10",
+      purchaseFundingSource: "investment",
+      idempotencyKey: "animal-create-funding-investment",
+    });
+    expect(vi.mocked(dbModule.createAnimal)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ purchaseFundingSource: "investment" }),
+      expect.anything(),
+    );
+  });
+
+  it("forces the funding source to null for a born animal, even if one was sent", async () => {
+    const { dbModule } = await mockTransactionDb();
+    const caller = appRouter.createCaller(makeCtx());
+    await caller.animals.create({
+      categoryId: 1, speciesId: 1, groupId: 1, statusId: 1,
+      sex: "male", acquisitionType: "born",
+      acquisitionDate: "2024-01-15", birthDate: "2024-01-15",
+      // A birth has no purchase to fund — this should be ignored, not stored.
+      purchaseFundingSource: "revenue",
+      idempotencyKey: "animal-create-born-ignores-funding",
+    });
+    expect(vi.mocked(dbModule.createAnimal)).toHaveBeenLastCalledWith(
+      expect.objectContaining({ purchaseFundingSource: null }),
+      expect.anything(),
+    );
+  });
 });
 
 describe("animals.update ID", () => {
@@ -770,6 +822,51 @@ describe("animals.update ID", () => {
       expectedVersion: 1,
       animalIdNumber: "0099",
     })).rejects.toThrow(/changed while editing/i);
+  });
+
+  // This is what makes historical purchases editable: reclassifying an old
+  // record's funding source after the fact must reach storage as sent.
+  it("lets a purchased animal's funding source be reclassified", async () => {
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.getAnimalById).mockResolvedValueOnce({
+      animal: { id: 1, animalId: "LMB-001", sex: "male", acquisitionType: "purchased", isActive: 1, categoryId: 1, speciesId: 1, groupId: 1, statusId: 1, version: 1 },
+      categoryName: "Lamb", speciesName: "Sheep", groupName: "Pen A", statusName: "Active",
+    } as any);
+    vi.mocked(dbModule.updateAnimal).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+
+    await caller.animals.update({
+      id: 1,
+      expectedVersion: 1,
+      purchaseFundingSource: "revenue",
+    });
+
+    expect(vi.mocked(dbModule.updateAnimal)).toHaveBeenLastCalledWith(
+      1,
+      expect.objectContaining({ purchaseFundingSource: "revenue" }),
+      expect.anything(),
+      1,
+    );
+  });
+
+  it("forces the funding source to null when updating a born animal, even if one was sent", async () => {
+    // Default getAnimalById mock returns acquisitionType: "born".
+    const { dbModule } = await mockTransactionDb();
+    vi.mocked(dbModule.updateAnimal).mockClear();
+    const caller = appRouter.createCaller(makeCtx());
+
+    await caller.animals.update({
+      id: 1,
+      expectedVersion: 1,
+      purchaseFundingSource: "revenue",
+    });
+
+    expect(vi.mocked(dbModule.updateAnimal)).toHaveBeenLastCalledWith(
+      1,
+      expect.objectContaining({ purchaseFundingSource: null }),
+      expect.anything(),
+      1,
+    );
   });
 });
 

@@ -1,4 +1,6 @@
 import { getLoginUrl } from "@/const";
+import { clearOfflineIdentity } from "@/lib/offline/identity";
+import { clearAllOfflineData } from "@/lib/offline/persister";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -36,6 +38,11 @@ export function useAuth(options?: UseAuthOptions) {
       }
       throw error;
     } finally {
+      // Field phones get shared, so signing out has to remove the persisted
+      // tenant data as well as the session — otherwise the next person's app
+      // would restore this user's cached animals at boot.
+      clearOfflineIdentity();
+      await clearAllOfflineData();
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
     }

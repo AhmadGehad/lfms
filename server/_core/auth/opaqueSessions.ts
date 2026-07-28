@@ -15,6 +15,8 @@ export type SessionRecord = {
   lastSeenAt: Date;
   idleExpiresAt: Date;
   absoluteExpiresAt: Date;
+  /** Idle timeout captured at issuance (e.g. a per-company override). Falls back to the manager's default when null. */
+  idleTimeoutMs: number | null;
   revokedAt: Date | null;
   revokedReason: string | null;
   ipAddress: string | null;
@@ -69,6 +71,8 @@ export type IssueSessionInput = {
   mfaVerifiedAt?: Date | null;
   ipAddress?: string | null;
   userAgent?: string | null;
+  /** Per-issuance idle timeout override (e.g. a per-company setting). Defaults to the manager's configured idle timeout. */
+  idleTimeoutMs?: number;
 };
 
 export type OpaqueSessionManagerOptions = {
@@ -90,7 +94,7 @@ const DEFAULTS: Record<
   >
 > = {
   tenant: {
-    idleTimeoutMs: 30 * 60 * 1_000,
+    idleTimeoutMs: 8 * 60 * 60 * 1_000,
     absoluteTimeoutMs: 7 * 24 * 60 * 60 * 1_000,
     maximumActiveSessions: 5,
   },
@@ -157,7 +161,8 @@ export class OpaqueSessionManager {
   async issue(input: IssueSessionInput): Promise<IssuedSession> {
     const now = this.now();
     const token = `${this.audience === "tenant" ? "lfms_t" : "lfms_p"}_${randomBytes(32).toString("base64url")}`;
-    const idleExpiresAt = addMilliseconds(now, this.idleTimeoutMs);
+    const idleTimeoutMs = input.idleTimeoutMs ?? this.idleTimeoutMs;
+    const idleExpiresAt = addMilliseconds(now, idleTimeoutMs);
     const absoluteExpiresAt = addMilliseconds(now, this.absoluteTimeoutMs);
     const authenticationMethods = [...(input.authenticationMethods ?? [])];
 
@@ -172,6 +177,7 @@ export class OpaqueSessionManager {
       lastSeenAt: now,
       idleExpiresAt,
       absoluteExpiresAt,
+      idleTimeoutMs: input.idleTimeoutMs ?? null,
       ipAddress: normalizeRiskSignal(input.ipAddress, MAX_IP_LENGTH),
       userAgent: normalizeRiskSignal(input.userAgent, MAX_USER_AGENT_LENGTH),
     });
@@ -229,9 +235,10 @@ export class OpaqueSessionManager {
     }
 
     if (now.getTime() - record.lastSeenAt.getTime() >= this.touchIntervalMs) {
+      const idleTimeoutMs = record.idleTimeoutMs ?? this.idleTimeoutMs;
       const idleExpiresAt = new Date(
         Math.min(
-          now.getTime() + this.idleTimeoutMs,
+          now.getTime() + idleTimeoutMs,
           record.absoluteExpiresAt.getTime(),
         ),
       );

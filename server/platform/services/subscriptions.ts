@@ -7,6 +7,11 @@ import { affectedRows, requirePlatformDb } from "../repositories/db";
 import { findPlanByPublicId } from "../repositories/plans";
 import { rethrowPlatformWriteError } from "./errors";
 import { executeIdempotent } from "../idempotency";
+import { getCompanyOwnerEmail } from "../repositories/companies";
+import { ENV } from "../../_core/env";
+import { isEmailConfigured } from "../../_core/email";
+import { planChangedEmail } from "../../_core/emailTemplates";
+import { sendTemplatedEmail } from "../../_core/sendTemplatedEmail";
 
 export async function assignSubscription(input: {
   companyPublicId: string;
@@ -34,8 +39,9 @@ export async function assignSubscription(input: {
     invalidLifecycle("Past-due subscriptions require a grace end after the subscription period");
   }
   const db = await requirePlatformDb();
+  let planChangedEmailContext: { companyName: string; companySlug: string; companyId: number; planName: string } | null = null;
   try {
-    return await db.transaction(async tx => {
+    const response = await db.transaction(async tx => {
       const [company] = await tx.select().from(companies)
         .where(eq(companies.publicId, input.companyPublicId))
         .limit(1)
@@ -120,9 +126,43 @@ export async function assignSubscription(input: {
           before: current[0] ? { publicId: current[0].publicId, status: current[0].status } : null,
           after: { planPublicId: plan.publicId, status: input.status, periodStart: input.periodStart, periodEnd: input.periodEnd },
         });
+        // Only a genuine plan swap (not the very first assignment) warrants a "plan changed" email.
+        if (current.length > 0) {
+          planChangedEmailContext = {
+            companyName: company.name,
+            companySlug: company.slug,
+            companyId: company.id,
+            planName: plan.name,
+          };
+        }
         return { publicId, companyVersion: company.version + 1 };
       });
     });
+    const emailContext = planChangedEmailContext as {
+      companyName: string;
+      companySlug: string;
+      companyId: number;
+      planName: string;
+    } | null;
+    if (emailContext && isEmailConfigured()) {
+      const ownerEmail = await getCompanyOwnerEmail(emailContext.companyId);
+      if (ownerEmail) {
+        const email = planChangedEmail({
+          companyName: emailContext.companyName,
+          planName: emailContext.planName,
+          dashboardUrl: `https://${emailContext.companySlug}.${ENV.baseDomain}/`,
+        });
+        void sendTemplatedEmail({
+          template: "plan_changed",
+          to: ownerEmail,
+          companyId: emailContext.companyId,
+          subject: email.subject,
+          text: email.text,
+          html: email.html,
+        });
+      }
+    }
+    return response;
   } catch (error) {
     rethrowPlatformWriteError(error);
   }

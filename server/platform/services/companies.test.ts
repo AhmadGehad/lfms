@@ -38,6 +38,7 @@ vi.mock("../idempotency", () => ({
 }));
 
 import { changeCompanyLifecycle, createCompany } from "./companies";
+import { hashProviderSubject } from "../../invitations/service";
 
 const actor = {
   platformAdminId: 7,
@@ -187,6 +188,23 @@ describe("company onboarding", () => {
     const storedInvitation = transaction.writes.find(write => write.table === companyInvitations)?.value;
     expect(storedInvitation?.tokenHash).not.toEqual(result.ownerInvitationToken);
     expect(mocks.appendPlatformAudit).toHaveBeenCalledTimes(2);
+  });
+
+  // Regression: this used to be hardcoded to "manus" while the password
+  // activation flow inserts an identity with provider "password", so
+  // acceptInvitation's provider-matched identity lookup could never find it and
+  // every owner invitation failed with identity_mismatch.
+  it("binds the owner invitation to the password provider that activation uses", async () => {
+    const transaction = makeTransaction(new Map([[users, []]]));
+    useTransaction(transaction);
+
+    await createCompany(createInput, actor);
+
+    const invitation = transaction.writes.find(write => write.table === companyInvitations)?.value;
+    expect(invitation).toMatchObject({ provider: "password" });
+    expect(invitation?.providerSubjectHash).toEqual(
+      hashProviderSubject("password", "email:owner@example.test"),
+    );
   });
 
   it("does not trust or activate a preexisting account during owner invitation", async () => {

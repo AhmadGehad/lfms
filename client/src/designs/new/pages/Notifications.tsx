@@ -1,18 +1,14 @@
 import { useTranslation } from "react-i18next";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Bell, BellOff, Check, CheckCheck } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
-import { StatusBadge, type StatusTone } from "../components/StatusBadge";
+import { StatusBadge } from "../components/StatusBadge";
+import { formatAlertType, priorityTone } from "@shared/notifications";
 
-function typeTone(type?: string): StatusTone {
-  const l = (type ?? "").toLowerCase();
-  if (l.includes("critical") || l.includes("overdue") || l.includes("danger")) return "danger";
-  if (l.includes("warn") || l.includes("low") || l.includes("due")) return "warning";
-  if (l.includes("success") || l.includes("done")) return "success";
-  return "info";
-}
+type NotificationRow = RouterOutputs["notifications"]["list"][number];
+
 function fmtTime(d: unknown) {
   if (!d) return "";
   const x = new Date(d as string);
@@ -34,8 +30,8 @@ export default function NewNotifications() {
   const markRead = trpc.notifications.markRead.useMutation({ onSuccess: () => utils.notifications.list.invalidate() });
   const markAllRead = trpc.notifications.markAllRead.useMutation({ onSuccess: () => utils.notifications.list.invalidate() });
 
-  const rows = (notifications as any[]) ?? [];
-  const unread = rows.filter(n => !(n.isRead ?? n.readAt)).length;
+  const rows: NotificationRow[] = notifications ?? [];
+  const unread = rows.filter(n => !n.isRead).length;
 
   return (
     <div className="p-4 md:p-6">
@@ -60,7 +56,7 @@ export default function NewNotifications() {
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map(n => {
-            const isRead = Boolean(n.isRead ?? n.readAt);
+            const isRead = Boolean(n.isRead);
             return (
               <li
                 key={n.id}
@@ -69,8 +65,10 @@ export default function NewNotifications() {
                 <Bell className={`mt-0.5 h-4 w-4 shrink-0 ${isRead ? "text-muted-foreground" : "text-primary"}`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-foreground">{n.title ?? n.message ?? "—"}</p>
-                    {n.type && <StatusBadge tone={typeTone(n.type)} icon={false}>{n.type}</StatusBadge>}
+                    <p className="text-sm font-medium text-foreground">{n.title || n.message || "—"}</p>
+                    <StatusBadge tone={priorityTone(n.priority)} icon={false}>
+                      {formatAlertType(n.alertType)}
+                    </StatusBadge>
                   </div>
                   {n.title && n.message && <p className="mt-0.5 text-sm text-muted-foreground">{n.message}</p>}
                   <p className="mt-1 text-xs text-muted-foreground">{fmtTime(n.createdAt)}</p>

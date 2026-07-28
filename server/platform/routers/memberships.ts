@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { cursorPageInputSchema } from "../../../shared/platformApi";
 import { listMembershipRecords } from "../repositories/memberships";
-import { inspectMembership, updateMembership } from "../services/memberships";
+import {
+  inspectMembership,
+  sendMembershipPasswordReset,
+  setMembershipPassword,
+  updateMembership,
+} from "../services/memberships";
 import { createPlatformInvitation, exportPlatformAccessCsv, listPlatformInvitations, revokePlatformInvitation } from "../../invitations/service";
 import { platformAuditActor, platformMfaProcedure, platformPermissionProcedure, platformRouterFactory } from "../trpc";
 
@@ -45,4 +50,10 @@ export const platformMembershipsRouter = platformRouterFactory({
     farmPublicIds: z.array(publicId).max(100).optional(),
     expectedVersion: z.number().int().positive(),
   })).mutation(({ input, ctx }) => updateMembership(input, platformAuditActor(ctx))),
+  setPassword: platformMfaProcedure("memberships.write").input(z.object({
+    publicId,
+    password: z.string().min(12).max(512),
+  })).mutation(({ input, ctx }) => setMembershipPassword(input, platformAuditActor(ctx))),
+  sendPasswordReset: platformMfaProcedure("memberships.write").input(z.object({ publicId }))
+    .mutation(({ input, ctx }) => sendMembershipPasswordReset(input, platformAuditActor(ctx))),
 });

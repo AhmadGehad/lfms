@@ -49,6 +49,20 @@ export function CompanyBrandingSettings({ className }: { className?: string }) {
     },
     onError: error => toast.error(error.message),
   });
+  const uploadFavicon = trpc.config.uploadCompanyBrandingFavicon.useMutation({
+    onSuccess: async () => {
+      await refresh();
+      toast.success(t("branding.faviconSaved", "Favicon updated"));
+    },
+    onError: error => toast.error(error.message),
+  });
+  const removeFavicon = trpc.config.removeCompanyBrandingFavicon.useMutation({
+    onSuccess: async () => {
+      await refresh();
+      toast.success(t("branding.faviconRemoved", "Favicon removed"));
+    },
+    onError: error => toast.error(error.message),
+  });
 
   const onLogoSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -71,7 +85,29 @@ export function CompanyBrandingSettings({ className }: { className?: string }) {
     reader.readAsDataURL(file);
   };
 
-  const pending = updateName.isPending || uploadLogo.isPending || removeLogo.isPending;
+  const onFaviconSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || !branding.data) return;
+    if (!new Set(["image/jpeg", "image/png", "image/webp"]).has(file.type)) {
+      toast.error(t("branding.faviconType", "Use a JPEG, PNG, or WebP favicon"));
+      return;
+    }
+    if (file.size === 0 || file.size > MAX_LOGO_BYTES) {
+      toast.error(t("branding.faviconSize", "Favicon must be 2MB or smaller"));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => toast.error(t("branding.faviconRead", "Could not read the favicon file"));
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      uploadFavicon.mutate({ dataUrl: reader.result, expectedVersion: branding.data!.version });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const pending = updateName.isPending || uploadLogo.isPending || removeLogo.isPending ||
+    uploadFavicon.isPending || removeFavicon.isPending;
   const saveName = () => {
     if (!branding.data || name.trim().length < 2) return;
     updateName.mutate({ name: name.trim(), expectedVersion: branding.data.version });
@@ -116,6 +152,28 @@ export function CompanyBrandingSettings({ className }: { className?: string }) {
             {branding.data?.logoUrl && (
               <Button type="button" variant="outline" onClick={() => removeLogo.mutate({ expectedVersion: branding.data!.version })} disabled={pending}>
                 <Trash2 className="h-4 w-4" />{t("branding.removeLogo", "Remove logo")}
+              </Button>
+            )}
+          </>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="grid h-8 w-8 place-items-center overflow-hidden rounded border border-border bg-surface">
+          {branding.data?.hasFavicon ? (
+            <img src="/public/company-favicon" alt={t("branding.favicon", "Favicon")} className="h-full w-full object-contain" />
+          ) : (
+            <span className="text-[10px] font-semibold text-muted-foreground">{(branding.data?.name ?? "LFMS").slice(0, 2).toUpperCase()}</span>
+          )}
+        </div>
+        {canManage && (
+          <>
+            <input id="company-favicon-upload" type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={onFaviconSelected} />
+            <Button type="button" variant="outline" onClick={() => document.getElementById("company-favicon-upload")?.click()} disabled={pending || !branding.data}>
+              <ImageUp className="h-4 w-4" />{t("branding.uploadFavicon", "Upload favicon")}
+            </Button>
+            {branding.data?.hasFavicon && (
+              <Button type="button" variant="outline" onClick={() => removeFavicon.mutate({ expectedVersion: branding.data!.version })} disabled={pending}>
+                <Trash2 className="h-4 w-4" />{t("branding.removeFavicon", "Remove favicon")}
               </Button>
             )}
           </>

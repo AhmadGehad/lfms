@@ -12,6 +12,7 @@ import { assertWithinLimit, getEffectiveLimit, lockCompanyQuota } from "./entitl
 import { logger, redactLogFields } from "./observability/logger";
 import { executeVersionedUpdate } from "./concurrency/versioning";
 import { versionedTenantUpdateScope } from "./concurrency/tenantVersioning";
+import { categoryForAlertType, getChannelPreference, getMembershipNotificationPreferences } from "./notifications/preferences";
 
 type LfmsDatabase = ReturnType<typeof drizzle<Record<string, never>, Pool>>;
 type LfmsTransaction = Parameters<Parameters<LfmsDatabase["transaction"]>[0]>[0];
@@ -1204,6 +1205,7 @@ export async function getAnimalById(id: number) {
       categoryName: animalCategories.name,
       categoryPrefix: animalCategories.idPrefix,
       targetWeightKg: animalCategories.targetWeightKg,
+      readyToSellThreshold: animalCategories.readyToSellThreshold,
       groupCode: groups.groupCode,
       groupName: groups.name,
       statusName: animalStatuses.name,
@@ -2684,12 +2686,18 @@ export async function getNotifications(userId?: number, unreadOnly?: boolean) {
     .where(and(...conditions))
     .orderBy(desc(notifications.createdAt))
     .limit(50);
-  return rows.map(row => ({
-    ...row.notification,
-    isRead: row.notification.userId === null
-      ? row.receiptReadAt !== null
-      : row.notification.isRead,
-  }));
+  const preferences = await getMembershipNotificationPreferences(tenant.membershipId, db);
+  return rows
+    .map(row => ({
+      ...row.notification,
+      isRead: row.notification.userId === null
+        ? row.receiptReadAt !== null
+        : row.notification.isRead,
+    }))
+    .filter(row => {
+      const category = categoryForAlertType(row.alertType);
+      return category === null || getChannelPreference(preferences, category).inApp;
+    });
 }
 
 export async function createNotification(
@@ -3149,6 +3157,7 @@ export async function getAnimalPnL(animalId: number) {
     animalId,
     daysOnFarm,
     purchaseCost,
+    purchaseFundingSource: animal.purchaseFundingSource,
     animalOperatingCost,
     feedCost,
     directExpenseTotal,
@@ -3399,6 +3408,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
       statusName: row.statusName ?? (animal.isActive ? "Active" : "Inactive"),
       daysOnFarm,
       purchaseCost,
+      purchaseFundingSource: animal.purchaseFundingSource,
       animalOperatingCost,
       feedCost,
       directExpenseTotal,
