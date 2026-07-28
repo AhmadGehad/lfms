@@ -5,7 +5,7 @@ import { isEmailConfigured } from "../_core/email";
 import { operationalAlertEmail } from "../_core/emailTemplates";
 import { sendTemplatedEmail } from "../_core/sendTemplatedEmail";
 import { getDb } from "../db";
-import { getCompanyOwner } from "../platform/repositories/companies";
+import { getCompanyAdmins, getCompanyOwner } from "../platform/repositories/companies";
 import { categoryForAlertType, getUserEmailPreferenceForCompany } from "./preferences";
 
 const EMAILABLE_PRIORITIES = new Set(["critical", "high"]);
@@ -13,12 +13,18 @@ const COOLDOWN_MS = 4 * 60 * 60 * 1_000;
 
 /**
  * Fans an operational alert out to email. All current alert-generating call
- * sites create broadcast notifications (no assigned userId), so the
- * recipient is always the company's active owner.
+ * sites create broadcast notifications (no assigned userId), so recipients
+ * are the company's active owner plus its active admins — day-to-day alerts
+ * (vaccination/stock/pregnancy/growth) are exactly what an admin, not just the
+ * owner, needs to see. Each recipient's own per-company email preference is
+ * checked independently, so an admin who opted out of a category is skipped
+ * without affecting the owner (or other admins).
  *
  * Some call sites (e.g. feed stock entry) have no dedup on the underlying
  * notification row, so a per-company/alertType cooldown prevents repeated
- * mutations within a short window from spamming the same email.
+ * mutations within a short window from spamming the same email — this stays
+ * a single company-wide cooldown, not one per recipient, since it's throttling
+ * the alert event, not each person's inbox.
  */
 export async function notifyOperationalAlertByEmail(input: {
   companyId: number;
@@ -44,20 +50,27 @@ export async function notifyOperationalAlertByEmail(input: {
   if (recent) return;
   const owner = await getCompanyOwner(input.companyId);
   if (!owner) return;
-  const wantsEmail = await getUserEmailPreferenceForCompany(owner.userId, input.companyId, category);
-  if (!wantsEmail) return;
+  const admins = await getCompanyAdmins(input.companyId);
+  const recipients = [
+    { userId: owner.userId, email: owner.email },
+    ...admins.filter(admin => admin.userId !== owner.userId),
+  ];
   const email = operationalAlertEmail({
     title: input.title,
     message: input.message,
     priority: input.priority,
     ctaUrl: `https://${owner.companySlug}.${ENV.baseDomain}/notifications`,
   });
-  await sendTemplatedEmail({
-    template,
-    to: owner.email,
-    companyId: input.companyId,
-    subject: email.subject,
-    text: email.text,
-    html: email.html,
-  });
+  for (const recipient of recipients) {
+    const wantsEmail = await getUserEmailPreferenceForCompany(recipient.userId, input.companyId, category);
+    if (!wantsEmail) continue;
+    await sendTemplatedEmail({
+      template,
+      to: recipient.email,
+      companyId: input.companyId,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
+    });
+  }
 }

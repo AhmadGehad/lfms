@@ -75,6 +75,30 @@ export async function getCompanyOwnerEmail(companyId: number, db?: PlatformDb): 
   return owner?.email ?? null;
 }
 
+/**
+ * Active tenant admins (companyMemberships.role = "admin") for a company —
+ * distinct from platformAdministrators, which is the separate staff-facing
+ * concept. Used to widen operational-alert recipients beyond the owner alone,
+ * since day-to-day alerts (vaccination/stock/pregnancy/growth) are exactly the
+ * kind of thing an admin, not just the owner, needs to see.
+ */
+export async function getCompanyAdmins(
+  companyId: number,
+  db?: PlatformDb,
+): Promise<Array<{ userId: number; email: string }>> {
+  const handle = db ?? await requirePlatformDb();
+  const rows = await handle.select({ userId: users.id, email: users.email })
+    .from(companyMemberships)
+    .innerJoin(users, eq(companyMemberships.userId, users.id))
+    .where(and(
+      eq(companyMemberships.companyId, companyId),
+      eq(companyMemberships.role, "admin"),
+      eq(companyMemberships.status, "active"),
+      eq(users.status, "active"),
+    ));
+  return rows.filter((row): row is { userId: number; email: string } => Boolean(row.email));
+}
+
 export async function getCompanyRecord(publicId: string) {
   const db = await requirePlatformDb();
   const [row] = await db.select({
