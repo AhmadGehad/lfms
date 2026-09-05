@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
+import { calculateBulkSale } from "@shared/bulkSale";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -770,6 +771,8 @@ export function BulkRecordSaleDialog({
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pricePerKg, setPricePerKg] = useState("");
+  const [extraCharge, setExtraCharge] = useState("");
   const [form, setForm] = useState({
     saleDate: today(),
     statusId: "",
@@ -789,7 +792,11 @@ export function BulkRecordSaleDialog({
     setSearch("");
     const activeIds = new Set(activeAnimals.map(a => Number(a.animal.id)));
     setSelectedIds(new Set((initialSelectedIds ?? []).filter(id => activeIds.has(Number(id))).map(Number)));
-    setPerAnimal({});
+    setPerAnimal(Object.fromEntries(activeAnimals.map(a => [a.animal.id, {
+      salePrice: "", amountPaid: "", weightAtSale: a.latestWeightKg ? String(a.latestWeightKg) : "",
+    }])));
+    setPricePerKg("");
+    setExtraCharge("");
     setConfirmOpen(false);
   }, [exitStatuses, initialSelectedKey, open]);
 
@@ -810,20 +817,14 @@ export function BulkRecordSaleDialog({
     () => activeAnimals.filter(a => selectedIds.has(a.animal.id)),
     [activeAnimals, selectedIds]
   );
-  const totals = useMemo(() => {
-    return selectedAnimals.reduce(
-      (acc, a) => {
-        const row = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
-        const price = num(row.salePrice);
-        const paid = row.amountPaid === "" ? price : num(row.amountPaid);
-        acc.price += price;
-        acc.paid += paid;
-        return acc;
-      },
-      { price: 0, paid: 0 }
-    );
-  }, [perAnimal, selectedAnimals]);
-  const outstanding = Math.max(0, totals.price - totals.paid);
+  const quote = useMemo(() => {
+    try {
+      return calculateBulkSale(selectedAnimals.map(a => ({ id: a.animal.id, ...perAnimal[a.animal.id] })), pricePerKg, extraCharge);
+    } catch {
+      return null;
+    }
+  }, [perAnimal, selectedAnimals, pricePerKg, extraCharge]);
+  const outstanding = quote ? Math.round((quote.total - quote.paid) * 100) / 100 : 0;
 
   const toggle = (animal: AnimalRow) => {
     setSelectedIds(prev => {
@@ -869,6 +870,10 @@ export function BulkRecordSaleDialog({
       toast.error(t("common.required", "Fill required fields"));
       return;
     }
+    if (!quote) {
+      toast.error(t("sales.invalidBulkPricing"));
+      return;
+    }
     setConfirmOpen(true);
   };
 
@@ -879,6 +884,8 @@ export function BulkRecordSaleDialog({
       newStatusId: Number(form.statusId),
       buyerName: form.buyerName || undefined,
       saleNotes: form.notes || undefined,
+      pricePerKg: pricePerKg || undefined,
+      extraCharge: extraCharge || undefined,
       animals: selectedAnimals.map(a => {
         const row = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
         return {
@@ -966,6 +973,14 @@ export function BulkRecordSaleDialog({
                 <FormField label={t("common.notes", "Notes")} htmlFor="bulk-sale-notes" full>
                   <Textarea id="bulk-sale-notes" name="saleNotes" autoComplete="off" rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
                 </FormField>
+                <FormField label={t("sales.pricePerKg")} htmlFor="bulk-sale-rate">
+                  <Input id="bulk-sale-rate" type="number" min="0.01" step="0.01" inputMode="decimal" value={pricePerKg} onChange={e => setPricePerKg(e.target.value)} placeholder="0.00" />
+                  <p className="mt-1 text-xs text-muted-foreground">{t("sales.pricePerKgHelp")}</p>
+                </FormField>
+                <FormField label={t("sales.extraCharge")} htmlFor="bulk-sale-charge">
+                  <Input id="bulk-sale-charge" type="number" min="0" step="0.01" inputMode="decimal" value={extraCharge} onChange={e => setExtraCharge(e.target.value)} placeholder="0.00" />
+                  <p className="mt-1 text-xs text-muted-foreground">{t("sales.extraChargeHelp")}</p>
+                </FormField>
               </div>
 
               <div className="mt-4 overflow-hidden rounded-xl border border-border">
@@ -979,17 +994,21 @@ export function BulkRecordSaleDialog({
                   <p className="px-3 py-8 text-center text-sm text-muted-foreground">{t("sales.selectAnimalsToSell", "Select animals to sell")}</p>
                 ) : (
                   <div className="max-h-64 divide-y divide-border overflow-y-auto">
-                    {selectedAnimals.map(animal => {
+                    {selectedAnimals.map((animal, index) => {
                       const row = perAnimal[animal.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
+                      const calculatedPrice = quote?.rows[index]?.salePrice ?? "";
                       return (
                         <div key={animal.animal.id} className="grid grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr] gap-2 px-3 py-2">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold">{animal.animal.animalId}</p>
                             <p className="truncate text-xs text-muted-foreground">{animal.categoryName ?? "--"}</p>
                           </div>
-                          <Input aria-label={`${animal.animal.animalId} weight`} type="number" inputMode="decimal" autoComplete="off" value={row.weightAtSale} onChange={e => setRow(animal.animal.id, { weightAtSale: e.target.value })} placeholder="0.0" />
-                          <Input aria-label={`${animal.animal.animalId} price`} type="number" inputMode="decimal" autoComplete="off" value={row.salePrice} onChange={e => setRow(animal.animal.id, { salePrice: e.target.value })} placeholder="0.00" />
-                          <Input aria-label={`${animal.animal.animalId} paid`} type="number" inputMode="decimal" autoComplete="off" value={row.amountPaid} onChange={e => setRow(animal.animal.id, { amountPaid: e.target.value })} placeholder={row.salePrice || "0.00"} />
+                          <Input aria-label={`${animal.animal.animalId} ${t("pnl.weightAtSale")}`} type="number" min="0.01" max="2000" step="0.01" inputMode="decimal" autoComplete="off" value={row.weightAtSale} onChange={e => setRow(animal.animal.id, { weightAtSale: e.target.value })} placeholder="0.0" />
+                          <div>
+                            <Input aria-label={`${animal.animal.animalId} ${t("sales.salePrice")}`} type="number" min="0" step="0.01" inputMode="decimal" autoComplete="off" readOnly={!!pricePerKg} value={pricePerKg ? calculatedPrice : row.salePrice} onChange={e => setRow(animal.animal.id, { salePrice: e.target.value })} placeholder="0.00" />
+                            {num(extraCharge) > 0 && <p className="mt-1 text-xs text-muted-foreground">{t("sales.includingCharge")}: {quote ? fmt(num(calculatedPrice)) : "--"}</p>}
+                          </div>
+                          <Input aria-label={`${animal.animal.animalId} ${t("sales.amountPaid")}`} type="number" min="0" step="0.01" inputMode="decimal" autoComplete="off" value={row.amountPaid} onChange={e => setRow(animal.animal.id, { amountPaid: e.target.value })} placeholder={calculatedPrice || "0.00"} />
                         </div>
                       );
                     })}
@@ -997,11 +1016,15 @@ export function BulkRecordSaleDialog({
                 )}
               </div>
 
-              <div className="mt-4 grid gap-3 rounded-xl border border-border bg-card-2 p-3 text-sm sm:grid-cols-3">
-                <div><p className="text-muted-foreground">{t("sales.totalPrice", "Total Price")}</p><p className="font-semibold tabular-nums">{fmt(totals.price)}</p></div>
-                <div><p className="text-muted-foreground">{t("sales.totalPaid", "Total Paid")}</p><p className="font-semibold tabular-nums">{fmt(totals.paid)}</p></div>
-                <div><p className="text-muted-foreground">{t("sales.outstanding", "Outstanding")}</p><p className="font-semibold tabular-nums">{fmt(outstanding)}</p></div>
+              <div className="mt-4 grid gap-3 rounded-xl border border-border bg-card-2 p-3 text-sm sm:grid-cols-3" aria-live="polite">
+                <div><p className="text-muted-foreground">{t("sales.totalWeight")}</p><p className="font-semibold tabular-nums">{quote ? `${quote.weight.toFixed(2)} ${t("common.kg", "kg")}` : "--"}</p></div>
+                <div><p className="text-muted-foreground">{t("sales.subtotal")}</p><p className="font-semibold tabular-nums">{quote ? fmt(quote.subtotal) : "--"}</p></div>
+                <div><p className="text-muted-foreground">{t("sales.extraCharge")}</p><p className="font-semibold tabular-nums">{quote ? fmt(quote.extraCharge) : "--"}</p></div>
+                <div><p className="text-muted-foreground">{t("sales.totalPrice", "Total Price")}</p><p className="font-semibold tabular-nums">{quote ? fmt(quote.total) : "--"}</p></div>
+                <div><p className="text-muted-foreground">{t("sales.totalPaid", "Total Paid")}</p><p className="font-semibold tabular-nums">{quote ? fmt(quote.paid) : "--"}</p></div>
+                <div><p className="text-muted-foreground">{t("sales.outstanding", "Outstanding")}</p><p className="font-semibold tabular-nums">{quote ? fmt(outstanding) : "--"}</p></div>
               </div>
+              {!quote && <p role="alert" className="mt-2 text-sm text-danger-soft-foreground">{t("sales.invalidBulkPricing")}</p>}
             </section>
           </div>
 
@@ -1023,13 +1046,16 @@ export function BulkRecordSaleDialog({
             </p>
             <div className="rounded-xl border border-border bg-card-2 p-3 text-sm">
               <p>{selectedAnimals.length} {t("animals.selected", "selected")}</p>
-              <p>{t("sales.totalPrice", "Total Price")}: <strong>{fmt(totals.price)}</strong></p>
+              {pricePerKg && <p>{t("sales.pricePerKg")}: <strong>{fmt(num(pricePerKg))}</strong></p>}
+              <p>{t("sales.subtotal")}: <strong>{quote ? fmt(quote.subtotal) : "--"}</strong></p>
+              <p>{t("sales.extraCharge")}: <strong>{quote ? fmt(quote.extraCharge) : "--"}</strong></p>
+              <p>{t("sales.totalPrice", "Total Price")}: <strong>{quote ? fmt(quote.total) : "--"}</strong></p>
               <p>{t("sales.outstanding", "Outstanding")}: <strong>{fmt(outstanding)}</strong></p>
             </div>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)}>{t("common.back", "Back")}</Button>
-            <Button type="button" variant="destructive" disabled={isMutationWorking(bulkExit)} onClick={submit}>
+            <Button type="button" variant="destructive" disabled={isMutationWorking(bulkExit) || !quote} onClick={submit}>
               {isMutationWorking(bulkExit) ? t("common.saving", "Saving…") : t("sales.confirmSale", "Confirm Sale")}
             </Button>
           </DialogFooter>

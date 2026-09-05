@@ -2,6 +2,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { extractAnimalIdNumber } from "@shared/animalIds";
 import { hasPermission } from "@shared/permissions";
+import { calculateBulkSale } from "@shared/bulkSale";
 import { getClientIp } from "../_core/audit";
 import { composeAnimalIdOrThrow, sequenceValueFromAnimalIdNumber } from "../_core/animalIds";
 import { isDuplicateEntryError } from "../_core/databaseErrors";
@@ -627,6 +628,8 @@ export const animalsRouter = router({
         newStatusId: z.number().int().positive(),
         buyerName: z.string().max(100).optional(),
         saleNotes: z.string().max(2000).optional(),
+        pricePerKg: optionalMoneyString,
+        extraCharge: optionalMoneyString,
         animals: z
           .array(
             z.object({
@@ -642,6 +645,12 @@ export const animalsRouter = router({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      let quote: ReturnType<typeof calculateBulkSale>;
+      try {
+        quote = calculateBulkSale(input.animals, input.pricePerKg, input.extraCharge);
+      } catch (error) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: (error as Error).message });
+      }
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
@@ -668,8 +677,9 @@ export const animalsRouter = router({
         salePrice?: string;
         amountPaid?: string;
         weightAtSale?: string;
+        extraCharge: string;
       }> = [];
-      for (const a of input.animals) {
+      for (const [index, a] of quote.rows.entries()) {
         const existing = byId.get(a.id);
         if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: `Animal ${a.id} not found` });
         if (existing.animal.isActive === false) {
@@ -681,14 +691,7 @@ export const animalsRouter = router({
         if (new Date(input.exitDate) < new Date(String(existing.animal.acquisitionDate))) {
           throw new TRPCError({ code: "BAD_REQUEST", message: `Exit date is before acquisition for ${existing.animal.animalId}` });
         }
-        if (a.salePrice !== undefined && parseFloat(a.salePrice) < 0) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: `Sale price cannot be negative for ${existing.animal.animalId}` });
-        }
-        if (a.amountPaid !== undefined && a.salePrice !== undefined &&
-            parseFloat(a.amountPaid) > parseFloat(a.salePrice)) {
-          throw new TRPCError({ code: "BAD_REQUEST", message: `Amount paid exceeds sale price for ${existing.animal.animalId}` });
-        }
-        prepared.push({ id: a.id, existing, salePrice: a.salePrice, amountPaid: a.amountPaid, weightAtSale: a.weightAtSale, expectedVersion: a.expectedVersion });
+        prepared.push({ ...a, existing, expectedVersion: input.animals[index].expectedVersion });
       }
 
       // All-or-nothing: every animal's update + history + sale + audit in one transaction.
@@ -724,7 +727,10 @@ export const animalsRouter = router({
                 ? String(parseFloat(p.salePrice) / parseFloat(p.weightAtSale))
                 : undefined,
               buyerName: input.buyerName,
-              notes: input.saleNotes,
+              notes: [input.saleNotes,
+                input.pricePerKg ? `Base price/kg: ${input.pricePerKg}` : undefined,
+                quote.extraCharge > 0 ? `Bulk extra charge: ${quote.extraCharge.toFixed(2)}; this animal's share: ${p.extraCharge}` : undefined,
+              ].filter(Boolean).join("\n") || undefined,
               createdBy: ctx.user?.id,
             }, tx);
             bulkSaleId = (saleResult as any)?.insertId;
@@ -742,6 +748,8 @@ export const animalsRouter = router({
               exitDate: input.exitDate,
               exitReason: input.exitReason,
               salePrice: p.salePrice,
+              pricePerKg: input.pricePerKg,
+              extraCharge: p.extraCharge,
               amountPaid: p.amountPaid,
               saleId: bulkSaleId,
             } as any,

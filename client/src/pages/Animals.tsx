@@ -33,6 +33,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
+import { calculateBulkSale } from "@shared/bulkSale";
 
 function StatusBadge({ status }: { status: string }) {
   const lower = status?.toLowerCase() ?? "";
@@ -683,17 +684,20 @@ function BulkSellDialog({
   const [newStatusId, setNewStatusId] = useState("");
   const [buyerName, setBuyerName] = useState("");
   const [saleNotes, setSaleNotes] = useState("");
+  const [pricePerKg, setPricePerKg] = useState("");
+  const [extraCharge, setExtraCharge] = useState("");
   const [perAnimal, setPerAnimal] = useState<Record<number, { salePrice: string; amountPaid: string; weightAtSale: string }>>({});
+  const selectedKey = selectedAnimals.map(a => a.animal.id).join(",");
 
   // initialize per-animal entries when selection changes
   React.useEffect(() => {
-    const next: typeof perAnimal = {};
-    for (const a of selectedAnimals) {
-      next[a.animal.id] = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
-    }
-    setPerAnimal(next);
+    if (!open) return;
+    setPerAnimal(previous => Object.fromEntries(selectedAnimals.map(a => [
+      a.animal.id,
+      previous[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: a.latestWeightKg ? String(a.latestWeightKg) : "" },
+    ])));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAnimals.length]);
+  }, [selectedKey, open]);
 
   const utils = trpc.useUtils();
   const bulkExit = trpc.animals.bulkExit.useMutation({
@@ -704,19 +708,34 @@ function BulkSellDialog({
       utils.dashboard.getKPIs.invalidate();
       onOpenChange(false);
       setExitReason(""); setBuyerName(""); setSaleNotes(""); setPerAnimal({});
+      setPricePerKg(""); setExtraCharge("");
       onSuccess();
     },
     onError: (e) => toast.error(e.message),
   });
 
-  // totals
-  const totalPrice = Object.values(perAnimal).reduce((s, v) => s + (parseFloat(v.salePrice) || 0), 0);
-  const totalPaid = Object.values(perAnimal).reduce((s, v) => s + (parseFloat(v.amountPaid || v.salePrice || "0") || 0), 0);
-  const totalOutstanding = totalPrice - totalPaid;
+  const saleRows = selectedAnimals.map(a => ({
+    id: a.animal.id,
+    expectedVersion: a.animal.version,
+    salePrice: perAnimal[a.animal.id]?.salePrice || undefined,
+    amountPaid: perAnimal[a.animal.id]?.amountPaid || undefined,
+    weightAtSale: perAnimal[a.animal.id]?.weightAtSale || undefined,
+  }));
+  let quote: ReturnType<typeof calculateBulkSale> | null = null;
+  try {
+    quote = calculateBulkSale(saleRows, pricePerKg || undefined, extraCharge || undefined);
+  } catch {
+    // Incomplete fields remain editable while the quote is unavailable.
+  }
+  const totalOutstanding = quote ? quote.total - quote.paid : 0;
 
   const onSubmit = () => {
     if (!exitDate || !exitReason || !newStatusId) {
       toast.error(t("common.required"));
+      return;
+    }
+    if (!quote) {
+      toast.error(t("sales.invalidBulkPricing"));
       return;
     }
     bulkExit.mutate({
@@ -725,13 +744,9 @@ function BulkSellDialog({
       newStatusId: Number(newStatusId),
       buyerName: buyerName || undefined,
       saleNotes: saleNotes || undefined,
-      animals: selectedAnimals.map((a) => ({
-        id: a.animal.id,
-        expectedVersion: a.animal.version,
-        salePrice: perAnimal[a.animal.id]?.salePrice || undefined,
-        amountPaid: perAnimal[a.animal.id]?.amountPaid || undefined,
-        weightAtSale: perAnimal[a.animal.id]?.weightAtSale || undefined,
-      })),
+      pricePerKg: pricePerKg || undefined,
+      extraCharge: extraCharge || undefined,
+      animals: saleRows,
     });
   };
 
@@ -774,6 +789,17 @@ function BulkSellDialog({
             <Label>{t("common.notes")}</Label>
             <Input value={saleNotes} onChange={(e) => setSaleNotes(e.target.value)} />
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bulk-sale-price-per-kg">{t("sales.pricePerKg")}</Label>
+            <Input id="bulk-sale-price-per-kg" type="number" min="0" step="0.01" placeholder="0.00"
+              value={pricePerKg} onChange={e => setPricePerKg(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="bulk-sale-extra-charge">{t("sales.extraCharge")}</Label>
+            <Input id="bulk-sale-extra-charge" type="number" min="0" step="0.01" placeholder="0.00"
+              aria-describedby="bulk-sale-extra-charge-help" value={extraCharge} onChange={e => setExtraCharge(e.target.value)} />
+            <p id="bulk-sale-extra-charge-help" className="text-xs text-muted-foreground">{t("sales.extraChargeHelp")}</p>
+          </div>
         </div>
 
         {/* Per-animal price + paid + weight */}
@@ -789,31 +815,38 @@ function BulkSellDialog({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {selectedAnimals.map((a: any) => {
+              {selectedAnimals.map((a: any, index: number) => {
                 const row = perAnimal[a.animal.id] ?? { salePrice: "", amountPaid: "", weightAtSale: "" };
-                const price = parseFloat(row.salePrice) || 0;
-                const paid = parseFloat(row.amountPaid || (row.salePrice || "0")) || 0;
+                const computed = quote?.rows[index];
+                const price = Number(computed?.salePrice ?? 0);
+                const paid = Number(computed?.amountPaid ?? computed?.salePrice ?? 0);
                 const outstanding = price - paid;
                 return (
                   <TableRow key={a.animal.id}>
                     <TableCell className="font-mono font-semibold text-primary">{a.animal.animalId}</TableCell>
                     <TableCell>
-                      <Input type="number" placeholder="0" value={row.weightAtSale}
+                      <Input type="number" min="0" step="0.01" placeholder="0" value={row.weightAtSale}
+                        aria-label={`${a.animal.animalId}: ${t("common.weight")}`}
                         onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, weightAtSale: e.target.value } }))}
                         className="w-24" />
                     </TableCell>
                     <TableCell>
-                      <Input type="number" placeholder="0.00" value={row.salePrice}
+                      <Input type="number" min="0" step="0.01" placeholder="0.00" value={pricePerKg ? computed?.salePrice ?? "" : row.salePrice}
+                        readOnly={Boolean(pricePerKg)} aria-label={`${a.animal.animalId}: ${t("sales.salePrice")}`}
                         onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, salePrice: e.target.value } }))}
                         className="w-32" />
+                      {!pricePerKg && Number(computed?.extraCharge) > 0 && (
+                        <span className="text-xs text-muted-foreground">{t("sales.totalPrice")}: {price.toFixed(2)}</span>
+                      )}
                     </TableCell>
                     <TableCell>
-                      <Input type="number" placeholder={row.salePrice || "0.00"} value={row.amountPaid}
+                      <Input type="number" min="0" step="0.01" placeholder={computed?.salePrice || "0.00"} value={row.amountPaid}
+                        aria-label={`${a.animal.animalId}: ${t("sales.amountPaid")}`}
                         onChange={(e) => setPerAnimal((p) => ({ ...p, [a.animal.id]: { ...row, amountPaid: e.target.value } }))}
                         className="w-32" />
                     </TableCell>
                     <TableCell className={outstanding > 0 ? "text-amber-600 font-medium" : "text-muted-foreground"}>
-                      {outstanding.toFixed(2)}
+                      {quote ? outstanding.toFixed(2) : "—"}
                     </TableCell>
                   </TableRow>
                 );
@@ -823,11 +856,15 @@ function BulkSellDialog({
         </div>
 
         {/* Totals */}
-        <div className="grid grid-cols-3 gap-3 text-sm border rounded-lg p-3 bg-muted/30">
-          <div><span className="text-muted-foreground">{t("sales.totalPrice")}: </span><strong>{totalPrice.toFixed(2)}</strong></div>
-          <div><span className="text-muted-foreground">{t("sales.totalPaid")}: </span><strong className="text-green-700">{totalPaid.toFixed(2)}</strong></div>
-          <div><span className="text-muted-foreground">{t("sales.totalOutstanding")}: </span><strong className={totalOutstanding > 0 ? "text-amber-600" : ""}>{totalOutstanding.toFixed(2)}</strong></div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm border rounded-lg p-3 bg-muted/30" aria-live="polite">
+          <div><span className="text-muted-foreground">{t("sales.totalWeight")}: </span><strong>{quote ? `${quote.weight.toFixed(2)} kg` : "—"}</strong></div>
+          <div><span className="text-muted-foreground">{t("sales.subtotal")}: </span><strong>{quote?.subtotal.toFixed(2) ?? "—"}</strong></div>
+          <div><span className="text-muted-foreground">{t("sales.extraCharge")}: </span><strong>{quote?.extraCharge.toFixed(2) ?? "—"}</strong></div>
+          <div><span className="text-muted-foreground">{t("sales.totalPrice")}: </span><strong>{quote?.total.toFixed(2) ?? "—"}</strong></div>
+          <div><span className="text-muted-foreground">{t("sales.totalPaid")}: </span><strong className="text-green-700">{quote?.paid.toFixed(2) ?? "—"}</strong></div>
+          <div><span className="text-muted-foreground">{t("sales.totalOutstanding")}: </span><strong className={totalOutstanding > 0 ? "text-amber-600" : ""}>{quote ? totalOutstanding.toFixed(2) : "—"}</strong></div>
         </div>
+        {!quote && selectedAnimals.length > 0 && <p role="alert" className="text-sm text-destructive">{t("sales.invalidBulkPricing")}</p>}
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
