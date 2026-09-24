@@ -228,19 +228,20 @@ async function main() {
      WHERE table_schema='public' AND is_identity='YES'`,
   );
   for (const { t, c } of identities) {
+    // last_value alone is ambiguous: with is_called the next value is
+    // last_value + 1, so a sequence sitting exactly on max(id) is correct.
     const { rows: [r] } = await client.query(
-      `SELECT COALESCE((SELECT MAX(${qi(c)}) FROM ${qi(t)}),0) AS maxid,
-              (SELECT last_value FROM ${qi(t + "_" + c + "_seq")}) AS seq`,
-    ).catch(async () => {
-      const { rows } = await client.query(
-        `SELECT COALESCE((SELECT MAX(${qi(c)}) FROM ${qi(t)}),0) AS maxid,
-                nextval(pg_get_serial_sequence($1,$2)) - 1 AS seq`,
-        [t, c],
-      );
-      return { rows };
-    });
-    if (Number(r.seq) <= Number(r.maxid) && Number(r.maxid) > 0) {
-      fail(`${t}.${c}: sequence at ${r.seq} but max id is ${r.maxid}`);
+      `SELECT COALESCE((SELECT MAX(${qi(c)}) FROM ${qi(t)}), 0) AS maxid,
+              s.last_value, s.is_called
+       FROM pg_sequences ps
+       JOIN LATERAL (SELECT last_value, is_called FROM ${qi(t + "_" + c + "_seq")}) s ON true
+       WHERE ps.schemaname = 'public' AND ps.sequencename = $1`,
+      [`${t}_${c}_seq`],
+    );
+    if (!r) continue;
+    const next = r.is_called ? Number(r.last_value) + 1 : Number(r.last_value);
+    if (next <= Number(r.maxid)) {
+      fail(`${t}.${c}: next sequence value ${next} would collide with max id ${r.maxid}`);
     }
   }
   console.log(`  ${identities.length} sequences ahead of max(id)`);
