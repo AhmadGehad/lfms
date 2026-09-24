@@ -1,11 +1,11 @@
 import { and, eq, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { TenantActorContext, TenantContext } from "../../shared/tenancy";
 import { canAccessFarm, TENANCY_ERROR_CODES } from "../../shared/tenancy";
 
 type CompanyScopedColumns = {
-  companyId: AnyMySqlColumn;
-  farmId?: AnyMySqlColumn;
+  companyId: AnyPgColumn;
+  farmId?: AnyPgColumn;
 };
 
 export function assertFarmAccess(context: TenantContext, farmId: number) {
@@ -16,7 +16,7 @@ export function assertFarmAccess(context: TenantContext, farmId: number) {
 
 export function companyScope(
   context: Pick<TenantActorContext, "companyId">,
-  companyId: AnyMySqlColumn,
+  companyId: AnyPgColumn,
 ) {
   return eq(companyId, context.companyId);
 }

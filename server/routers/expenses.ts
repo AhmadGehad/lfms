@@ -104,7 +104,7 @@ export const expensesRouter = router({
             ...shared,
             amount,
             categoryTarget: row.categoryTarget ?? undefined,
-            expenseDate: new Date(input.expenseDate),
+            expenseDate: input.expenseDate,
             createdBy: ctx.user.id,
           }, tx);
           const insertId = Number((result as any).insertId);

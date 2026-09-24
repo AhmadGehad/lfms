@@ -10,7 +10,7 @@ has ever appeared in Git history must be rotated before production use.
 | ---------------------------------- | ------------- | --------------------------------------------------------------------------- |
 | `PORT`                             | web           | Fixed HTTP port; production never selects a fallback port                   |
 | `SHUTDOWN_TIMEOUT_MS`              | web           | Graceful HTTP drain deadline before connections are forced closed           |
-| `DATABASE_URL`                     | server        | MySQL/TiDB URL with verified TLS (`ssl=true` or `ssl-mode=VERIFY_IDENTITY`) |
+| `DATABASE_URL`                     | server        | Postgres URL with verified TLS (`sslmode=require` or `verify-full`) |
 | `DB_POOL_CONNECTION_LIMIT`         | server/worker | Per-process database connection cap                                         |
 | `DB_POOL_QUEUE_LIMIT`              | server/worker | Per-process pending database request cap                                    |
 | `JWT_SECRET`                       | server        | Legacy signed-callback key; independent random value of at least 32 bytes   |
@@ -31,7 +31,7 @@ has ever appeared in Git history must be rotated before production use.
 | `OBJECT_STORAGE_BUCKET`            | server/worker | Private attachment bucket                                                   |
 | `OBJECT_STORAGE_ACCESS_KEY_ID`     | server/worker | Object-storage access key from secret manager                               |
 | `OBJECT_STORAGE_SECRET_ACCESS_KEY` | server/worker | Object-storage secret from secret manager                                   |
-| `OBJECT_STORAGE_KMS_KEY_ID`        | server/worker | KMS key used for server-side encryption                                     |
+| `OBJECT_STORAGE_KMS_KEY_ID`        | server/worker | AWS S3 only. Must be unset when OBJECT_STORAGE_ENDPOINT is set (Supabase)   |
 | `LOG_LEVEL`                        | all services  | Structured log threshold                                                    |
 | `METRICS_BEARER_TOKEN`             | web           | At least 32 characters; protects Prometheus metrics                         |
 | `DEPLOY_VERSION`                   | all services  | Immutable build/version identifier                                          |

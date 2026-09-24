@@ -149,7 +149,7 @@ async function findCleanCompletedExport(
   if (input.id) conditions.push(eq(exportJobs.id, input.id));
   if (input.publicId) conditions.push(eq(exportJobs.publicId, input.publicId));
   if (input.deletionRequestPublicId) {
-    conditions.push(sql<boolean>`JSON_UNQUOTE(JSON_EXTRACT(${exportJobs.filters}, '$.deletionRequestPublicId')) = ${input.deletionRequestPublicId}`);
+    conditions.push(sql<boolean>`(${exportJobs.filters}->>'deletionRequestPublicId') = ${input.deletionRequestPublicId}`);
   }
   if (input.freshCheckpoint) {
     conditions.push(gte(exportJobs.completedAt, new Date(input.now.getTime() - CHECKPOINT_MAX_AGE_MS)));
@@ -533,7 +533,7 @@ export async function cancelCompanyDeletion(input: {
     const pendingExports = await tx.select({ publicId: exportJobs.publicId }).from(exportJobs).where(and(
       eq(exportJobs.companyId, request.companyId),
       inArray(exportJobs.status, ["pending", "failed"]),
-      sql<boolean>`JSON_UNQUOTE(JSON_EXTRACT(${exportJobs.filters}, '$.deletionRequestPublicId')) = ${request.publicId}`,
+      sql<boolean>`(${exportJobs.filters}->>'deletionRequestPublicId') = ${request.publicId}`,
     )).for("update");
     await tx.update(exportJobs).set({
       status: "canceled",
@@ -541,7 +541,7 @@ export async function cancelCompanyDeletion(input: {
     }).where(and(
       eq(exportJobs.companyId, request.companyId),
       inArray(exportJobs.status, ["pending", "failed"]),
-      sql<boolean>`JSON_UNQUOTE(JSON_EXTRACT(${exportJobs.filters}, '$.deletionRequestPublicId')) = ${request.publicId}`,
+      sql<boolean>`(${exportJobs.filters}->>'deletionRequestPublicId') = ${request.publicId}`,
     ));
     for (const pendingExport of pendingExports) {
       await tx.update(backgroundJobs).set({ status: "canceled", completedAt: new Date() }).where(and(

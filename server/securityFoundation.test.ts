@@ -131,14 +131,24 @@ describe("OAuth state", () => {
 
   it("requires verified TLS in the production database URL", () => {
     expect(() => validateProductionDatabaseUrl(
-      "mysql://db.example.test/lfms?ssl=true",
+      "postgres://db.example.test/lfms?sslmode=verify-full",
     )).not.toThrow();
     expect(() => validateProductionDatabaseUrl(
-      "mysql://db.example.test/lfms",
+      "postgres://db.example.test/lfms?sslmode=require",
+    )).not.toThrow();
+    expect(() => validateProductionDatabaseUrl(
+      "postgres://db.example.test/lfms",
     )).toThrow(/verified TLS/);
     expect(() => validateProductionDatabaseUrl(
-      "mysql://db.example.test/lfms?ssl=%7B%22rejectUnauthorized%22%3Afalse%7D",
+      "postgres://db.example.test/lfms?sslmode=disable",
     )).toThrow(/verified TLS/);
+  });
+
+  it("rejects a leftover MySQL database URL", () => {
+    // A pre-migration URL must fail loudly rather than be silently accepted.
+    expect(() => validateProductionDatabaseUrl(
+      "mysql://db.example.test/lfms?ssl=true",
+    )).toThrow(/postgres/);
   });
   it("allows one exact, browser-bound callback", async () => {
     const store = new MemoryOAuthStateStore();

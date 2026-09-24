@@ -29,11 +29,17 @@ function fakeTransaction() {
   let record: Record<string, any> | null = null;
   const tx = {
     insert: () => ({
-      values: async (values: Record<string, unknown>) => {
-        if (record) throw Object.assign(new Error("duplicate"), { code: "ER_DUP_ENTRY" });
-        record = { id: 1, responseBody: null, responseStatus: null, ...values };
-        return [{ insertId: 1 }];
-      },
+      values: (values: Record<string, unknown>) => ({
+        // Postgres reports the collision by returning no rows instead of
+        // raising, which is what keeps the surrounding transaction usable.
+        onConflictDoNothing: () => ({
+          returning: async () => {
+            if (record) return [];
+            record = { id: 1, responseBody: null, responseStatus: null, ...values };
+            return [{ id: 1 }];
+          },
+        }),
+      }),
     }),
     select: () => ({
       from: () => ({

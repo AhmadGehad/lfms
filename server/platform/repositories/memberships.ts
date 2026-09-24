@@ -32,13 +32,13 @@ export async function listMembershipRecords(input: {
     status: companyMemberships.status,
     farmAccessMode: companyMemberships.farmAccessMode,
     version: companyMemberships.version,
-    farmCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm.companyMembershipId = ${companyMemberships.id} AND fm.companyId = ${companyMemberships.companyId})`,
+    farmCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm."companyMembershipId" = ${companyMemberships.id} AND fm."companyId" = ${companyMemberships.companyId})`,
     assignedFarmPublicIds: sql<string>`COALESCE((
-      SELECT GROUP_CONCAT(f.publicId ORDER BY f.name SEPARATOR ',')
+      SELECT string_agg(f."publicId"::text, ',' ORDER BY f.name)
       FROM ${farmMemberships} fm
-      INNER JOIN ${farms} f ON f.id = fm.farmId AND f.companyId = fm.companyId
-      WHERE fm.companyMembershipId = ${companyMemberships.id}
-        AND fm.companyId = ${companyMemberships.companyId}
+      INNER JOIN ${farms} f ON f.id = fm."farmId" AND f."companyId" = fm."companyId"
+      WHERE fm."companyMembershipId" = ${companyMemberships.id}
+        AND fm."companyId" = ${companyMemberships.companyId}
     ), '')`,
     lastSignedIn: users.lastSignedIn,
     createdAt: companyMemberships.createdAt,

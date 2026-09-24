@@ -1,4 +1,4 @@
-import { getTableConfig } from "drizzle-orm/mysql-core";
+import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 import { animals, lambingLog } from "../drizzle/schema";
 import type { TenantContext } from "../shared/tenancy";
@@ -90,6 +90,8 @@ describe("birth-to-animal integrity", () => {
     );
 
     expect(index?.config.unique).toBe(true);
-    expect(index?.config.columns).toContain(lambingLog.promotedHeadId);
+    // pg-core wraps index columns in IndexedColumn, so compare by name.
+    expect(index?.config.columns.map(column => column.name))
+      .toContain(lambingLog.promotedHeadId.name);
   });
 });

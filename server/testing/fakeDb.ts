@@ -25,6 +25,8 @@ export interface FakeDbOptions {
   /** Per-table `insertId`; anything unlisted gets `defaultInsertId`. */
   insertIds?: Map<unknown, number>;
   defaultInsertId?: number;
+  /** Tables whose next ON CONFLICT DO NOTHING insert should find a collision. */
+  conflictTables?: Set<unknown>;
 }
 
 export interface FakeDb {
@@ -69,12 +71,32 @@ export function createFakeDb(options: FakeDbOptions = {}): FakeDb {
   const db: any = {
     select: () => ({ from: (table: unknown) => terminal(table) }),
     selectDistinct: () => ({ from: (table: unknown) => terminal(table) }),
-    insert: (table: unknown) => ({
-      values: async (value: unknown) => {
-        writes.push({ kind: "insert", table, value });
-        return [{ insertId: options.insertIds?.get(table) ?? defaultInsertId }];
-      },
-    }),
+    insert: (table: unknown) => {
+      // Mirrors server/pgCompat.ts: awaiting a mutation yields the mysql2
+      // tuple, while .returning() hands back rows. `conflictRows` drives the
+      // ON CONFLICT DO NOTHING path, where Postgres returns no rows.
+      const insertId = () => options.insertIds?.get(table) ?? defaultInsertId;
+      const makeBuilder = (value: unknown, conflicted: boolean) => {
+        const record = () => writes.push({ kind: "insert", table, value });
+        const builder: any = {};
+        builder.onConflictDoNothing = () =>
+          makeBuilder(value, options.conflictTables?.has(table) ?? false);
+        builder.onConflictDoUpdate = () => makeBuilder(value, conflicted);
+        builder.returning = async () => {
+          if (conflicted) return [];
+          record();
+          return [{ id: insertId() }];
+        };
+        builder.execute = async () => {
+          record();
+          return [{ insertId: insertId(), affectedRows: 1 }, []];
+        };
+        builder.then = (resolve: (v: unknown) => unknown, reject: (e: unknown) => unknown) =>
+          builder.execute().then(resolve, reject);
+        return builder;
+      };
+      return { values: (value: unknown) => makeBuilder(value, false) };
+    },
     update: (table: unknown) => ({
       set: (value: unknown) => ({
         where: async () => {
@@ -89,6 +111,7 @@ export function createFakeDb(options: FakeDbOptions = {}): FakeDb {
         return [{ affectedRows: updateAffectedRows }];
       },
     }),
+    execute: async () => [[], []],
     // The transaction shares this same fake, so code that queries via `tx`
     // reads from the same queues and records into the same `writes`.
     transaction: async (callback: (tx: unknown) => unknown) => callback(db),

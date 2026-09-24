@@ -9,7 +9,7 @@ describe("public runtime configuration", () => {
     expect(
       buildPublicRuntimeConfig({
         NODE_ENV: "production",
-        DATABASE_URL: "mysql://must-not-leak",
+        DATABASE_URL: "postgres://must-not-leak",
         VITE_DEFAULT_DESIGN: "new",
         VITE_FRONTEND_FORGE_API_KEY: "browser-visible-key",
         VITE_FRONTEND_FORGE_API_URL: "https://forge.example.test/",

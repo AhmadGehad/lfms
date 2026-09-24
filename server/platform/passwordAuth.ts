@@ -41,10 +41,6 @@ function normalizeEmail(value: unknown) {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
-function driverBinary(value: Buffer) {
-  return value as unknown as string;
-}
-
 async function auditLogin(
   req: Request,
   res: Response,
@@ -287,7 +283,7 @@ export function registerPlatformPasswordAuthRoutes(app: Express) {
           id: authenticationTokens.id,
           userId: authenticationTokens.userId,
         }).from(authenticationTokens).where(and(
-          eq(authenticationTokens.tokenHash, driverBinary(tokenHash)),
+          eq(authenticationTokens.tokenHash, tokenHash),
           eq(authenticationTokens.purpose, "reset_password"),
           isNull(authenticationTokens.usedAt),
           gt(authenticationTokens.expiresAt, new Date()),

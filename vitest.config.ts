@@ -13,6 +13,7 @@ export default defineConfig({
     },
   },
   test: {
+    exclude: ["**/node_modules/**", "**/dist/**", "server/integration/**"],
     environment: "node",
     include: [
       "server/**/*.test.ts",

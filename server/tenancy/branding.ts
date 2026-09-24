@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import type { Express, Request, Response } from "express";
 import { and, eq, isNull, sql } from "drizzle-orm";
-import { alias } from "drizzle-orm/mysql-core";
+import { alias } from "drizzle-orm/pg-core";
 import { companies, companyBranding, tenantFiles } from "../../drizzle/schema";
 import { createAuditEntry, getDb } from "../db";
 import { retireCompanyAsset, storagePutCompanyAsset } from "../storage";

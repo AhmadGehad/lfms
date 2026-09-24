@@ -1,43 +1,118 @@
 import {
   bigint,
-  binary,
   boolean,
-  decimal,
-  int,
-  mysqlEnum,
-  mysqlTable,
+  customType,
+  date,
+  integer,
+  json,
+  numeric,
+  pgEnum,
+  pgTable,
   text,
   timestamp,
   varchar,
-  date,
-  json,
   index,
   uniqueIndex,
   primaryKey,
   foreignKey,
   check,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
+
+// drizzle-orm 0.45's pg-core exports no bytea. These columns hold raw 32-byte
+// SHA-256 digests, so the driver value must stay a Buffer end to end - any
+// text coercion silently breaks every auth token and invitation lookup.
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});
 import { sql } from "drizzle-orm";
 
+// 58 enum types, namespaced <table>_<column> because Postgres
+// enum names are global (19 tables share "status", 5 share "role").
+export const saasUsersRoleEnum = pgEnum("saas_users_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasUsersStatusEnum = pgEnum("saas_users_status", ["active", "locked", "disabled"]);
+export const saasCompaniesLifecyclestatusEnum = pgEnum("saas_companies_lifecyclestatus", [
+    "provisioning",
+    "active",
+    "suspended",
+    "deletion_requested",
+    "purging",
+    "deleted",
+  ]);
+export const saasFarmsStatusEnum = pgEnum("saas_farms_status", ["active", "suspended", "archived"]);
+export const saasCompanyMembershipsRoleEnum = pgEnum("saas_company_memberships_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasCompanyMembershipsStatusEnum = pgEnum("saas_company_memberships_status", ["invited", "active", "suspended", "removed"]);
+export const saasCompanyMembershipsFarmaccessmodeEnum = pgEnum("saas_company_memberships_farmaccessmode", ["all", "restricted"]);
+export const saasCompanyInvitationsRoleEnum = pgEnum("saas_company_invitations_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasCompanyInvitationsFarmaccessmodeEnum = pgEnum("saas_company_invitations_farmaccessmode", ["all", "restricted"]);
+export const saasCompanyInvitationsStatusEnum = pgEnum("saas_company_invitations_status", ["pending", "accepted", "revoked", "expired"]);
+export const saasCompanyRolePermissionsRoleEnum = pgEnum("saas_company_role_permissions_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasCompanyRolePermissionsEffectEnum = pgEnum("saas_company_role_permissions_effect", ["allow", "deny"]);
+export const saasAuthenticationTokensPurposeEnum = pgEnum("saas_authentication_tokens_purpose", ["verify_email", "reset_password", "change_email", "identity_link"]);
+export const saasMfaCredentialsMethodEnum = pgEnum("saas_mfa_credentials_method", ["totp"]);
+export const saasTenantSessionsAuthlevelEnum = pgEnum("saas_tenant_sessions_authlevel", ["primary", "mfa", "step_up"]);
+export const saasOauthStatesAudienceEnum = pgEnum("saas_oauth_states_audience", ["tenant", "platform"]);
+export const saasPlatformAdministratorsStatusEnum = pgEnum("saas_platform_administrators_status", ["invited", "active", "suspended", "revoked"]);
+export const saasPlatformSessionsAuthlevelEnum = pgEnum("saas_platform_sessions_authlevel", ["primary", "mfa", "step_up"]);
+export const saasFeatureCatalogStatusEnum = pgEnum("saas_feature_catalog_status", ["active", "deprecated"]);
+export const saasFeatureCatalogDisableddatamodeEnum = pgEnum("saas_feature_catalog_disableddatamode", ["read_only", "hidden", "inaccessible"]);
+export const saasFeatureCatalogLimitunitEnum = pgEnum("saas_feature_catalog_limitunit", ["boolean", "count", "bytes", "requests"]);
+export const saasSubscriptionPlansStatusEnum = pgEnum("saas_subscription_plans_status", ["draft", "active", "retired"]);
+export const saasPlanEntitlementsAccessmodeEnum = pgEnum("saas_plan_entitlements_accessmode", ["enabled", "read_only", "disabled"]);
+export const saasCompanySubscriptionsStatusEnum = pgEnum("saas_company_subscriptions_status", ["trialing", "active", "past_due", "suspended", "canceled", "expired"]);
+export const saasCompanyFeatureOverridesAccessmodeEnum = pgEnum("saas_company_feature_overrides_accessmode", ["enabled", "read_only", "disabled"]);
+export const saasUsageCountersPeriodtypeEnum = pgEnum("saas_usage_counters_periodtype", ["lifetime", "daily", "monthly", "billing_period"]);
+export const saasSupportAccessGrantsAccessmodeEnum = pgEnum("saas_support_access_grants_accessmode", ["read_only", "write"]);
+export const saasSupportAccessGrantsStatusEnum = pgEnum("saas_support_access_grants_status", ["pending", "approved", "active", "expired", "revoked", "rejected"]);
+export const saasSupportAccessApprovalsDecisionEnum = pgEnum("saas_support_access_approvals_decision", ["approved", "rejected"]);
+export const saasSecurityEventsActortypeEnum = pgEnum("saas_security_events_actortype", ["anonymous", "tenant_user", "platform_admin", "support", "system_job"]);
+export const saasSecurityEventsSeverityEnum = pgEnum("saas_security_events_severity", ["info", "warning", "high", "critical"]);
+export const saasSecurityEventsOutcomeEnum = pgEnum("saas_security_events_outcome", ["success", "denied", "error"]);
+export const saasTenantFilesStatusEnum = pgEnum("saas_tenant_files_status", ["reserved", "uploading", "quarantine", "clean", "rejected", "deleted"]);
+export const saasOutboxEventsStatusEnum = pgEnum("saas_outbox_events_status", ["pending", "processing", "sent", "failed", "dead_letter"]);
+export const saasBackgroundJobsStatusEnum = pgEnum("saas_background_jobs_status", ["pending", "processing", "completed", "failed", "dead_letter", "canceled"]);
+export const saasIdempotencyKeysStatusEnum = pgEnum("saas_idempotency_keys_status", ["processing", "completed", "failed"]);
+export const saasExportJobsStatusEnum = pgEnum("saas_export_jobs_status", ["pending", "processing", "completed", "failed", "expired", "canceled"]);
+export const saasDeletionRequestsStatusEnum = pgEnum("saas_deletion_requests_status", ["requested", "exported", "legal_hold", "approved", "purging", "completed", "canceled"]);
+export const saasTenantRestoreJobsStatusEnum = pgEnum("saas_tenant_restore_jobs_status", ["pending", "validating", "ready", "restoring", "completed", "failed", "rolled_back", "canceled"]);
+export const saasAzalRolePermissionsRoleEnum = pgEnum("saas_azal_role_permissions_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const capitalFundingBatchesKindEnum = pgEnum("capital_funding_batches_kind", ["pro_rata", "reversal"]);
+export const capitalContributionsKindEnum = pgEnum("capital_contributions_kind", ["initial", "direct", "pro_rata", "reversal"]);
+export const capitalProfitAllocationsKindEnum = pgEnum("capital_profit_allocations_kind", ["monthly", "adjustment"]);
+export const capitalProfitAllocationsStatusEnum = pgEnum("capital_profit_allocations_status", ["draft", "finalized"]);
+export const saasAzalVaccinesValidityunitEnum = pgEnum("saas_azal_vaccines_validityunit", ["days", "months"]);
+export const saasAzalAnimalsSexEnum = pgEnum("saas_azal_animals_sex", ["male", "female"]);
+export const saasAzalAnimalsAcquisitiontypeEnum = pgEnum("saas_azal_animals_acquisitiontype", ["purchased", "born"]);
+export const saasAzalAnimalsPurchasefundingsourceEnum = pgEnum("saas_azal_animals_purchasefundingsource", ["revenue", "investment"]);
+export const saasAzalLambingLogSexEnum = pgEnum("saas_azal_lambing_log_sex", ["male", "female"]);
+export const saasAzalFeedStockLedgerTransactiontypeEnum = pgEnum("saas_azal_feed_stock_ledger_transactiontype", ["purchase", "stock_count", "adjustment"]);
+export const saasAzalExpensesScopetypeEnum = pgEnum("saas_azal_expenses_scopetype", ["company", "farm"]);
+export const saasAzalExpensesTargettypeEnum = pgEnum("saas_azal_expenses_targettype", ["general", "category", "head", "herd"]);
+export const saasAzalPregnancyRecordsStatusEnum = pgEnum("saas_azal_pregnancy_records_status", ["active", "delivered", "aborted", "lost"]);
+export const saasAzalNotificationsPriorityEnum = pgEnum("saas_azal_notifications_priority", ["low", "medium", "high", "critical"]);
+export const saasEmailLogStatusEnum = pgEnum("saas_email_log_status", ["sent", "failed", "skipped_unconfigured"]);
+export const saasAzalAuditLogActortypeEnum = pgEnum("saas_azal_audit_log_actortype", ["tenant_user", "platform_admin", "support", "system_job", "migration"]);
+export const saasAzalAuditLogActioncategoryEnum = pgEnum("saas_azal_audit_log_actioncategory", ["auth", "crud", "config", "membership", "billing", "security", "data_export", "data_delete", "company"]);
+export const saasAzalAuditLogOutcomeEnum = pgEnum("saas_azal_audit_log_outcome", ["success", "denied", "error"]);
+
 // ─── USERS ────────────────────────────────────────────────────────────────────
-export const users = mysqlTable("saas_users", {
-  id: int("id").autoincrement().primaryKey(),
+export const users = pgTable("saas_users", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   normalizedEmail: varchar("normalizedEmail", { length: 320 }).unique(),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]).default("user").notNull(),
-  status: mysqlEnum("status", ["active", "locked", "disabled"]).default("active").notNull(),
-  authVersion: int("authVersion").default(1).notNull(),
-  failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
-  lockedUntil: timestamp("lockedUntil"),
-  lastPasswordChange: timestamp("lastPasswordChange"),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  role: saasUsersRoleEnum("role").default("user").notNull(),
+  status: saasUsersStatusEnum("status").default("active").notNull(),
+  authVersion: integer("authVersion").default(1).notNull(),
+  failedLoginAttempts: integer("failedLoginAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil", { precision: 0 }),
+  lastPasswordChange: timestamp("lastPasswordChange", { precision: 0 }),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  lastSignedIn: timestamp("lastSignedIn", { precision: 0 }).defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -45,59 +120,52 @@ export type InsertUser = typeof users.$inferInsert;
 
 // ─── TENANT CONTROL PLANE ───────────────────────────────────────────────────
 
-export const saasSchemaMigrations = mysqlTable("saas_schema_migrations", {
-  id: int("id").autoincrement().primaryKey(),
+export const saasSchemaMigrations = pgTable("saas_schema_migrations", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   version: varchar("version", { length: 100 }).notNull().unique(),
   checksumSha256: varchar("checksumSha256", { length: 64 }).notNull(),
   executionId: varchar("executionId", { length: 26 }).notNull(),
   appliedBy: varchar("appliedBy", { length: 200 }).notNull(),
-  appliedAt: timestamp("appliedAt").defaultNow().notNull(),
+  appliedAt: timestamp("appliedAt", { precision: 0 }).defaultNow().notNull(),
 });
 
-export const companies = mysqlTable("saas_companies", {
-  id: int("id").autoincrement().primaryKey(),
+export const companies = pgTable("saas_companies", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
   name: varchar("name", { length: 200 }).notNull(),
   slug: varchar("slug", { length: 100 }).notNull().unique(),
-  lifecycleStatus: mysqlEnum("lifecycleStatus", [
-    "provisioning",
-    "active",
-    "suspended",
-    "deletion_requested",
-    "purging",
-    "deleted",
-  ]).default("provisioning").notNull(),
+  lifecycleStatus: saasCompaniesLifecyclestatusEnum("lifecycleStatus").default("provisioning").notNull(),
   settings: json("settings"),
-  entitlementVersion: int("entitlementVersion").default(1).notNull(),
-  version: int("version").default(1).notNull(),
-  suspendedAt: timestamp("suspendedAt"),
+  entitlementVersion: integer("entitlementVersion").default(1).notNull(),
+  version: integer("version").default(1).notNull(),
+  suspendedAt: timestamp("suspendedAt", { precision: 0 }),
   suspendedReason: text("suspendedReason"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  deletedAt: timestamp("deletedAt"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
 }, table => ({
   lifecycleIdx: index("companies_lifecycle_idx").on(table.lifecycleStatus, table.id),
 }));
 
-export const farms = mysqlTable("saas_farms", {
-  id: int("id").autoincrement().primaryKey(),
+export const farms = pgTable("saas_farms", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 200 }).notNull(),
   code: varchar("code", { length: 40 }).notNull(),
   timezone: varchar("timezone", { length: 64 }).default("UTC").notNull(),
-  latitude: decimal("latitude", { precision: 10, scale: 7 }),
-  longitude: decimal("longitude", { precision: 10, scale: 7 }),
-  status: mysqlEnum("status", ["active", "suspended", "archived"]).default("active").notNull(),
+  latitude: numeric("latitude", { precision: 10, scale: 7 }),
+  longitude: numeric("longitude", { precision: 10, scale: 7 }),
+  status: saasFarmsStatusEnum("status").default("active").notNull(),
   settings: json("settings"),
-  version: int("version").default(1).notNull(),
-  createdByMembershipId: int("createdByMembershipId"),
-  deletedByMembershipId: int("deletedByMembershipId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  deletedAt: timestamp("deletedAt"),
+  version: integer("version").default(1).notNull(),
+  createdByMembershipId: integer("createdByMembershipId"),
+  deletedByMembershipId: integer("deletedByMembershipId"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
   activeCode: varchar("activeCode", { length: 40 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`code\`) ELSE NULL END`, { mode: "stored" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("code") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("farms_company_id_id_unique").on(table.companyId, table.id),
   activeCodeUnique: uniqueIndex("farms_company_active_code_unique").on(table.companyId, table.activeCode),
@@ -119,23 +187,23 @@ export const farms = mysqlTable("saas_farms", {
   }).onDelete("restrict"),
 }));
 
-export const companyMemberships = mysqlTable("saas_company_memberships", {
-  id: int("id").autoincrement().primaryKey(),
+export const companyMemberships = pgTable("saas_company_memberships", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  userId: int("userId").notNull(),
-  role: mysqlEnum("role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]).default("viewer").notNull(),
-  status: mysqlEnum("status", ["invited", "active", "suspended", "removed"]).default("invited").notNull(),
-  farmAccessMode: mysqlEnum("farmAccessMode", ["all", "restricted"]).default("restricted").notNull(),
-  authorizationVersion: int("authorizationVersion").default(1).notNull(),
-  version: int("version").default(1).notNull(),
-  invitedByMembershipId: int("invitedByMembershipId"),
-  joinedAt: timestamp("joinedAt"),
-  removedAt: timestamp("removedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  ownerCompanyGuard: int("ownerCompanyGuard")
-    .generatedAlwaysAs(() => sql`CASE WHEN \`role\` = 'owner' AND \`status\` = 'active' THEN \`companyId\` ELSE NULL END`, { mode: "stored" }),
+  companyId: integer("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  role: saasCompanyMembershipsRoleEnum("role").default("viewer").notNull(),
+  status: saasCompanyMembershipsStatusEnum("status").default("invited").notNull(),
+  farmAccessMode: saasCompanyMembershipsFarmaccessmodeEnum("farmAccessMode").default("restricted").notNull(),
+  authorizationVersion: integer("authorizationVersion").default(1).notNull(),
+  version: integer("version").default(1).notNull(),
+  invitedByMembershipId: integer("invitedByMembershipId"),
+  joinedAt: timestamp("joinedAt", { precision: 0 }),
+  removedAt: timestamp("removedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  ownerCompanyGuard: integer("ownerCompanyGuard")
+    .generatedAlwaysAs(sql`CASE WHEN "role" = 'owner' AND "status" = 'active' THEN "companyId" ELSE NULL END`),
   notificationPreferences: json("notificationPreferences"),
 }, table => ({
   companyIdUnique: uniqueIndex("company_memberships_company_id_id_unique").on(table.companyId, table.id),
@@ -159,11 +227,11 @@ export const companyMemberships = mysqlTable("saas_company_memberships", {
   }).onDelete("restrict"),
 }));
 
-export const farmMemberships = mysqlTable("saas_farm_memberships", {
-  companyId: int("companyId").notNull(),
-  companyMembershipId: int("companyMembershipId").notNull(),
-  farmId: int("farmId").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const farmMemberships = pgTable("saas_farm_memberships", {
+  companyId: integer("companyId").notNull(),
+  companyMembershipId: integer("companyMembershipId").notNull(),
+  farmId: integer("farmId").notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   pk: primaryKey({
     name: "farm_memberships_pk",
@@ -183,13 +251,13 @@ export const farmMemberships = mysqlTable("saas_farm_memberships", {
 
 // Immutable provenance for a legacy-to-SaaS identity import. It is never used
 // as an authorization source and never references or modifies legacy tables.
-export const legacyUserLinks = mysqlTable("saas_legacy_user_links", {
-  companyId: int("companyId").notNull(),
-  legacyUserId: int("legacyUserId").notNull(),
-  saasUserId: int("saasUserId").notNull(),
+export const legacyUserLinks = pgTable("saas_legacy_user_links", {
+  companyId: integer("companyId").notNull(),
+  legacyUserId: integer("legacyUserId").notNull(),
+  saasUserId: integer("saasUserId").notNull(),
   legacyOpenId: varchar("legacyOpenId", { length: 64 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   pk: primaryKey({ name: "saas_legacy_user_links_pk", columns: [table.companyId, table.legacyUserId] }),
   companyUserUnique: uniqueIndex("saas_legacy_user_links_company_user_unique").on(table.companyId, table.saasUserId),
@@ -197,28 +265,28 @@ export const legacyUserLinks = mysqlTable("saas_legacy_user_links", {
   userFk: foreignKey({ name: "saas_legacy_user_links_user_fk", columns: [table.saasUserId], foreignColumns: [users.id] }).onDelete("restrict"),
 }));
 
-export const companyInvitations = mysqlTable("saas_company_invitations", {
-  id: int("id").autoincrement().primaryKey(),
+export const companyInvitations = pgTable("saas_company_invitations", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   normalizedEmail: varchar("normalizedEmail", { length: 320 }).notNull(),
-  role: mysqlEnum("role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]).default("viewer").notNull(),
-  farmAccessMode: mysqlEnum("farmAccessMode", ["all", "restricted"]).default("restricted").notNull(),
+  role: saasCompanyInvitationsRoleEnum("role").default("viewer").notNull(),
+  farmAccessMode: saasCompanyInvitationsFarmaccessmodeEnum("farmAccessMode").default("restricted").notNull(),
   farmPublicIds: json("farmPublicIds"),
   provider: varchar("provider", { length: 50 }).default("manus").notNull(),
-  providerSubjectHash: binary("providerSubjectHash", { length: 32 }).notNull(),
-  tokenHash: binary("tokenHash", { length: 32 }).notNull().unique(),
-  status: mysqlEnum("status", ["pending", "accepted", "revoked", "expired"]).default("pending").notNull(),
-  invitedByMembershipId: int("invitedByMembershipId"),
-  invitedByPlatformAdministratorId: int("invitedByPlatformAdministratorId"),
-  acceptedByUserId: int("acceptedByUserId"),
-  expiresAt: timestamp("expiresAt").notNull(),
-  acceptedAt: timestamp("acceptedAt"),
-  revokedAt: timestamp("revokedAt"),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  providerSubjectHash: bytea("providerSubjectHash").notNull(),
+  tokenHash: bytea("tokenHash").notNull().unique(),
+  status: saasCompanyInvitationsStatusEnum("status").default("pending").notNull(),
+  invitedByMembershipId: integer("invitedByMembershipId"),
+  invitedByPlatformAdministratorId: integer("invitedByPlatformAdministratorId"),
+  acceptedByUserId: integer("acceptedByUserId"),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
+  acceptedAt: timestamp("acceptedAt", { precision: 0 }),
+  revokedAt: timestamp("revokedAt", { precision: 0 }),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
   activeEmail: varchar("activeEmail", { length: 320 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`status\` = 'pending' THEN \`normalizedEmail\` ELSE NULL END`, { mode: "stored" }),
+    .generatedAlwaysAs(sql`CASE WHEN "status" = 'pending' THEN "normalizedEmail" ELSE NULL END`),
 }, table => ({
   activeEmailUnique: uniqueIndex("company_invitations_active_email_unique").on(table.companyId, table.activeEmail),
   companyStatusIdx: index("company_invitations_company_status_idx").on(table.companyId, table.status, table.expiresAt),
@@ -244,16 +312,16 @@ export const companyInvitations = mysqlTable("saas_company_invitations", {
   }).onDelete("restrict"),
 }));
 
-export const companyRolePermissions = mysqlTable("saas_company_role_permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  companyId: int("companyId").notNull(),
-  role: mysqlEnum("role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]).notNull(),
+export const companyRolePermissions = pgTable("saas_company_role_permissions", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  companyId: integer("companyId").notNull(),
+  role: saasCompanyRolePermissionsRoleEnum("role").notNull(),
   resource: varchar("resource", { length: 100 }).notNull(),
   action: varchar("action", { length: 100 }).notNull(),
-  effect: mysqlEnum("effect", ["allow", "deny"]).notNull(),
-  version: int("version").default(1).notNull(),
-  updatedByMembershipId: int("updatedByMembershipId"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  effect: saasCompanyRolePermissionsEffectEnum("effect").notNull(),
+  version: integer("version").default(1).notNull(),
+  updatedByMembershipId: integer("updatedByMembershipId"),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   roleResourceActionUnique: uniqueIndex("company_role_permissions_scope_unique")
     .on(table.companyId, table.role, table.resource, table.action),
@@ -269,16 +337,16 @@ export const companyRolePermissions = mysqlTable("saas_company_role_permissions"
   }).onDelete("restrict"),
 }));
 
-export const companySecurityPolicies = mysqlTable("saas_company_security_policies", {
-  companyId: int("companyId").primaryKey(),
+export const companySecurityPolicies = pgTable("saas_company_security_policies", {
+  companyId: integer("companyId").primaryKey(),
   requireMfa: boolean("requireMfa").default(false).notNull(),
   allowedMfaMethods: json("allowedMfaMethods"),
-  privilegedSessionMaxAgeSeconds: int("privilegedSessionMaxAgeSeconds").default(900).notNull(),
+  privilegedSessionMaxAgeSeconds: integer("privilegedSessionMaxAgeSeconds").default(900).notNull(),
   requireMfaForOwners: boolean("requireMfaForOwners").default(true).notNull(),
   requireMfaForBilling: boolean("requireMfaForBilling").default(true).notNull(),
   requireMfaForDataExport: boolean("requireMfaForDataExport").default(false).notNull(),
-  updatedByMembershipId: int("updatedByMembershipId"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  updatedByMembershipId: integer("updatedByMembershipId"),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   companyFk: foreignKey({
     name: "company_security_policies_company_fk",
@@ -294,16 +362,16 @@ export const companySecurityPolicies = mysqlTable("saas_company_security_policie
 
 // ─── AUTHENTICATION DATA ────────────────────────────────────────────────────
 
-export const authIdentities = mysqlTable("saas_auth_identities", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const authIdentities = pgTable("saas_auth_identities", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  userId: integer("userId").notNull(),
   provider: varchar("provider", { length: 50 }).notNull(),
   providerSubject: varchar("providerSubject", { length: 255 }),
   providerEmail: varchar("providerEmail", { length: 320 }),
   providerEmailVerified: boolean("providerEmailVerified").default(false).notNull(),
-  linkedAt: timestamp("linkedAt"),
-  lastUsedAt: timestamp("lastUsedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  linkedAt: timestamp("linkedAt", { precision: 0 }),
+  lastUsedAt: timestamp("lastUsedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   providerSubjectUnique: uniqueIndex("auth_identities_provider_subject_unique")
     .on(table.provider, table.providerSubject),
@@ -317,10 +385,10 @@ export const authIdentities = mysqlTable("saas_auth_identities", {
   }).onDelete("cascade"),
 }));
 
-export const passwordCredentials = mysqlTable("saas_password_credentials", {
-  userId: int("userId").primaryKey(),
+export const passwordCredentials = pgTable("saas_password_credentials", {
+  userId: integer("userId").primaryKey(),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
-  passwordChangedAt: timestamp("passwordChangedAt").defaultNow().notNull(),
+  passwordChangedAt: timestamp("passwordChangedAt", { precision: 0 }).defaultNow().notNull(),
   passwordNeedsRehash: boolean("passwordNeedsRehash").default(false).notNull(),
 }, table => ({
   userFk: foreignKey({
@@ -330,17 +398,17 @@ export const passwordCredentials = mysqlTable("saas_password_credentials", {
   }).onDelete("cascade"),
 }));
 
-export const authenticationTokens = mysqlTable("saas_authentication_tokens", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  authIdentityId: int("authIdentityId"),
-  purpose: mysqlEnum("purpose", ["verify_email", "reset_password", "change_email", "identity_link"]).notNull(),
-  tokenHash: binary("tokenHash", { length: 32 }).notNull().unique(),
+export const authenticationTokens = pgTable("saas_authentication_tokens", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  userId: integer("userId").notNull(),
+  authIdentityId: integer("authIdentityId"),
+  purpose: saasAuthenticationTokensPurposeEnum("purpose").notNull(),
+  tokenHash: bytea("tokenHash").notNull().unique(),
   targetValue: varchar("targetValue", { length: 320 }),
-  attempts: int("attempts").default(0).notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  usedAt: timestamp("usedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
+  usedAt: timestamp("usedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   lookupIdx: index("authentication_tokens_lookup_idx").on(table.userId, table.purpose, table.expiresAt),
   userFk: foreignKey({
@@ -355,16 +423,16 @@ export const authenticationTokens = mysqlTable("saas_authentication_tokens", {
   }).onDelete("cascade"),
 }));
 
-export const mfaCredentials = mysqlTable("saas_mfa_credentials", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  method: mysqlEnum("method", ["totp"]).notNull(),
+export const mfaCredentials = pgTable("saas_mfa_credentials", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  userId: integer("userId").notNull(),
+  method: saasMfaCredentialsMethodEnum("method").notNull(),
   encryptedSecret: text("encryptedSecret").notNull(),
   encryptionKeyVersion: varchar("encryptionKeyVersion", { length: 50 }).notNull(),
   lastUsedTotpStep: bigint("lastUsedTotpStep", { mode: "number" }),
-  enabledAt: timestamp("enabledAt"),
-  disabledAt: timestamp("disabledAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  enabledAt: timestamp("enabledAt", { precision: 0 }),
+  disabledAt: timestamp("disabledAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   userMethodUnique: uniqueIndex("mfa_credentials_user_method_unique").on(table.userId, table.method),
   userFk: foreignKey({
@@ -374,12 +442,12 @@ export const mfaCredentials = mysqlTable("saas_mfa_credentials", {
   }).onDelete("cascade"),
 }));
 
-export const mfaRecoveryCodes = mysqlTable("saas_mfa_recovery_codes", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const mfaRecoveryCodes = pgTable("saas_mfa_recovery_codes", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   mfaCredentialId: bigint("mfaCredentialId", { mode: "number" }).notNull(),
   codeHash: varchar("codeHash", { length: 255 }).notNull(),
-  usedAt: timestamp("usedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  usedAt: timestamp("usedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   credentialIdx: index("mfa_recovery_codes_credential_idx").on(table.mfaCredentialId, table.usedAt),
   credentialFk: foreignKey({
@@ -389,23 +457,23 @@ export const mfaRecoveryCodes = mysqlTable("saas_mfa_recovery_codes", {
   }).onDelete("cascade"),
 }));
 
-export const tenantSessions = mysqlTable("saas_tenant_sessions", {
-  id: int("id").autoincrement().primaryKey(),
+export const tenantSessions = pgTable("saas_tenant_sessions", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
   tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
   tokenFamilyId: varchar("tokenFamilyId", { length: 64 }).notNull(),
-  userId: int("userId").notNull(),
-  lastSelectedCompanyId: int("lastSelectedCompanyId"),
-  authLevel: mysqlEnum("authLevel", ["primary", "mfa", "step_up"]).default("primary").notNull(),
-  mfaVerifiedAt: timestamp("mfaVerifiedAt"),
+  userId: integer("userId").notNull(),
+  lastSelectedCompanyId: integer("lastSelectedCompanyId"),
+  authLevel: saasTenantSessionsAuthlevelEnum("authLevel").default("primary").notNull(),
+  mfaVerifiedAt: timestamp("mfaVerifiedAt", { precision: 0 }),
   authenticationMethods: json("authenticationMethods"),
-  userAuthVersion: int("userAuthVersion").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
-  idleExpiresAt: timestamp("idleExpiresAt").notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  idleTimeoutMs: int("idleTimeoutMs"),
-  revokedAt: timestamp("revokedAt"),
+  userAuthVersion: integer("userAuthVersion").notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  lastSeenAt: timestamp("lastSeenAt", { precision: 0 }).defaultNow().notNull(),
+  idleExpiresAt: timestamp("idleExpiresAt", { precision: 0 }).notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
+  idleTimeoutMs: integer("idleTimeoutMs"),
+  revokedAt: timestamp("revokedAt", { precision: 0 }),
   revokedReason: varchar("revokedReason", { length: 200 }),
   ipAddress: varchar("ipAddress", { length: 45 }),
   userAgent: varchar("userAgent", { length: 500 }),
@@ -424,45 +492,45 @@ export const tenantSessions = mysqlTable("saas_tenant_sessions", {
   }).onDelete("set null"),
 }));
 
-export const authRateLimits = mysqlTable("saas_auth_rate_limits", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const authRateLimits = pgTable("saas_auth_rate_limits", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   keyHash: varchar("keyHash", { length: 64 }).notNull(),
-  bucketStart: timestamp("bucketStart").notNull(),
-  count: int("count").default(0).notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
+  bucketStart: timestamp("bucketStart", { precision: 0 }).notNull(),
+  count: integer("count").default(0).notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
 }, table => ({
   bucketUnique: uniqueIndex("auth_rate_limits_bucket_unique").on(table.keyHash, table.bucketStart),
   expiryIdx: index("auth_rate_limits_expiry_idx").on(table.expiresAt),
 }));
 
-export const oauthStates = mysqlTable("saas_oauth_states", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const oauthStates = pgTable("saas_oauth_states", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   stateHash: varchar("stateHash", { length: 64 }).notNull().unique(),
-  audience: mysqlEnum("audience", ["tenant", "platform"]).notNull(),
+  audience: saasOauthStatesAudienceEnum("audience").notNull(),
   redirectUri: varchar("redirectUri", { length: 500 }).notNull(),
   returnTo: varchar("returnTo", { length: 500 }).notNull(),
   browserBindingHash: varchar("browserBindingHash", { length: 64 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  consumedAt: timestamp("consumedAt"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
+  consumedAt: timestamp("consumedAt", { precision: 0 }),
 }, table => ({
   expiryIdx: index("oauth_states_expiry_idx").on(table.expiresAt, table.consumedAt),
 }));
 
 // ─── PLATFORM ADMINISTRATION AUTHORITY ──────────────────────────────────────
 
-export const platformAdministrators = mysqlTable("saas_platform_administrators", {
-  id: int("id").autoincrement().primaryKey(),
+export const platformAdministrators = pgTable("saas_platform_administrators", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  userId: int("userId").notNull().unique(),
-  status: mysqlEnum("status", ["invited", "active", "suspended", "revoked"]).default("invited").notNull(),
-  authVersion: int("authVersion").default(1).notNull(),
+  userId: integer("userId").notNull().unique(),
+  status: saasPlatformAdministratorsStatusEnum("status").default("invited").notNull(),
+  authVersion: integer("authVersion").default(1).notNull(),
   mfaRequired: boolean("mfaRequired").default(true).notNull(),
-  version: int("version").default(1).notNull(),
-  grantedByPlatformAdministratorId: int("grantedByPlatformAdministratorId"),
-  grantedAt: timestamp("grantedAt").defaultNow().notNull(),
-  revokedAt: timestamp("revokedAt"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  version: integer("version").default(1).notNull(),
+  grantedByPlatformAdministratorId: integer("grantedByPlatformAdministratorId"),
+  grantedAt: timestamp("grantedAt", { precision: 0 }).defaultNow().notNull(),
+  revokedAt: timestamp("revokedAt", { precision: 0 }),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   statusIdx: index("platform_administrators_status_idx").on(table.status, table.id),
   userFk: foreignKey({
@@ -477,15 +545,15 @@ export const platformAdministrators = mysqlTable("saas_platform_administrators",
   }).onDelete("restrict"),
 }));
 
-export const platformIdentities = mysqlTable("saas_platform_identities", {
-  id: int("id").autoincrement().primaryKey(),
-  platformAdministratorId: int("platformAdministratorId").notNull(),
+export const platformIdentities = pgTable("saas_platform_identities", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  platformAdministratorId: integer("platformAdministratorId").notNull(),
   provider: varchar("provider", { length: 50 }).notNull(),
   providerSubject: varchar("providerSubject", { length: 255 }).notNull(),
   providerEmail: varchar("providerEmail", { length: 320 }),
   providerEmailVerified: boolean("providerEmailVerified").default(false).notNull(),
-  lastUsedAt: timestamp("lastUsedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  lastUsedAt: timestamp("lastUsedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   providerSubjectUnique: uniqueIndex("platform_identities_provider_subject_unique")
     .on(table.provider, table.providerSubject),
@@ -498,29 +566,29 @@ export const platformIdentities = mysqlTable("saas_platform_identities", {
   }).onDelete("cascade"),
 }));
 
-export const platformRoles = mysqlTable("saas_platform_roles", {
-  id: int("id").autoincrement().primaryKey(),
+export const platformRoles = pgTable("saas_platform_roles", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   code: varchar("code", { length: 100 }).notNull().unique(),
   name: varchar("name", { length: 150 }).notNull(),
   description: text("description"),
   isSystem: boolean("isSystem").default(false).notNull(),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 });
 
-export const platformPermissions = mysqlTable("saas_platform_permissions", {
-  id: int("id").autoincrement().primaryKey(),
+export const platformPermissions = pgTable("saas_platform_permissions", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   code: varchar("code", { length: 120 }).notNull().unique(),
   description: text("description"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 });
 
-export const platformAdministratorRoles = mysqlTable("saas_platform_administrator_roles", {
-  platformAdministratorId: int("platformAdministratorId").notNull(),
-  platformRoleId: int("platformRoleId").notNull(),
-  grantedByPlatformAdministratorId: int("grantedByPlatformAdministratorId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const platformAdministratorRoles = pgTable("saas_platform_administrator_roles", {
+  platformAdministratorId: integer("platformAdministratorId").notNull(),
+  platformRoleId: integer("platformRoleId").notNull(),
+  grantedByPlatformAdministratorId: integer("grantedByPlatformAdministratorId"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   pk: primaryKey({
     name: "platform_administrator_roles_pk",
@@ -543,10 +611,10 @@ export const platformAdministratorRoles = mysqlTable("saas_platform_administrato
   }).onDelete("restrict"),
 }));
 
-export const platformRolePermissions = mysqlTable("saas_platform_role_permissions", {
-  platformRoleId: int("platformRoleId").notNull(),
-  platformPermissionId: int("platformPermissionId").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const platformRolePermissions = pgTable("saas_platform_role_permissions", {
+  platformRoleId: integer("platformRoleId").notNull(),
+  platformPermissionId: integer("platformPermissionId").notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   pk: primaryKey({
     name: "platform_role_permissions_pk",
@@ -564,21 +632,21 @@ export const platformRolePermissions = mysqlTable("saas_platform_role_permission
   }).onDelete("cascade"),
 }));
 
-export const platformSessions = mysqlTable("saas_platform_sessions", {
-  id: int("id").autoincrement().primaryKey(),
+export const platformSessions = pgTable("saas_platform_sessions", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
   tokenHash: varchar("tokenHash", { length: 128 }).notNull().unique(),
   tokenFamilyId: varchar("tokenFamilyId", { length: 64 }).notNull(),
-  platformAdministratorId: int("platformAdministratorId").notNull(),
-  authLevel: mysqlEnum("authLevel", ["primary", "mfa", "step_up"]).default("primary").notNull(),
-  mfaVerifiedAt: timestamp("mfaVerifiedAt"),
+  platformAdministratorId: integer("platformAdministratorId").notNull(),
+  authLevel: saasPlatformSessionsAuthlevelEnum("authLevel").default("primary").notNull(),
+  mfaVerifiedAt: timestamp("mfaVerifiedAt", { precision: 0 }),
   authenticationMethods: json("authenticationMethods"),
-  authVersion: int("authVersion").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
-  idleExpiresAt: timestamp("idleExpiresAt").notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
-  revokedAt: timestamp("revokedAt"),
+  authVersion: integer("authVersion").notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  lastSeenAt: timestamp("lastSeenAt", { precision: 0 }).defaultNow().notNull(),
+  idleExpiresAt: timestamp("idleExpiresAt", { precision: 0 }).notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
+  revokedAt: timestamp("revokedAt", { precision: 0 }),
   revokedReason: varchar("revokedReason", { length: 200 }),
   ipAddress: varchar("ipAddress", { length: 45 }),
   userAgent: varchar("userAgent", { length: 500 }),
@@ -595,37 +663,37 @@ export const platformSessions = mysqlTable("saas_platform_sessions", {
 
 // ─── FEATURES, PLANS, SUBSCRIPTIONS, AND USAGE ───────────────────────────────
 
-export const featureCatalog = mysqlTable("saas_feature_catalog", {
-  id: int("id").autoincrement().primaryKey(),
+export const featureCatalog = pgTable("saas_feature_catalog", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
   code: varchar("code", { length: 100 }).notNull().unique(),
   name: varchar("name", { length: 150 }).notNull(),
   description: text("description"),
-  status: mysqlEnum("status", ["active", "deprecated"]).default("active").notNull(),
-  disabledDataMode: mysqlEnum("disabledDataMode", ["read_only", "hidden", "inaccessible"])
+  status: saasFeatureCatalogStatusEnum("status").default("active").notNull(),
+  disabledDataMode: saasFeatureCatalogDisableddatamodeEnum("disabledDataMode")
     .default("read_only").notNull(),
-  limitUnit: mysqlEnum("limitUnit", ["boolean", "count", "bytes", "requests"])
+  limitUnit: saasFeatureCatalogLimitunitEnum("limitUnit")
     .default("boolean").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 });
 
-export const subscriptionPlans = mysqlTable("saas_subscription_plans", {
-  id: int("id").autoincrement().primaryKey(),
+export const subscriptionPlans = pgTable("saas_subscription_plans", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
   code: varchar("code", { length: 80 }).notNull(),
   name: varchar("name", { length: 150 }).notNull(),
   description: text("description"),
-  planVersion: int("planVersion").default(1).notNull(),
-  status: mysqlEnum("status", ["draft", "active", "retired"]).default("draft").notNull(),
-  priceMonthly: decimal("priceMonthly", { precision: 12, scale: 2 }).default("0").notNull(),
-  priceYearly: decimal("priceYearly", { precision: 12, scale: 2 }).default("0").notNull(),
+  planVersion: integer("planVersion").default(1).notNull(),
+  status: saasSubscriptionPlansStatusEnum("status").default("draft").notNull(),
+  priceMonthly: numeric("priceMonthly", { precision: 12, scale: 2 }).default("0").notNull(),
+  priceYearly: numeric("priceYearly", { precision: 12, scale: 2 }).default("0").notNull(),
   currency: varchar("currency", { length: 3 }).default("USD").notNull(),
-  version: int("version").default(1).notNull(),
-  createdByPlatformAdministratorId: int("createdByPlatformAdministratorId"),
-  publishedAt: timestamp("publishedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  version: integer("version").default(1).notNull(),
+  createdByPlatformAdministratorId: integer("createdByPlatformAdministratorId"),
+  publishedAt: timestamp("publishedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   codeVersionUnique: uniqueIndex("subscription_plans_code_version_unique").on(table.code, table.planVersion),
   statusIdx: index("subscription_plans_status_idx").on(table.status, table.code, table.planVersion),
@@ -636,15 +704,15 @@ export const subscriptionPlans = mysqlTable("saas_subscription_plans", {
   }).onDelete("restrict"),
 }));
 
-export const planEntitlements = mysqlTable("saas_plan_entitlements", {
-  id: int("id").autoincrement().primaryKey(),
-  subscriptionPlanId: int("subscriptionPlanId").notNull(),
-  featureId: int("featureId").notNull(),
-  accessMode: mysqlEnum("accessMode", ["enabled", "read_only", "disabled"]).default("disabled").notNull(),
+export const planEntitlements = pgTable("saas_plan_entitlements", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  subscriptionPlanId: integer("subscriptionPlanId").notNull(),
+  featureId: integer("featureId").notNull(),
+  accessMode: saasPlanEntitlementsAccessmodeEnum("accessMode").default("disabled").notNull(),
   limitValue: bigint("limitValue", { mode: "number" }),
   configuration: json("configuration"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   planFeatureUnique: uniqueIndex("plan_entitlements_plan_feature_unique")
     .on(table.subscriptionPlanId, table.featureId),
@@ -660,26 +728,26 @@ export const planEntitlements = mysqlTable("saas_plan_entitlements", {
   }).onDelete("restrict"),
 }));
 
-export const companySubscriptions = mysqlTable("saas_company_subscriptions", {
-  id: int("id").autoincrement().primaryKey(),
+export const companySubscriptions = pgTable("saas_company_subscriptions", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  subscriptionPlanId: int("subscriptionPlanId").notNull(),
+  companyId: integer("companyId").notNull(),
+  subscriptionPlanId: integer("subscriptionPlanId").notNull(),
   planSnapshot: json("planSnapshot").notNull(),
-  status: mysqlEnum("status", ["trialing", "active", "past_due", "suspended", "canceled", "expired"])
+  status: saasCompanySubscriptionsStatusEnum("status")
     .default("trialing").notNull(),
-  periodStart: timestamp("periodStart").notNull(),
-  periodEnd: timestamp("periodEnd").notNull(),
-  trialEndsAt: timestamp("trialEndsAt"),
-  graceEndsAt: timestamp("graceEndsAt"),
-  canceledAt: timestamp("canceledAt"),
+  periodStart: timestamp("periodStart", { precision: 0 }).notNull(),
+  periodEnd: timestamp("periodEnd", { precision: 0 }).notNull(),
+  trialEndsAt: timestamp("trialEndsAt", { precision: 0 }),
+  graceEndsAt: timestamp("graceEndsAt", { precision: 0 }),
+  canceledAt: timestamp("canceledAt", { precision: 0 }),
   isCurrent: boolean("isCurrent").default(true).notNull(),
-  version: int("version").default(1).notNull(),
-  changedByPlatformAdministratorId: int("changedByPlatformAdministratorId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  currentCompanyGuard: int("currentCompanyGuard")
-    .generatedAlwaysAs(() => sql`CASE WHEN \`isCurrent\` = TRUE THEN \`companyId\` ELSE NULL END`, { mode: "stored" }),
+  version: integer("version").default(1).notNull(),
+  changedByPlatformAdministratorId: integer("changedByPlatformAdministratorId"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  currentCompanyGuard: integer("currentCompanyGuard")
+    .generatedAlwaysAs(sql`CASE WHEN "isCurrent" = TRUE THEN "companyId" ELSE NULL END`),
 }, table => ({
   currentCompanyUnique: uniqueIndex("company_subscriptions_current_company_unique").on(table.currentCompanyGuard),
   companyHistoryIdx: index("company_subscriptions_history_idx").on(table.companyId, table.createdAt, table.id),
@@ -703,26 +771,26 @@ export const companySubscriptions = mysqlTable("saas_company_subscriptions", {
   }).onDelete("restrict"),
 }));
 
-export const companyFeatureOverrides = mysqlTable("saas_company_feature_overrides", {
-  id: int("id").autoincrement().primaryKey(),
+export const companyFeatureOverrides = pgTable("saas_company_feature_overrides", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  featureId: int("featureId").notNull(),
-  accessMode: mysqlEnum("accessMode", ["enabled", "read_only", "disabled"]),
+  companyId: integer("companyId").notNull(),
+  featureId: integer("featureId").notNull(),
+  accessMode: saasCompanyFeatureOverridesAccessmodeEnum("accessMode"),
   limitValue: bigint("limitValue", { mode: "number" }),
   configuration: json("configuration"),
   reason: text("reason").notNull(),
-  startsAt: timestamp("startsAt").defaultNow().notNull(),
-  expiresAt: timestamp("expiresAt"),
+  startsAt: timestamp("startsAt", { precision: 0 }).defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }),
   isCurrent: boolean("isCurrent").default(true).notNull(),
-  version: int("version").default(1).notNull(),
-  createdByPlatformAdministratorId: int("createdByPlatformAdministratorId").notNull(),
-  revokedByPlatformAdministratorId: int("revokedByPlatformAdministratorId"),
-  revokedAt: timestamp("revokedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  version: integer("version").default(1).notNull(),
+  createdByPlatformAdministratorId: integer("createdByPlatformAdministratorId").notNull(),
+  revokedByPlatformAdministratorId: integer("revokedByPlatformAdministratorId"),
+  revokedAt: timestamp("revokedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
   currentCompanyFeatureGuard: varchar("currentCompanyFeatureGuard", { length: 80 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`isCurrent\` = TRUE THEN CONCAT(\`companyId\`, ':', \`featureId\`) ELSE NULL END`, { mode: "stored" }),
+    .generatedAlwaysAs(sql`CASE WHEN "isCurrent" = TRUE THEN "companyId"::text || ':' || "featureId"::text ELSE NULL END`),
 }, table => ({
   currentOverrideUnique: uniqueIndex("company_feature_overrides_current_unique")
     .on(table.currentCompanyFeatureGuard),
@@ -750,18 +818,18 @@ export const companyFeatureOverrides = mysqlTable("saas_company_feature_override
   }).onDelete("restrict"),
 }));
 
-export const usageCounters = mysqlTable("saas_usage_counters", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  companyId: int("companyId").notNull(),
-  featureId: int("featureId"),
+export const usageCounters = pgTable("saas_usage_counters", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  companyId: integer("companyId").notNull(),
+  featureId: integer("featureId"),
   metricCode: varchar("metricCode", { length: 100 }).notNull(),
-  periodType: mysqlEnum("periodType", ["lifetime", "daily", "monthly", "billing_period"]).notNull(),
-  periodStart: timestamp("periodStart").notNull(),
-  periodEnd: timestamp("periodEnd").notNull(),
+  periodType: saasUsageCountersPeriodtypeEnum("periodType").notNull(),
+  periodStart: timestamp("periodStart", { precision: 0 }).notNull(),
+  periodEnd: timestamp("periodEnd", { precision: 0 }).notNull(),
   usedValue: bigint("usedValue", { mode: "number" }).default(0).notNull(),
   reservedValue: bigint("reservedValue", { mode: "number" }).default(0).notNull(),
-  version: int("version").default(1).notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  version: integer("version").default(1).notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   metricPeriodUnique: uniqueIndex("usage_counters_metric_period_unique")
     .on(table.companyId, table.metricCode, table.periodType, table.periodStart, table.periodEnd),
@@ -780,26 +848,26 @@ export const usageCounters = mysqlTable("saas_usage_counters", {
 
 // ─── SUPPORT ACCESS, SECURITY, AND OPERATIONS ────────────────────────────────
 
-export const supportAccessGrants = mysqlTable("saas_support_access_grants", {
-  id: int("id").autoincrement().primaryKey(),
+export const supportAccessGrants = pgTable("saas_support_access_grants", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  requestedByPlatformAdministratorId: int("requestedByPlatformAdministratorId").notNull(),
-  accessMode: mysqlEnum("accessMode", ["read_only", "write"]).default("read_only").notNull(),
+  companyId: integer("companyId").notNull(),
+  requestedByPlatformAdministratorId: integer("requestedByPlatformAdministratorId").notNull(),
+  accessMode: saasSupportAccessGrantsAccessmodeEnum("accessMode").default("read_only").notNull(),
   allowedScopes: json("allowedScopes").notNull(),
   reason: text("reason").notNull(),
   ticketReference: varchar("ticketReference", { length: 150 }).notNull(),
-  status: mysqlEnum("status", ["pending", "approved", "active", "expired", "revoked", "rejected"])
+  status: saasSupportAccessGrantsStatusEnum("status")
     .default("pending").notNull(),
-  activatedAt: timestamp("activatedAt"),
-  expiresAt: timestamp("expiresAt").notNull(),
-  revokedAt: timestamp("revokedAt"),
-  revokedByPlatformAdministratorId: int("revokedByPlatformAdministratorId"),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  activatedAt: timestamp("activatedAt", { precision: 0 }),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
+  revokedAt: timestamp("revokedAt", { precision: 0 }),
+  revokedByPlatformAdministratorId: integer("revokedByPlatformAdministratorId"),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
   activeCompanyTicketGuard: varchar("activeCompanyTicketGuard", { length: 200 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`status\` IN ('pending','approved','active') THEN CONCAT(\`companyId\`, ':', LOWER(\`ticketReference\`)) ELSE NULL END`, { mode: "stored" }),
+    .generatedAlwaysAs(sql`CASE WHEN "status" IN ('pending','approved','active') THEN "companyId"::text || ':' || LOWER("ticketReference")::text ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("support_access_grants_company_id_id_unique")
     .on(table.companyId, table.id),
@@ -826,13 +894,13 @@ export const supportAccessGrants = mysqlTable("saas_support_access_grants", {
   }).onDelete("restrict"),
 }));
 
-export const supportAccessApprovals = mysqlTable("saas_support_access_approvals", {
-  id: int("id").autoincrement().primaryKey(),
-  supportAccessGrantId: int("supportAccessGrantId").notNull(),
-  platformAdministratorId: int("platformAdministratorId").notNull(),
-  decision: mysqlEnum("decision", ["approved", "rejected"]).notNull(),
+export const supportAccessApprovals = pgTable("saas_support_access_approvals", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  supportAccessGrantId: integer("supportAccessGrantId").notNull(),
+  platformAdministratorId: integer("platformAdministratorId").notNull(),
+  decision: saasSupportAccessApprovalsDecisionEnum("decision").notNull(),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   approverUnique: uniqueIndex("support_access_approvals_approver_unique")
     .on(table.supportAccessGrantId, table.platformAdministratorId),
@@ -848,22 +916,22 @@ export const supportAccessApprovals = mysqlTable("saas_support_access_approvals"
   }).onDelete("restrict"),
 }));
 
-export const securityEvents = mysqlTable("saas_security_events", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const securityEvents = pgTable("saas_security_events", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId"),
-  actorType: mysqlEnum("actorType", ["anonymous", "tenant_user", "platform_admin", "support", "system_job"]).notNull(),
-  userId: int("userId"),
-  platformAdministratorId: int("platformAdministratorId"),
-  supportAccessGrantId: int("supportAccessGrantId"),
+  companyId: integer("companyId"),
+  actorType: saasSecurityEventsActortypeEnum("actorType").notNull(),
+  userId: integer("userId"),
+  platformAdministratorId: integer("platformAdministratorId"),
+  supportAccessGrantId: integer("supportAccessGrantId"),
   eventType: varchar("eventType", { length: 120 }).notNull(),
-  severity: mysqlEnum("severity", ["info", "warning", "high", "critical"]).default("info").notNull(),
-  outcome: mysqlEnum("outcome", ["success", "denied", "error"]).notNull(),
+  severity: saasSecurityEventsSeverityEnum("severity").default("info").notNull(),
+  outcome: saasSecurityEventsOutcomeEnum("outcome").notNull(),
   requestId: varchar("requestId", { length: 64 }),
   ipAddress: varchar("ipAddress", { length: 45 }),
   userAgent: varchar("userAgent", { length: 500 }),
   metadata: json("metadata"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   companyTimeIdx: index("security_events_company_time_idx").on(table.companyId, table.createdAt, table.id),
   severityTimeIdx: index("security_events_severity_time_idx").on(table.severity, table.createdAt, table.id),
@@ -885,26 +953,26 @@ export const securityEvents = mysqlTable("saas_security_events", {
   }).onDelete("restrict"),
 }));
 
-export const tenantFiles = mysqlTable("saas_tenant_files", {
-  id: int("id").autoincrement().primaryKey(),
+export const tenantFiles = pgTable("saas_tenant_files", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId"),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId"),
   storageKey: varchar("storageKey", { length: 500 }).notNull().unique(),
   originalName: varchar("originalName", { length: 255 }).notNull(),
   contentType: varchar("contentType", { length: 100 }).notNull(),
   sizeBytes: bigint("sizeBytes", { mode: "number" }).notNull(),
   checksumSha256: varchar("checksumSha256", { length: 64 }).notNull(),
-  status: mysqlEnum("status", ["reserved", "uploading", "quarantine", "clean", "rejected", "deleted"])
+  status: saasTenantFilesStatusEnum("status")
     .default("reserved").notNull(),
-  uploadedByMembershipId: int("uploadedByMembershipId"),
+  uploadedByMembershipId: integer("uploadedByMembershipId"),
   generatedByBackgroundJobId: bigint("generatedByBackgroundJobId", { mode: "number" }),
   generatedByExportJobId: bigint("generatedByExportJobId", { mode: "number" }),
   scanResult: json("scanResult"),
-  verifiedAt: timestamp("verifiedAt"),
-  deletedAt: timestamp("deletedAt"),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  verifiedAt: timestamp("verifiedAt", { precision: 0 }),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   companyIdUnique: uniqueIndex("tenant_files_company_id_id_unique").on(table.companyId, table.id),
   companyStatusIdx: index("tenant_files_company_status_idx").on(table.companyId, table.status, table.createdAt),
@@ -932,19 +1000,19 @@ export const tenantFiles = mysqlTable("saas_tenant_files", {
   }).onDelete("restrict"),
   attributionCheck: check(
     "tenant_files_attribution_check",
-    sql`((\`uploadedByMembershipId\` IS NOT NULL) + (\`generatedByBackgroundJobId\` IS NOT NULL)) = 1 AND (\`generatedByExportJobId\` IS NULL OR \`generatedByBackgroundJobId\` IS NOT NULL)`,
+    sql`(("uploadedByMembershipId" IS NOT NULL)::int + ("generatedByBackgroundJobId" IS NOT NULL)::int) = 1 AND ("generatedByExportJobId" IS NULL OR "generatedByBackgroundJobId" IS NOT NULL)`,
   ),
 }));
 
 // Tenant-facing brand state is kept separate from the control-plane company
 // record so logo ownership and lifecycle stay referentially constrained.
-export const companyBranding = mysqlTable("saas_company_branding", {
-  companyId: int("companyId").primaryKey(),
-  logoTenantFileId: int("logoTenantFileId"),
-  faviconTenantFileId: int("faviconTenantFileId"),
-  version: int("version").default(1).notNull(),
-  updatedByMembershipId: int("updatedByMembershipId"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+export const companyBranding = pgTable("saas_company_branding", {
+  companyId: integer("companyId").primaryKey(),
+  logoTenantFileId: integer("logoTenantFileId"),
+  faviconTenantFileId: integer("faviconTenantFileId"),
+  version: integer("version").default(1).notNull(),
+  updatedByMembershipId: integer("updatedByMembershipId"),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   logoFileIdx: index("company_branding_logo_file_idx").on(table.logoTenantFileId),
   faviconFileIdx: index("company_branding_favicon_file_idx").on(table.faviconTenantFileId),
@@ -970,26 +1038,26 @@ export const companyBranding = mysqlTable("saas_company_branding", {
   }).onDelete("restrict"),
 }));
 
-export const outboxEvents = mysqlTable("saas_outbox_events", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  companyId: int("companyId"),
+export const outboxEvents = pgTable("saas_outbox_events", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  companyId: integer("companyId"),
   eventType: varchar("eventType", { length: 120 }).notNull(),
   payload: json("payload"),
   encryptedPayload: text("encryptedPayload"),
   encryptionKeyVersion: varchar("encryptionKeyVersion", { length: 50 }),
-  status: mysqlEnum("status", ["pending", "processing", "sent", "failed", "dead_letter"])
+  status: saasOutboxEventsStatusEnum("status")
     .default("pending").notNull(),
-  attempts: int("attempts").default(0).notNull(),
-  maxAttempts: int("maxAttempts").default(5).notNull(),
-  nextAttemptAt: timestamp("nextAttemptAt").defaultNow().notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("maxAttempts").default(5).notNull(),
+  nextAttemptAt: timestamp("nextAttemptAt", { precision: 0 }).defaultNow().notNull(),
   lockedBy: varchar("lockedBy", { length: 100 }),
-  lockedUntil: timestamp("lockedUntil"),
+  lockedUntil: timestamp("lockedUntil", { precision: 0 }),
   deduplicationKey: varchar("deduplicationKey", { length: 200 }),
-  deduplicationCompanyId: int("deduplicationCompanyId")
-    .generatedAlwaysAs(() => sql`COALESCE(\`companyId\`, 0)`, { mode: "stored" }),
+  deduplicationCompanyId: integer("deduplicationCompanyId")
+    .generatedAlwaysAs(sql`COALESCE("companyId", 0)`),
   lastError: text("lastError"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  processedAt: timestamp("processedAt"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  processedAt: timestamp("processedAt", { precision: 0 }),
 }, table => ({
   deduplicationUnique: uniqueIndex("outbox_events_deduplication_unique")
     .on(table.deduplicationCompanyId, table.eventType, table.deduplicationKey),
@@ -999,31 +1067,31 @@ export const outboxEvents = mysqlTable("saas_outbox_events", {
     columns: [table.companyId],
     foreignColumns: [companies.id],
   }).onDelete("cascade"),
-  payloadCheck: check("outbox_payload_check", sql`\`payload\` IS NOT NULL OR \`encryptedPayload\` IS NOT NULL`),
+  payloadCheck: check("outbox_payload_check", sql`"payload" IS NOT NULL OR "encryptedPayload" IS NOT NULL`),
 }));
 
-export const backgroundJobs = mysqlTable("saas_background_jobs", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const backgroundJobs = pgTable("saas_background_jobs", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId"),
+  companyId: integer("companyId"),
   jobType: varchar("jobType", { length: 120 }).notNull(),
   payload: json("payload").notNull(),
-  status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "dead_letter", "canceled"])
+  status: saasBackgroundJobsStatusEnum("status")
     .default("pending").notNull(),
-  priority: int("priority").default(0).notNull(),
-  attempts: int("attempts").default(0).notNull(),
-  maxAttempts: int("maxAttempts").default(5).notNull(),
-  runAt: timestamp("runAt").defaultNow().notNull(),
+  priority: integer("priority").default(0).notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("maxAttempts").default(5).notNull(),
+  runAt: timestamp("runAt", { precision: 0 }).defaultNow().notNull(),
   lockedBy: varchar("lockedBy", { length: 100 }),
-  lockedUntil: timestamp("lockedUntil"),
+  lockedUntil: timestamp("lockedUntil", { precision: 0 }),
   deduplicationKey: varchar("deduplicationKey", { length: 200 }),
-  deduplicationCompanyId: int("deduplicationCompanyId")
-    .generatedAlwaysAs(() => sql`COALESCE(\`companyId\`, 0)`, { mode: "stored" }),
+  deduplicationCompanyId: integer("deduplicationCompanyId")
+    .generatedAlwaysAs(sql`COALESCE("companyId", 0)`),
   lastError: text("lastError"),
   requestId: varchar("requestId", { length: 64 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  startedAt: timestamp("startedAt"),
-  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  startedAt: timestamp("startedAt", { precision: 0 }),
+  completedAt: timestamp("completedAt", { precision: 0 }),
 }, table => ({
   deduplicationUnique: uniqueIndex("background_jobs_deduplication_unique")
     .on(table.deduplicationCompanyId, table.jobType, table.deduplicationKey),
@@ -1037,22 +1105,22 @@ export const backgroundJobs = mysqlTable("saas_background_jobs", {
   }).onDelete("cascade"),
 }));
 
-export const idempotencyKeys = mysqlTable("saas_idempotency_keys", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  companyId: int("companyId"),
-  scopeCompanyId: int("scopeCompanyId")
-    .generatedAlwaysAs(() => sql`COALESCE(\`companyId\`, 0)`, { mode: "stored" }),
-  userId: int("userId").notNull(),
+export const idempotencyKeys = pgTable("saas_idempotency_keys", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  companyId: integer("companyId"),
+  scopeCompanyId: integer("scopeCompanyId")
+    .generatedAlwaysAs(sql`COALESCE("companyId", 0)`),
+  userId: integer("userId").notNull(),
   keyHash: varchar("keyHash", { length: 128 }).notNull(),
   requestMethod: varchar("requestMethod", { length: 10 }).notNull(),
   requestPathHash: varchar("requestPathHash", { length: 128 }).notNull(),
   requestBodyHash: varchar("requestBodyHash", { length: 128 }).notNull(),
-  responseStatus: int("responseStatus"),
+  responseStatus: integer("responseStatus"),
   responseBody: json("responseBody"),
-  status: mysqlEnum("status", ["processing", "completed", "failed"]).default("processing").notNull(),
-  lockedUntil: timestamp("lockedUntil"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  expiresAt: timestamp("expiresAt").notNull(),
+  status: saasIdempotencyKeysStatusEnum("status").default("processing").notNull(),
+  lockedUntil: timestamp("lockedUntil", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
 }, table => ({
   scopeUnique: uniqueIndex("idempotency_keys_scope_unique")
     .on(table.scopeCompanyId, table.userId, table.requestMethod, table.requestPathHash, table.keyHash),
@@ -1069,24 +1137,24 @@ export const idempotencyKeys = mysqlTable("saas_idempotency_keys", {
   }).onDelete("cascade"),
 }));
 
-export const exportJobs = mysqlTable("saas_export_jobs", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const exportJobs = pgTable("saas_export_jobs", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId"),
-  requestedByMembershipId: int("requestedByMembershipId"),
-  requestedByPlatformAdministratorId: int("requestedByPlatformAdministratorId"),
-  supportAccessGrantId: int("supportAccessGrantId"),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId"),
+  requestedByMembershipId: integer("requestedByMembershipId"),
+  requestedByPlatformAdministratorId: integer("requestedByPlatformAdministratorId"),
+  supportAccessGrantId: integer("supportAccessGrantId"),
   exportType: varchar("exportType", { length: 80 }).notNull(),
   filters: json("filters"),
-  status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "expired", "canceled"])
+  status: saasExportJobsStatusEnum("status")
     .default("pending").notNull(),
-  tenantFileId: int("tenantFileId"),
+  tenantFileId: integer("tenantFileId"),
   failureReason: text("failureReason"),
-  expiresAt: timestamp("expiresAt").notNull(),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  completedAt: timestamp("completedAt"),
+  expiresAt: timestamp("expiresAt", { precision: 0 }).notNull(),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  completedAt: timestamp("completedAt", { precision: 0 }),
 }, table => ({
   companyIdUnique: uniqueIndex("export_jobs_company_id_id_unique").on(table.companyId, table.id),
   companyStatusIdx: index("export_jobs_company_status_idx").on(table.companyId, table.status, table.createdAt),
@@ -1122,22 +1190,22 @@ export const exportJobs = mysqlTable("saas_export_jobs", {
   }).onDelete("restrict"),
 }));
 
-export const deletionRequests = mysqlTable("saas_deletion_requests", {
-  id: int("id").autoincrement().primaryKey(),
+export const deletionRequests = pgTable("saas_deletion_requests", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  requestedByMembershipId: int("requestedByMembershipId"),
-  requestedByPlatformAdministratorId: int("requestedByPlatformAdministratorId"),
-  approvedByPlatformAdministratorId: int("approvedByPlatformAdministratorId"),
+  companyId: integer("companyId").notNull(),
+  requestedByMembershipId: integer("requestedByMembershipId"),
+  requestedByPlatformAdministratorId: integer("requestedByPlatformAdministratorId"),
+  approvedByPlatformAdministratorId: integer("approvedByPlatformAdministratorId"),
   reason: text("reason").notNull(),
-  status: mysqlEnum("status", ["requested", "exported", "legal_hold", "approved", "purging", "completed", "canceled"])
+  status: saasDeletionRequestsStatusEnum("status")
     .default("requested").notNull(),
-  retentionUntil: timestamp("retentionUntil").notNull(),
-  approvedAt: timestamp("approvedAt"),
-  purgedAt: timestamp("purgedAt"),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  retentionUntil: timestamp("retentionUntil", { precision: 0 }).notNull(),
+  approvedAt: timestamp("approvedAt", { precision: 0 }),
+  purgedAt: timestamp("purgedAt", { precision: 0 }),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   companyStatusIdx: index("deletion_requests_company_status_idx").on(table.companyId, table.status, table.createdAt),
   companyFk: foreignKey({
@@ -1162,22 +1230,22 @@ export const deletionRequests = mysqlTable("saas_deletion_requests", {
   }).onDelete("restrict"),
 }));
 
-export const tenantRestoreJobs = mysqlTable("saas_tenant_restore_jobs", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const tenantRestoreJobs = pgTable("saas_tenant_restore_jobs", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  sourceTenantFileId: int("sourceTenantFileId").notNull(),
+  companyId: integer("companyId").notNull(),
+  sourceTenantFileId: integer("sourceTenantFileId").notNull(),
   preRestoreExportJobId: bigint("preRestoreExportJobId", { mode: "number" }),
-  requestedByPlatformAdministratorId: int("requestedByPlatformAdministratorId").notNull(),
-  approvedByPlatformAdministratorId: int("approvedByPlatformAdministratorId"),
-  status: mysqlEnum("status", ["pending", "validating", "ready", "restoring", "completed", "failed", "rolled_back", "canceled"])
+  requestedByPlatformAdministratorId: integer("requestedByPlatformAdministratorId").notNull(),
+  approvedByPlatformAdministratorId: integer("approvedByPlatformAdministratorId"),
+  status: saasTenantRestoreJobsStatusEnum("status")
     .default("pending").notNull(),
   validationResult: json("validationResult"),
   failureReason: text("failureReason"),
-  maintenanceLeaseUntil: timestamp("maintenanceLeaseUntil"),
-  version: int("version").default(1).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  completedAt: timestamp("completedAt"),
+  maintenanceLeaseUntil: timestamp("maintenanceLeaseUntil", { precision: 0 }),
+  version: integer("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  completedAt: timestamp("completedAt", { precision: 0 }),
 }, table => ({
   companyStatusIdx: index("tenant_restore_jobs_company_status_idx").on(table.companyId, table.status, table.createdAt),
   companyFk: foreignKey({
@@ -1211,15 +1279,15 @@ export const tenantRestoreJobs = mysqlTable("saas_tenant_restore_jobs", {
 // Durable per-user preferences (design version, theme, saved views, density…).
 // Key/value so new prefs need no migration. `companyId` is nullable today and
 // becomes the tenant scope when multi-farm SaaS lands (docs/TENANCY_DESIGN.md).
-export const userSettings = mysqlTable("saas_azal_user_settings", {
-  id: int("id").autoincrement().primaryKey(),
+export const userSettings = pgTable("saas_azal_user_settings", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  userId: int("userId").notNull(),
-  companyId: int("companyId").notNull(),
+  userId: integer("userId").notNull(),
+  companyId: integer("companyId").notNull(),
   settingKey: varchar("settingKey", { length: 100 }).notNull(),
   settingValue: text("settingValue").notNull(),
-  version: int("version").default(1).notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  version: integer("version").default(1).notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   companyUserKeyUnique: uniqueIndex("user_settings_company_user_key_unique")
     .on(table.companyId, table.userId, table.settingKey),
@@ -1242,14 +1310,14 @@ export type InsertUserSetting = typeof userSettings.$inferInsert;
 // ─── ROLE PERMISSIONS ────────────────────────────────────────────────────────
 // Rows are explicit overrides. Missing rows fall back to the legacy role
 // hierarchy defined in shared/permissions.ts.
-export const rolePermissions = mysqlTable("saas_azal_role_permissions", {
-  id: int("id").autoincrement().primaryKey(),
-  role: mysqlEnum("role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]).notNull(),
+export const rolePermissions = pgTable("saas_azal_role_permissions", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  role: saasAzalRolePermissionsRoleEnum("role").notNull(),
   page: varchar("page", { length: 64 }).notNull(),
   action: varchar("action", { length: 64 }).notNull(),
   allowed: boolean("allowed").notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  updatedBy: int("updatedBy"),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  updatedBy: integer("updatedBy"),
 }, table => ({
   rolePageActionUnique: uniqueIndex("role_permissions_role_page_action_unique")
     .on(table.role, table.page, table.action),
@@ -1259,24 +1327,24 @@ export type RolePermission = typeof rolePermissions.$inferSelect;
 
 // ─── CONFIGURATION TABLES ─────────────────────────────────────────────────────
 
-export const species = mysqlTable("saas_azal_species", {
-  id: int("id").autoincrement().primaryKey(),
+export const species = pgTable("saas_azal_species", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   // Average gestation length in days for this species, used to compute a
   // pregnancy's expected delivery date (confirmationDate + gestationDays).
-  gestationDays: int("gestationDays").default(150).notNull(),
+  gestationDays: integer("gestationDays").default(150).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 100 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("species_company_id_id_unique").on(table.companyId, table.id),
   activeNameUnique: uniqueIndex("species_company_active_name_unique").on(table.companyId, table.activeName),
@@ -1288,33 +1356,33 @@ export const species = mysqlTable("saas_azal_species", {
   }).onDelete("restrict"),
 }));
 
-export const animalCategories = mysqlTable("saas_azal_animal_categories", {
-  id: int("id").autoincrement().primaryKey(),
+export const animalCategories = pgTable("saas_azal_animal_categories", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
-  speciesId: int("speciesId").notNull(),
+  speciesId: integer("speciesId").notNull(),
   idPrefix: varchar("idPrefix", { length: 10 }).notNull(),
-  idSequence: int("idSequence").default(0).notNull(),
-  lambIdSequence: int("lambIdSequence").default(0).notNull(),
-  targetWeightKg: decimal("targetWeightKg", { precision: 8, scale: 2 }),
-  expectedCycleDays: int("expectedCycleDays"),
-  autoStageWeightKg: decimal("autoStageWeightKg", { precision: 8, scale: 2 }),
-  autoStageTargetCategoryId: int("autoStageTargetCategoryId"),
+  idSequence: integer("idSequence").default(0).notNull(),
+  lambIdSequence: integer("lambIdSequence").default(0).notNull(),
+  targetWeightKg: numeric("targetWeightKg", { precision: 8, scale: 2 }),
+  expectedCycleDays: integer("expectedCycleDays"),
+  autoStageWeightKg: numeric("autoStageWeightKg", { precision: 8, scale: 2 }),
+  autoStageTargetCategoryId: integer("autoStageTargetCategoryId"),
   // Percentage of target weight to mark animal as ready to sell (e.g., 80 = 80%)
-  readyToSellThreshold: decimal("readyToSellThreshold", { precision: 5, scale: 2 }).default("80.00").notNull(),
+  readyToSellThreshold: numeric("readyToSellThreshold", { precision: 5, scale: 2 }).default("80.00").notNull(),
   isExitStatus: boolean("isExitStatus").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 100 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
   activePrefix: varchar("activePrefix", { length: 10 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN UPPER(\`idPrefix\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN UPPER("idPrefix") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("animal_categories_company_id_id_unique").on(table.companyId, table.id),
   activeNameUnique: uniqueIndex("animal_categories_company_active_name_unique").on(table.companyId, table.activeName),
@@ -1336,13 +1404,13 @@ export const animalCategories = mysqlTable("saas_azal_animal_categories", {
   }).onDelete("restrict"),
 }));
 
-export const companyCategorySequences = mysqlTable("saas_azal_company_category_sequences", {
-  companyId: int("companyId").notNull(),
-  categoryId: int("categoryId").notNull(),
-  animalIdSequence: int("animalIdSequence").default(0).notNull(),
-  lambIdSequence: int("lambIdSequence").default(0).notNull(),
-  version: int("version").default(1).notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+export const companyCategorySequences = pgTable("saas_azal_company_category_sequences", {
+  companyId: integer("companyId").notNull(),
+  categoryId: integer("categoryId").notNull(),
+  animalIdSequence: integer("animalIdSequence").default(0).notNull(),
+  lambIdSequence: integer("lambIdSequence").default(0).notNull(),
+  version: integer("version").default(1).notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   pk: primaryKey({
     name: "company_category_sequences_pk",
@@ -1360,22 +1428,22 @@ export const companyCategorySequences = mysqlTable("saas_azal_company_category_s
   }).onDelete("cascade"),
 }));
 
-export const animalStatuses = mysqlTable("saas_azal_animal_statuses", {
-  id: int("id").autoincrement().primaryKey(),
+export const animalStatuses = pgTable("saas_azal_animal_statuses", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   isExitStatus: boolean("isExitStatus").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 100 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("animal_statuses_company_id_id_unique").on(table.companyId, table.id),
   activeNameUnique: uniqueIndex("animal_statuses_company_active_name_unique").on(table.companyId, table.activeName),
@@ -1386,29 +1454,29 @@ export const animalStatuses = mysqlTable("saas_azal_animal_statuses", {
   }).onDelete("restrict"),
 }));
 
-export const groups = mysqlTable("saas_azal_groups", {
-  id: int("id").autoincrement().primaryKey(),
+export const groups = pgTable("saas_azal_groups", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
   groupCode: varchar("groupCode", { length: 20 }).notNull(),
   name: varchar("name", { length: 100 }).notNull(),
-  speciesId: int("speciesId"),
-  categoryId: int("categoryId"),
+  speciesId: integer("speciesId"),
+  categoryId: integer("categoryId"),
   description: text("description"),
-  latitude: decimal("latitude", { precision: 10, scale: 7 }),
-  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  latitude: numeric("latitude", { precision: 10, scale: 7 }),
+  longitude: numeric("longitude", { precision: 10, scale: 7 }),
   mapShape: json("mapShape"),
   color: varchar("color", { length: 20 }),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeCode: varchar("activeCode", { length: 20 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN UPPER(\`groupCode\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN UPPER("groupCode") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("groups_company_id_id_unique").on(table.companyId, table.id),
   activeCodeUnique: uniqueIndex("groups_farm_active_code_unique").on(table.companyId, table.farmId, table.activeCode),
@@ -1434,21 +1502,21 @@ export const groups = mysqlTable("saas_azal_groups", {
 // People (or entities) who own one or more animals on the farm. Animals link
 // to an owner via animals.ownerId. Used to filter the animal registry,
 // expenses, sales, and P&L by owner.
-export const owners = mysqlTable("saas_azal_owners", {
-  id: int("id").autoincrement().primaryKey(),
+export const owners = pgTable("saas_azal_owners", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   phone: varchar("phone", { length: 30 }),
   email: varchar("email", { length: 100 }),
   notes: text("notes"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   companyIdUnique: uniqueIndex("owners_company_id_id_unique").on(table.companyId, table.id),
   companyActiveIdx: index("owners_company_active_idx").on(table.companyId, table.isActive, table.deletedAt),
@@ -1463,101 +1531,101 @@ export const owners = mysqlTable("saas_azal_owners", {
 // Capital is deliberately nested under an animal owner.  An owner can have
 // multiple investors; financial events are immutable ledger rows so historic
 // ownership and closed allocations remain reproducible.
-export const capitalInvestors = mysqlTable("capital_investors", {
-  id: int("id").autoincrement().primaryKey(),
-  ownerId: int("ownerId").notNull(),
+export const capitalInvestors = pgTable("capital_investors", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  ownerId: integer("ownerId").notNull(),
   name: varchar("name", { length: 120 }).notNull(),
   phone: varchar("phone", { length: 30 }),
   email: varchar("email", { length: 100 }),
   notes: text("notes"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
 }, table => ({
   ownerActiveIdx: index("capital_investors_owner_active_idx").on(table.ownerId, table.isActive),
 }));
 
-export const capitalFundingBatches = mysqlTable("capital_funding_batches", {
-  id: int("id").autoincrement().primaryKey(),
-  ownerId: int("ownerId").notNull(),
-  kind: mysqlEnum("kind", ["pro_rata", "reversal"]).notNull(),
-  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+export const capitalFundingBatches = pgTable("capital_funding_batches", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  ownerId: integer("ownerId").notNull(),
+  kind: capitalFundingBatchesKindEnum("kind").notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   effectiveDate: date("effectiveDate").notNull(),
   notes: text("notes"),
-  reversalOfBatchId: int("reversalOfBatchId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy").notNull(),
+  reversalOfBatchId: integer("reversalOfBatchId"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy").notNull(),
 }, table => ({
   ownerDateIdx: index("capital_funding_batches_owner_date_idx").on(table.ownerId, table.effectiveDate),
   reversalUnique: uniqueIndex("capital_funding_batches_reversal_unique").on(table.reversalOfBatchId),
 }));
 
-export const capitalContributions = mysqlTable("capital_contributions", {
-  id: int("id").autoincrement().primaryKey(),
-  ownerId: int("ownerId").notNull(),
-  investorId: int("investorId").notNull(),
-  batchId: int("batchId"),
-  kind: mysqlEnum("kind", ["initial", "direct", "pro_rata", "reversal"]).notNull(),
-  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
+export const capitalContributions = pgTable("capital_contributions", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  ownerId: integer("ownerId").notNull(),
+  investorId: integer("investorId").notNull(),
+  batchId: integer("batchId"),
+  kind: capitalContributionsKindEnum("kind").notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
   effectiveDate: date("effectiveDate").notNull(),
   notes: text("notes"),
-  reversalOfContributionId: int("reversalOfContributionId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy").notNull(),
+  reversalOfContributionId: integer("reversalOfContributionId"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy").notNull(),
 }, table => ({
   ownerDateIdx: index("capital_contributions_owner_date_idx").on(table.ownerId, table.effectiveDate),
   investorDateIdx: index("capital_contributions_investor_date_idx").on(table.investorId, table.effectiveDate),
   reversalUnique: uniqueIndex("capital_contributions_reversal_unique").on(table.reversalOfContributionId),
 }));
 
-export const capitalProfitAllocations = mysqlTable("capital_profit_allocations", {
-  id: int("id").autoincrement().primaryKey(),
-  ownerId: int("ownerId").notNull(),
-  kind: mysqlEnum("kind", ["monthly", "adjustment"]).notNull(),
-  status: mysqlEnum("status", ["draft", "finalized"]).default("draft").notNull(),
+export const capitalProfitAllocations = pgTable("capital_profit_allocations", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  ownerId: integer("ownerId").notNull(),
+  kind: capitalProfitAllocationsKindEnum("kind").notNull(),
+  status: capitalProfitAllocationsStatusEnum("status").default("draft").notNull(),
   periodStart: date("periodStart").notNull(),
   periodEnd: date("periodEnd").notNull(),
-  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
-  adjustmentOfAllocationId: int("adjustmentOfAllocationId"),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  adjustmentOfAllocationId: integer("adjustmentOfAllocationId"),
   notes: text("notes"),
-  finalizedAt: timestamp("finalizedAt"),
-  finalizedBy: int("finalizedBy"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy").notNull(),
+  finalizedAt: timestamp("finalizedAt", { precision: 0 }),
+  finalizedBy: integer("finalizedBy"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy").notNull(),
 }, table => ({
   ownerPeriodIdx: index("capital_profit_allocations_owner_period_idx").on(table.ownerId, table.periodStart, table.periodEnd),
   ownerKindPeriodUnique: uniqueIndex("capital_profit_allocations_owner_kind_period_unique").on(table.ownerId, table.kind, table.periodStart, table.periodEnd),
 }));
 
-export const capitalProfitAllocationLines = mysqlTable("capital_profit_allocation_lines", {
-  id: int("id").autoincrement().primaryKey(),
-  allocationId: int("allocationId").notNull(),
-  investorId: int("investorId").notNull(),
-  ownershipPct: decimal("ownershipPct", { precision: 9, scale: 6 }).notNull(),
-  amount: decimal("amount", { precision: 14, scale: 2 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const capitalProfitAllocationLines = pgTable("capital_profit_allocation_lines", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  allocationId: integer("allocationId").notNull(),
+  investorId: integer("investorId").notNull(),
+  ownershipPct: numeric("ownershipPct", { precision: 9, scale: 6 }).notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   allocationInvestorUnique: uniqueIndex("capital_profit_lines_allocation_investor_unique").on(table.allocationId, table.investorId),
 }));
 
-export const birthTypes = mysqlTable("saas_azal_birth_types", {
-  id: int("id").autoincrement().primaryKey(),
+export const birthTypes = pgTable("saas_azal_birth_types", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 50 }).notNull(),
   description: text("description"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 50 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("birth_types_company_id_id_unique").on(table.companyId, table.id),
   activeNameUnique: uniqueIndex("birth_types_company_active_name_unique").on(table.companyId, table.activeName),
@@ -1568,21 +1636,21 @@ export const birthTypes = mysqlTable("saas_azal_birth_types", {
   }).onDelete("restrict"),
 }));
 
-export const feedItems = mysqlTable("saas_azal_feed_items", {
-  id: int("id").autoincrement().primaryKey(),
+export const feedItems = pgTable("saas_azal_feed_items", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   unit: varchar("unit", { length: 20 }).notNull().default("kg"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 100 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
 }, table => ({
   deletedNameIdx: index("feed_items_deleted_name_idx").on(table.deletedAt, table.name),
   companyIdUnique: uniqueIndex("feed_items_company_id_id_unique").on(table.companyId, table.id),
@@ -1594,18 +1662,18 @@ export const feedItems = mysqlTable("saas_azal_feed_items", {
   }).onDelete("restrict"),
 }));
 
-export const feedItemPriceHistory = mysqlTable("saas_azal_feed_item_price_history", {
-  id: int("id").autoincrement().primaryKey(),
+export const feedItemPriceHistory = pgTable("saas_azal_feed_item_price_history", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId"),
-  feedItemId: int("feedItemId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId"),
+  feedItemId: integer("feedItemId").notNull(),
   effectiveDate: date("effectiveDate").notNull(),
-  pricePerUnit: decimal("pricePerUnit", { precision: 10, scale: 2 }).notNull(),
+  pricePerUnit: numeric("pricePerUnit", { precision: 10, scale: 2 }).notNull(),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   itemDateIdIdx: index("feed_item_price_history_item_date_id_idx").on(table.feedItemId, table.effectiveDate, table.id),
   scopeDateIdx: index("feed_item_price_history_scope_date_idx")
@@ -1627,25 +1695,25 @@ export const feedItemPriceHistory = mysqlTable("saas_azal_feed_item_price_histor
   }).onDelete("restrict"),
 }));
 
-export const vaccines = mysqlTable("saas_azal_vaccines", {
-  id: int("id").autoincrement().primaryKey(),
+export const vaccines = pgTable("saas_azal_vaccines", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
-  validityPeriod: int("validityPeriod").notNull(),
-  validityUnit: mysqlEnum("validityUnit", ["days", "months"]).default("days").notNull(),
+  validityPeriod: integer("validityPeriod").notNull(),
+  validityUnit: saasAzalVaccinesValidityunitEnum("validityUnit").default("days").notNull(),
   boosterRequired: boolean("boosterRequired").default(false).notNull(),
-  boosterInterval: int("boosterInterval"),
+  boosterInterval: integer("boosterInterval"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 100 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("vaccines_company_id_id_unique").on(table.companyId, table.id),
   activeNameUnique: uniqueIndex("vaccines_company_active_name_unique").on(table.companyId, table.activeName),
@@ -1656,28 +1724,28 @@ export const vaccines = mysqlTable("saas_azal_vaccines", {
   }).onDelete("restrict"),
 }));
 
-export const vaccinationRecords = mysqlTable("saas_azal_vaccination_records", {
-  id: int("id").autoincrement().primaryKey(),
+export const vaccinationRecords = pgTable("saas_azal_vaccination_records", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
-  animalId: int("animalId").notNull(),
-  vaccineId: int("vaccineId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  animalId: integer("animalId").notNull(),
+  vaccineId: integer("vaccineId").notNull(),
   vaccinationDate: date("vaccinationDate").notNull(),
   nextDueDate: date("nextDueDate"),
   boosterDueDate: date("boosterDueDate"),
-  notifyBeforeNext: int("notifyBeforeNext").default(7),
-  notifyBeforeBooster: int("notifyBeforeBooster").default(7),
+  notifyBeforeNext: integer("notifyBeforeNext").default(7),
+  notifyBeforeBooster: integer("notifyBeforeBooster").default(7),
   batchNumber: varchar("batchNumber", { length: 50 }),
   notes: text("notes"),
   veterinarian: varchar("veterinarian", { length: 100 }),
   isCompleted: boolean("isCompleted").default(false).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   animalDueIdx: index("vaccination_records_tenant_animal_due_idx")
     .on(table.companyId, table.farmId, table.animalId, table.nextDueDate),
@@ -1698,21 +1766,21 @@ export const vaccinationRecords = mysqlTable("saas_azal_vaccination_records", {
   }).onDelete("restrict"),
 }));
 
-export const expenseCategories = mysqlTable("saas_azal_expense_categories", {
-  id: int("id").autoincrement().primaryKey(),
+export const expenseCategories = pgTable("saas_azal_expense_categories", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 100 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("expense_categories_company_id_id_unique").on(table.companyId, table.id),
   activeNameUnique: uniqueIndex("expense_categories_company_active_name_unique").on(table.companyId, table.activeName),
@@ -1723,22 +1791,22 @@ export const expenseCategories = mysqlTable("saas_azal_expense_categories", {
   }).onDelete("restrict"),
 }));
 
-export const expenseSubCategories = mysqlTable("saas_azal_expense_sub_categories", {
-  id: int("id").autoincrement().primaryKey(),
+export const expenseSubCategories = pgTable("saas_azal_expense_sub_categories", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  categoryId: int("categoryId").notNull(),
+  companyId: integer("companyId").notNull(),
+  categoryId: integer("categoryId").notNull(),
   name: varchar("name", { length: 100 }).notNull(),
   description: text("description"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeName: varchar("activeName", { length: 100 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN LOWER(\`name\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN LOWER("name") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("expense_sub_categories_company_id_id_unique").on(table.companyId, table.id),
   activeNameUnique: uniqueIndex("expense_sub_categories_parent_active_name_unique")
@@ -1750,16 +1818,16 @@ export const expenseSubCategories = mysqlTable("saas_azal_expense_sub_categories
   }).onDelete("restrict"),
 }));
 
-export const systemSettings = mysqlTable("saas_azal_system_settings", {
-  id: int("id").autoincrement().primaryKey(),
+export const systemSettings = pgTable("saas_azal_system_settings", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
+  companyId: integer("companyId").notNull(),
   settingKey: varchar("settingKey", { length: 100 }).notNull(),
   settingValue: text("settingValue").notNull(),
   description: text("description"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  updatedBy: int("updatedBy"),
-  version: int("version").default(1).notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  updatedBy: integer("updatedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   companyKeyUnique: uniqueIndex("system_settings_company_key_unique").on(table.companyId, table.settingKey),
   companyFk: foreignKey({
@@ -1771,44 +1839,44 @@ export const systemSettings = mysqlTable("saas_azal_system_settings", {
 
 // ─── ANIMAL REGISTRY ──────────────────────────────────────────────────────────
 
-export const animals = mysqlTable("saas_azal_animals", {
-  id: int("id").autoincrement().primaryKey(),
+export const animals = pgTable("saas_azal_animals", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
   animalId: varchar("animalId", { length: 20 }).notNull(),
-  speciesId: int("speciesId").notNull(),
-  categoryId: int("categoryId").notNull(),
-  groupId: int("groupId").notNull(),
-  statusId: int("statusId").notNull(),
-  sex: mysqlEnum("sex", ["male", "female"]).notNull(),
-  acquisitionType: mysqlEnum("acquisitionType", ["purchased", "born"]).notNull(),
+  speciesId: integer("speciesId").notNull(),
+  categoryId: integer("categoryId").notNull(),
+  groupId: integer("groupId").notNull(),
+  statusId: integer("statusId").notNull(),
+  sex: saasAzalAnimalsSexEnum("sex").notNull(),
+  acquisitionType: saasAzalAnimalsAcquisitiontypeEnum("acquisitionType").notNull(),
   acquisitionDate: date("acquisitionDate").notNull(),
   birthDate: date("birthDate").notNull(),
-  damId: int("damId"),
-  sireId: int("sireId"),
-  ownerId: int("ownerId"),
+  damId: integer("damId"),
+  sireId: integer("sireId"),
+  ownerId: integer("ownerId"),
   photoUrl: varchar("photoUrl", { length: 500 }),
-  purchaseCost: decimal("purchaseCost", { precision: 10, scale: 2 }).default("0"),
+  purchaseCost: numeric("purchaseCost", { precision: 10, scale: 2 }).default("0"),
   // NULL = unclassified (every pre-existing row, and every "born" animal —
   // a birth has no purchase to fund). Treated identically to "investment" in
   // every calculation: only "revenue" deducts from Net Revenue on the Animal
   // P&L page. Editable any time via animals.update, so historical purchases
   // can be reclassified after the fact.
-  purchaseFundingSource: mysqlEnum("purchaseFundingSource", ["revenue", "investment"]),
-  weightAtAcquisition: decimal("weightAtAcquisition", { precision: 8, scale: 2 }),
+  purchaseFundingSource: saasAzalAnimalsPurchasefundingsourceEnum("purchaseFundingSource"),
+  weightAtAcquisition: numeric("weightAtAcquisition", { precision: 8, scale: 2 }),
   exitDate: date("exitDate"),
   exitReason: text("exitReason"),
   notes: text("notes"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeAnimalCode: varchar("activeAnimalCode", { length: 20 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN UPPER(\`animalId\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN UPPER("animalId") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("animals_company_id_id_unique").on(table.companyId, table.id),
   activeAnimalCodeUnique: uniqueIndex("animals_farm_active_code_unique")
@@ -1857,29 +1925,24 @@ export const animals = mysqlTable("saas_azal_animals", {
   }).onDelete("restrict"),
 }));
 
-export const animalStatusHistory = mysqlTable("saas_azal_animal_status_history", {
-  id: int("id").autoincrement().primaryKey(),
+export const animalStatusHistory = pgTable("saas_azal_animal_status_history", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
-  animalId: int("animalId"),
-  legacyAnimalId: int("legacyAnimalId"),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  animalId: integer("animalId"),
+  legacyAnimalId: integer("legacyAnimalId"),
   animalPublicIdSnapshot: varchar("animalPublicIdSnapshot", { length: 26 }),
   animalCodeSnapshot: varchar("animalCodeSnapshot", { length: 20 }),
-  previousStatusId: int("previousStatusId"),
-  newStatusId: int("newStatusId").notNull(),
-  changedAt: timestamp("changedAt").defaultNow().notNull(),
-  changedBy: int("changedBy"),
+  previousStatusId: integer("previousStatusId"),
+  newStatusId: integer("newStatusId").notNull(),
+  changedAt: timestamp("changedAt", { precision: 0 }).defaultNow().notNull(),
+  changedBy: integer("changedBy"),
   notes: text("notes"),
-  version: int("version").default(1).notNull(),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   animalTimeIdx: index("animal_status_history_tenant_animal_time_idx")
     .on(table.companyId, table.animalId, table.changedAt, table.id),
-  animalFk: foreignKey({
-    name: "animal_status_history_animal_fk",
-    columns: [table.companyId, table.animalId],
-    foreignColumns: [animals.companyId, animals.id],
-  }).onDelete("restrict"),
   farmFk: foreignKey({
     name: "animal_status_history_farm_fk",
     columns: [table.companyId, table.farmId],
@@ -1899,24 +1962,24 @@ export const animalStatusHistory = mysqlTable("saas_azal_animal_status_history",
 
 // ─── SALES ────────────────────────────────────────────────────────────────────
 
-export const sales = mysqlTable("saas_azal_sales", {
-  id: int("id").autoincrement().primaryKey(),
+export const sales = pgTable("saas_azal_sales", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
-  animalId: int("animalId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  animalId: integer("animalId").notNull(),
   saleDate: date("saleDate").notNull(),
-  salePrice: decimal("salePrice", { precision: 10, scale: 2 }).notNull(),
-  amountPaid: decimal("amountPaid", { precision: 10, scale: 2 }).default("0").notNull(),
-  weightAtSale: decimal("weightAtSale", { precision: 8, scale: 2 }),
-  pricePerKg: decimal("pricePerKg", { precision: 10, scale: 2 }),
+  salePrice: numeric("salePrice", { precision: 10, scale: 2 }).notNull(),
+  amountPaid: numeric("amountPaid", { precision: 10, scale: 2 }).default("0").notNull(),
+  weightAtSale: numeric("weightAtSale", { precision: 8, scale: 2 }),
+  pricePerKg: numeric("pricePerKg", { precision: 10, scale: 2 }),
   buyerName: varchar("buyerName", { length: 100 }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   animalUnique: uniqueIndex("sales_tenant_animal_unique").on(table.companyId, table.animalId),
   farmDateIdx: index("sales_farm_date_idx").on(table.companyId, table.farmId, table.saleDate, table.id),
@@ -1934,34 +1997,34 @@ export const sales = mysqlTable("saas_azal_sales", {
 
 // ─── BREEDING & LAMBING ───────────────────────────────────────────────────────
 
-export const lambingLog = mysqlTable("saas_azal_lambing_log", {
-  id: int("id").autoincrement().primaryKey(),
+export const lambingLog = pgTable("saas_azal_lambing_log", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
   lambId: varchar("lambId", { length: 20 }).notNull(),
-  speciesId: int("speciesId"),
-  categoryId: int("categoryId"),
+  speciesId: integer("speciesId"),
+  categoryId: integer("categoryId"),
   birthDate: date("birthDate").notNull(),
-  damId: int("damId"),
-  sireId: int("sireId"),
-  sex: mysqlEnum("sex", ["male", "female"]).notNull(),
-  birthTypeId: int("birthTypeId").notNull(),
-  birthWeightKg: decimal("birthWeightKg", { precision: 8, scale: 2 }),
-  valueUsed: decimal("valueUsed", { precision: 10, scale: 2 }),
-  groupId: int("groupId"),
+  damId: integer("damId"),
+  sireId: integer("sireId"),
+  sex: saasAzalLambingLogSexEnum("sex").notNull(),
+  birthTypeId: integer("birthTypeId").notNull(),
+  birthWeightKg: numeric("birthWeightKg", { precision: 8, scale: 2 }),
+  valueUsed: numeric("valueUsed", { precision: 10, scale: 2 }),
+  groupId: integer("groupId"),
   notes: text("notes"),
   isPromoted: boolean("isPromoted").default(false).notNull(),
-  promotedHeadId: int("promotedHeadId"),
+  promotedHeadId: integer("promotedHeadId"),
   promotedAnimalCode: varchar("promotedAnimalCode", { length: 20 }),
-  promotedAnimalPurgedAt: timestamp("promotedAnimalPurgedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  promotedAnimalPurgedAt: timestamp("promotedAnimalPurgedAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
   activeLambCode: varchar("activeLambCode", { length: 20 })
-    .generatedAlwaysAs(() => sql`CASE WHEN \`deletedAt\` IS NULL THEN UPPER(\`lambId\`) ELSE NULL END`, { mode: "virtual" }),
+    .generatedAlwaysAs(sql`CASE WHEN "deletedAt" IS NULL THEN UPPER("lambId") ELSE NULL END`),
 }, table => ({
   companyIdUnique: uniqueIndex("lambing_log_company_id_id_unique").on(table.companyId, table.id),
   promotedHeadUnique: uniqueIndex("lambing_log_promoted_head_unique")
@@ -2013,21 +2076,21 @@ export const lambingLog = mysqlTable("saas_azal_lambing_log", {
 
 // ─── FATTENING / WEIGHT LOG ───────────────────────────────────────────────────
 
-export const weightLog = mysqlTable("saas_azal_weight_log", {
-  id: int("id").autoincrement().primaryKey(),
+export const weightLog = pgTable("saas_azal_weight_log", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
-  animalId: int("animalId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  animalId: integer("animalId").notNull(),
   weighDate: date("weighDate").notNull(),
-  weightKg: decimal("weightKg", { precision: 8, scale: 2 }).notNull(),
+  weightKg: numeric("weightKg", { precision: 8, scale: 2 }).notNull(),
   sessionId: varchar("sessionId", { length: 36 }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   animalDateIdx: index("weight_log_tenant_animal_date_idx")
     .on(table.companyId, table.animalId, table.weighDate, table.id),
@@ -2047,23 +2110,23 @@ export const weightLog = mysqlTable("saas_azal_weight_log", {
 
 // ─── FEED MANAGEMENT ──────────────────────────────────────────────────────────
 
-export const rationPlans = mysqlTable("saas_azal_ration_plans", {
-  id: int("id").autoincrement().primaryKey(),
+export const rationPlans = pgTable("saas_azal_ration_plans", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId"),
-  categoryId: int("categoryId").notNull(),
-  feedItemId: int("feedItemId").notNull(),
-  qtyPerHeadPerDay: decimal("qtyPerHeadPerDay", { precision: 8, scale: 3 }).notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId"),
+  categoryId: integer("categoryId").notNull(),
+  feedItemId: integer("feedItemId").notNull(),
+  qtyPerHeadPerDay: numeric("qtyPerHeadPerDay", { precision: 8, scale: 3 }).notNull(),
   effectiveDate: date("effectiveDate").notNull(),
   endDate: date("endDate"),
   isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   scopeActiveIdx: index("ration_plans_scope_active_idx")
     .on(table.companyId, table.farmId, table.categoryId, table.feedItemId, table.isActive, table.deletedAt),
@@ -2084,24 +2147,24 @@ export const rationPlans = mysqlTable("saas_azal_ration_plans", {
   }).onDelete("restrict"),
 }));
 
-export const feedStockLedger = mysqlTable("saas_azal_feed_stock_ledger", {
-  id: int("id").autoincrement().primaryKey(),
+export const feedStockLedger = pgTable("saas_azal_feed_stock_ledger", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
-  feedItemId: int("feedItemId").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  feedItemId: integer("feedItemId").notNull(),
   transactionDate: date("transactionDate").notNull(),
-  transactionType: mysqlEnum("transactionType", ["purchase", "stock_count", "adjustment"]).notNull(),
-  qty: decimal("qty", { precision: 10, scale: 3 }).notNull(),
-  unitCost: decimal("unitCost", { precision: 10, scale: 2 }),
-  totalCost: decimal("totalCost", { precision: 10, scale: 2 }),
+  transactionType: saasAzalFeedStockLedgerTransactiontypeEnum("transactionType").notNull(),
+  qty: numeric("qty", { precision: 10, scale: 3 }).notNull(),
+  unitCost: numeric("unitCost", { precision: 10, scale: 2 }),
+  totalCost: numeric("totalCost", { precision: 10, scale: 2 }),
   supplierName: varchar("supplierName", { length: 100 }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   farmItemDateIdx: index("feed_stock_ledger_farm_item_date_idx")
     .on(table.companyId, table.farmId, table.feedItemId, table.transactionDate, table.id),
@@ -2119,27 +2182,27 @@ export const feedStockLedger = mysqlTable("saas_azal_feed_stock_ledger", {
 
 // ─── EXPENSE LOG ──────────────────────────────────────────────────────────────
 
-export const expenses = mysqlTable("saas_azal_expenses", {
-  id: int("id").autoincrement().primaryKey(),
+export const expenses = pgTable("saas_azal_expenses", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId"),
-  scopeType: mysqlEnum("scopeType", ["company", "farm"]).default("company").notNull(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId"),
+  scopeType: saasAzalExpensesScopetypeEnum("scopeType").default("company").notNull(),
   expenseDate: date("expenseDate").notNull(),
-  categoryId: int("categoryId").notNull(),
-  subCategoryId: int("subCategoryId"),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  targetType: mysqlEnum("targetType", ["general", "category", "head", "herd"]).notNull(),
-  categoryTarget: int("categoryTarget"),
-  headId: int("headId"),
+  categoryId: integer("categoryId").notNull(),
+  subCategoryId: integer("subCategoryId"),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  targetType: saasAzalExpensesTargettypeEnum("targetType").notNull(),
+  categoryTarget: integer("categoryTarget"),
+  headId: integer("headId"),
   vendorName: varchar("vendorName", { length: 100 }),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   scopeDateIdx: index("expenses_scope_date_idx")
     .on(table.companyId, table.scopeType, table.farmId, table.expenseDate, table.id),
@@ -2163,10 +2226,6 @@ export const expenses = mysqlTable("saas_azal_expenses", {
     columns: [table.companyId, table.farmId],
     foreignColumns: [farms.companyId, farms.id],
   }).onDelete("restrict"),
-  scopeCheck: check(
-    "expenses_scope_check",
-    sql`(\`scopeType\` = 'company' AND \`farmId\` IS NULL) OR (\`scopeType\` = 'farm' AND \`farmId\` IS NOT NULL)`,
-  ),
 }));
 
 // ─── PREGNANCY TRACKING ───────────────────────────────────────────────────────
@@ -2175,31 +2234,31 @@ export const expenses = mysqlTable("saas_azal_expenses", {
 // delivery date as confirmationDate + gestationDays (snapshotted from the
 // animal's species at creation, so historical records stay stable). Closed
 // automatically when a birth is registered against the dam.
-export const pregnancyRecords = mysqlTable("saas_azal_pregnancy_records", {
-  id: int("id").autoincrement().primaryKey(),
+export const pregnancyRecords = pgTable("saas_azal_pregnancy_records", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId").notNull(),
-  animalId: int("animalId").notNull(),
-  sireId: int("sireId"),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  animalId: integer("animalId").notNull(),
+  sireId: integer("sireId"),
   confirmationDate: date("confirmationDate").notNull(),
-  gestationDays: int("gestationDays").notNull(),
+  gestationDays: integer("gestationDays").notNull(),
   expectedDueDate: date("expectedDueDate").notNull(),
-  notifyBeforeDue: int("notifyBeforeDue").default(7).notNull(),
+  notifyBeforeDue: integer("notifyBeforeDue").default(7).notNull(),
   checkupDate: date("checkupDate"),
-  notifyBeforeCheckup: int("notifyBeforeCheckup").default(3).notNull(),
-  status: mysqlEnum("status", ["active", "delivered", "aborted", "lost"]).default("active").notNull(),
-  outcomeLambingLogId: int("outcomeLambingLogId"),
+  notifyBeforeCheckup: integer("notifyBeforeCheckup").default(3).notNull(),
+  status: saasAzalPregnancyRecordsStatusEnum("status").default("active").notNull(),
+  outcomeLambingLogId: integer("outcomeLambingLogId"),
   completedDate: date("completedDate"),
   notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  createdBy: int("createdBy"),
-  deletedAt: timestamp("deletedAt"),
-  deletedBy: int("deletedBy"),
-  version: int("version").default(1).notNull(),
-  activeAnimalGuard: int("activeAnimalGuard")
-    .generatedAlwaysAs(() => sql`CASE WHEN \`status\` = 'active' AND \`deletedAt\` IS NULL THEN \`animalId\` ELSE NULL END`, { mode: "virtual" }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
+  createdBy: integer("createdBy"),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+  deletedBy: integer("deletedBy"),
+  version: integer("version").default(1).notNull(),
+  activeAnimalGuard: integer("activeAnimalGuard")
+    .generatedAlwaysAs(sql`CASE WHEN "status" = 'active' AND "deletedAt" IS NULL THEN "animalId" ELSE NULL END`),
 }, table => ({
   activeAnimalUnique: uniqueIndex("pregnancy_records_tenant_active_animal_unique")
     .on(table.companyId, table.activeAnimalGuard),
@@ -2229,23 +2288,23 @@ export const pregnancyRecords = mysqlTable("saas_azal_pregnancy_records", {
 
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
-export const notifications = mysqlTable("saas_azal_notifications", {
-  id: int("id").autoincrement().primaryKey(),
+export const notifications = pgTable("saas_azal_notifications", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId").notNull(),
-  farmId: int("farmId"),
-  userId: int("userId"),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId"),
+  userId: integer("userId"),
   alertType: varchar("alertType", { length: 50 }).notNull(),
   title: varchar("title", { length: 200 }).notNull(),
   message: text("message").notNull(),
   relatedEntityType: varchar("relatedEntityType", { length: 50 }),
   relatedEntityId: varchar("relatedEntityId", { length: 50 }),
   isRead: boolean("isRead").default(false).notNull(),
-  priority: mysqlEnum("priority", ["low", "medium", "high", "critical"]).default("medium").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  expiresAt: timestamp("expiresAt"),
+  priority: saasAzalNotificationsPriorityEnum("priority").default("medium").notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  expiresAt: timestamp("expiresAt", { precision: 0 }),
   deduplicationKey: varchar("deduplicationKey", { length: 200 }),
-  version: int("version").default(1).notNull(),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   companyIdUnique: uniqueIndex("notifications_company_id_id_unique").on(table.companyId, table.id),
   deduplicationUnique: uniqueIndex("notifications_tenant_deduplication_unique")
@@ -2268,14 +2327,14 @@ export const notifications = mysqlTable("saas_azal_notifications", {
   }).onDelete("restrict"),
 }));
 
-export const notificationReceipts = mysqlTable("saas_azal_notification_receipts", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
-  companyId: int("companyId").notNull(),
-  notificationId: int("notificationId").notNull(),
-  companyMembershipId: int("companyMembershipId").notNull(),
-  deliveredAt: timestamp("deliveredAt"),
-  readAt: timestamp("readAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const notificationReceipts = pgTable("saas_azal_notification_receipts", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
+  companyId: integer("companyId").notNull(),
+  notificationId: integer("notificationId").notNull(),
+  companyMembershipId: integer("companyMembershipId").notNull(),
+  deliveredAt: timestamp("deliveredAt", { precision: 0 }),
+  readAt: timestamp("readAt", { precision: 0 }),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   recipientUnique: uniqueIndex("notification_receipts_recipient_unique")
     .on(table.notificationId, table.companyMembershipId),
@@ -2293,14 +2352,14 @@ export const notificationReceipts = mysqlTable("saas_azal_notification_receipts"
   }).onDelete("cascade"),
 }));
 
-export const emailLog = mysqlTable("saas_email_log", {
-  id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+export const emailLog = pgTable("saas_email_log", {
+  id: bigint("id", { mode: "number" }).generatedByDefaultAsIdentity().primaryKey(),
   template: varchar("template", { length: 100 }).notNull(),
   recipientEmail: varchar("recipientEmail", { length: 254 }).notNull(),
-  companyId: int("companyId"),
-  status: mysqlEnum("status", ["sent", "failed", "skipped_unconfigured"]).notNull(),
+  companyId: integer("companyId"),
+  status: saasEmailLogStatusEnum("status").notNull(),
   errorMessage: text("errorMessage"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 }, table => ({
   templateTimeIdx: index("email_log_template_time_idx").on(table.template, table.createdAt, table.id),
   recipientTimeIdx: index("email_log_recipient_time_idx").on(table.recipientEmail, table.createdAt, table.id),
@@ -2313,18 +2372,18 @@ export const emailLog = mysqlTable("saas_email_log", {
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 
-export const auditLog = mysqlTable("saas_azal_audit_log", {
-  id: int("id").autoincrement().primaryKey(),
+export const auditLog = pgTable("saas_azal_audit_log", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   publicId: varchar("publicId", { length: 26 }).notNull().unique(),
-  companyId: int("companyId"),
-  farmId: int("farmId"),
-  userId: int("userId"),
-  membershipId: int("membershipId"),
-  platformAdministratorId: int("platformAdministratorId"),
-  supportAccessGrantId: int("supportAccessGrantId"),
-  actorType: mysqlEnum("actorType", ["tenant_user", "platform_admin", "support", "system_job", "migration"]).notNull(),
+  companyId: integer("companyId"),
+  farmId: integer("farmId"),
+  userId: integer("userId"),
+  membershipId: integer("membershipId"),
+  platformAdministratorId: integer("platformAdministratorId"),
+  supportAccessGrantId: integer("supportAccessGrantId"),
+  actorType: saasAzalAuditLogActortypeEnum("actorType"),
   action: varchar("action", { length: 50 }).notNull(),
-  actionCategory: mysqlEnum("actionCategory", ["auth", "crud", "config", "membership", "billing", "security", "data_export", "data_delete", "company"]).notNull(),
+  actionCategory: saasAzalAuditLogActioncategoryEnum("actionCategory"),
   entityType: varchar("entityType", { length: 50 }).notNull(),
   entityId: varchar("entityId", { length: 50 }),
   oldValues: json("oldValues"),
@@ -2332,15 +2391,15 @@ export const auditLog = mysqlTable("saas_azal_audit_log", {
   ipAddress: varchar("ipAddress", { length: 45 }),
   userAgent: varchar("userAgent", { length: 500 }),
   requestId: varchar("requestId", { length: 64 }),
-  outcome: mysqlEnum("outcome", ["success", "denied", "error"]).default("success").notNull(),
+  outcome: saasAzalAuditLogOutcomeEnum("outcome").default("success").notNull(),
   metadata: json("metadata"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
   // Revert tracking: when this action was undone, by whom, and (on a "revert"
   // entry) which original audit row it undoes.
-  revertedAt: timestamp("revertedAt"),
-  revertedByUserId: int("revertedByUserId"),
-  revertOfAuditId: int("revertOfAuditId"),
-  version: int("version").default(1).notNull(),
+  revertedAt: timestamp("revertedAt", { precision: 0 }),
+  revertedByUserId: integer("revertedByUserId"),
+  revertOfAuditId: integer("revertOfAuditId"),
+  version: integer("version").default(1).notNull(),
 }, table => ({
   companyTimeIdx: index("audit_log_company_time_idx").on(table.companyId, table.createdAt, table.id),
   actorTimeIdx: index("audit_log_actor_time_idx")

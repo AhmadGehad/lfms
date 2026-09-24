@@ -19,12 +19,12 @@ describe("structured logger", () => {
   });
 
   it("redacts credentials embedded in generic error messages", () => {
-    const credentialedDatabaseUrl = ["mysql://user", ":pass@db.internal/lfms"].join("");
+    const credentialedDatabaseUrl = ["postgres://user", ":pass@db.internal/lfms"].join("");
     expect(redactLogFields({
       error: new Error(`request failed: authorization=Bearer abc.def and ${credentialedDatabaseUrl}`),
     })).toMatchObject({
       error: {
-        message: "request failed: authorization=[REDACTED] [REDACTED] and mysql://[REDACTED]@db.internal/lfms",
+        message: "request failed: authorization=[REDACTED] [REDACTED] and postgres://[REDACTED]@db.internal/lfms",
       },
     });
   });

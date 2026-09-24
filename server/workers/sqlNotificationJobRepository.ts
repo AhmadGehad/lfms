@@ -9,7 +9,6 @@ import {
   vaccines,
 } from "../../drizzle/schema";
 import { getDb } from "../db";
-import { isDuplicateEntryError } from "../_core/databaseErrors";
 import type {
   BoosterDueRow,
   LowStockRow,
@@ -75,8 +74,11 @@ export class SqlNotificationJobRepository implements NotificationJobRepository {
 
   async enqueue(input: Parameters<NotificationJobRepository["enqueue"]>[0]) {
     const db = await requireDb();
-    try {
-      const [result] = await db.insert(backgroundJobs).values({
+      // getDb() returns the ambient transaction when one is open, so letting a
+      // duplicate-key error escape would abort the caller's transaction in
+      // Postgres (25P02). ON CONFLICT DO NOTHING reports the collision by
+      // returning no rows instead.
+      const inserted = await db.insert(backgroundJobs).values({
         publicId: generatePublicId(),
         companyId: input.companyId,
         jobType: input.type,
@@ -84,12 +86,14 @@ export class SqlNotificationJobRepository implements NotificationJobRepository {
         runAt: input.runAt,
         deduplicationKey: input.deduplicationKey,
         maxAttempts: 5,
-      });
-      return affectedRows(result) === 1;
-    } catch (error) {
-      if (isDuplicateEntryError(error)) return false;
-      throw error;
-    }
+      }).onConflictDoNothing({
+        target: [
+          backgroundJobs.deduplicationCompanyId,
+          backgroundJobs.jobType,
+          backgroundJobs.deduplicationKey,
+        ],
+      }).returning({ id: backgroundJobs.id });
+      return inserted.length === 1;
   }
 
   async listLowStock(companyId: number, farmId: number): Promise<readonly LowStockRow[]> {
@@ -108,58 +112,58 @@ export class SqlNotificationJobRepository implements NotificationJobRepository {
     };
     const [rows] = await db.execute(sql`
       WITH latest_counts AS (
-        SELECT feedItemId, qty, transactionDate
+        SELECT "feedItemId", qty, "transactionDate"
         FROM (
-          SELECT feedItemId, qty, transactionDate,
-            ROW_NUMBER() OVER (PARTITION BY feedItemId ORDER BY transactionDate DESC, id DESC) AS rn
+          SELECT "feedItemId", qty, "transactionDate",
+            ROW_NUMBER() OVER (PARTITION BY "feedItemId" ORDER BY "transactionDate" DESC, id DESC) AS rn
           FROM saas_azal_feed_stock_ledger
-          WHERE companyId = ${companyId}
-            AND farmId = ${farmId}
-            AND transactionType = 'stock_count'
-            AND deletedAt IS NULL
+          WHERE "companyId" = ${companyId}
+            AND "farmId" = ${farmId}
+            AND "transactionType" = 'stock_count'
+            AND "deletedAt" IS NULL
         ) ranked_counts
         WHERE rn = 1
       ),
       tx_sums AS (
-        SELECT l.feedItemId,
-          SUM(CASE WHEN l.transactionType = 'purchase' THEN l.qty ELSE 0 END) AS purchasedQty,
-          SUM(CASE WHEN l.transactionType = 'adjustment' THEN l.qty ELSE 0 END) AS adjustmentQty
+        SELECT l."feedItemId",
+          SUM(CASE WHEN l."transactionType" = 'purchase' THEN l.qty ELSE 0 END) AS "purchasedQty",
+          SUM(CASE WHEN l."transactionType" = 'adjustment' THEN l.qty ELSE 0 END) AS "adjustmentQty"
         FROM saas_azal_feed_stock_ledger l
-        LEFT JOIN latest_counts lc ON lc.feedItemId = l.feedItemId
-        WHERE l.companyId = ${companyId}
-          AND l.farmId = ${farmId}
-          AND l.transactionType IN ('purchase', 'adjustment')
-          AND l.deletedAt IS NULL
-          AND l.transactionDate >= COALESCE(lc.transactionDate, '2020-01-01')
-        GROUP BY l.feedItemId
+        LEFT JOIN latest_counts lc ON lc."feedItemId" = l."feedItemId"
+        WHERE l."companyId" = ${companyId}
+          AND l."farmId" = ${farmId}
+          AND l."transactionType" IN ('purchase', 'adjustment')
+          AND l."deletedAt" IS NULL
+          AND l."transactionDate" >= COALESCE(lc."transactionDate", '2020-01-01')
+        GROUP BY l."feedItemId"
       ),
       head_counts AS (
-        SELECT categoryId, COUNT(*) AS heads
+        SELECT "categoryId", COUNT(*) AS heads
         FROM saas_azal_animals
-        WHERE companyId = ${companyId}
-          AND farmId = ${farmId}
-          AND isActive = TRUE
-          AND deletedAt IS NULL
-        GROUP BY categoryId
+        WHERE "companyId" = ${companyId}
+          AND "farmId" = ${farmId}
+          AND "isActive" = TRUE
+          AND "deletedAt" IS NULL
+        GROUP BY "categoryId"
       )
-      SELECT fi.id AS feedItemId, fi.name AS feedItemName, fi.unit,
-        lc.qty AS lastCountQty, lc.transactionDate AS lastCountDate,
-        COALESCE(tx.purchasedQty, 0) AS purchasedQty,
-        COALESCE(tx.adjustmentQty, 0) AS adjustmentQty,
-        rp.categoryId, rp.qtyPerHeadPerDay AS planQty,
+      SELECT fi.id AS "feedItemId", fi.name AS "feedItemName", fi.unit,
+        lc.qty AS "lastCountQty", lc."transactionDate" AS "lastCountDate",
+        COALESCE(tx."purchasedQty", 0) AS "purchasedQty",
+        COALESCE(tx."adjustmentQty", 0) AS "adjustmentQty",
+        rp."categoryId", rp."qtyPerHeadPerDay" AS "planQty",
         COALESCE(hc.heads, 0) AS heads
       FROM saas_azal_feed_items fi
-      LEFT JOIN latest_counts lc ON lc.feedItemId = fi.id
-      LEFT JOIN tx_sums tx ON tx.feedItemId = fi.id
+      LEFT JOIN latest_counts lc ON lc."feedItemId" = fi.id
+      LEFT JOIN tx_sums tx ON tx."feedItemId" = fi.id
       LEFT JOIN saas_azal_ration_plans rp
-        ON rp.feedItemId = fi.id
-        AND rp.companyId = ${companyId}
-        AND rp.farmId = ${farmId}
-        AND rp.isActive = TRUE
-        AND rp.deletedAt IS NULL
-      LEFT JOIN head_counts hc ON hc.categoryId = rp.categoryId
-      WHERE fi.companyId = ${companyId}
-        AND fi.deletedAt IS NULL
+        ON rp."feedItemId" = fi.id
+        AND rp."companyId" = ${companyId}
+        AND rp."farmId" = ${farmId}
+        AND rp."isActive" = TRUE
+        AND rp."deletedAt" IS NULL
+      LEFT JOIN head_counts hc ON hc."categoryId" = rp."categoryId"
+      WHERE fi."companyId" = ${companyId}
+        AND fi."deletedAt" IS NULL
       ORDER BY fi.id
     `) as unknown as [Row[], unknown];
 

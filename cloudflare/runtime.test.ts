@@ -18,14 +18,14 @@ describe("Cloudflare container boundary", () => {
   it("passes only allowlisted string environment values", () => {
     expect(
       collectContainerEnvironment({
-        DATABASE_URL: "mysql://example.test/db",
+        DATABASE_URL: "postgres://example.test/db?sslmode=require",
         EMPTY: "ignored",
         LFMS_WEB: { binding: true },
         SESSION_PEPPER: "pepper",
         CF_VERSION_METADATA: { id: "worker-version-1" },
       })
     ).toEqual({
-      DATABASE_URL: "mysql://example.test/db",
+      DATABASE_URL: "postgres://example.test/db?sslmode=require",
       SESSION_PEPPER: "pepper",
       DEPLOY_VERSION: "worker-version-1",
     });

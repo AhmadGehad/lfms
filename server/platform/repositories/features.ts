@@ -10,9 +10,9 @@ import { publicCursorPage, requirePlatformDb, type PlatformDb } from "./db";
 // Drizzle omits a table qualifier for interpolated columns in a nested SQL
 // fragment. Use a fixed, local identifier so the correlated subqueries bind to
 // the feature row, not to an `id` column inside their own table.
-const featureCatalogId = sql.raw("`saas_feature_catalog`.`id`");
-export const activePlanCountSql = sql<number>`(SELECT COUNT(*) FROM ${planEntitlements} pe WHERE pe.featureId = ${featureCatalogId} AND pe.accessMode != 'disabled')`;
-export const activeOverrideCountSql = sql<number>`(SELECT COUNT(*) FROM ${companyFeatureOverrides} cfo WHERE cfo.featureId = ${featureCatalogId} AND cfo.isCurrent = TRUE)`;
+const featureCatalogId = sql.raw('"saas_feature_catalog"."id"');
+export const activePlanCountSql = sql<number>`(SELECT COUNT(*) FROM ${planEntitlements} pe WHERE pe."featureId" = ${featureCatalogId} AND pe."accessMode" != 'disabled')`;
+export const activeOverrideCountSql = sql<number>`(SELECT COUNT(*) FROM ${companyFeatureOverrides} cfo WHERE cfo."featureId" = ${featureCatalogId} AND cfo."isCurrent" = TRUE)`;
 
 export async function listFeatureRecords(input: {
   cursor?: string | null;

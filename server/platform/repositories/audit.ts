@@ -1,5 +1,5 @@
 import { and, desc, eq, like, lt, or, sql, type SQL } from "drizzle-orm";
-import { alias } from "drizzle-orm/mysql-core";
+import { alias } from "drizzle-orm/pg-core";
 import { auditLog, companies, platformAdministrators, supportAccessGrants, users } from "../../../drizzle/schema";
 import { decodeCursor } from "../../../shared/platformApi";
 import type { PlatformContext, SupportScope } from "../../../shared/tenancy";

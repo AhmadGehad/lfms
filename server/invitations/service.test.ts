@@ -383,7 +383,6 @@ describe("activating an invitation with a password", () => {
         // 2. acceptInvitation lookup
         [{
           invitation,
-          providerSubjectHashHex: (invitation.providerSubjectHash as Buffer).toString("hex"),
           companyPublicId: "01J00000000000000000000001",
           companySlug: "example-company",
           companyStatus: "provisioning",
