@@ -1,9 +1,13 @@
+// Guards the frozen legacy pair: drizzle/schema.mysql.ts against the hand-written
+// MySQL migrations in drizzle/*.sql. Both are immutable audit artefacts (see
+// docs/LEGACY_IMMUTABILITY.md) and are no longer the deployment path. The live
+// Postgres schema is verified instead by scripts/pg-migration/apply-schema.mts.
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { getTableColumns } from "drizzle-orm";
 import { getTableConfig } from "drizzle-orm/mysql-core";
 import { describe, expect, it } from "vitest";
-import * as schema from "../drizzle/schema";
+import * as schema from "../drizzle/schema.mysql";
 import {
   animals,
   auditLog,
@@ -22,7 +26,7 @@ import {
   tenantFiles,
   tenantSessions,
   usageCounters,
-} from "../drizzle/schema";
+} from "../drizzle/schema.mysql";
 
 const root = path.resolve(import.meta.dirname, "..");
 

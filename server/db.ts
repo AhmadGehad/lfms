@@ -1,7 +1,9 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 import { and, desc, eq, inArray, isNotNull, isNull, or, sql, lte, gte } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
-import { createPool, type Pool } from "mysql2/promise";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
+import { withMysqlResultShape } from "./pgCompat";
+import { SUPABASE_ROOT_CA } from "./_core/supabaseCa";
 import { toMinor, toMajor, divMinor } from "./_core/money";
 import { animalCategories, animalStatusHistory, animalStatuses, animals, auditLog, birthTypes, companyMemberships, expenseCategories, expenseSubCategories, expenses, feedItemPriceHistory, feedItems, feedStockLedger, groups, InsertUser, lambingLog, notificationReceipts, notifications, owners, pregnancyRecords, rationPlans, sales, species, systemSettings, userSettings, users, vaccines, vaccinationRecords, weightLog } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -24,44 +26,41 @@ const transactionStorage = new AsyncLocalStorage<DbOrTx>();
 
 function databasePoolOptions(value: string) {
   const url = new URL(value);
-  const poolOptions = {
-    uri: value,
-    waitForConnections: true,
-    connectionLimit: ENV.databasePoolConnectionLimit,
-    queueLimit: ENV.databasePoolQueueLimit,
-    enableKeepAlive: true,
-    keepAliveInitialDelay: 0,
-  };
-  const rawSsl = url.searchParams.get("ssl") ?? "";
-  const ssl = rawSsl.toLowerCase();
-  const sslMode = (url.searchParams.get("ssl-mode") ?? "").toUpperCase();
-  // Managed platforms (TiDB Cloud via Manus) inject mysql2's JSON ssl profile:
-  // ssl={"rejectUnauthorized":true}
-  const jsonSslVerified = (() => {
-    if (!rawSsl.startsWith("{")) return false;
-    try {
-      const profile = JSON.parse(rawSsl) as { rejectUnauthorized?: unknown };
-      return profile.rejectUnauthorized !== false;
-    } catch {
-      return false;
-    }
-  })();
-  const verifiedTlsRequested = ssl === "true" || ssl === "verify_identity" ||
-    sslMode === "VERIFY_CA" || sslMode === "VERIFY_IDENTITY" || jsonSslVerified;
+  // Postgres uses sslmode; the MySQL `ssl` / `ssl-mode` spellings are accepted
+  // too so an operator pasting an old-style URL fails loudly rather than
+  // silently connecting without certificate verification.
+  const sslMode = (
+    url.searchParams.get("sslmode") ??
+    url.searchParams.get("ssl-mode") ??
+    url.searchParams.get("ssl") ??
+    ""
+  ).toLowerCase();
+  const verifiedTlsRequested =
+    sslMode === "verify-full" || sslMode === "verify-ca" || sslMode === "require" ||
+    sslMode === "true" || sslMode === "verify_identity";
   if (ENV.isProduction && !verifiedTlsRequested) {
     throw new Error("DATABASE_URL must require verified TLS in production");
   }
-  if (!verifiedTlsRequested) return poolOptions;
 
-  // mysql2 does not implement MySQL's ssl-mode URI option and interprets
-  // ssl=true as a boolean profile, which it rejects. Convert the validated URI
-  // convention into an explicit TLS object with certificate/hostname checks.
-  url.searchParams.delete("ssl");
+  // node-postgres derives its own `ssl` from a connection string's sslmode,
+  // which would override the explicit CA below and fail against Supabase's
+  // private root. Strip the TLS params and let the object decide, exactly as
+  // the previous mysql2 configuration did.
+  url.searchParams.delete("sslmode");
   url.searchParams.delete("ssl-mode");
+  url.searchParams.delete("ssl");
+
   return {
-    ...poolOptions,
-    uri: url.toString(),
-    ssl: { rejectUnauthorized: true, verifyIdentity: true },
+    connectionString: url.toString(),
+    max: ENV.databasePoolConnectionLimit,
+    keepAlive: true,
+    // Supabase uses a private CA, so the root must be supplied explicitly or
+    // the chain cannot be verified at all. `verify-full` then checks the
+    // certificate and hostname; `require` encrypts without verifying, which is
+    // what that Postgres mode means.
+    ssl: verifiedTlsRequested
+      ? { ca: SUPABASE_ROOT_CA, rejectUnauthorized: sslMode !== "require" }
+      : undefined,
   };
 }
 
@@ -70,8 +69,8 @@ export async function getDb(): Promise<DbOrTx | null> {
   if (transaction) return transaction;
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _pool = createPool(databasePoolOptions(process.env.DATABASE_URL));
-      _db = drizzle(_pool);
+      _pool = new Pool(databasePoolOptions(process.env.DATABASE_URL));
+      _db = withMysqlResultShape(drizzle(_pool));
     } catch (error) {
       logger.warn("database.connection_initialization_failed", { error });
       _db = null;
@@ -169,7 +168,8 @@ export async function upsertUser(user: UpsertUserInput): Promise<void> {
   }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db.insert(users).values(values)
+    .onConflictDoUpdate({ target: users.openId, set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -792,11 +792,11 @@ export async function getAllFeedItems() {
   if (!db) return [];
   const tenant = requireTenantUserContext();
   const priceFarmScope = tenant.selectedFarmId !== null
-    ? sql`AND ph.farmId = ${tenant.selectedFarmId}`
+    ? sql`AND ph."farmId" = ${tenant.selectedFarmId}`
     : tenant.farmAccessMode === "all" || tenant.accessibleFarmIds === "all"
       ? sql``
       : tenant.accessibleFarmIds.length > 0
-        ? sql`AND ph.farmId IN (${sql.join(tenant.accessibleFarmIds.map(id => sql`${id}`), sql`, `)})`
+        ? sql`AND ph."farmId" IN (${sql.join(tenant.accessibleFarmIds.map(id => sql`${id}`), sql`, `)})`
         : sql`AND FALSE`;
   return db
     .select({
@@ -811,12 +811,12 @@ export async function getAllFeedItems() {
       deletedBy: feedItems.deletedBy,
       version: feedItems.version,
       currentPrice: sql<string | null>`(
-        SELECT ph.pricePerUnit
+        SELECT ph."pricePerUnit"
         FROM saas_azal_feed_item_price_history ph
-        WHERE ph.feedItemId = ${sql.raw("`saas_azal_feed_items`.`id`")}
-          AND ph.companyId = ${tenant.companyId}
+        WHERE ph."feedItemId" = ${sql.raw('"saas_azal_feed_items"."id"')}
+          AND ph."companyId" = ${tenant.companyId}
           ${priceFarmScope}
-        ORDER BY ph.effectiveDate DESC, ph.id DESC
+        ORDER BY ph."effectiveDate" DESC, ph.id DESC
         LIMIT 1
       )`.as("currentPrice"),
     })
@@ -1081,7 +1081,10 @@ export async function upsertSetting(key: string, value: string, updatedBy?: numb
   await db
     .insert(systemSettings)
     .values(tenantInsert({ settingKey: key, settingValue: value, updatedBy }))
-    .onDuplicateKeyUpdate({ set: { settingValue: value, updatedBy } });
+    .onConflictDoUpdate({
+      target: [systemSettings.companyId, systemSettings.settingKey],
+      set: { settingValue: value, updatedBy },
+    });
 }
 
 // ─── PER-USER SETTINGS ──────────────────────────────────────────────────────────
@@ -1116,7 +1119,10 @@ export async function upsertUserSetting(userId: number, key: string, value: stri
     await db
       .insert(userSettings)
       .values(tenantInsert({ userId, settingKey: key, settingValue: value }))
-      .onDuplicateKeyUpdate({ set: { settingValue: value } });
+      .onConflictDoUpdate({
+        target: [userSettings.companyId, userSettings.userId, userSettings.settingKey],
+        set: { settingValue: value },
+      });
   } catch (error) {
     logger.warn("preferences.write_failed", { error });
   }
@@ -1153,31 +1159,31 @@ export async function getAnimals(filters?: { speciesId?: number; categoryId?: nu
       isExitStatus: animalStatuses.isExitStatus,
       ownerName: owners.name,
       latestWeightKg: sql<string | null>`(
-        SELECT wl.weightKg FROM saas_azal_weight_log wl
-        WHERE wl.companyId = ${tenant.companyId} AND wl.animalId = ${animals.id} AND wl.deletedAt IS NULL
-        ORDER BY wl.weighDate DESC LIMIT 1
+        SELECT wl."weightKg" FROM saas_azal_weight_log wl
+        WHERE wl."companyId" = ${tenant.companyId} AND wl."animalId" = ${animals.id} AND wl."deletedAt" IS NULL
+        ORDER BY wl."weighDate" DESC LIMIT 1
       )`,
       nextVaccineDate: sql<string | null>`(
-        SELECT vr.nextDueDate FROM saas_azal_vaccination_records vr
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
-        ORDER BY vr.nextDueDate ASC LIMIT 1
+        SELECT vr."nextDueDate" FROM saas_azal_vaccination_records vr
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."nextDueDate" IS NOT NULL
+        ORDER BY vr."nextDueDate" ASC LIMIT 1
       )`,
       nextVaccineName: sql<string | null>`(
         SELECT v.name FROM saas_azal_vaccination_records vr
-        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
-        ORDER BY vr.nextDueDate ASC LIMIT 1
+        INNER JOIN saas_azal_vaccines v ON vr."vaccineId" = v.id AND v."companyId" = ${tenant.companyId}
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."nextDueDate" IS NOT NULL
+        ORDER BY vr."nextDueDate" ASC LIMIT 1
       )`,
       nextBoosterDate: sql<string | null>`(
-        SELECT vr.boosterDueDate FROM saas_azal_vaccination_records vr
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
-        ORDER BY vr.boosterDueDate ASC LIMIT 1
+        SELECT vr."boosterDueDate" FROM saas_azal_vaccination_records vr
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."boosterDueDate" IS NOT NULL
+        ORDER BY vr."boosterDueDate" ASC LIMIT 1
       )`,
       nextBoosterName: sql<string | null>`(
         SELECT v.name FROM saas_azal_vaccination_records vr
-        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
-        ORDER BY vr.boosterDueDate ASC LIMIT 1
+        INNER JOIN saas_azal_vaccines v ON vr."vaccineId" = v.id AND v."companyId" = ${tenant.companyId}
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."boosterDueDate" IS NOT NULL
+        ORDER BY vr."boosterDueDate" ASC LIMIT 1
       )`
     })
     .from(animals)
@@ -1212,26 +1218,26 @@ export async function getAnimalById(id: number) {
       isExitStatus: animalStatuses.isExitStatus,
       ownerName: owners.name,
       nextVaccineDate: sql<string | null>`(
-        SELECT vr.nextDueDate FROM saas_azal_vaccination_records vr
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
-        ORDER BY vr.nextDueDate ASC LIMIT 1
+        SELECT vr."nextDueDate" FROM saas_azal_vaccination_records vr
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."nextDueDate" IS NOT NULL
+        ORDER BY vr."nextDueDate" ASC LIMIT 1
       )`,
       nextVaccineName: sql<string | null>`(
         SELECT v.name FROM saas_azal_vaccination_records vr
-        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.nextDueDate IS NOT NULL
-        ORDER BY vr.nextDueDate ASC LIMIT 1
+        INNER JOIN saas_azal_vaccines v ON vr."vaccineId" = v.id AND v."companyId" = ${tenant.companyId}
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."nextDueDate" IS NOT NULL
+        ORDER BY vr."nextDueDate" ASC LIMIT 1
       )`,
       nextBoosterDate: sql<string | null>`(
-        SELECT vr.boosterDueDate FROM saas_azal_vaccination_records vr
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
-        ORDER BY vr.boosterDueDate ASC LIMIT 1
+        SELECT vr."boosterDueDate" FROM saas_azal_vaccination_records vr
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."boosterDueDate" IS NOT NULL
+        ORDER BY vr."boosterDueDate" ASC LIMIT 1
       )`,
       nextBoosterName: sql<string | null>`(
         SELECT v.name FROM saas_azal_vaccination_records vr
-        INNER JOIN saas_azal_vaccines v ON vr.vaccineId = v.id AND v.companyId = ${tenant.companyId}
-        WHERE vr.companyId = ${tenant.companyId} AND vr.animalId = ${animals.id} AND vr.deletedAt IS NULL AND vr.isCompleted = false AND vr.boosterDueDate IS NOT NULL
-        ORDER BY vr.boosterDueDate ASC LIMIT 1
+        INNER JOIN saas_azal_vaccines v ON vr."vaccineId" = v.id AND v."companyId" = ${tenant.companyId}
+        WHERE vr."companyId" = ${tenant.companyId} AND vr."animalId" = ${animals.id} AND vr."deletedAt" IS NULL AND vr."isCompleted" = false AND vr."boosterDueDate" IS NOT NULL
+        ORDER BY vr."boosterDueDate" ASC LIMIT 1
       )`
     })
     .from(animals)
@@ -1373,7 +1379,7 @@ function unpromotedLambHeadConditions(filters?: CurrentHeadCountFilters) {
   if (filters?.categoryId) conditions.push(eq(lambingLog.categoryId, filters.categoryId));
   if (filters?.groupId) conditions.push(eq(lambingLog.groupId, filters.groupId));
   if (filters?.ownerId) {
-    conditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${lambingLog.farmId} AND ownerId = ${filters.ownerId} AND deletedAt IS NULL)`);
+    conditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE "companyId" = ${tenant.companyId} AND "farmId" = ${lambingLog.farmId} AND "ownerId" = ${filters.ownerId} AND "deletedAt" IS NULL)`);
   }
   return conditions;
 }
@@ -1445,7 +1451,7 @@ async function getUnpromotedLambHeadDays(filters: CurrentHeadCountFilters | unde
   const rows = await db
     .select({
       totalHeadDays: sql<number>`SUM(
-        GREATEST(0, DATEDIFF(${toDate}, GREATEST(${lambingLog.birthDate}, ${fromDate})) + 1)
+        GREATEST(0, (${toDate}::date - GREATEST(${lambingLog.birthDate}, ${fromDate}::date)) + 1)
       )`,
     })
     .from(lambingLog)
@@ -1643,11 +1649,11 @@ export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: 
       isPromoted: lambingLog.isPromoted,
       promotedHeadId: lambingLog.promotedHeadId,
       promotedAnimalCode: sql<string | null>`COALESCE(
-        (SELECT a.animalId FROM saas_azal_animals a WHERE a.id = ${lambingLog.promotedHeadId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId}),
+        (SELECT a."animalId" FROM saas_azal_animals a WHERE a.id = ${lambingLog.promotedHeadId} AND a."companyId" = ${tenant.companyId} AND a."farmId" = ${lambingLog.farmId}),
         ${lambingLog.promotedAnimalCode}
       )`,
       promotedAnimalDeletedAt: sql<Date | null>`(
-        SELECT a.deletedAt FROM saas_azal_animals a WHERE a.id = ${lambingLog.promotedHeadId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId}
+        SELECT a."deletedAt" FROM saas_azal_animals a WHERE a.id = ${lambingLog.promotedHeadId} AND a."companyId" = ${tenant.companyId} AND a."farmId" = ${lambingLog.farmId}
       )`,
       promotedAnimalPurgedAt: lambingLog.promotedAnimalPurgedAt,
       createdAt: lambingLog.createdAt,
@@ -1658,8 +1664,8 @@ export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: 
       categoryName: animalCategories.name,
       effectiveDamId: lambingLog.damId,
       effectiveSireId: lambingLog.sireId,
-      damAnimalId: sql<string | null>`(SELECT a.animalId FROM saas_azal_animals a WHERE a.id = ${lambingLog.damId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId})`,
-      sireAnimalId: sql<string | null>`(SELECT a.animalId FROM saas_azal_animals a WHERE a.id = ${lambingLog.sireId} AND a.companyId = ${tenant.companyId} AND a.farmId = ${lambingLog.farmId})`
+      damAnimalId: sql<string | null>`(SELECT a."animalId" FROM saas_azal_animals a WHERE a.id = ${lambingLog.damId} AND a."companyId" = ${tenant.companyId} AND a."farmId" = ${lambingLog.farmId})`,
+      sireAnimalId: sql<string | null>`(SELECT a."animalId" FROM saas_azal_animals a WHERE a.id = ${lambingLog.sireId} AND a."companyId" = ${tenant.companyId} AND a."farmId" = ${lambingLog.farmId})`
     })
     .from(lambingLog)
     .leftJoin(birthTypes, and(eq(lambingLog.birthTypeId, birthTypes.id), eq(birthTypes.companyId, tenant.companyId)))
@@ -1670,7 +1676,7 @@ export async function getLambingLog(filters?: { isPromoted?: boolean; ownerId?: 
   if (filters?.isPromoted !== undefined) lambingConditions.push(eq(lambingLog.isPromoted, filters.isPromoted) as any);
   // Owner scope: lambs are attributed to the dam's owner.
   if (filters?.ownerId) {
-    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${lambingLog.farmId} AND ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
+    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE "companyId" = ${tenant.companyId} AND "farmId" = ${lambingLog.farmId} AND "ownerId" = ${filters.ownerId} AND "deletedAt" IS NULL)` as any);
   }
   return query.where(and(...lambingConditions)).orderBy(desc(lambingLog.birthDate)) as Promise<any[]>;
 }
@@ -1682,7 +1688,7 @@ export async function getLambingSummary(filters?: { ownerId?: number }) {
   const lambingConditions = [tenantScope(tenant, lambingLog), isNull(lambingLog.deletedAt)];
   // Owner scope: lambs are attributed to the dam's owner, matching getLambingLog.
   if (filters?.ownerId) {
-    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${lambingLog.farmId} AND ownerId = ${filters.ownerId} AND deletedAt IS NULL)` as any);
+    lambingConditions.push(sql`${lambingLog.damId} IN (SELECT id FROM saas_azal_animals WHERE "companyId" = ${tenant.companyId} AND "farmId" = ${lambingLog.farmId} AND "ownerId" = ${filters.ownerId} AND "deletedAt" IS NULL)` as any);
   }
   const [row] = await db
     .select({
@@ -1813,9 +1819,9 @@ export async function getRationPlans(categoryId?: number) {
       unit: feedItems.unit,
       categoryName: animalCategories.name,
       currentPrice: sql<string | null>`(
-        SELECT ph.pricePerUnit FROM saas_azal_feed_item_price_history ph
-        WHERE ph.feedItemId = ${rationPlans.feedItemId} AND ph.companyId = ${tenant.companyId} AND ph.farmId = ${rationPlans.farmId}
-        ORDER BY ph.effectiveDate DESC, ph.id DESC LIMIT 1
+        SELECT ph."pricePerUnit" FROM saas_azal_feed_item_price_history ph
+        WHERE ph."feedItemId" = ${rationPlans.feedItemId} AND ph."companyId" = ${tenant.companyId} AND ph."farmId" = ${rationPlans.farmId}
+        ORDER BY ph."effectiveDate" DESC, ph.id DESC LIMIT 1
       )`
     })
     .from(rationPlans)
@@ -1907,7 +1913,7 @@ export function buildPricesByItem(
   // feedItemId -> (eff -> { price, id }), keeping the highest id per eff.
   const byItem = new Map<number, Map<string, { price: number; id: number }>>();
   for (const pr of rows) {
-    const eff = pr.effectiveDate instanceof Date ? pr.effectiveDate.toISOString().split("T")[0] : String(pr.effectiveDate).split("T")[0];
+    const eff = String(pr.effectiveDate).split("T")[0];
     if (!byItem.has(pr.feedItemId)) byItem.set(pr.feedItemId, new Map());
     const perEff = byItem.get(pr.feedItemId)!;
     const cur = perEff.get(eff);
@@ -2056,8 +2062,8 @@ export async function computeFeedCostForPeriod(categoryId: number, startDate: st
   const plansForPure = planRows.map(p => ({
     feedItemId: p.feedItemId,
     qtyPerHeadPerDay: p.qtyPerHeadPerDay,
-    effectiveDate: p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0],
-    endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
+    effectiveDate: String(p.effectiveDate).split("T")[0],
+    endDate: p.endDate ? (String(p.endDate).split("T")[0]) : null,
     isActive: true
   }));
   const pricesMap = buildPricesByItem(priceRows);
@@ -2249,9 +2255,9 @@ export async function getExpenses(filters?: { fromDate?: string; toDate?: string
     // OR (b) it's targeted at a category in which the owner has at least one animal.
     const ownerId = filters.ownerId;
     conditions.push(sql`(
-      (${expenses.targetType} = 'head'     AND ${expenses.headId} IN (SELECT id FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${expenses.farmId} AND ownerId = ${ownerId} AND deletedAt IS NULL))
+      (${expenses.targetType} = 'head'     AND ${expenses.headId} IN (SELECT id FROM saas_azal_animals WHERE "companyId" = ${tenant.companyId} AND "farmId" = ${expenses.farmId} AND "ownerId" = ${ownerId} AND "deletedAt" IS NULL))
       OR
-      (${expenses.targetType} = 'category' AND ${expenses.categoryTarget} IN (SELECT DISTINCT categoryId FROM saas_azal_animals WHERE companyId = ${tenant.companyId} AND farmId = ${expenses.farmId} AND ownerId = ${ownerId} AND deletedAt IS NULL))
+      (${expenses.targetType} = 'category' AND ${expenses.categoryTarget} IN (SELECT DISTINCT "categoryId" FROM saas_azal_animals WHERE "companyId" = ${tenant.companyId} AND "farmId" = ${expenses.farmId} AND "ownerId" = ${ownerId} AND "deletedAt" IS NULL))
     )`);
   }
   const query = db
@@ -2449,11 +2455,11 @@ export async function createPregnancyRecord(data: {
   const [result] = await db.insert(pregnancyRecords).values(tenantInsert({
     animalId: data.animalId,
     sireId: data.sireId ?? null,
-    confirmationDate: new Date(data.confirmationDate),
+    confirmationDate: data.confirmationDate,
     gestationDays,
-    expectedDueDate: new Date(expectedDueDate),
+    expectedDueDate,
     notifyBeforeDue: data.notifyBeforeDue ?? 7,
-    checkupDate: data.checkupDate ? new Date(data.checkupDate) : null,
+    checkupDate: data.checkupDate ?? null,
     notifyBeforeCheckup: data.notifyBeforeCheckup ?? 3,
     notes: data.notes,
     createdBy: data.createdBy,
@@ -2573,7 +2579,7 @@ export async function closePregnancyOnBirth(damId: number, lambingLogId: number 
   const db = tx ?? (await getDb());
   if (!db) return;
   const tenant = requireTenantUserContext();
-  const today = new Date(new Date().toISOString().split("T")[0]);
+  const today = new Date().toISOString().split("T")[0];
   await db
     .update(pregnancyRecords)
     .set({
@@ -2742,7 +2748,10 @@ export async function markNotificationRead(id: number, userId: number) {
         companyMembershipId: tenant.membershipId,
         deliveredAt: new Date(),
         readAt: new Date(),
-      }).onDuplicateKeyUpdate({ set: { readAt: new Date() } });
+      }).onConflictDoUpdate({
+        target: [notificationReceipts.notificationId, notificationReceipts.companyMembershipId],
+        set: { readAt: new Date() },
+      });
     }
     return true;
   });
@@ -2769,7 +2778,10 @@ export async function markAllNotificationsRead(userId: number) {
         companyMembershipId: tenant.membershipId,
         deliveredAt: now,
         readAt: now,
-      }))).onDuplicateKeyUpdate({ set: { readAt: now } });
+      }))).onConflictDoUpdate({
+        target: [notificationReceipts.notificationId, notificationReceipts.companyMembershipId],
+        set: { readAt: now },
+      });
     }
   });
 }
@@ -2936,11 +2948,9 @@ export async function getAnimalPnL(animalId: number) {
 
   const today = new Date().toISOString().split("T")[0];
   const exitDate = animal.exitDate
-    ? (animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0])
+    ? (String(animal.exitDate).split("T")[0])
     : today;
-  const acquisitionDate = animal.acquisitionDate instanceof Date
-    ? animal.acquisitionDate.toISOString().split("T")[0]
-    : String(animal.acquisitionDate).split("T")[0];
+  const acquisitionDate = String(animal.acquisitionDate).split("T")[0];
 
   // Days on farm
   const daysOnFarm = Math.max(1, Math.floor((new Date(exitDate).getTime() - new Date(acquisitionDate).getTime()) / 86400000));
@@ -2967,7 +2977,7 @@ export async function getAnimalPnL(animalId: number) {
   const categoryHeadCountByDate = new Map<string, number>();
   try {
     for (const expense of catExpensesRows) {
-      const dateStr = expense.expenseDate instanceof Date ? expense.expenseDate.toISOString().split("T")[0] : String(expense.expenseDate).split("T")[0];
+      const dateStr = String(expense.expenseDate).split("T")[0];
       let headCount = categoryHeadCountByDate.get(dateStr);
       if (headCount == null) {
         const counts = await getCategoryHeadCountsOnDate([animal.categoryId], dateStr);
@@ -2989,7 +2999,7 @@ export async function getAnimalPnL(animalId: number) {
       .from(expenses)
       .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "herd"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
     for (const he of herdExpenseRows) {
-      const dStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
+      const dStr = String(he.expenseDate).split("T")[0];
       const herdCount = await getHerdHeadCountOnDate(dStr);
       herdExpenseAllocationMinor += divMinor(toMinor(String(he.amount)), herdCount);
     }
@@ -3007,7 +3017,7 @@ export async function getAnimalPnL(animalId: number) {
       .from(expenses)
       .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "general"), isNull(expenses.deletedAt), sql`${expenses.expenseDate} >= ${acqDateStr}`, sql`${expenses.expenseDate} <= ${exitDateStr}`));
     for (const ge of generalExpenseRows) {
-      const dStr = ge.expenseDate instanceof Date ? ge.expenseDate.toISOString().split("T")[0] : String(ge.expenseDate).split("T")[0];
+      const dStr = String(ge.expenseDate).split("T")[0];
       generalExpenseAllocationMinor += divMinor(toMinor(String(ge.amount)), await getHerdHeadCountOnDate(dStr));
     }
   } catch (err) {
@@ -3066,13 +3076,13 @@ export async function getAnimalPnL(animalId: number) {
       continue;
     }
     if (expense.targetType === "category") {
-      const dateStr = expense.expenseDate instanceof Date ? expense.expenseDate.toISOString().split("T")[0] : String(expense.expenseDate).split("T")[0];
+      const dateStr = String(expense.expenseDate).split("T")[0];
       const shareMinor = divMinor(amountMinor, categoryHeadCountByDate.get(dateStr) ?? 1);
       detailedCategoryAllocationMinor += shareMinor;
       addExpenseBreakdown("category", categoryName, subCategoryName, shareMinor);
       continue;
     }
-    const dateStr = expense.expenseDate instanceof Date ? expense.expenseDate.toISOString().split("T")[0] : String(expense.expenseDate).split("T")[0];
+    const dateStr = String(expense.expenseDate).split("T")[0];
     let herdCount = herdCountByDate.get(dateStr);
     if (herdCount == null) {
       herdCount = await getHerdHeadCountOnDate(dateStr);
@@ -3248,7 +3258,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   for (const e of allCatExp) {
     if (e.categoryTarget == null) continue;
     const catId = Number(e.categoryTarget);
-    const dateStr = e.expenseDate instanceof Date ? e.expenseDate.toISOString().split("T")[0] : String(e.expenseDate).split("T")[0];
+    const dateStr = String(e.expenseDate).split("T")[0];
     if (!catExpByCatId.has(catId)) catExpByCatId.set(catId, []);
     catExpByCatId.get(catId)!.push({ amount: toMinor(String(e.amount)), date: dateStr });
   }
@@ -3263,7 +3273,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     .from(animals)
     .where(and(tenantScope(tenant, animals), isNull(animals.deletedAt)));
   const normAcq = (d: any) => d instanceof Date ? d.toISOString().split("T")[0] : String(d ?? today).split("T")[0];
-  const normExit = (d: any) => d ? (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]) : null;
+  const normExit = (d: any) => d ? (String(d).split("T")[0]) : null;
 
   // Pre-build per-category animal list with acquisition/exit dates so we can
   // allocate each category expense against the head count that overlapped it.
@@ -3287,7 +3297,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   // Pre-split each herd expense → { date, perHeadMinor } so each animal alive
   // that day picks up the same per-head share.
   const herdExpenseShares = allHerdExp.map((he: any) => {
-    const dateStr = he.expenseDate instanceof Date ? he.expenseDate.toISOString().split("T")[0] : String(he.expenseDate).split("T")[0];
+    const dateStr = String(he.expenseDate).split("T")[0];
     return { date: dateStr, perHeadMinor: divMinor(toMinor(String(he.amount)), herdCountOnDate(dateStr)) };
   });
 
@@ -3298,7 +3308,7 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     .from(expenses)
     .where(and(tenantScope(tenant, expenses), eq(expenses.targetType, "general"), isNull(expenses.deletedAt)));
   const generalExpenseShares = allGeneralExp.map((ge: any) => {
-    const dateStr = ge.expenseDate instanceof Date ? ge.expenseDate.toISOString().split("T")[0] : String(ge.expenseDate).split("T")[0];
+    const dateStr = String(ge.expenseDate).split("T")[0];
     return { date: dateStr, perHeadMinor: divMinor(toMinor(String(ge.amount)), herdCountOnDate(dateStr)) };
   });
 
@@ -3322,8 +3332,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
     const plans = (plansByCategory.get(categoryId) ?? []).map(p => ({
       feedItemId: p.feedItemId,
       qtyPerHeadPerDay: p.qtyPerHeadPerDay,
-      effectiveDate: p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0],
-      endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
+      effectiveDate: String(p.effectiveDate).split("T")[0],
+      endDate: p.endDate ? (String(p.endDate).split("T")[0]) : null,
       isActive: p.isActive
     }));
     return segmentedFeedCostPure(plans, pricesByItem, startStr, endStr);
@@ -3333,8 +3343,8 @@ export async function getAllAnimalsPnL(filters?: { speciesId?: number; categoryI
   const results = [];
   for (const row of allAnimals) {
     const animal = row.animal;
-    const acqDateStr = animal.acquisitionDate instanceof Date ? animal.acquisitionDate.toISOString().split("T")[0] : String(animal.acquisitionDate ?? today).split("T")[0];
-    const exitDateStr = animal.exitDate ? (animal.exitDate instanceof Date ? animal.exitDate.toISOString().split("T")[0] : String(animal.exitDate).split("T")[0]) : today;
+    const acqDateStr = String(animal.acquisitionDate ?? today).split("T")[0];
+    const exitDateStr = animal.exitDate ? (String(animal.exitDate).split("T")[0]) : today;
     const daysOnFarm = Math.max(1, Math.floor((new Date(exitDateStr).getTime() - new Date(acqDateStr).getTime()) / 86400000));
 
     const purchaseCostMinor = toMinor(String(animal.purchaseCost ?? "0"));
@@ -3532,7 +3542,7 @@ export async function getOwnerFeedCostMinor(ownerId: number, fromDate: string, t
 
   const norm = (d: Date | string | null): string | null => {
     if (d == null) return null;
-    return d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0];
+    return String(d).split("T")[0];
   };
 
   const owned = await db
@@ -3565,8 +3575,8 @@ export async function getOwnerFeedCostMinor(ownerId: number, fromDate: string, t
     const plans = (plansByCategory.get(a.categoryId) ?? []).map(p => ({
       feedItemId: p.feedItemId,
       qtyPerHeadPerDay: p.qtyPerHeadPerDay,
-      effectiveDate: p.effectiveDate instanceof Date ? p.effectiveDate.toISOString().split("T")[0] : String(p.effectiveDate).split("T")[0],
-      endDate: p.endDate ? (p.endDate instanceof Date ? p.endDate.toISOString().split("T")[0] : String(p.endDate).split("T")[0]) : null,
+      effectiveDate: String(p.effectiveDate).split("T")[0],
+      endDate: p.endDate ? (String(p.endDate).split("T")[0]) : null,
       isActive: p.isActive,
     }));
     totalMinor += toMinor(String(segmentedFeedCostPure(plans, pricesByItem, start, end)));
@@ -3652,7 +3662,7 @@ export async function getOwnerExpenseBreakdownMinor(ownerId: number, fromDate: s
   const tenant = requireTenantUserContext();
 
   const norm = (d: Date | string | null): string | null =>
-    d == null ? null : (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]);
+    d == null ? null : (String(d).split("T")[0]);
 
   const allAnimals = await db
     .select({ id: animals.id, categoryId: animals.categoryId, ownerId: animals.ownerId, acquisitionDate: animals.acquisitionDate, exitDate: animals.exitDate })
@@ -3759,7 +3769,7 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   // Owner-scoped = modeled consumption of the owner's animals (accrual basis),
   // because purchases aren't tagged by owner.
   const feedPurchasesInPeriod = await db
-    .select({ total: sql<number>`SUM(totalCost)` })
+    .select({ total: sql<number>`SUM("totalCost")` })
     .from(feedStockLedger)
     .where(and(tenantScope(tenant, feedStockLedger), eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${fromDate}`, sql`${feedStockLedger.transactionDate} <= ${toDate}`, isNull(feedStockLedger.deletedAt)));
   const ownerFeedMinor = ownerId ? await getOwnerFeedCostMinor(ownerId, fromDate, toDate) : 0;
@@ -3768,8 +3778,8 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   // cash actually received (amountPaid) so the dashboard can show outstanding.
   const totalRevenue = await db
     .select({
-      total: sql<number>`SUM(salePrice)`,
-      paid: sql<number>`SUM(amountPaid)`,
+      total: sql<number>`SUM("salePrice")`,
+      paid: sql<number>`SUM("amountPaid")`,
     })
     .from(sales)
     .where(and(tenantScope(tenant, sales), sql`${sales.saleDate} >= ${fromDate}`, sql`${sales.saleDate} <= ${toDate}`, isNull(sales.deletedAt), ownerSalesCond));
@@ -3781,9 +3791,9 @@ export async function getDashboardKPIs(filters?: { fromDate?: string; toDate?: s
   const avgHeadRows = await db
     .select({
       totalHeadDays: sql<number>`SUM(
-        GREATEST(0, DATEDIFF(
-          LEAST(COALESCE(exitDate, ${toDate}), ${toDate}),
-          GREATEST(acquisitionDate, ${fromDate})
+        GREATEST(0, (
+          LEAST(COALESCE("exitDate", ${toDate}::date), ${toDate}::date)
+          - GREATEST("acquisitionDate", ${fromDate}::date)
         ) + 1)
       )`,
     })
@@ -3856,22 +3866,22 @@ export async function getFeedStockStatus(timings?: Record<string, number>, tx?: 
   const stockFarmScope = allFarms
     ? sql`TRUE`
     : farmList.length > 0
-      ? sql`farmId IN (${sql.join(farmList, sql`, `)})`
+      ? sql`"farmId" IN (${sql.join(farmList, sql`, `)})`
       : sql`FALSE`;
   const stockAliasFarmScope = allFarms
     ? sql`TRUE`
     : farmList.length > 0
-      ? sql`l.farmId IN (${sql.join(farmList, sql`, `)})`
+      ? sql`l."farmId" IN (${sql.join(farmList, sql`, `)})`
       : sql`FALSE`;
   const animalFarmScope = allFarms
     ? sql`TRUE`
     : farmList.length > 0
-      ? sql`farmId IN (${sql.join(farmList, sql`, `)})`
+      ? sql`"farmId" IN (${sql.join(farmList, sql`, `)})`
       : sql`FALSE`;
   const rationFarmScope = allFarms
     ? sql`TRUE`
     : farmList.length > 0
-      ? sql`rp.farmId IN (${sql.join(farmList, sql`, `)})`
+      ? sql`rp."farmId" IN (${sql.join(farmList, sql`, `)})`
       : sql`FALSE`;
 
   type FeedStockStatusRow = {
@@ -3891,91 +3901,91 @@ export async function getFeedStockStatus(timings?: Record<string, number>, tx?: 
   const queryStarted = Date.now();
   const [rows] = await db.execute(sql`
     WITH latest_counts AS (
-      SELECT farmId, feedItemId, qty, transactionDate
+      SELECT "farmId", "feedItemId", qty, "transactionDate"
       FROM (
         SELECT
-          farmId,
-          feedItemId,
+          "farmId",
+          "feedItemId",
           qty,
-          transactionDate,
+          "transactionDate",
           ROW_NUMBER() OVER (
-            PARTITION BY farmId, feedItemId
-            ORDER BY transactionDate DESC, id DESC
+            PARTITION BY "farmId", "feedItemId"
+            ORDER BY "transactionDate" DESC, id DESC
           ) AS rn
         FROM saas_azal_feed_stock_ledger
-        WHERE transactionType = 'stock_count'
-          AND companyId = ${tenant.companyId}
+        WHERE "transactionType" = 'stock_count'
+          AND "companyId" = ${tenant.companyId}
           AND ${stockFarmScope}
-          AND deletedAt IS NULL
+          AND "deletedAt" IS NULL
       ) ranked_counts
       WHERE rn = 1
     ),
     tx_sums AS (
       SELECT
-        l.farmId,
-        l.feedItemId,
-        SUM(CASE WHEN l.transactionType = 'purchase' THEN l.qty ELSE 0 END) AS purchasedQty,
-        SUM(CASE WHEN l.transactionType = 'adjustment' THEN l.qty ELSE 0 END) AS adjustmentQty
+        l."farmId",
+        l."feedItemId",
+        SUM(CASE WHEN l."transactionType" = 'purchase' THEN l.qty ELSE 0 END) AS "purchasedQty",
+        SUM(CASE WHEN l."transactionType" = 'adjustment' THEN l.qty ELSE 0 END) AS "adjustmentQty"
       FROM saas_azal_feed_stock_ledger l
       LEFT JOIN latest_counts lc
-        ON lc.farmId = l.farmId AND lc.feedItemId = l.feedItemId
-      WHERE l.transactionType IN ('purchase', 'adjustment')
-        AND l.companyId = ${tenant.companyId}
+        ON lc."farmId" = l."farmId" AND lc."feedItemId" = l."feedItemId"
+      WHERE l."transactionType" IN ('purchase', 'adjustment')
+        AND l."companyId" = ${tenant.companyId}
         AND ${stockAliasFarmScope}
-        AND l.deletedAt IS NULL
-        AND l.transactionDate >= COALESCE(lc.transactionDate, '2020-01-01')
-      GROUP BY l.farmId, l.feedItemId
+        AND l."deletedAt" IS NULL
+        AND l."transactionDate" >= COALESCE(lc."transactionDate", '2020-01-01')
+      GROUP BY l."farmId", l."feedItemId"
     ),
     head_counts AS (
-      SELECT farmId, categoryId, COUNT(*) AS heads
+      SELECT "farmId", "categoryId", COUNT(*) AS heads
       FROM saas_azal_animals
-      WHERE isActive = TRUE
-        AND companyId = ${tenant.companyId}
+      WHERE "isActive" = TRUE
+        AND "companyId" = ${tenant.companyId}
         AND ${animalFarmScope}
-        AND deletedAt IS NULL
-      GROUP BY farmId, categoryId
+        AND "deletedAt" IS NULL
+      GROUP BY "farmId", "categoryId"
     ),
     farm_feed AS (
-      SELECT farmId, feedItemId FROM latest_counts
+      SELECT "farmId", "feedItemId" FROM latest_counts
       UNION
-      SELECT farmId, feedItemId FROM tx_sums
+      SELECT "farmId", "feedItemId" FROM tx_sums
       UNION
-      SELECT rp.farmId, rp.feedItemId
+      SELECT rp."farmId", rp."feedItemId"
       FROM saas_azal_ration_plans rp
-      WHERE rp.companyId = ${tenant.companyId}
+      WHERE rp."companyId" = ${tenant.companyId}
         AND ${rationFarmScope}
-        AND rp.isActive = TRUE
-        AND rp.deletedAt IS NULL
+        AND rp."isActive" = TRUE
+        AND rp."deletedAt" IS NULL
     )
     SELECT
-      ff.farmId AS farmId,
-      fi.id AS feedItemId,
-      fi.name AS feedItemName,
+      ff."farmId" AS "farmId",
+      fi.id AS "feedItemId",
+      fi.name AS "feedItemName",
       fi.unit AS unit,
-      lc.qty AS lastCountQty,
-      lc.transactionDate AS lastCountDate,
-      COALESCE(tx.purchasedQty, 0) AS purchasedQty,
-      COALESCE(tx.adjustmentQty, 0) AS adjustmentQty,
-      rp.categoryId AS categoryId,
-      rp.qtyPerHeadPerDay AS planQty,
+      lc.qty AS "lastCountQty",
+      lc."transactionDate" AS "lastCountDate",
+      COALESCE(tx."purchasedQty", 0) AS "purchasedQty",
+      COALESCE(tx."adjustmentQty", 0) AS "adjustmentQty",
+      rp."categoryId" AS "categoryId",
+      rp."qtyPerHeadPerDay" AS "planQty",
       COALESCE(hc.heads, 0) AS heads
     FROM saas_azal_feed_items fi
-    LEFT JOIN farm_feed ff ON ff.feedItemId = fi.id
+    LEFT JOIN farm_feed ff ON ff."feedItemId" = fi.id
     LEFT JOIN latest_counts lc
-      ON lc.farmId = ff.farmId AND lc.feedItemId = fi.id
+      ON lc."farmId" = ff."farmId" AND lc."feedItemId" = fi.id
     LEFT JOIN tx_sums tx
-      ON tx.farmId = ff.farmId AND tx.feedItemId = fi.id
+      ON tx."farmId" = ff."farmId" AND tx."feedItemId" = fi.id
     LEFT JOIN saas_azal_ration_plans rp
-      ON rp.feedItemId = fi.id
-      AND rp.farmId = ff.farmId
-      AND rp.companyId = ${tenant.companyId}
+      ON rp."feedItemId" = fi.id
+      AND rp."farmId" = ff."farmId"
+      AND rp."companyId" = ${tenant.companyId}
       AND ${rationFarmScope}
-      AND rp.isActive = TRUE
-      AND rp.deletedAt IS NULL
+      AND rp."isActive" = TRUE
+      AND rp."deletedAt" IS NULL
     LEFT JOIN head_counts hc
-      ON hc.farmId = rp.farmId AND hc.categoryId = rp.categoryId
-    WHERE fi.companyId = ${tenant.companyId}
-      AND fi.deletedAt IS NULL
+      ON hc."farmId" = rp."farmId" AND hc."categoryId" = rp."categoryId"
+    WHERE fi."companyId" = ${tenant.companyId}
+      AND fi."deletedAt" IS NULL
     ORDER BY fi.name
   `) as unknown as [FeedStockStatusRow[], unknown];
   timings && (timings["feedStock.sqlMs"] = Date.now() - queryStarted);
@@ -3983,9 +3993,7 @@ export async function getFeedStockStatus(timings?: Record<string, number>, tx?: 
   const shapeStarted = Date.now();
   const toDateString = (value: string | Date | null | undefined) => {
     if (!value) return null;
-    return value instanceof Date
-      ? value.toISOString().split("T")[0]
-      : String(value).split("T")[0];
+    return String(value).split("T")[0];
   };
 
   const byFarmItem = new Map<string, {
@@ -4188,7 +4196,7 @@ export async function getFeedShrinkage(): Promise<{
   const rows: ShrinkageRow[] = [];
   const byItemLatest: Record<number, { shrinkageQty: number; shrinkageValue: number; toDate: string } | undefined> = {};
 
-  const ds = (d: any) => (d instanceof Date ? d.toISOString().split("T")[0] : String(d).split("T")[0]);
+  const ds = (d: any) => (String(d).split("T")[0]);
 
   for (const item of items) {
     const scopedPrice = await getCurrentFeedItemPrice(item.id);
@@ -4322,15 +4330,15 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   // (salePrice) and cash actually received (amountPaid).
   const salesData = await db
     .select({
-      total: sql<number>`SUM(salePrice)`,
-      paid: sql<number>`SUM(amountPaid)`,
+      total: sql<number>`SUM("salePrice")`,
+      paid: sql<number>`SUM("amountPaid")`,
     })
     .from(sales)
     .where(and(tenantScope(tenant, sales), sql`${sales.saleDate} >= ${filters.fromDate}`, sql`${sales.saleDate} <= ${filters.toDate}`, isNull(sales.deletedAt), ownerSalesCond));
 
   // Animal purchase costs (exclude soft-deleted)
   const purchaseCosts = await db
-    .select({ total: sql<number>`SUM(purchaseCost)` })
+    .select({ total: sql<number>`SUM("purchaseCost")` })
     .from(animals)
     .where(and(
       tenantScope(tenant, animals),
@@ -4381,7 +4389,7 @@ export async function getIncomeStatement(filters: { fromDate: string; toDate: st
   // animals via their ration plans (accrual basis), because feed purchases are
   // not tagged by owner — so a 0 here would understate the owner's true cost.
   const feedPurchases = await db
-    .select({ total: sql<number>`SUM(totalCost)` })
+    .select({ total: sql<number>`SUM("totalCost")` })
     .from(feedStockLedger)
     .where(and(tenantScope(tenant, feedStockLedger), eq(feedStockLedger.transactionType, "purchase"), sql`${feedStockLedger.transactionDate} >= ${filters.fromDate}`, sql`${feedStockLedger.transactionDate} <= ${filters.toDate}`, isNull(feedStockLedger.deletedAt)));
   const totalFeedCostMinor = ownerId
@@ -4513,9 +4521,7 @@ export async function recomputeVaccinationDatesForVaccine(vaccineId: number, dbO
     .for("update");
 
   for (const rec of records) {
-    const dateStr = rec.vaccinationDate instanceof Date
-      ? rec.vaccinationDate.toISOString().split("T")[0]
-      : String(rec.vaccinationDate).split("T")[0];
+    const dateStr = String(rec.vaccinationDate).split("T")[0];
     const nextDueDateStr = calculateNextDueDate(
       { validityPeriod: v.validityPeriod, validityUnit: v.validityUnit as "days" | "months", boosterRequired: v.boosterRequired, boosterInterval: v.boosterInterval ?? undefined },
       dateStr
@@ -4526,8 +4532,8 @@ export async function recomputeVaccinationDatesForVaccine(vaccineId: number, dbO
     );
     const [result] = await db.update(vaccinationRecords)
       .set({
-        nextDueDate: new Date(nextDueDateStr),
-        boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null,
+        nextDueDate: nextDueDateStr,
+        boosterDueDate: boosterDueDateStr ?? null,
         version: sql`${vaccinationRecords.version} + 1`,
       })
       .where(and(
@@ -4634,12 +4640,12 @@ export async function addVaccinationRecord(data: { animalId: number; vaccineId: 
   const [result] = await db.insert(vaccinationRecords).values(tenantInsert({
     animalId: data.animalId,
     vaccineId: data.vaccineId,
-    vaccinationDate: new Date(data.vaccinationDate),
+    vaccinationDate: data.vaccinationDate,
     batchNumber: data.batchNumber,
     notes: data.notes,
     veterinarian: data.veterinarian,
-    nextDueDate: new Date(nextDueDateStr),
-    boosterDueDate: boosterDueDateStr ? new Date(boosterDueDateStr) : null,
+    nextDueDate: nextDueDateStr,
+    boosterDueDate: boosterDueDateStr ?? null,
     notifyBeforeNext: data.notifyBeforeNext ?? 7,
     notifyBeforeBooster: data.notifyBeforeBooster ?? 7,
   }, true));
@@ -4881,7 +4887,7 @@ export async function getNextVaccinationDate(animalId: number): Promise<{ nextDu
   if (result.length === 0) return null;
   const nextDueDate = result[0].nextDueDate;
   return {
-    nextDueDate: nextDueDate instanceof Date ? nextDueDate.toISOString().split("T")[0] : nextDueDate,
+    nextDueDate,
     vaccineName: result[0].vaccineName
   };
 }

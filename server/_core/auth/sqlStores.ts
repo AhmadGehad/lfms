@@ -418,7 +418,8 @@ export class SqlRateLimitStore implements RateLimitStore {
       await tx
         .insert(authRateLimits)
         .values({ keyHash, bucketStart, expiresAt, count: 1 })
-        .onDuplicateKeyUpdate({
+        .onConflictDoUpdate({
+          target: [authRateLimits.keyHash, authRateLimits.bucketStart],
           set: {
             count: sql`${authRateLimits.count} + 1`,
             expiresAt,

@@ -1,5 +1,25 @@
 # Legacy Production Immutability
 
+## Status after the Supabase migration (2026-09-24)
+
+The engine migration to Supabase Postgres **is** the opt-in replication project
+this document anticipated, carried out as a frozen-write single copy rather
+than via CDC. Specifically:
+
+- The legacy MySQL/TiDB database was never altered. It is left running and
+  untouched as the rollback path.
+- The 27 legacy tables were copied verbatim into a separate `legacy` Postgres
+  schema, keeping them out of `public` so the sidecar boundary still holds.
+- `drizzle.config.ts` and `db:push` still refuse to run; they continue to guard
+  the legacy MySQL database.
+- The former shared-schema migrations in `drizzle/*.sql` remain disabled and
+  retained for audit only. `drizzle/schema.mysql.ts` is their frozen companion.
+
+Everything below describes the legacy contract and remains in force for the
+MySQL database.
+
+---
+
 ## Protected Contract
 
 All current LFMS production tables and data are protected. The SaaS project

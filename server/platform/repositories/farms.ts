@@ -30,7 +30,7 @@ export async function listFarmRecords(input: {
     timezone: farms.timezone,
     status: farms.status,
     version: farms.version,
-    memberCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm.farmId = ${farms.id} AND fm.companyId = ${farms.companyId})`,
+    memberCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm."farmId" = ${farms.id} AND fm."companyId" = ${farms.companyId})`,
     createdAt: farms.createdAt,
     updatedAt: farms.updatedAt,
   }).from(farms)
@@ -61,7 +61,7 @@ export async function getFarmRecord(publicId: string) {
     status: farms.status,
     settings: farms.settings,
     version: farms.version,
-    memberCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm.farmId = ${farms.id} AND fm.companyId = ${farms.companyId})`,
+    memberCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm."farmId" = ${farms.id} AND fm."companyId" = ${farms.companyId})`,
     createdAt: farms.createdAt,
     updatedAt: farms.updatedAt,
   }).from(farms)
@@ -93,7 +93,7 @@ export async function listFarmExportRows(input: {
     code: farms.code,
     timezone: farms.timezone,
     status: farms.status,
-    memberCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm.farmId = ${farms.id} AND fm.companyId = ${farms.companyId})`,
+    memberCount: sql<number>`(SELECT COUNT(*) FROM ${farmMemberships} fm WHERE fm."farmId" = ${farms.id} AND fm."companyId" = ${farms.companyId})`,
     createdAt: farms.createdAt,
     updatedAt: farms.updatedAt,
   }).from(farms)

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getTableConfig } from "drizzle-orm/mysql-core";
+import { getTableConfig } from "drizzle-orm/pg-core";
 import {
   applyCanonicalData as applyCanonicalDataWithoutContext,
   canonicalDataToObject,
@@ -191,9 +191,10 @@ describe("canonical transfer modes", () => {
     );
 
     expect(index?.config.unique).toBe(true);
-    expect(index?.config.columns).toEqual([
-      feedItems.companyId,
-      feedItems.activeName,
+    // pg-core wraps index columns in IndexedColumn, so compare by name.
+    expect(index?.config.columns.map(column => column.name)).toEqual([
+      feedItems.companyId.name,
+      feedItems.activeName.name,
     ]);
   });
 

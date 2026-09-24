@@ -30,8 +30,8 @@ export async function listPlanRecords(input: {
     priceMonthly: subscriptionPlans.priceMonthly,
     priceYearly: subscriptionPlans.priceYearly,
     currency: subscriptionPlans.currency,
-    companyCount: sql<number>`(SELECT COUNT(*) FROM ${companySubscriptions} cs WHERE cs.subscriptionPlanId = ${subscriptionPlans.id} AND cs.isCurrent = TRUE)`,
-    entitlementCount: sql<number>`(SELECT COUNT(*) FROM ${planEntitlements} pe WHERE pe.subscriptionPlanId = ${subscriptionPlans.id})`,
+    companyCount: sql<number>`(SELECT COUNT(*) FROM ${companySubscriptions} cs WHERE cs."subscriptionPlanId" = ${subscriptionPlans.id} AND cs."isCurrent" = TRUE)`,
+    entitlementCount: sql<number>`(SELECT COUNT(*) FROM ${planEntitlements} pe WHERE pe."subscriptionPlanId" = ${subscriptionPlans.id})`,
     publishedAt: subscriptionPlans.publishedAt,
     createdAt: subscriptionPlans.createdAt,
   }).from(subscriptionPlans)

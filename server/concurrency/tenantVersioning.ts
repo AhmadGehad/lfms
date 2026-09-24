@@ -1,14 +1,14 @@
 import { and, eq, type SQL } from "drizzle-orm";
-import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
+import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import type { TenantContext } from "../../shared/tenancy";
 import { tenantScope } from "../tenancy/scope";
 import { assertExpectedVersion } from "./versioning";
 
 type VersionedTenantColumns = {
-  companyId: AnyMySqlColumn;
-  farmId?: AnyMySqlColumn;
-  id: AnyMySqlColumn;
-  version: AnyMySqlColumn;
+  companyId: AnyPgColumn;
+  farmId?: AnyPgColumn;
+  id: AnyPgColumn;
+  version: AnyPgColumn;
 };
 
 export function versionedTenantUpdateScope(

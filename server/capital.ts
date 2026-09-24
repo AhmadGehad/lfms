@@ -17,7 +17,8 @@ type LedgerContribution = { investorId: number; kind: "initial" | "direct" | "pr
 type Investor = { id: number; name: string; isActive?: boolean };
 
 const dateKey = (value: Date | string) => value instanceof Date ? value.toISOString().slice(0, 10) : String(value).slice(0, 10);
-const dbDate = (value: string) => new Date(`${value}T00:00:00.000Z`);
+// DATE columns carry no time; drizzle's pg date() maps plain YYYY-MM-DD strings.
+const dbDate = (value: string) => value;
 const signedMinor = (row: Pick<LedgerContribution, "kind" | "amount">) => (row.kind === "reversal" ? -1 : 1) * toMinor(row.amount);
 const eachDate = (start: string, end: string, fn: (date: string) => void) => {
   const cursor = new Date(`${start}T00:00:00Z`);

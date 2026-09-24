@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getTableConfig, MySqlDialect } from "drizzle-orm/mysql-core";
+import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { expenses, feedStockLedger, rationPlans } from "../../drizzle/schema";
 import type { TenantContext } from "../../shared/tenancy";
 import { versionedTenantUpdateScope } from "./tenantVersioning";
@@ -19,14 +19,15 @@ describe("versioned tenant update SQL", () => {
   ] as const)(
     "scopes %s by tenant, farm, id, and expected version",
     (tableName, table) => {
-      const query = new MySqlDialect().sqlToQuery(
+      const query = new PgDialect().sqlToQuery(
         versionedTenantUpdateScope(context, table, 23, 4)
       );
       const physicalTableName = getTableConfig(table).name;
-      expect(query.sql).toContain(`\`${physicalTableName}\`.\`companyId\` = ?`);
-      expect(query.sql).toContain(`\`${physicalTableName}\`.\`farmId\` = ?`);
-      expect(query.sql).toContain(`\`${physicalTableName}\`.\`id\` = ?`);
-      expect(query.sql).toContain(`\`${physicalTableName}\`.\`version\` = ?`);
+      for (const column of ["companyId", "farmId", "id", "version"]) {
+        expect(query.sql).toMatch(
+          new RegExp(`"${physicalTableName}"\\."${column}" = \\$\\d+`)
+        );
+      }
       expect(query.params).toEqual(expect.arrayContaining([7, 11, 23, 4]));
     }
   );

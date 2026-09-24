@@ -68,6 +68,15 @@ async function assertManagementAuthorityRemains(
     .for("update");
   if (active.length === 0) invalidLifecycle("At least one active platform administrator is required");
   const activeIds = active.map(row => row.id);
+  // Postgres rejects FOR UPDATE alongside DISTINCT, so the row lock is taken
+  // separately from the authority query. Locking the assignment rows first
+  // preserves the guarantee the combined statement gave under MySQL: no
+  // concurrent transaction can change who holds administrators.write while
+  // this check runs.
+  await tx.select({ adminId: platformAdministratorRoles.platformAdministratorId })
+    .from(platformAdministratorRoles)
+    .where(inArray(platformAdministratorRoles.platformAdministratorId, activeIds))
+    .for("update");
   const writers = await tx.selectDistinct({ id: platformAdministratorRoles.platformAdministratorId })
     .from(platformAdministratorRoles)
     .innerJoin(platformRolePermissions, eq(platformAdministratorRoles.platformRoleId, platformRolePermissions.platformRoleId))
@@ -75,8 +84,7 @@ async function assertManagementAuthorityRemains(
     .where(and(
       inArray(platformAdministratorRoles.platformAdministratorId, activeIds),
       eq(platformPermissions.code, "administrators.write"),
-    ))
-    .for("update");
+    ));
   let targetKeepsAuthority = nextStatus === "active";
   if (targetKeepsAuthority && nextRoleIds) {
     const [permission] = await tx.select({ id: platformRolePermissions.platformRoleId })

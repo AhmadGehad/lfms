@@ -75,6 +75,14 @@ export function validateStorageConfiguration() {
       if (endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
         throw new Error("OBJECT_STORAGE_ENDPOINT must not contain credentials, query, or fragment");
       }
+      // SSE-KMS is an AWS-only feature. Supabase Storage (and other
+      // S3-compatible endpoints) reject the header, so every upload would
+      // fail at runtime; refuse the combination at startup instead.
+      if (ENV.objectStorageKmsKeyId) {
+        throw new Error(
+          "OBJECT_STORAGE_KMS_KEY_ID is only supported on AWS S3; unset it when OBJECT_STORAGE_ENDPOINT is configured",
+        );
+      }
     }
     return;
   }

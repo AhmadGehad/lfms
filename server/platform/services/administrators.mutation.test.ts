@@ -53,16 +53,23 @@ describe("platform administrator mutation", () => {
   it("replaces roles with CAS, revokes sessions, and audits old and new grants", async () => {
     const events: Array<{ action: string; table: unknown; value?: Record<string, unknown> }> = [];
     const managerGrantQuery = query([{ id: 10 }, { id: 11 }]);
-    const lockManagerGrants = vi.fn(async () => [{ id: 10 }, { id: 11 }]);
-    managerGrantQuery.for = lockManagerGrants;
     const rows = new Map<unknown, unknown[]>([
       [platformRoles, [{ id: 8, code: "platform_support" }]],
       [platformAdministratorRoles, [{ code: "platform_admin" }]],
       [platformAdministrators, [{ id: 10 }, { id: 11 }]],
       [platformRolePermissions, [{ id: 8 }]],
     ]);
+    // Postgres forbids FOR UPDATE with DISTINCT, so the authority check now
+    // locks the grant rows through a separate plain select.
+    const lockManagerGrants = vi.fn(async () => [{ id: 10 }, { id: 11 }]);
     const tx = {
-      select: () => ({ from: (table: unknown) => query(rows.get(table) ?? []) }),
+      select: () => ({
+        from: (table: unknown) => {
+          const builder = query(rows.get(table) ?? []);
+          if (table === platformAdministratorRoles) builder.for = lockManagerGrants;
+          return builder;
+        },
+      }),
       selectDistinct: () => ({ from: () => managerGrantQuery }),
       update: (table: unknown) => ({
         set: (value: Record<string, unknown>) => ({

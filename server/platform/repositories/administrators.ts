@@ -33,10 +33,10 @@ export async function listAdministratorRecords(input: {
     mfaRequired: platformAdministrators.mfaRequired,
     version: platformAdministrators.version,
     roleCodes: sql<string>`COALESCE((
-      SELECT GROUP_CONCAT(pr.code ORDER BY pr.code SEPARATOR ',')
+      SELECT string_agg(pr.code::text, ',' ORDER BY pr.code)
       FROM ${platformAdministratorRoles} par
-      INNER JOIN ${platformRoles} pr ON pr.id = par.platformRoleId
-      WHERE par.platformAdministratorId = ${platformAdministrators.id}
+      INNER JOIN ${platformRoles} pr ON pr.id = par."platformRoleId"
+      WHERE par."platformAdministratorId" = ${platformAdministrators.id}
     ), '')`,
     lastSignedIn: users.lastSignedIn,
     updatedAt: platformAdministrators.updatedAt,

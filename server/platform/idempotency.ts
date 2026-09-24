@@ -38,14 +38,6 @@ export function hashIdempotencyRequest(input: {
   };
 }
 
-function isDuplicateKey(error: unknown) {
-  return Boolean(
-    error &&
-    typeof error === "object" &&
-    String((error as { code?: unknown }).code ?? "") === "ER_DUP_ENTRY",
-  );
-}
-
 /**
  * Run a platform mutation once. The idempotency claim, business writes, audit,
  * and cached response share the caller's transaction.
@@ -67,21 +59,20 @@ export async function executeIdempotent<T>(
 
   const now = new Date();
   const hashes = hashIdempotencyRequest(input);
-  let created = false;
-  try {
-    await tx.insert(idempotencyKeys).values({
-      companyId: input.companyId,
-      userId: input.userId,
-      ...hashes,
-      requestMethod: "POST",
-      status: "processing",
-      lockedUntil: new Date(now.getTime() + PROCESSING_LEASE_MS),
-      expiresAt: new Date(now.getTime() + RETENTION_MS),
-    });
-    created = true;
-  } catch (error) {
-    if (!isDuplicateKey(error)) throw error;
-  }
+  // Postgres aborts the entire transaction on any error, so catching a
+  // duplicate-key failure here - as the MySQL version did - would leave the
+  // caller's transaction poisoned and every following statement would fail
+  // with 25P02. ON CONFLICT DO NOTHING detects the collision without raising.
+  const claimed = await tx.insert(idempotencyKeys).values({
+    companyId: input.companyId,
+    userId: input.userId,
+    ...hashes,
+    requestMethod: "POST",
+    status: "processing",
+    lockedUntil: new Date(now.getTime() + PROCESSING_LEASE_MS),
+    expiresAt: new Date(now.getTime() + RETENTION_MS),
+  }).onConflictDoNothing().returning({ id: idempotencyKeys.id });
+  const created = claimed.length > 0;
 
   const companyPredicate = input.companyId === null
     ? isNull(idempotencyKeys.companyId)

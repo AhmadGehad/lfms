@@ -32,7 +32,16 @@
     "db:rehearse-tenancy": "node scripts/rehearse-tenancy-migration.mjs",
     "db:migrate-tenancy": "MIGRATION_MODE=production node scripts/rehearse-tenancy-migration.mjs",
     "admin:bootstrap": "tsx scripts/bootstrap-platform-admin.ts",
-    "admin:bootstrap:password": "tsx scripts/bootstrap-platform-admin-password.ts"
+    "admin:bootstrap:password": "tsx scripts/bootstrap-platform-admin-password.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "pg:build-schema": "bash scripts/pg-migration/build-schema.sh",
+    "pg:apply-schema": "tsx scripts/pg-migration/apply-schema.mts",
+    "pg:preflight": "tsx scripts/pg-migration/preflight.mts",
+    "pg:copy": "tsx scripts/pg-migration/copy-data.mts",
+    "pg:copy-legacy": "tsx scripts/pg-migration/copy-legacy.mts",
+    "pg:verify": "tsx scripts/pg-migration/verify.mts",
+    "pg:backup": "tsx scripts/pg-migration/backup-source.mts",
+    "pg:copy-storage": "tsx scripts/pg-migration/copy-storage.mts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1090.0",
@@ -97,6 +106,7 @@
     "nanoid": "^5.1.5",
     "next-themes": "^0.4.6",
     "nodemailer": "^9.0.3",
+    "pg": "^8.23.0",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.1",
@@ -122,6 +132,7 @@
     "@types/google.maps": "^3.58.1",
     "@types/node": "^24.7.0",
     "@types/nodemailer": "^8.0.1",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
     "@vitejs/plugin-react": "^5.0.4",

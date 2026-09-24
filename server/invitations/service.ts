@@ -78,10 +78,6 @@ function safeFarmPublicIds(value: unknown) {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-function driverBinary(value: Buffer) {
-  return value as unknown as string;
-}
-
 function safeEqual(left: string | Buffer | null, right: Buffer) {
   const buffer = typeof left === "string" ? Buffer.from(left, "binary") : left;
   return Boolean(buffer && buffer.length === right.length && timingSafeEqual(buffer, right));
@@ -172,8 +168,8 @@ export async function insertPlatformInvitation(tx: PlatformDb, input: {
     farmAccessMode: input.farmAccessMode,
     farmPublicIds,
     provider,
-    providerSubjectHash: driverBinary(providerSubjectHash),
-    tokenHash: driverBinary(hashInvitationToken(token)),
+    providerSubjectHash: providerSubjectHash,
+    tokenHash: hashInvitationToken(token),
     status: "pending",
     invitedByPlatformAdministratorId: actor.platformAdminId,
     expiresAt: input.expiresAt,
@@ -477,7 +473,7 @@ export async function previewInvitation(input: { token: string; companySlug: str
     expiresAt: companyInvitations.expiresAt,
   }).from(companyInvitations)
     .innerJoin(companies, eq(companyInvitations.companyId, companies.id))
-    .where(and(eq(companyInvitations.tokenHash, driverBinary(tokenHash)), eq(companies.slug, input.companySlug)))
+    .where(and(eq(companyInvitations.tokenHash, tokenHash), eq(companies.slug, input.companySlug)))
     .limit(1);
   if (!row) notFound("Invitation");
   const expired = row.status === "pending" && row.expiresAt <= new Date();
@@ -551,15 +547,12 @@ export async function acceptInvitation(input: {
     const tokenHash = hashInvitationToken(input.token);
     const [invitation] = await tx.select({
       invitation: companyInvitations,
-      // The drizzle binary() mapping decodes BINARY columns as utf8 text,
-      // which destroys hash bytes; read a hex projection for comparisons.
-      providerSubjectHashHex: sql<string>`LOWER(HEX(${companyInvitations.providerSubjectHash}))`,
       companyPublicId: companies.publicId,
       companySlug: companies.slug,
       companyStatus: companies.lifecycleStatus,
     }).from(companyInvitations)
       .innerJoin(companies, eq(companyInvitations.companyId, companies.id))
-      .where(and(eq(companyInvitations.tokenHash, driverBinary(tokenHash)), eq(companies.slug, input.companySlug)))
+      .where(and(eq(companyInvitations.tokenHash, tokenHash), eq(companies.slug, input.companySlug)))
       .limit(1).for("update");
     if (!invitation) notFound("Invitation");
     const record = invitation.invitation;
@@ -612,9 +605,7 @@ export async function acceptInvitation(input: {
       .where(and(eq(authIdentities.userId, actor.userId), eq(authIdentities.provider, record.provider)))
       .limit(1).for("update");
     const providerEmail = identity?.providerEmail ? normalizeEmail(identity.providerEmail) : null;
-    const storedSubjectHash = typeof invitation.providerSubjectHashHex === "string"
-      ? Buffer.from(invitation.providerSubjectHashHex, "hex")
-      : record.providerSubjectHash;
+    const storedSubjectHash = record.providerSubjectHash;
     const emailBindingMatches = Boolean(providerEmail && safeEqual(
       storedSubjectHash,
       hashProviderSubject(record.provider, emailBindingSubject(providerEmail)),
@@ -762,7 +753,7 @@ export async function activateInvitationWithPassword(input: {
     }).from(companyInvitations)
       .innerJoin(companies, eq(companyInvitations.companyId, companies.id))
       .where(and(
-        eq(companyInvitations.tokenHash, driverBinary(tokenHash)),
+        eq(companyInvitations.tokenHash, tokenHash),
         eq(companies.slug, input.companySlug),
       ))
       .limit(1);

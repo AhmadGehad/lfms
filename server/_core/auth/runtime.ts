@@ -186,21 +186,24 @@ export function hasPlatformOidcConfiguration() {
 
 export function validateProductionDatabaseUrl(value: string) {
   const url = new URL(value);
-  if (url.protocol !== "mysql:") throw new Error("DATABASE_URL must use mysql://");
+  if (url.protocol !== "postgres:" && url.protocol !== "postgresql:") {
+    throw new Error("DATABASE_URL must use postgres://");
+  }
   if (!url.hostname || !url.pathname || url.pathname === "/") {
     throw new Error("DATABASE_URL must include a host and database name");
   }
-  const sslParam = url.searchParams.get("ssl") ?? "";
-  const ssl = sslParam.toLowerCase();
-  const sslMode = (url.searchParams.get("ssl-mode") ?? "").toUpperCase();
-  // Accept: ssl=true, ssl=verify_identity, ssl-mode=VERIFY_CA/VERIFY_IDENTITY,
-  // and TiDB/MySQL2 JSON format: ssl={"rejectUnauthorized":true}
-  let sslJson: Record<string, unknown> = {};
-  try { sslJson = JSON.parse(sslParam); } catch { /* not JSON */ }
-  const verifiedSsl = ssl === "true" || ssl === "verify_identity" ||
-    sslMode === "VERIFY_CA" || sslMode === "VERIFY_IDENTITY" ||
-    sslJson["rejectUnauthorized"] === true;
-  if (!verifiedSsl || ssl === "false" || sslMode === "DISABLED") {
+  // Postgres spells this `sslmode`. The MySQL spellings are still read so an
+  // operator pasting a pre-migration URL fails loudly here rather than
+  // connecting to Supabase without certificate verification.
+  const sslMode = (
+    url.searchParams.get("sslmode") ??
+    url.searchParams.get("ssl-mode") ??
+    url.searchParams.get("ssl") ??
+    ""
+  ).toLowerCase();
+  const verifiedSsl =
+    sslMode === "verify-full" || sslMode === "verify-ca" || sslMode === "require";
+  if (!verifiedSsl) {
     throw new Error("DATABASE_URL must require verified TLS in production");
   }
   return url;
