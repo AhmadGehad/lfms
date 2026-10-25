@@ -1,4 +1,8 @@
 import { Container, getRandom } from "@cloudflare/containers";
+import {
+  buildPublicRuntimeConfig,
+  serializePublicRuntimeConfig,
+} from "../shared/publicRuntimeConfig";
 import { env as workerEnv } from "cloudflare:workers";
 import {
   collectContainerEnvironment,
@@ -62,6 +66,7 @@ type WorkerBindings = {
 } & Record<string, unknown>;
 
 const INTERNAL_SEND_EMAIL_PATH = "/__internal/send-email";
+const RUNTIME_CONFIG_PATH = "/runtime-config.js";
 
 // Constant-time comparison so guessing INTERNAL_API_SECRET can't be sped up
 // by measuring how many leading bytes of the Authorization header matched.
@@ -181,6 +186,29 @@ export default {
     }
 
     const isPlatform = isPlatformHostname(hostname, baseDomain);
+    if (
+      url.pathname === RUNTIME_CONFIG_PATH &&
+      (request.method === "GET" || request.method === "HEAD")
+    ) {
+      // Render-blocking in index.html and built only from vars the Worker
+      // already has, so it is answered here instead of from the container.
+      return secureEdgeResponse(
+        new Response(
+          request.method === "HEAD"
+            ? null
+            : serializePublicRuntimeConfig(buildPublicRuntimeConfig(env)),
+          {
+            headers: {
+              "Content-Type": "application/javascript; charset=utf-8",
+              "Cache-Control": "no-store",
+            },
+          }
+        ),
+        env,
+        requestId,
+        { platform: isPlatform }
+      );
+    }
     if (!shouldProxyToContainer(request)) {
       const assetPath = resolveEdgeAssetPath(url.pathname, isPlatform);
       if (!assetPath) {
@@ -212,6 +240,7 @@ export default {
         return secureEdgeResponse(response, env, requestId, {
           html: isHtml && response.ok,
           platform: isPlatform,
+          immutable: assetPath.startsWith("/assets/"),
         });
       } catch (error) {
         console.error("LFMS static assets unavailable", {

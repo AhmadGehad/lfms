@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InlineSkeleton } from "@/components/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { AnimalCostDetailsDialog } from "@/components/AnimalCostDetailsDialog";
 import { Input } from "@/components/ui/input";
@@ -452,11 +453,11 @@ export default function NewAnimalProfile() {
             <div className="grid grid-cols-2 gap-3 sm:min-w-64">
               <div className="rounded-lg bg-surface p-3">
                 <p className="text-xs text-muted-foreground">{t("pnl.totalCost", "Total Cost")}</p>
-                <p className="font-semibold tabular-nums">{pnlLoading ? "..." : fmt(parseFloat(p?.totalCost ?? 0))}</p>
+                <p className="font-semibold tabular-nums">{pnlLoading ? <InlineSkeleton className="h-4 w-20" /> : fmt(parseFloat(p?.totalCost ?? 0))}</p>
               </div>
               <div className="rounded-lg bg-surface p-3">
                 <p className="text-xs text-muted-foreground">{t("pnl.netPnL", "Net P&L")}</p>
-                <p className={`font-semibold tabular-nums ${netPnl >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}`}>{pnlLoading ? "..." : fmt(netPnl)}</p>
+                <p className={`font-semibold tabular-nums ${netPnl >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}`}>{pnlLoading ? <InlineSkeleton className="h-4 w-20" /> : fmt(netPnl)}</p>
               </div>
             </div>
           </div>

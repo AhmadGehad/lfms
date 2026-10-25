@@ -49,6 +49,7 @@ import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { AnimalCreateDialog, BulkRecordSaleDialog, QuickExpenseDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { CapitalPartnersSummary } from "@/components/CapitalPartnersSummary";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const MS_DAY = 86400000;
 const DASHBOARD_PREF_KEY = "lfms:new-dashboard-layout";
@@ -305,25 +306,25 @@ export default function NewDashboard() {
     { ownerId: ownerParam },
     { enabled: perms.can("dashboard", "view") }
   );
-  const { data: feedStock } = trpc.feed.getStockStatus.useQuery(undefined, { enabled: perms.can("feed", "view") });
-  const { data: upcomingVaccinations } = trpc.vaccination.getUpcomingVaccinations.useQuery(
+  const { data: feedStock, isLoading: feedLoading } = trpc.feed.getStockStatus.useQuery(undefined, { enabled: perms.can("feed", "view") });
+  const { data: upcomingVaccinations, isLoading: vaccinationsLoading } = trpc.vaccination.getUpcomingVaccinations.useQuery(
     { days: 30 }, { enabled: perms.can("vaccinations", "view") }
   );
-  const { data: pregnancyAlerts } = trpc.pregnancy.getUpcoming.useQuery(
+  const { data: pregnancyAlerts, isLoading: pregnancyLoading } = trpc.pregnancy.getUpcoming.useQuery(
     { days: 30 }, { enabled: perms.can("pregnancy", "view") }
   );
-  const { data: unpaidSales } = trpc.sales.list.useQuery(
+  const { data: unpaidSales, isLoading: unpaidLoading } = trpc.sales.list.useQuery(
     { outstandingOnly: true, ownerId: ownerParam }, { enabled: perms.can("sales", "view") }
   );
-  const { data: animals } = trpc.animals.list.useQuery(
+  const { data: animals, isLoading: animalsLoading } = trpc.animals.list.useQuery(
     { isActive: true, ownerId: ownerParam },
     { enabled: perms.can("animals", "view") }
   );
-  const { data: lambsToPromote } = trpc.breeding.listLambing.useQuery(
+  const { data: lambsToPromote, isLoading: lambsLoading } = trpc.breeding.listLambing.useQuery(
     { isPromoted: false, ownerId: ownerParam },
     { enabled: perms.can("breeding", "view") }
   );
-  const { data: auditRows } = trpc.audit.list.useQuery(
+  const { data: auditRows, isLoading: auditLoading } = trpc.audit.list.useQuery(
     {},
     { enabled: perms.can("audit", "view") }
   );
@@ -333,15 +334,15 @@ export default function NewDashboard() {
     from.setMonth(from.getMonth() - 6);
     return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) };
   }, []);
-  const { data: expenseTrend } = trpc.dashboard.getExpenseTrend.useQuery(
+  const { data: expenseTrend, isLoading: expenseTrendLoading } = trpc.dashboard.getExpenseTrend.useQuery(
     { fromDate: trendRange.from, toDate: trendRange.to, ownerId: ownerParam },
     { enabled: perms.can("dashboard", "view") }
   );
-  const { data: salesTrend } = trpc.dashboard.getSalesTrend.useQuery(
+  const { data: salesTrend, isLoading: salesTrendLoading } = trpc.dashboard.getSalesTrend.useQuery(
     { fromDate: trendRange.from, toDate: trendRange.to, ownerId: ownerParam },
     { enabled: perms.can("dashboard", "view") }
   );
-  const { data: headCountByCategory } = trpc.dashboard.getHeadCountByCategory.useQuery(
+  const { data: headCountByCategory, isLoading: headcountLoading } = trpc.dashboard.getHeadCountByCategory.useQuery(
     { ownerId: ownerParam },
     { enabled: perms.can("dashboard", "view") }
   );
@@ -500,7 +501,7 @@ export default function NewDashboard() {
     animals: (
       <KpiCard
         label={kpiLabels.animals}
-        value={kpisLoading ? "..." : (kpis?.totalActiveHeads ?? 0)}
+        value={kpisLoading ? <Skeleton className="h-7 w-20" /> : (kpis?.totalActiveHeads ?? 0)}
         icon={Leaf}
         href="/animals"
         hint={`${(kpis?.categoryBreakdown ?? []).length} ${t("common.category", "categories").toLowerCase()}`}
@@ -510,7 +511,7 @@ export default function NewDashboard() {
     revenue: (
       <KpiCard
         label={kpiLabels.revenue}
-        value={kpisLoading ? "..." : fmt(kpis?.totalRevenue ?? 0)}
+        value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(kpis?.totalRevenue ?? 0)}
         icon={TrendingUp}
         href="/sales"
         tone="success"
@@ -519,7 +520,7 @@ export default function NewDashboard() {
     expenses: (
       <KpiCard
         label={kpiLabels.expenses}
-        value={kpisLoading ? "..." : fmt(kpis?.totalExpenses ?? 0)}
+        value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(kpis?.totalExpenses ?? 0)}
         icon={DollarSign}
         href="/expenses"
         hint={kpis ? `${t("feed.title", "Feed")}: ${fmt(kpis.feedExpenses ?? 0)}` : undefined}
@@ -529,7 +530,7 @@ export default function NewDashboard() {
     pnl: (
       <KpiCard
         label={kpiLabels.pnl}
-        value={kpisLoading ? "..." : fmt(grossPnL)}
+        value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(grossPnL)}
         icon={Activity}
         href="/pnl"
         trend={kpis ? { pct: 0 } : undefined}
@@ -548,6 +549,7 @@ export default function NewDashboard() {
           tone="warning"
           count={pregnancyItems.length}
           items={pregnancyItems}
+          loading={pregnancyLoading}
           viewAllHref="/pregnancy"
           viewAllLabel={t("common.viewAll", "View all")}
           emptyText={t("dashboard.noPregnancies", "No pregnancies due soon")}
@@ -563,6 +565,7 @@ export default function NewDashboard() {
           tone={overdueVax > 0 ? "danger" : "warning"}
           count={vaccinationItems.length}
           items={vaccinationItems}
+          loading={vaccinationsLoading}
           viewAllHref="/vaccinations"
           viewAllLabel={t("common.viewAll", "View all")}
           emptyText={t("dashboard.noVaccinations", "Nothing due this week")}
@@ -578,6 +581,7 @@ export default function NewDashboard() {
           tone="danger"
           count={feedItems.length}
           items={feedItems}
+          loading={feedLoading}
           viewAllHref="/feed"
           viewAllLabel={t("common.viewAll", "View all")}
           emptyText={t("dashboard.feedOk", "Stock levels healthy")}
@@ -593,6 +597,7 @@ export default function NewDashboard() {
           tone="success"
           count={readyItems.length}
           items={readyItems}
+          loading={animalsLoading}
           viewAllHref="/animals?view=ready"
           viewAllLabel={t("common.viewAll", "View all")}
           emptyText={t("dashboard.noneReady", "No animals near target")}
@@ -608,6 +613,7 @@ export default function NewDashboard() {
           tone="info"
           count={lambItems.length}
           items={lambItems}
+          loading={lambsLoading}
           viewAllHref="/breeding"
           viewAllLabel={t("common.viewAll", "View all")}
           emptyText={t("dashboard.noLambsToPromote", "No lambs waiting for promotion")}
@@ -623,6 +629,7 @@ export default function NewDashboard() {
           tone="info"
           count={unpaidItems.length}
           items={unpaidItems}
+          loading={unpaidLoading}
           viewAllHref="/sales"
           viewAllLabel={t("common.viewAll", "View all")}
           emptyText={t("dashboard.noUnpaid", "All sales settled")}
@@ -637,12 +644,13 @@ export default function NewDashboard() {
           salesTrend={(salesTrend as any[]) ?? []}
           expenseTrend={(expenseTrend as any[]) ?? []}
           fmt={fmt}
+          loading={salesTrendLoading || expenseTrendLoading}
         />
       ),
     },
     headcount: {
       enabled: perms.can("dashboard", "view"),
-      node: <HeadcountPanel title={widgetLabels.headcount} rows={(headCountByCategory as any[]) ?? []} />,
+      node: <HeadcountPanel title={widgetLabels.headcount} rows={(headCountByCategory as any[]) ?? []} loading={headcountLoading} />,
     },
     recent: {
       enabled: perms.can("audit", "view"),
@@ -653,6 +661,7 @@ export default function NewDashboard() {
           tone="neutral"
           count={recentItems.length}
           items={recentItems}
+          loading={auditLoading}
           viewAllHref="/audit"
           viewAllLabel={t("common.viewAll", "View all")}
           emptyText={t("dashboard.noRecentWork", "No recent changes")}
@@ -750,8 +759,9 @@ const monthLabel = (m: unknown) => {
 };
 
 /** Six-month revenue (bars) and expense (area) trend — one measure per plot. */
-function TrendsPanel({ title, salesTrend, expenseTrend, fmt }: {
+function TrendsPanel({ title, salesTrend, expenseTrend, fmt, loading }: {
   title: string;
+  loading?: boolean;
   salesTrend: any[];
   expenseTrend: any[];
   fmt: (n: number) => string;
@@ -767,7 +777,12 @@ function TrendsPanel({ title, salesTrend, expenseTrend, fmt }: {
         <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         {title}
       </h3>
-      {sales.length === 0 && expenses.length === 0 ? (
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2" aria-busy="true">
+          <Skeleton className="h-40 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
+        </div>
+      ) : sales.length === 0 && expenses.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{t("common.noData", "No data")}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -812,7 +827,7 @@ function TrendsPanel({ title, salesTrend, expenseTrend, fmt }: {
 }
 
 /** Active head count by category as labeled horizontal bars (replaces Old's pie). */
-function HeadcountPanel({ title, rows }: { title: string; rows: any[] }) {
+function HeadcountPanel({ title, rows, loading }: { title: string; rows: any[]; loading?: boolean }) {
   const { t } = useTranslation();
   const data = rows
     .map(r => ({ name: r.category ?? t("common.noData", "No data"), count: Number(r.count ?? 0) }))
@@ -825,7 +840,11 @@ function HeadcountPanel({ title, rows }: { title: string; rows: any[] }) {
         <Leaf className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
         {title}
       </h3>
-      {data.length === 0 ? (
+      {loading ? (
+        <div className="space-y-2" aria-busy="true">
+          {Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-5 w-full" />)}
+        </div>
+      ) : data.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">{t("common.noData", "No data")}</p>
       ) : (
         <ul className="space-y-2">

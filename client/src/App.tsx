@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { InstallAppBanner } from "./components/InstallAppBanner";
+import { DashboardLayoutSkeleton } from "./components/DashboardLayoutSkeleton";
+import { AuthPageSkeleton } from "./components/PageSkeleton";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { OwnerFilterProvider } from "./contexts/OwnerFilterContext";
 import { DesignVersionProvider } from "./contexts/DesignVersionContext";
@@ -54,18 +56,9 @@ function TenantSurface() {
   // so a real fetch error doesn't get mistaken for "workspace doesn't exist".
   const workspaceNotFound = branding.isSuccess && branding.data === null;
 
-  const loadingIndicator = (
-    <main
-      className="grid min-h-dvh place-items-center bg-background"
-      aria-busy="true"
-      aria-live="polite"
-    >
-      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
-        <span className="text-sm">Loading…</span>
-      </div>
-    </main>
-  );
+  // Shaped like what is about to appear: the sign-in card on auth routes, the
+  // app shell everywhere else.
+  const loadingIndicator = unauthenticatedRoute ? <AuthPageSkeleton /> : <DashboardLayoutSkeleton />;
 
   const surface = () => {
     // Wait for the existence check before rendering *any* route on this

@@ -126,11 +126,6 @@ describe("Cloudflare container boundary", () => {
     ).toBe(true);
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.apiseg.com/runtime-config.js")
-      )
-    ).toBe(true);
-    expect(
-      shouldProxyToContainer(
         new Request("https://azal-farms.apiseg.com/animals", { method: "POST" })
       )
     ).toBe(true);
@@ -172,13 +167,33 @@ describe("Cloudflare container boundary", () => {
     expect(
       shouldProxyToContainer(new Request("https://azal-farms.apiseg.com/sw.js"))
     ).toBe(false);
-    // The app cannot boot offline without this file, and it is container-served,
-    // so the service worker has to cache it rather than treat it as an asset.
+    // The Worker answers /runtime-config.js itself, before this check runs.
     expect(
       shouldProxyToContainer(
         new Request("https://azal-farms.apiseg.com/runtime-config.js")
       )
-    ).toBe(true);
+    ).toBe(false);
+  });
+
+  it("lets browsers cache hashed build assets without revalidating", () => {
+    const asset = secureEdgeResponse(
+      new Response("console.log(1)", {
+        headers: { "Cache-Control": "public, max-age=0, must-revalidate" },
+      }),
+      {},
+      "edge-request-asset",
+      { immutable: true }
+    );
+    expect(asset.headers.get("cache-control")).toBe(
+      "public, max-age=31536000, immutable"
+    );
+    const missing = secureEdgeResponse(
+      new Response("Not found", { status: 404 }),
+      {},
+      "edge-request-missing",
+      { immutable: true }
+    );
+    expect(missing.headers.get("cache-control")).toBe("no-store");
   });
 
   it("adds hardened HTML headers and storage origins at the edge", () => {

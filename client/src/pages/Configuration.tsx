@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TableRowsSkeleton } from "@/components/PageSkeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
@@ -97,6 +98,8 @@ function SpeciesTab() {
       <Table>
         <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("pregnancy.gestationDays")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
+          {species === undefined && <TableRowsSkeleton columns={5} rows={4} />}
+
           {(species ?? []).map((s: any) => (
             <TableRow key={s.id}>
               <TableCell className="font-medium">{s.name}</TableCell>
@@ -237,6 +240,8 @@ function CategoriesTab() {
           <TableHead className="w-16"></TableHead>
         </TableRow></TableHeader>
         <TableBody>
+          {categories === undefined && <TableRowsSkeleton columns={6} rows={4} />}
+
           {(categories ?? []).map((c: any) => (
             <TableRow key={c.id}>
               <TableCell className="font-medium">{c.name}</TableCell>
@@ -334,6 +339,8 @@ function GroupsTab() {
       <Table>
         <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.code")}</TableHead><TableHead>Color</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
+          {groups === undefined && <TableRowsSkeleton columns={5} rows={4} />}
+
           {(groups ?? []).map((g: any) => (
             <TableRow key={g.id}>
               <TableCell className="font-medium">{g.name}</TableCell>
@@ -401,6 +408,8 @@ function StatusesTab() {
       <Table>
         <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
+          {statuses === undefined && <TableRowsSkeleton columns={3} rows={4} />}
+
           {(statuses ?? []).map((s: any) => (
             <TableRow key={s.id}>
               <TableCell className="font-medium">{s.name}</TableCell>
@@ -489,6 +498,8 @@ function OwnersTab() {
           <TableHead className="w-28"></TableHead>
         </TableRow></TableHeader>
         <TableBody>
+          {owners === undefined && <TableRowsSkeleton columns={6} rows={4} />}
+
           {(owners ?? []).map((o: any) => (
             <TableRow key={o.id}>
               <TableCell className="font-medium">{o.name}</TableCell>
@@ -499,7 +510,7 @@ function OwnersTab() {
               <TableCell className="whitespace-nowrap">{canUpdate && <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(o)}><Pencil className="h-3.5 w-3.5" /></Button>}</TableCell>
             </TableRow>
           ))}
-          {(owners ?? []).length === 0 && (
+          {owners?.length === 0 && (
             <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">{t("owners.noOwners")}</TableCell></TableRow>
           )}
         </TableBody>
@@ -557,6 +568,8 @@ function BirthTypesTab() {
       <Table>
         <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead className="w-16"></TableHead></TableRow></TableHeader>
         <TableBody>
+          {birthTypes === undefined && <TableRowsSkeleton columns={3} rows={4} />}
+
           {(birthTypes ?? []).map((b: any) => (
             <TableRow key={b.id}>
               <TableCell className="font-medium">{b.name}</TableCell>
@@ -650,6 +663,8 @@ function FeedItemsTab() {
       <Table>
         <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.unit")}</TableHead><TableHead>{t("config.pricePerUnit")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-24"></TableHead></TableRow></TableHeader>
         <TableBody>
+          {feedItems === undefined && <TableRowsSkeleton columns={5} rows={4} />}
+
           {(feedItems ?? []).map((fi: any) => (
             <TableRow key={fi.id}>
               <TableCell className="font-medium">{fi.name}</TableCell>
@@ -816,6 +831,8 @@ function ExpenseCategoriesTab() {
       <Table>
         <TableHeader><TableRow><TableHead>{t("common.name")}</TableHead><TableHead>{t("config.description")}</TableHead><TableHead>{t("expenses.subCategory")}</TableHead><TableHead>{t("config.statusLabel")}</TableHead><TableHead className="w-20"></TableHead></TableRow></TableHeader>
         <TableBody>
+          {categories === undefined && <TableRowsSkeleton columns={5} rows={4} />}
+
           {(categories ?? []).flatMap((c: any) => {
             const children = (subCategories ?? []).filter((s: any) => s.categoryId === c.id);
             return [

@@ -16,11 +16,11 @@ import { toast } from "sonner";
 import {
   Trash2,
   RotateCcw,
-  Loader2,
   PackageOpen,
   Filter,
 } from "lucide-react";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ListSkeleton } from "@/components/PageSkeleton";
 
 const ENTITY_TYPES = [
   { value: "all", label: "All Types" },
@@ -234,9 +234,7 @@ export default function RecycleBin() {
 
         {/* Items */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
+          <ListSkeleton rows={5} />
         ) : items.length === 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-20 text-center">

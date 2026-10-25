@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
 import { FormEvent, useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const INVITATION_STORAGE_KEY = "lfms.pendingInvitation";
 
@@ -60,7 +61,13 @@ export default function AcceptInvitation() {
           <div><h1 className="text-xl font-semibold">APIS company invitation</h1><p className="text-sm text-muted-foreground">Secure company access</p></div>
         </div>
 
-        {preview.isPending && <p className="text-sm text-muted-foreground">Checking invitation...</p>}
+        {preview.isPending && (
+          <div className="space-y-3" role="status" aria-label="Checking invitation">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+            <Skeleton className="h-10 w-full rounded-lg" />
+          </div>
+        )}
 
         {unavailable && !preview.isPending && (
           <div className="flex gap-3 border-l-4 border-destructive px-4 py-2">

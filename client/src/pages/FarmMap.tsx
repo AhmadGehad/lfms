@@ -32,6 +32,7 @@ import {
 import { type MouseEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type DrawMode = "select" | "rect" | "polygon";
 
@@ -458,9 +459,7 @@ export default function FarmMap() {
 
           <div ref={frameRef} className="h-[360px] overflow-auto rounded-md bg-muted/50 md:h-[540px]">
             {imageLoading ? (
-              <div className="flex h-full items-center justify-center">
-                <div className="h-12 w-12 animate-pulse rounded-full bg-muted" />
-              </div>
+              <Skeleton className="h-full w-full rounded-md" aria-hidden="true" />
             ) : imageUrl ? (
               <div
                 className="flex items-center justify-center p-4"
@@ -538,9 +537,8 @@ export default function FarmMap() {
           </div>
           <div className="max-h-[calc(100vh-12rem)] space-y-2 overflow-y-auto pr-1">
             {groupsLoading ? (
-              <div className="space-y-2">
-                <div className="h-12 animate-pulse rounded-md bg-muted" />
-                <div className="h-12 animate-pulse rounded-md bg-muted" />
+              <div className="space-y-2" aria-hidden="true">
+                {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-12 rounded-md" />)}
               </div>
             ) : (
               groupList.map((group: any) => {

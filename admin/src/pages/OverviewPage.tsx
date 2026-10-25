@@ -6,6 +6,7 @@ import { PageHeading } from "@admin/components/PageHeading";
 import { StatusBadge } from "@admin/components/StatusBadge";
 import { formatDate, formatNumber } from "@admin/lib/format";
 import { platformTrpc } from "@admin/lib/trpc";
+import { InlineSkeleton } from "@/components/PageSkeleton";
 
 export function OverviewPage() {
   const summary = platformTrpc.dashboard.summary.useQuery();
@@ -24,10 +25,10 @@ export function OverviewPage() {
         </Alert>
       )}
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Platform metrics">
-        <MetricCard label="Companies" value={summary.isLoading ? "…" : formatNumber(total)} detail={`${data?.companies.active ?? 0} active · ${data?.companies.suspended ?? 0} suspended`} icon={Building2} />
-        <MetricCard label="Farms" value={summary.isLoading ? "…" : formatNumber(data?.farms)} detail="Across all active and suspended tenants" icon={Warehouse} />
-        <MetricCard label="Active users" value={summary.isLoading ? "…" : formatNumber(data?.memberships)} detail="Company memberships with active access" icon={Users} />
-        <MetricCard label="Failed jobs" value={summary.isLoading ? "…" : formatNumber(data?.jobs.failed)} detail={`${data?.jobs.pending ?? 0} queued · ${data?.jobs.processing ?? 0} processing`} icon={Activity} tone={(data?.jobs.failed ?? 0) > 0 ? "danger" : "default"} />
+        <MetricCard label="Companies" value={summary.isLoading ? <InlineSkeleton className="h-7 w-16" /> : formatNumber(total)} detail={`${data?.companies.active ?? 0} active · ${data?.companies.suspended ?? 0} suspended`} icon={Building2} />
+        <MetricCard label="Farms" value={summary.isLoading ? <InlineSkeleton className="h-7 w-16" /> : formatNumber(data?.farms)} detail="Across all active and suspended tenants" icon={Warehouse} />
+        <MetricCard label="Active users" value={summary.isLoading ? <InlineSkeleton className="h-7 w-16" /> : formatNumber(data?.memberships)} detail="Company memberships with active access" icon={Users} />
+        <MetricCard label="Failed jobs" value={summary.isLoading ? <InlineSkeleton className="h-7 w-16" /> : formatNumber(data?.jobs.failed)} detail={`${data?.jobs.pending ?? 0} queued · ${data?.jobs.processing ?? 0} processing`} icon={Activity} tone={(data?.jobs.failed ?? 0) > 0 ? "danger" : "default"} />
       </section>
 
       <section className="mt-4 grid gap-4 lg:grid-cols-2">
