@@ -25,7 +25,8 @@ import {
   bucketForIdentity,
   createOfflinePersister,
 } from "./lib/offline/persister";
-import { registerServiceWorker } from "./lib/offline/registerServiceWorker";
+import { registerServiceWorker, unregisterServiceWorker } from "./lib/offline/registerServiceWorker";
+import { isBareHost } from "./lib/bareHost";
 import { captureInstallPrompt } from "./lib/pwa/installPromptBuffer";
 import { isAuthExpiredError } from "./lib/offline/syncQueue";
 import { initializePublicBrowserServices } from "./lib/publicConfig";
@@ -199,12 +200,18 @@ const trpcClient = trpc.createClient({
 // mutation has no function of its own and can only resume via these defaults.
 registerOfflineMutationDefaults(queryClient, trpcClient);
 
-registerServiceWorker(applyUpdate => {
-  toast("A new version of APIS is ready.", {
-    duration: Infinity,
-    action: { label: "Reload", onClick: applyUpdate },
+// The marketing site and demo need no offline support, and a cached shell
+// would keep showing returning visitors an outdated page.
+if (isBareHost(window.location.hostname)) {
+  void unregisterServiceWorker();
+} else {
+  registerServiceWorker(applyUpdate => {
+    toast("A new version of APIS is ready.", {
+      duration: Infinity,
+      action: { label: "Reload", onClick: applyUpdate },
+    });
   });
-});
+}
 
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
