@@ -8,7 +8,7 @@
  */
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
-import { PERMISSION_PAGES } from "@shared/permissions";
+import { CONFIGURABLE_ROLES, PERMISSION_PAGES } from "@shared/permissions";
 import apisFavicon from "@/assets/brand/favicon.svg";
 
 type Out = inferRouterOutputs<AppRouter>;
@@ -695,6 +695,7 @@ export const demoFixtures: DemoFixtures = {
   },
   permissions: {
     my: { role: "owner", matrix: OWNER_MATRIX },
+    catalog: { configurableRoles: CONFIGURABLE_ROLES, pages: PERMISSION_PAGES },
     roleMatrix: (input: { role: "supervisor" | "staff" | "user" | "viewer" }) => ({
       role: input.role,
       revision: "demo",
