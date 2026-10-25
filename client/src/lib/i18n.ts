@@ -27,6 +27,7 @@ const en = {
     configuration: "Configuration",
     dataManagement: "Data Management",
     recycleBin: "Recycle Bin",
+    expand: "Expand menu",
     groups: {
       overview: "Overview",
       livestock: "Livestock",
@@ -1064,6 +1065,7 @@ const ar = {
     configuration: "الإعدادات",
     dataManagement: "إدارة البيانات",
     recycleBin: "سلة المحذوفات",
+    expand: "توسيع القائمة",
     groups: {
       overview: "نظرة عامة",
       livestock: "المواشي",

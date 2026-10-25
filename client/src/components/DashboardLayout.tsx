@@ -23,6 +23,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
@@ -157,6 +158,8 @@ function DashboardLayoutContent({
   // On mobile the sidebar is an offcanvas drawer — when it's visible the user
   // always sees the full labels regardless of the desktop "collapsed" state.
   const showLabels = !isCollapsed || isMobileProp;
+  // Tooltips open away from the rail: right of a left sidebar, left of an RTL one.
+  const tipSide = isAr ? "left" : "right";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = isMobileProp;
@@ -273,7 +276,8 @@ function DashboardLayoutContent({
         >
           {/* Header */}
           <SidebarHeader className="h-16 justify-center border-b border-sidebar-border">
-            <div className={`flex items-center gap-3 px-2 w-full ${isAr ? "flex-row-reverse" : ""}`}>
+            <div className={`flex items-center gap-3 w-full ${isCollapsed ? "justify-center" : "px-2"} ${isAr ? "flex-row-reverse" : ""}`}>
+              <NavTip label={showLabels ? undefined : t("nav.expand", "Expand menu")} side={tipSide}>
               <button
                 onClick={toggleSidebar}
                 className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors shrink-0"
@@ -281,6 +285,7 @@ function DashboardLayoutContent({
               >
                 <PanelLeft className={`h-4 w-4 text-sidebar-foreground/70 ${isAr ? "rotate-180" : ""}`} />
               </button>
+              </NavTip>
               {showLabels && (
                 <div className={`flex items-center gap-2 min-w-0 ${isAr ? "flex-row-reverse" : ""}`}>
                   <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
@@ -305,7 +310,7 @@ function DashboardLayoutContent({
             {navGroups.map((group) => (
               <div
                 key={group.label}
-                style={{ display: "flex", flexDirection: "column", padding: "8px 8px 4px 8px" }}
+                style={{ display: "flex", flexDirection: "column", padding: isCollapsed ? "6px 4px 2px 4px" : "8px 8px 4px 8px" }}
               >
                 {showLabels && (
                   <div
@@ -327,6 +332,7 @@ function DashboardLayoutContent({
                       (item.path !== "/" && location.startsWith(item.path));
                     return (
                       <li key={item.path} style={{ position: "relative" }}>
+                        <NavTip label={showLabels ? undefined : item.label} side={tipSide}>
                         <button
                           type="button"
                           data-tour={`nav-${item.page}`}
@@ -334,7 +340,7 @@ function DashboardLayoutContent({
                             setLocation(item.path);
                             if (isMobile) toggleSidebar();
                           }}
-                          title={isCollapsed ? item.label : undefined}
+                          aria-label={showLabels ? undefined : item.label}
                           className={`w-full rounded-md text-sm transition-colors ${
                             isActive
                               ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
@@ -345,8 +351,9 @@ function DashboardLayoutContent({
                             minHeight: "40px",
                             display: "flex",
                             alignItems: "center",
+                            justifyContent: showLabels ? undefined : "center",
                             gap: "10px",
-                            padding: "8px 12px",
+                            padding: showLabels ? "8px 12px" : 0,
                             flexDirection: isAr ? "row-reverse" : "row",
                             textAlign: isAr ? "right" : "left",
                             border: "none",
@@ -355,8 +362,8 @@ function DashboardLayoutContent({
                           }}
                         >
                           <item.icon
-                            className={isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/70"}
-                            style={{ width: 16, height: 16, flexShrink: 0 }}
+                            className={isActive ? "text-sidebar-primary-foreground" : showLabels ? "text-sidebar-foreground/70" : "text-sidebar-foreground"}
+                            style={{ width: showLabels ? 16 : 18, height: showLabels ? 16 : 18, flexShrink: 0 }}
                           />
                           {showLabels && (
                             <span style={{ flex: 1, lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -385,6 +392,7 @@ function DashboardLayoutContent({
                             />
                           )}
                         </button>
+                        </NavTip>
                       </li>
                     );
                   })}
@@ -394,7 +402,7 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           {/* Footer */}
-          <SidebarFooter className="p-3 border-t border-sidebar-border">
+          <SidebarFooter className={`${isCollapsed ? "px-1 py-2" : "p-3"} border-t border-sidebar-border`}>
             {/* Language + Theme row */}
             {showLabels && (
               <div className={`flex items-center justify-between mb-2 gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
@@ -415,6 +423,7 @@ function DashboardLayoutContent({
             )}
             {/* Collapsed: show theme toggle icon only */}
             {isCollapsed && (
+              <NavTip label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"} side={tipSide}>
               <button
                 onClick={toggleTheme}
                 className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors mx-auto mb-2"
@@ -426,10 +435,11 @@ function DashboardLayoutContent({
                   <Moon className="h-4 w-4 text-sidebar-foreground/70" />
                 )}
               </button>
+              </NavTip>
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className={`flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-sidebar-accent transition-colors w-full ${isAr ? "flex-row-reverse text-right" : "text-left"} focus:outline-none`}>
+                <button aria-label={showLabels ? undefined : (user?.name ?? "Account")} className={`flex items-center gap-3 rounded-lg ${showLabels ? "px-2" : "justify-center px-0"} py-2 hover:bg-sidebar-accent transition-colors w-full ${isAr ? "flex-row-reverse text-right" : "text-left"} focus:outline-none`}>
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarFallback className="text-xs font-semibold bg-sidebar-primary text-sidebar-primary-foreground">
                       {user?.name?.charAt(0).toUpperCase() ?? "U"}
@@ -533,5 +543,16 @@ function DashboardLayoutContent({
         </main>
       </SidebarInset>
     </>
+  );
+}
+
+/** Shows the item's name on hover/focus while the sidebar is collapsed to icons. */
+function NavTip({ label, side, children }: { label?: string; side: "left" | "right"; children: React.ReactElement }) {
+  if (!label) return children;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side} sideOffset={8}>{label}</TooltipContent>
+    </Tooltip>
   );
 }
