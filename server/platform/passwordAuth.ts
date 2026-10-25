@@ -1,8 +1,7 @@
 /**
  * Platform admin authentication via self-hosted email + password.
  *
- * Mirrors manusAuth.ts's authorization model: after verifying credentials the
- * server checks whether the user is listed in `platformAdministrators` with
+ * After verifying credentials the server checks whether the user is listed in `platformAdministrators` with
  * status = "active". Only those users receive a platform session cookie.
  *
  * Route surface: admin.<BASE_DOMAIN>  (/api/platform/auth/*)

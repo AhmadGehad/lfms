@@ -20,7 +20,6 @@ describe("public runtime configuration", () => {
       analyticsWebsiteId: undefined,
       appTitle: undefined,
       defaultDesign: "new",
-      frontendForgeApiUrl: "https://forge.example.test",
       supportEmail: "support@example.test",
     });
   });

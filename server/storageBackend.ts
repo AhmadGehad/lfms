@@ -36,14 +36,6 @@ function getS3Client() {
   return s3Client;
 }
 
-function forgeConfiguration() {
-  if (!ENV.forgeApiUrl || !ENV.forgeApiKey) return null;
-  return {
-    url: ENV.forgeApiUrl.replace(/\/+$/, ""),
-    key: ENV.forgeApiKey,
-  };
-}
-
 function validatedUrl(value: string, label: string, options: { allowPrivate?: boolean } = {}) {
   const url = new URL(value);
   if (url.protocol !== "https:" && (!ENV.isProduction && url.protocol !== "http:")) {
@@ -86,36 +78,9 @@ export function validateStorageConfiguration() {
     }
     return;
   }
-  // Without S3 configuration, file storage uses the Manus Forge fallback.
-  // In production the Forge URL must pass the HTTPS/public-host checks below.
-  const forge = forgeConfiguration();
-  if (forge) {
-    const endpoint = validatedUrl(forge.url, "BUILT_IN_FORGE_API_URL");
-    if (endpoint.search || endpoint.hash) {
-      throw new Error("BUILT_IN_FORGE_API_URL must not contain query or fragment");
-    }
-    return;
-  }
   throw new Error(
-    "Private storage is not configured; set OBJECT_STORAGE_BUCKET/REGION or the legacy Forge variables",
+    "Private storage is not configured; set OBJECT_STORAGE_BUCKET and OBJECT_STORAGE_REGION",
   );
-}
-
-async function forgePresignedUrl(operation: "put" | "get", key: string) {
-  const forge = forgeConfiguration();
-  if (!forge) throw new Error("Storage backend unavailable");
-  const endpoint = new URL(`v1/storage/presign/${operation}`, `${forge.url}/`);
-  endpoint.searchParams.set("path", key);
-  const response = await fetch(endpoint, {
-    headers: { Authorization: `Bearer ${forge.key}` },
-    redirect: "error",
-  });
-  if (!response.ok) throw new Error(`Storage presign failed (${response.status})`);
-  const rawBody = await response.text();
-  if (rawBody.length > 8_192) throw new Error("Storage presign response is too large");
-  const body = JSON.parse(rawBody) as { url?: string };
-  if (!body.url) throw new Error("Storage presign returned no URL");
-  return validatedUrl(body.url, "Storage presigned URL").toString();
 }
 
 export async function putPrivateObject(input: {
@@ -141,14 +106,7 @@ export async function putPrivateObject(input: {
     return;
   }
 
-  const url = await forgePresignedUrl("put", input.key);
-  const response = await fetch(url, {
-    method: "PUT",
-    headers: { "Content-Type": input.contentType },
-    body: new Blob([Uint8Array.from(input.bytes)], { type: input.contentType }),
-    redirect: "error",
-  });
-  if (!response.ok) throw new Error(`Storage upload failed (${response.status})`);
+  throw new Error("Storage backend unavailable");
 }
 
 export async function getPrivateObjectUrl(key: string) {
@@ -159,7 +117,7 @@ export async function getPrivateObjectUrl(key: string) {
       { expiresIn: 300 },
     );
   }
-  return forgePresignedUrl("get", key);
+  throw new Error("Storage backend unavailable");
 }
 
 async function collectBytes(
@@ -195,26 +153,5 @@ export async function getPrivateObjectBytes(key: string, maximumBytes: number) {
     return collectBytes(response.Body as AsyncIterable<Uint8Array>, maximumBytes);
   }
 
-  const url = await forgePresignedUrl("get", key);
-  const response = await fetch(url, { redirect: "error" });
-  if (!response.ok || !response.body) throw new Error(`Storage download failed (${response.status})`);
-  const contentLength = Number(response.headers.get("content-length"));
-  if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
-    throw new Error("Storage object exceeds restore size limit");
-  }
-  const reader = response.body.getReader();
-  const iterable: AsyncIterable<Uint8Array> = {
-    async *[Symbol.asyncIterator]() {
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) return;
-          if (value) yield value;
-        }
-      } finally {
-        reader.releaseLock();
-      }
-    },
-  };
-  return collectBytes(iterable, maximumBytes);
+  throw new Error("Storage backend unavailable");
 }

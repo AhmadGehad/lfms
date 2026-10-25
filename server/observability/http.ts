@@ -13,7 +13,6 @@ const durations = new Map<MetricKey, { count: number; sumSeconds: number }>();
 function routeGroup(pathname: string) {
   if (pathname.startsWith("/api/platform")) return "platform_api";
   if (pathname.startsWith("/api/trpc")) return "tenant_api";
-  if (pathname.startsWith("/api/oauth")) return "tenant_auth";
   if (pathname.startsWith("/api/platform/auth")) return "platform_auth";
   if (pathname.startsWith("/manus-storage")) return "storage";
   if (pathname.startsWith("/health")) return "health";

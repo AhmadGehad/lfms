@@ -16,10 +16,6 @@ has ever appeared in Git history must be rotated before production use.
 | `JWT_SECRET`                       | server        | Legacy signed-callback key; independent random value of at least 32 bytes   |
 | `SESSION_PEPPER`                   | server        | Pepper used when hashing opaque session tokens                              |
 | `OAUTH_STATE_SECRET`               | server        | HMAC key for OAuth transaction state                                        |
-| `VITE_APP_ID`                      | server        | Manus OAuth application identifier                                          |
-| `OAUTH_SERVER_URL`                 | server        | Manus OAuth API base URL                                                    |
-| `VITE_OAUTH_PORTAL_URL`            | server        | Manus sign-in portal URL used to construct validated redirects              |
-| `OAUTH_ALLOWED_HOSTS`              | server        | Exact comma-separated OAuth API and portal host allowlist                   |
 | `BASE_DOMAIN`                      | server        | Tenant base domain, for example `lfms.example.com`                          |
 | `TRUST_PROXY_CIDRS`                | server        | Exact comma-separated ingress proxy IPs/CIDRs trusted for forwarded headers |
 | `ALLOWED_TENANT_ORIGINS`           | server        | Comma-separated exact development origins; ignored in production CORS       |
@@ -40,14 +36,12 @@ has ever appeared in Git history must be rotated before production use.
 | `WORKER_SHUTDOWN_TIMEOUT_MS`       | worker        | Hard stop deadline; must exceed `JOB_LEASE_MS`                              |
 | `WORKER_ID`                        | worker        | Stable replica prefix included in unique lease-owner IDs                    |
 
-Without `OBJECT_STORAGE_BUCKET`, file storage uses the Manus Forge fallback
-through `BUILT_IN_FORGE_API_URL`/`BUILT_IN_FORGE_API_KEY`; in production the
-Forge URL must be HTTPS on a public host. Configure the `OBJECT_STORAGE_*`
-variables to switch to S3-compatible private storage (for example R2).
+File storage requires the `OBJECT_STORAGE_*` variables (S3-compatible private
+storage, for example Supabase Storage or R2); startup fails without them.
 
 ## Optional Workforce Admin MFA
 
-Admin login uses Manus by default. To enforce provider-verified MFA for an
+Admin login uses email and password by default. To enforce provider-verified MFA for an
 administrator, configure all of the following and provision that
 administrator's workforce OIDC identity. Partial OIDC configuration is invalid.
 
@@ -102,9 +96,6 @@ Keep server credentials server-side unless their name starts with `VITE_`.
 | `ADMIN_ORIGIN`                | Exact SaaS Admin origin used by development CORS; production derives same-origin from each request                    |
 | `VITE_ENABLE_LOCAL_DEV_AUTH`  | Public boolean; explicit `1` enables direct-loopback dev login only when `NODE_ENV=development`; never deploy enabled |
 | `OWNER_OPEN_ID`               | Legacy owner mapping during the Azal Farms migration                                                                  |
-| `BUILT_IN_FORGE_API_URL`      | Manus provider base URL for enabled maps, AI, notification, and data integrations                                     |
-| `BUILT_IN_FORGE_API_KEY`      | Server-side Manus provider credential                                                                                 |
-| `VITE_FRONTEND_FORGE_API_URL` | Browser-safe Manus map proxy base URL                                                                                 |
 | `VITE_APP_TITLE`              | Browser/application title                                                                                             |
 | `VITE_SUPPORT_EMAIL`          | Public tenant support email shown on suspended/landing screens; mailbox must be monitored                             |
 | `VITE_DEFAULT_DESIGN`         | Public default tenant UI version: `old` or `new`                                                                      |
