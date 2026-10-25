@@ -72,7 +72,7 @@ export function collectContainerEnvironment(
 
 export function getConfiguredBaseDomain(
   source: Record<string, unknown>,
-  fallback = "l-fms.com"
+  fallback = "apiseg.com"
 ) {
   const value =
     typeof source.BASE_DOMAIN === "string"
@@ -106,7 +106,7 @@ export function isPlatformHostname(hostname: string, baseDomain: string) {
   );
 }
 
-export function isLfmsHostname(hostname: string, baseDomain = "l-fms.com") {
+export function isLfmsHostname(hostname: string, baseDomain = "apiseg.com") {
   const normalized = normalizeEdgeHostname(hostname);
   const normalizedBase = normalizeEdgeHostname(baseDomain);
   if (normalized === normalizedBase) return true;
@@ -123,6 +123,30 @@ export function isReservedDeploymentHostname(
   const normalized = normalizeEdgeHostname(hostname);
   const stagingRoot = `staging.${normalizeEdgeHostname(baseDomain)}`;
   return normalized === stagingRoot || normalized.endsWith(`.${stagingRoot}`);
+}
+
+export function getLegacyDomainRedirect(request: Request, baseDomain: string) {
+  if (
+    baseDomain !== "apiseg.com" ||
+    !["GET", "HEAD"].includes(request.method)
+  ) {
+    return null;
+  }
+  const url = new URL(request.url);
+  const hostname = normalizeEdgeHostname(url.hostname);
+  if (
+    !isLfmsHostname(hostname, "l-fms.com") ||
+    isReservedDeploymentHostname(hostname, "l-fms.com")
+  ) {
+    return null;
+  }
+  url.protocol = "https:";
+  url.hostname =
+    hostname === "l-fms.com" || hostname === "www.l-fms.com"
+      ? baseDomain
+      : `${hostname.slice(0, -"l-fms.com".length)}${baseDomain}`;
+  url.port = "";
+  return url.toString();
 }
 
 export function normalizeContainerRequest(request: Request, requestId: string) {

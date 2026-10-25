@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "lfms-production",
+  "name": "lfms",
   "main": "cloudflare/worker.ts",
   "assets": {
     "directory": "./dist/cloudflare-assets",
@@ -13,6 +13,14 @@
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,
   "routes": [
+    {
+      "pattern": "apiseg.com/*",
+      "zone_name": "apiseg.com",
+    },
+    {
+      "pattern": "*.apiseg.com/*",
+      "zone_name": "apiseg.com",
+    },
     {
       "pattern": "l-fms.com/*",
       "zone_name": "l-fms.com",
@@ -65,8 +73,8 @@
     "DB_POOL_CONNECTION_LIMIT": "5",
     "DB_POOL_QUEUE_LIMIT": "50",
     "CONTAINER_INSTANCE_COUNT": "3",
-    "BASE_DOMAIN": "l-fms.com",
-    "ALLOWED_TENANT_ORIGINS": "https://l-fms.com,https://www.l-fms.com,https://admin.l-fms.com,https://auth.l-fms.com",
+    "BASE_DOMAIN": "apiseg.com",
+    "ALLOWED_TENANT_ORIGINS": "https://apiseg.com,https://www.apiseg.com,https://admin.apiseg.com,https://auth.apiseg.com",
     "CSP_SCRIPT_ORIGINS": "https://forge.manus.ai,https://maps.googleapis.com,https://maps.gstatic.com",
     "CSP_CONNECT_ORIGINS": "https://forge.manus.ai,https://maps.googleapis.com,https://maps.gstatic.com",
     "CSP_IMAGE_ORIGINS": "https://maps.googleapis.com,https://maps.gstatic.com,https://streetviewpixels-pa.googleapis.com,https://lh3.googleusercontent.com",

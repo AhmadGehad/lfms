@@ -12,6 +12,34 @@ tables. Do not run migration or provisioning scripts as part of this deploy.
 
 ## Release Gate
 
+### Apis production domain migration
+
+Production configuration now targets `apiseg.com` on the existing `lfms`
+Worker. UI branding, email sender/support addresses, database, secrets,
+Durable Object identifiers, and the existing staging domain remain unchanged.
+The old production routes remain attached for GET/HEAD redirects to the same
+tenant/path/query on the new domain. Old-domain mutations are rejected rather
+than replayed across origins. Existing sessions and browser offline data do
+not transfer to the new domain; users must sign in again.
+
+Before deploying this change:
+
+- Attach `apiseg.com`, `www.apiseg.com`, `admin.apiseg.com`,
+  `auth.apiseg.com`, and the tenant wildcard with active DNS/TLS. Keep the old
+  domain attachments for redirects.
+- Register `https://admin.apiseg.com/api/platform/auth/callback` and each
+  active tenant's `https://<company>.apiseg.com/api/oauth/callback` with Manus.
+  If workforce OIDC is configured, update `ADMIN_OIDC_REDIRECT_URI` and its
+  provider registration together.
+- Complete the existing release gates below. Their production hostname
+  examples refer to the old domain; use `apiseg.com` for production checks.
+- For a manual deploy, use `CLOUDFLARE_PRODUCTION_CONFIRM=apiseg.com`.
+
+After deployment, verify new apex/admin/tenant health and runtime config,
+login and invitation/reset flows, old-domain redirects, and transactional
+email using the existing verified sender domain. Verify that
+`staging.l-fms.com` continues to use its separate staging deployment.
+
 Do not deploy until all items below are true:
 
 - The Cloudflare zone for `l-fms.com` is active on a Workers Paid plan with

@@ -3,6 +3,7 @@ import {
   collectContainerEnvironment,
   getConfiguredBaseDomain,
   getConfiguredInstanceCount,
+  getLegacyDomainRedirect,
   isLfmsHostname,
   isPlatformHostname,
   isReservedDeploymentHostname,
@@ -32,10 +33,11 @@ describe("Cloudflare container boundary", () => {
   });
 
   it("accepts only the base domain and one valid subdomain label", () => {
-    expect(isLfmsHostname("l-fms.com")).toBe(true);
-    expect(isLfmsHostname("azal-farms.l-fms.com")).toBe(true);
-    expect(isLfmsHostname("a.b.l-fms.com")).toBe(false);
-    expect(isLfmsHostname("not-l-fms.com")).toBe(false);
+    expect(isLfmsHostname("apiseg.com")).toBe(true);
+    expect(isLfmsHostname("azal-farms.apiseg.com")).toBe(true);
+    expect(isLfmsHostname("a.b.apiseg.com")).toBe(false);
+    expect(isLfmsHostname("not-apiseg.com")).toBe(false);
+    expect(isLfmsHostname("l-fms.com")).toBe(false);
     expect(normalizeEdgeHostname("ADMIN.L-FMS.COM.")).toBe("admin.l-fms.com");
     expect(isPlatformHostname("ADMIN.L-FMS.COM.", "l-fms.com")).toBe(true);
   });
@@ -57,8 +59,50 @@ describe("Cloudflare container boundary", () => {
       "staging.l-fms.com"
     );
     expect(getConfiguredBaseDomain({ BASE_DOMAIN: "https://evil.test" })).toBe(
-      "l-fms.com"
+      "apiseg.com"
     );
+  });
+
+  it("redirects old production links without replaying mutations or staging traffic", () => {
+    for (const method of ["GET", "HEAD"]) {
+      expect(
+        getLegacyDomainRedirect(
+          new Request("http://www.l-fms.com/path?q=1", { method }),
+          "apiseg.com"
+        )
+      ).toBe("https://apiseg.com/path?q=1");
+      expect(
+        getLegacyDomainRedirect(
+          new Request("https://azal-farms.l-fms.com/accept-invitation?x=1", {
+            method,
+          }),
+          "apiseg.com"
+        )
+      ).toBe("https://azal-farms.apiseg.com/accept-invitation?x=1");
+    }
+    for (const host of [
+      "staging.l-fms.com",
+      "admin.staging.l-fms.com",
+      "evil-l-fms.com",
+      "l-fms.com.evil.test",
+      "apiseg.com",
+    ]) {
+      expect(
+        getLegacyDomainRedirect(new Request(`https://${host}/`), "apiseg.com")
+      ).toBeNull();
+    }
+    expect(
+      getLegacyDomainRedirect(
+        new Request("https://admin.l-fms.com/api", { method: "POST" }),
+        "apiseg.com"
+      )
+    ).toBeNull();
+    expect(
+      getLegacyDomainRedirect(
+        new Request("https://l-fms.com/"),
+        "staging.l-fms.com"
+      )
+    ).toBeNull();
   });
 
   it("bounds the configured fixed container pool", () => {

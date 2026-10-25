@@ -25,10 +25,10 @@ if (target !== "production" && target !== "staging") {
 }
 if (
   target === "production" &&
-  process.env.CLOUDFLARE_PRODUCTION_CONFIRM !== "l-fms.com"
+  process.env.CLOUDFLARE_PRODUCTION_CONFIRM !== "apiseg.com"
 ) {
   throw new Error(
-    "Set CLOUDFLARE_PRODUCTION_CONFIRM=l-fms.com for a production deploy"
+    "Set CLOUDFLARE_PRODUCTION_CONFIRM=apiseg.com for a production deploy"
   );
 }
 
