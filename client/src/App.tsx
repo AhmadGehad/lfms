@@ -18,6 +18,7 @@ import { OfflineIdentityTracker } from "./lib/offline/OfflineIdentityTracker";
 import { lazy, Suspense } from "react";
 
 const Landing = lazy(() => import("./pages/Landing"));
+const DemoApp = lazy(() => import("./demo/DemoApp"));
 
 // Bare-domain visitors (no company subdomain) get the marketing page; a
 // company workspace only exists on <slug>.<base-domain>.
@@ -50,8 +51,8 @@ function TenantSurface() {
 
   if (bareHost)
     return (
-      <Suspense fallback={<main className="min-h-dvh bg-[#F7F5EE]" aria-busy="true" />}>
-        <Landing />
+      <Suspense fallback={<main className="min-h-dvh bg-[#0D3B2E]" aria-busy="true" />}>
+        {path === "/demo" || path.startsWith("/demo/") ? <DemoApp /> : <Landing />}
       </Suspense>
     );
 
