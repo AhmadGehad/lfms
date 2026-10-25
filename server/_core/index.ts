@@ -97,7 +97,7 @@ async function startServer() {
   // Derive additional tenant hostnames from ALLOWED_TENANT_ORIGINS (strip protocol)
   // This allows the Manus internal domain (e.g. livestockms-boywmbm5.manus.space)
   // and any other explicitly allowed origins to be treated as tenant surface
-  // even when BASE_DOMAIN is a custom domain like l-fms.com.
+  // even when BASE_DOMAIN is a custom domain like apiseg.com.
   const additionalTenantHostnames = ENV.allowedTenantOrigins
     .map(origin => { try { return new URL(origin).hostname; } catch { return origin; } })
     .filter(Boolean);

@@ -74,7 +74,7 @@ by a shared secret.
 | Variable              | Purpose                                                                          |
 | ---------------------- | ----------------------------------------------------------------------------- |
 | `INTERNAL_API_SECRET` | Shared secret between the container and the Worker's internal send-email route |
-| `SMTP_FROM`           | Also used as the Cloudflare-sent "from" address (e.g. `noreply@l-fms.com`)      |
+| `SMTP_FROM`           | Also used as the Cloudflare-sent "from" address (e.g. `noreply@apiseg.com`)      |
 
 The zone's Email Routing must be enabled with `SMTP_FROM`'s domain verified
 for outbound sending, or Cloudflare will reject the send.

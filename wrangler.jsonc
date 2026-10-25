@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "lfms-production",
+  "name": "lfms",
   "main": "cloudflare/worker.ts",
   "assets": {
     "directory": "./dist/cloudflare-assets",
@@ -14,16 +14,17 @@
   "workers_dev": false,
   "routes": [
     {
-      "pattern": "l-fms.com/*",
-      "zone_name": "l-fms.com",
+      "pattern": "apiseg.com/*",
+      "zone_name": "apiseg.com",
     },
     {
-      "pattern": "*.l-fms.com/*",
-      "zone_name": "l-fms.com",
+      "pattern": "*.apiseg.com/*",
+      "zone_name": "apiseg.com",
     },
   ],
   "containers": [
     {
+      "name": "lfms-production-lfmswebcontainer",
       "class_name": "LfmsWebContainer",
       "image": "./Dockerfile",
       "max_instances": 3,
@@ -65,8 +66,8 @@
     "DB_POOL_CONNECTION_LIMIT": "5",
     "DB_POOL_QUEUE_LIMIT": "50",
     "CONTAINER_INSTANCE_COUNT": "3",
-    "BASE_DOMAIN": "l-fms.com",
-    "ALLOWED_TENANT_ORIGINS": "https://l-fms.com,https://www.l-fms.com,https://admin.l-fms.com,https://auth.l-fms.com",
+    "BASE_DOMAIN": "apiseg.com",
+    "ALLOWED_TENANT_ORIGINS": "https://apiseg.com,https://www.apiseg.com,https://admin.apiseg.com,https://auth.apiseg.com",
     "CSP_SCRIPT_ORIGINS": "https://forge.manus.ai,https://maps.googleapis.com,https://maps.gstatic.com",
     "CSP_CONNECT_ORIGINS": "https://forge.manus.ai,https://maps.googleapis.com,https://maps.gstatic.com",
     "CSP_IMAGE_ORIGINS": "https://maps.googleapis.com,https://maps.gstatic.com,https://streetviewpixels-pa.googleapis.com,https://lh3.googleusercontent.com",
@@ -81,9 +82,9 @@
     "VITE_DEFAULT_DESIGN": "old",
     "VITE_ENABLE_LOCAL_DEV_AUTH": "0",
     "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
-    "VITE_SUPPORT_EMAIL": "support@l-fms.com",
+    "VITE_SUPPORT_EMAIL": "support@apiseg.com",
     "LOG_LEVEL": "info",
-    "SMTP_FROM": "noreply@l-fms.com",
+    "SMTP_FROM": "noreply@apiseg.com",
   },
   "secrets": {
     "required": [
@@ -112,12 +113,12 @@
       },
       "routes": [
         {
-          "pattern": "staging.l-fms.com/*",
-          "zone_name": "l-fms.com",
+          "pattern": "staging.apiseg.com/*",
+          "zone_name": "apiseg.com",
         },
         {
-          "pattern": "*.staging.l-fms.com/*",
-          "zone_name": "l-fms.com",
+          "pattern": "*.staging.apiseg.com/*",
+          "zone_name": "apiseg.com",
         },
       ],
       "containers": [
@@ -157,8 +158,8 @@
         "DB_POOL_CONNECTION_LIMIT": "3",
         "DB_POOL_QUEUE_LIMIT": "25",
         "CONTAINER_INSTANCE_COUNT": "1",
-        "BASE_DOMAIN": "staging.l-fms.com",
-        "ALLOWED_TENANT_ORIGINS": "https://staging.l-fms.com,https://www.staging.l-fms.com,https://admin.staging.l-fms.com,https://auth.staging.l-fms.com",
+        "BASE_DOMAIN": "staging.apiseg.com",
+        "ALLOWED_TENANT_ORIGINS": "https://staging.apiseg.com,https://www.staging.apiseg.com,https://admin.staging.apiseg.com,https://auth.staging.apiseg.com",
         "CSP_SCRIPT_ORIGINS": "https://forge.manus.ai,https://maps.googleapis.com,https://maps.gstatic.com",
         "CSP_CONNECT_ORIGINS": "https://forge.manus.ai,https://maps.googleapis.com,https://maps.gstatic.com",
         "CSP_IMAGE_ORIGINS": "https://maps.googleapis.com,https://maps.gstatic.com,https://streetviewpixels-pa.googleapis.com,https://lh3.googleusercontent.com",
@@ -173,9 +174,9 @@
         "VITE_DEFAULT_DESIGN": "old",
         "VITE_ENABLE_LOCAL_DEV_AUTH": "0",
         "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
-        "VITE_SUPPORT_EMAIL": "support@l-fms.com",
+        "VITE_SUPPORT_EMAIL": "support@apiseg.com",
         "LOG_LEVEL": "info",
-        "SMTP_FROM": "noreply@l-fms.com",
+        "SMTP_FROM": "noreply@apiseg.com",
       },
       "secrets": {
         "required": [

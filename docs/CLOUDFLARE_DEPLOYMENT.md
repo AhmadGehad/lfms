@@ -12,11 +12,39 @@ tables. Do not run migration or provisioning scripts as part of this deploy.
 
 ## Release Gate
 
+### Apis production domain migration
+
+Production configuration targets `apiseg.com` on the existing `lfms` Worker;
+staging uses `staging.apiseg.com`. Support and sender addresses use the new
+domain. UI design, database, secrets, and Durable Object identifiers remain
+unchanged. No previous-domain routes, redirects, or runtime aliases remain.
+Existing sessions and browser offline data do not transfer across origins;
+users must sign in again. Reconcile pending writes on existing devices before
+retiring their original origin. Deploying a new build invalidates cached reads
+while retaining pending writes within their original user/company/farm bucket.
+
+Before deploying this change:
+
+- Attach `apiseg.com`, `www.apiseg.com`, `admin.apiseg.com`,
+  `auth.apiseg.com`, and the tenant wildcard with active DNS/TLS.
+- Register `https://admin.apiseg.com/api/platform/auth/callback` and each
+  active tenant's `https://<company>.apiseg.com/api/oauth/callback` with Manus.
+  If workforce OIDC is configured, update `ADMIN_OIDC_REDIRECT_URI` and its
+  provider registration together.
+- Complete the existing release gates below using `apiseg.com` for production.
+- Verify the new sender domain and support mailbox before sending email.
+- For a manual deploy, use `CLOUDFLARE_PRODUCTION_CONFIRM=apiseg.com`.
+
+After deployment, verify new apex/admin/tenant health and runtime config,
+login and invitation/reset flows, and transactional email using the new verified
+sender domain. Verify that
+`staging.apiseg.com` continues to use its separate staging deployment.
+
 Do not deploy until all items below are true:
 
-- The Cloudflare zone for `l-fms.com` is active on a Workers Paid plan with
+- The Cloudflare zone for `apiseg.com` is active on a Workers Paid plan with
   Containers access.
-- Staging has a certificate covering `*.staging.l-fms.com`. The default
+- Staging has a certificate covering `*.staging.apiseg.com`. The default
   Universal SSL wildcard does not cover this multi-level hostname; use Total
   TLS, Advanced Certificate Manager, or a custom certificate.
 - Every name in `secrets.required` is configured as a dashboard Secret on the
@@ -37,13 +65,13 @@ Do not deploy until all items below are true:
 - A current provider-managed database backup or snapshot exists. This deploy
   makes no schema change, but the backup remains an operational release gate.
 - The Manus application has exact allowed callbacks for Admin and every active
-  tenant, including `https://admin.l-fms.com/api/platform/auth/callback` and
-  `https://azal-farms.l-fms.com/api/oauth/callback`. If Manus does not support a
+  tenant, including `https://admin.apiseg.com/api/platform/auth/callback` and
+  `https://azal-farms.apiseg.com/api/oauth/callback`. If Manus does not support a
   safe tenant wildcard, register each company before activation.
 - Administrators with `mfaRequired=true` use the configured workforce OIDC
   provider. Manus-only Admin accounts must be explicitly configured with
   `mfaRequired=false`.
-- `support@l-fms.com` is verified and monitored before it is shown to suspended
+- `support@apiseg.com` is verified and monitored before it is shown to suspended
   tenants.
 
 The repository intentionally has one dependency lockfile. Do not add or use an
@@ -59,9 +87,9 @@ CI build, and Worker asset build deterministic.
 
 [`wrangler.jsonc`](../wrangler.jsonc) defines:
 
-- Worker routes for `l-fms.com/*` and `*.l-fms.com/*`.
-- An isolated `staging` environment on `staging.l-fms.com` and
-  `*.staging.l-fms.com`, with separate secrets and a separate database.
+- Worker routes for `apiseg.com/*` and `*.apiseg.com/*`.
+- An isolated `staging` environment on `staging.apiseg.com` and
+  `*.staging.apiseg.com`, with separate secrets and a separate database.
 - The `LfmsWebContainer` Durable Object binding.
 - The `ASSETS` binding for the generated tenant/Admin edge bundle. The Worker
   chooses the shell from the validated hostname; a tenant host cannot request
@@ -76,13 +104,13 @@ CI build, and Worker asset build deterministic.
 
 The apex and wildcard DNS records must be orange-cloud proxied; the wildcard
 covers production `admin`, `www`, and tenant hosts. The production Worker
-rejects the reserved `staging.l-fms.com` hostname tree so a missing staging
+rejects the reserved `staging.apiseg.com` hostname tree so a missing staging
 route cannot expose production as a staging tenant. Staging also needs explicit
 proxied `staging` and `*.staging` records. For this originless Worker route, use
 proxied placeholder `AAAA` records pointing to `100::` (or `A` records pointing
 to `192.0.2.0`). Remove the current cross-account CNAME targets: they return
 Cloudflare error 1014 and cannot be used as a rollback origin. There is no
-`auth.l-fms.com` broker in this release. Keep an independently working previous
+`auth.apiseg.com` broker in this release. Keep an independently working previous
 origin/route until post-deploy checks pass.
 
 Cloudflare does not automatically inject Worker secrets into a container. The
@@ -99,7 +127,7 @@ Configure every name in `secrets.required` in the Cloudflare dashboard under
 **Workers & Pages → (worker) → Settings → Variables and Secrets**, with type
 **Secret**. This includes the database, independent auth keys, private R2
 credentials, Manus server key, app ID, and analytics identifiers. Production
-(`lfms-production`) and staging (`lfms-staging`) are separate Workers with
+(`lfms`) and staging (`lfms-staging`) are separate Workers with
 separate secret sets and separate databases.
 
 Set all required secrets **before** connecting Git integration or pushing to
@@ -148,7 +176,7 @@ Cloudflare's build environment, including the container image build. No local
 Docker, local secrets file, or local Wrangler authentication is involved.
 
 Configure the Git-connected Worker in the dashboard
-(**Workers & Pages → lfms-production → Settings → Build**):
+(**Workers & Pages → lfms → Settings → Build**):
 
 - Repository: `AhmadGehad/lfms`, production branch as configured.
 - Build command: `pnpm run check:secrets && pnpm run check && pnpm run build`
@@ -204,7 +232,7 @@ reference. The deploy script always runs the full build before Wrangler uploads
 the edge asset version.
 
 Release order with Git integration: push to the staging branch first, run the
-staging gates against `staging.l-fms.com`, then push (or fast-forward merge)
+staging gates against `staging.apiseg.com`, then push (or fast-forward merge)
 the same reviewed commit to the production branch. Check rollout state with:
 
 ```bash
@@ -245,15 +273,15 @@ stopped.
 Run these checks before removing the previous origin:
 
 ```bash
-curl -fsS https://l-fms.com/health/live
-curl -fsS https://l-fms.com/health/ready
-curl -fsS https://admin.l-fms.com/health/live
-curl -fsS https://admin.l-fms.com/health/ready
-curl -fsS https://azal-farms.l-fms.com/health/live
-curl -fsS https://azal-farms.l-fms.com/health/ready
-curl -fsSI https://l-fms.com/
-curl -fsSI https://admin.l-fms.com/
-curl -fsSI https://azal-farms.l-fms.com/
+curl -fsS https://apiseg.com/health/live
+curl -fsS https://apiseg.com/health/ready
+curl -fsS https://admin.apiseg.com/health/live
+curl -fsS https://admin.apiseg.com/health/ready
+curl -fsS https://azal-farms.apiseg.com/health/live
+curl -fsS https://azal-farms.apiseg.com/health/ready
+curl -fsSI https://apiseg.com/
+curl -fsSI https://admin.apiseg.com/
+curl -fsSI https://azal-farms.apiseg.com/
 ```
 
 Expected results:
@@ -264,7 +292,7 @@ Expected results:
   `Content-Disposition: attachment`.
 - Responses include LFMS security headers and `X-Request-Id`.
 - HTTP redirects once to HTTPS; `www` redirects once to the apex domain.
-- Admin login works only on `admin.l-fms.com`.
+- Admin login works only on `admin.apiseg.com`.
 - Azal login resolves only the Azal company and displays migrated Azal data.
 - A tenant session cannot call platform APIs or another tenant hostname.
 - Maps, analytics, object storage, exports, and the external job worker are

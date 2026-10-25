@@ -94,7 +94,7 @@ jobs:
       - name: Smoke-test web image process and static routes
         env:
           BASE_DOMAIN: example.test
-          DATABASE_URL: mysql://127.0.0.1:9/lfms?ssl=true
+          DATABASE_URL: postgres://127.0.0.1:9/lfms?sslmode=require
           JWT_SECRET: ci-jwt-secret-00000000000000000000000000000000
           METRICS_BEARER_TOKEN: ci-metrics-token-000000000000000000000000000
           OAUTH_STATE_SECRET: ci-oauth-state-00000000000000000000000000000
@@ -143,7 +143,7 @@ jobs:
           ! grep --ignore-case --quiet '^Content-Disposition:.*attachment' "$RUNNER_TEMP/admin.headers"
       - name: Smoke-test background-worker image process
         env:
-          DATABASE_URL: mysql://127.0.0.1:9/lfms?ssl=true
+          DATABASE_URL: postgres://127.0.0.1:9/lfms?sslmode=require
         run: |
           docker run --detach --name lfms-worker-ci --env DATABASE_URL lfms-worker:ci
           trap 'docker logs lfms-worker-ci; docker rm --force lfms-worker-ci' EXIT

@@ -32,32 +32,32 @@ describe("Cloudflare container boundary", () => {
   });
 
   it("accepts only the base domain and one valid subdomain label", () => {
-    expect(isLfmsHostname("l-fms.com")).toBe(true);
-    expect(isLfmsHostname("azal-farms.l-fms.com")).toBe(true);
-    expect(isLfmsHostname("a.b.l-fms.com")).toBe(false);
-    expect(isLfmsHostname("not-l-fms.com")).toBe(false);
-    expect(normalizeEdgeHostname("ADMIN.L-FMS.COM.")).toBe("admin.l-fms.com");
-    expect(isPlatformHostname("ADMIN.L-FMS.COM.", "l-fms.com")).toBe(true);
+    expect(isLfmsHostname("apiseg.com")).toBe(true);
+    expect(isLfmsHostname("azal-farms.apiseg.com")).toBe(true);
+    expect(isLfmsHostname("a.b.apiseg.com")).toBe(false);
+    expect(isLfmsHostname("not-apiseg.com")).toBe(false);
+    expect(normalizeEdgeHostname("ADMIN.APISEG.COM.")).toBe("admin.apiseg.com");
+    expect(isPlatformHostname("ADMIN.APISEG.COM.", "apiseg.com")).toBe(true);
   });
 
   it("keeps the production wildcard away from the staging hostname tree", () => {
-    expect(isReservedDeploymentHostname("staging.l-fms.com", "l-fms.com")).toBe(
+    expect(isReservedDeploymentHostname("staging.apiseg.com", "apiseg.com")).toBe(
       true
     );
     expect(
-      isReservedDeploymentHostname("admin.staging.l-fms.com", "l-fms.com")
+      isReservedDeploymentHostname("admin.staging.apiseg.com", "apiseg.com")
     ).toBe(true);
     expect(
-      isReservedDeploymentHostname("staging.l-fms.com", "staging.l-fms.com")
+      isReservedDeploymentHostname("staging.apiseg.com", "staging.apiseg.com")
     ).toBe(false);
   });
 
   it("uses only a valid configured base domain", () => {
-    expect(getConfiguredBaseDomain({ BASE_DOMAIN: "staging.l-fms.com" })).toBe(
-      "staging.l-fms.com"
+    expect(getConfiguredBaseDomain({ BASE_DOMAIN: "staging.apiseg.com" })).toBe(
+      "staging.apiseg.com"
     );
     expect(getConfiguredBaseDomain({ BASE_DOMAIN: "https://evil.test" })).toBe(
-      "l-fms.com"
+      "apiseg.com"
     );
   });
 
@@ -72,7 +72,7 @@ describe("Cloudflare container boundary", () => {
 
   it("overwrites client-supplied forwarding headers", () => {
     const normalized = normalizeContainerRequest(
-      new Request("https://azal-farms.l-fms.com/animals", {
+      new Request("https://azal-farms.apiseg.com/animals", {
         headers: {
           "cf-connecting-ip": "203.0.113.7",
           forwarded: "for=attacker",
@@ -87,7 +87,7 @@ describe("Cloudflare container boundary", () => {
     expect(normalized.headers.get("forwarded")).toBeNull();
     expect(normalized.headers.get("x-forwarded-for")).toBe("203.0.113.7");
     expect(normalized.headers.get("x-forwarded-host")).toBe(
-      "azal-farms.l-fms.com"
+      "azal-farms.apiseg.com"
     );
     expect(normalized.headers.get("x-forwarded-port")).toBe("443");
     expect(normalized.headers.get("x-forwarded-proto")).toBe("https");
@@ -121,22 +121,22 @@ describe("Cloudflare container boundary", () => {
   it("proxies only server-owned paths and all state-changing requests", () => {
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/api/trpc/animals")
+        new Request("https://azal-farms.apiseg.com/api/trpc/animals")
       )
     ).toBe(true);
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/runtime-config.js")
+        new Request("https://azal-farms.apiseg.com/runtime-config.js")
       )
     ).toBe(true);
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/animals", { method: "POST" })
+        new Request("https://azal-farms.apiseg.com/animals", { method: "POST" })
       )
     ).toBe(true);
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/animals")
+        new Request("https://azal-farms.apiseg.com/animals")
       )
     ).toBe(false);
   });
@@ -170,13 +170,13 @@ describe("Cloudflare container boundary", () => {
 
   it("keeps the service worker out of the container proxy so it is cacheable", () => {
     expect(
-      shouldProxyToContainer(new Request("https://azal-farms.l-fms.com/sw.js"))
+      shouldProxyToContainer(new Request("https://azal-farms.apiseg.com/sw.js"))
     ).toBe(false);
     // The app cannot boot offline without this file, and it is container-served,
     // so the service worker has to cache it rather than treat it as an asset.
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/runtime-config.js")
+        new Request("https://azal-farms.apiseg.com/runtime-config.js")
       )
     ).toBe(true);
   });

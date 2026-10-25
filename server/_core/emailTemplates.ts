@@ -64,7 +64,7 @@ function renderEmailLayout({ previewText, heading, bodyHtml, ctaLabel, ctaUrl }:
             </tr>
             <tr>
               <td style="padding: 20px 32px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #9ca3af;">
-                Questions? Reply to this email or contact <a href="mailto:support@l-fms.com" style="color: ${BRAND_ACCENT};">support@l-fms.com</a>.
+                Questions? Reply to this email or contact <a href="mailto:support@apiseg.com" style="color: ${BRAND_ACCENT};">support@apiseg.com</a>.
                 <br />This is a transactional message related to your LFMS account.
               </td>
             </tr>
@@ -114,22 +114,22 @@ export function platformPasswordResetEmail(input: { resetUrl: string; expiresInM
 
 export function passwordChangedEmail(): EmailContent {
   const subject = "Your LFMS password was changed";
-  const text = "Your LFMS password was just changed. If this wasn't you, contact support@l-fms.com immediately.";
+  const text = "Your LFMS password was just changed. If this wasn't you, contact support@apiseg.com immediately.";
   const html = renderEmailLayout({
     previewText: "Your LFMS password was changed",
     heading: "Your password was changed",
-    bodyHtml: `<p>This confirms your LFMS password was just changed.</p><p>If you didn't make this change, contact <a href="mailto:support@l-fms.com" style="color: ${BRAND_ACCENT};">support@l-fms.com</a> immediately.</p>`,
+    bodyHtml: `<p>This confirms your LFMS password was just changed.</p><p>If you didn't make this change, contact <a href="mailto:support@apiseg.com" style="color: ${BRAND_ACCENT};">support@apiseg.com</a> immediately.</p>`,
   });
   return { subject, text, html };
 }
 
 export function platformPasswordChangedEmail(): EmailContent {
   const subject = "Your LFMS platform admin password was changed";
-  const text = "Your LFMS platform administrator password was just changed. If this wasn't you, contact support@l-fms.com immediately.";
+  const text = "Your LFMS platform administrator password was just changed. If this wasn't you, contact support@apiseg.com immediately.";
   const html = renderEmailLayout({
     previewText: "Your LFMS platform admin password was changed",
     heading: "Your platform admin password was changed",
-    bodyHtml: `<p>This confirms your LFMS platform administrator password was just changed.</p><p>If you didn't make this change, contact <a href="mailto:support@l-fms.com" style="color: ${BRAND_ACCENT};">support@l-fms.com</a> immediately.</p>`,
+    bodyHtml: `<p>This confirms your LFMS platform administrator password was just changed.</p><p>If you didn't make this change, contact <a href="mailto:support@apiseg.com" style="color: ${BRAND_ACCENT};">support@apiseg.com</a> immediately.</p>`,
   });
   return { subject, text, html };
 }
@@ -182,11 +182,11 @@ export function companySuspendedEmail(input: { companyName: string; reason?: str
   const company = escapeHtml(input.companyName);
   const reasonText = input.reason ? ` Reason: ${input.reason}` : "";
   const subject = `Your LFMS account for ${input.companyName} has been suspended`;
-  const text = `Your LFMS account for ${input.companyName} has been suspended.${reasonText}\n\nContact support@l-fms.com for assistance.`;
+  const text = `Your LFMS account for ${input.companyName} has been suspended.${reasonText}\n\nContact support@apiseg.com for assistance.`;
   const html = renderEmailLayout({
     previewText: `Your LFMS account for ${input.companyName} has been suspended`,
     heading: "Your account has been suspended",
-    bodyHtml: `<p>Access to <strong>${company}</strong> on LFMS has been suspended.${input.reason ? ` <strong>Reason:</strong> ${escapeHtml(input.reason)}` : ""}</p><p>Contact <a href="mailto:support@l-fms.com" style="color: ${BRAND_ACCENT};">support@l-fms.com</a> if you have questions.</p>`,
+    bodyHtml: `<p>Access to <strong>${company}</strong> on LFMS has been suspended.${input.reason ? ` <strong>Reason:</strong> ${escapeHtml(input.reason)}` : ""}</p><p>Contact <a href="mailto:support@apiseg.com" style="color: ${BRAND_ACCENT};">support@apiseg.com</a> if you have questions.</p>`,
   });
   return { subject, text, html };
 }
@@ -208,11 +208,11 @@ export function companyReactivatedEmail(input: { companyName: string; dashboardU
 export function subscriptionTrialEndingEmail(input: { companyName: string; daysRemaining: number; dashboardUrl: string }): EmailContent {
   const company = escapeHtml(input.companyName);
   const subject = `Your LFMS trial for ${input.companyName} ends in ${input.daysRemaining} days`;
-  const text = `Your LFMS trial for ${input.companyName} ends in ${input.daysRemaining} days.\n\nContact support@l-fms.com to choose a plan and keep uninterrupted access.\n\nYour dashboard: ${input.dashboardUrl}`;
+  const text = `Your LFMS trial for ${input.companyName} ends in ${input.daysRemaining} days.\n\nContact support@apiseg.com to choose a plan and keep uninterrupted access.\n\nYour dashboard: ${input.dashboardUrl}`;
   const html = renderEmailLayout({
     previewText: `Your trial ends in ${input.daysRemaining} days`,
     heading: "Your trial is ending soon",
-    bodyHtml: `<p>Your LFMS trial for <strong>${company}</strong> ends in <strong>${input.daysRemaining} days</strong>. Contact <a href="mailto:support@l-fms.com" style="color: ${BRAND_ACCENT};">support@l-fms.com</a> to choose a plan and keep uninterrupted access.</p>`,
+    bodyHtml: `<p>Your LFMS trial for <strong>${company}</strong> ends in <strong>${input.daysRemaining} days</strong>. Contact <a href="mailto:support@apiseg.com" style="color: ${BRAND_ACCENT};">support@apiseg.com</a> to choose a plan and keep uninterrupted access.</p>`,
     ctaLabel: "Go to dashboard",
     ctaUrl: input.dashboardUrl,
   });
@@ -222,11 +222,11 @@ export function subscriptionTrialEndingEmail(input: { companyName: string; daysR
 export function subscriptionExpiredEmail(input: { companyName: string; dashboardUrl: string }): EmailContent {
   const company = escapeHtml(input.companyName);
   const subject = `Your LFMS subscription for ${input.companyName} has expired`;
-  const text = `Your LFMS subscription for ${input.companyName} has expired.\n\nContact support@l-fms.com to renew and restore full access.\n\nYour dashboard: ${input.dashboardUrl}`;
+  const text = `Your LFMS subscription for ${input.companyName} has expired.\n\nContact support@apiseg.com to renew and restore full access.\n\nYour dashboard: ${input.dashboardUrl}`;
   const html = renderEmailLayout({
     previewText: `Your subscription for ${input.companyName} has expired`,
     heading: "Your subscription has expired",
-    bodyHtml: `<p>Your LFMS subscription for <strong>${company}</strong> has expired. Contact <a href="mailto:support@l-fms.com" style="color: ${BRAND_ACCENT};">support@l-fms.com</a> to renew and restore full access.</p>`,
+    bodyHtml: `<p>Your LFMS subscription for <strong>${company}</strong> has expired. Contact <a href="mailto:support@apiseg.com" style="color: ${BRAND_ACCENT};">support@apiseg.com</a> to renew and restore full access.</p>`,
     ctaLabel: "Go to dashboard",
     ctaUrl: input.dashboardUrl,
   });

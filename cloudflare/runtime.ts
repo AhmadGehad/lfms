@@ -72,7 +72,7 @@ export function collectContainerEnvironment(
 
 export function getConfiguredBaseDomain(
   source: Record<string, unknown>,
-  fallback = "l-fms.com"
+  fallback = "apiseg.com"
 ) {
   const value =
     typeof source.BASE_DOMAIN === "string"
@@ -106,7 +106,7 @@ export function isPlatformHostname(hostname: string, baseDomain: string) {
   );
 }
 
-export function isLfmsHostname(hostname: string, baseDomain = "l-fms.com") {
+export function isLfmsHostname(hostname: string, baseDomain = "apiseg.com") {
   const normalized = normalizeEdgeHostname(hostname);
   const normalizedBase = normalizeEdgeHostname(baseDomain);
   if (normalized === normalizedBase) return true;

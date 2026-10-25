@@ -2,7 +2,7 @@ import { CirclePause, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { publicConfig } from "@/lib/publicConfig";
 
-const fallbackSupportEmail = "support@l-fms.com";
+const fallbackSupportEmail = "support@apiseg.com";
 
 export default function CompanySuspended() {
   const supportEmail =

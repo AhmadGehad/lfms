@@ -19,7 +19,7 @@ export type HostValidationOptions = {
   allowDevelopmentPorts?: boolean;
   /** Extra hostnames (without protocol) that are treated as tenant surface.
    *  Use this to allow the Manus internal domain (e.g. livestockms-boywmbm5.manus.space)
-   *  when BASE_DOMAIN is a custom domain like l-fms.com. */
+   *  when BASE_DOMAIN is a custom domain like apiseg.com. */
   additionalTenantHostnames?: string[];
 };
 

@@ -419,7 +419,7 @@ export async function requestCompanyDeletion(input: {
         const email = deletionRequestedEmail({
           companyName: emailContext.companyName,
           gracePeriodEndsAt: emailContext.retentionUntil,
-          supportUrl: "mailto:support@l-fms.com",
+          supportUrl: "mailto:support@apiseg.com",
         });
         void sendTemplatedEmail({
           template: "deletion_requested",
@@ -579,7 +579,7 @@ export async function cancelCompanyDeletion(input: {
   if (isEmailConfigured()) {
     const ownerEmail = await getCompanyOwnerEmail(outcome.companyId);
     if (ownerEmail) {
-      const email = deletionCanceledEmail({ companyName: outcome.companyName, supportUrl: "mailto:support@l-fms.com" });
+      const email = deletionCanceledEmail({ companyName: outcome.companyName, supportUrl: "mailto:support@apiseg.com" });
       void sendTemplatedEmail({
         template: "deletion_canceled",
         to: ownerEmail,
