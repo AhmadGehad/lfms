@@ -301,7 +301,7 @@ function DashboardLayoutContent({
 
           {/* Navigation - uses inline styles for critical layout to guarantee
               no overlap regardless of utility-class ordering or base styles. */}
-          <SidebarContent className="py-2" style={{ gap: 0 }}>
+          <SidebarContent className="py-2" style={{ gap: 0 }} data-tour="sidebar-nav">
             {navGroups.map((group) => (
               <div
                 key={group.label}
@@ -329,6 +329,7 @@ function DashboardLayoutContent({
                       <li key={item.path} style={{ position: "relative" }}>
                         <button
                           type="button"
+                          data-tour={`nav-${item.page}`}
                           onClick={() => {
                             setLocation(item.path);
                             if (isMobile) toggleSidebar();
@@ -495,7 +496,7 @@ function DashboardLayoutContent({
             </div>
             <div className={`flex shrink-0 items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
               <OfflineSyncIndicator />
-              <DesignSwitch compact />
+              <span data-tour="design-switch" className="inline-flex"><DesignSwitch compact /></span>
               <FarmSwitcher className="hidden w-36 sm:flex" />
               <OwnerFilterSelect className="hidden w-32 sm:block" />
               <LanguageSwitcher />
@@ -514,14 +515,14 @@ function DashboardLayoutContent({
         {/* Desktop top bar — carries the global owner filter so every page can
             be scoped to a single owner from one consistent control. */}
         {!isMobile && (
-          <div className={`flex border-b h-12 items-center justify-between bg-background/95 px-4 md:px-6 backdrop-blur sticky top-0 z-40 ${isAr ? "flex-row-reverse" : ""}`}>
+          <div data-tour="topbar" className={`flex border-b h-12 items-center justify-between bg-background/95 px-4 md:px-6 backdrop-blur sticky top-0 z-40 ${isAr ? "flex-row-reverse" : ""}`}>
             <span className="font-semibold text-sm text-muted-foreground">{activeLabel}</span>
             <div className={`flex items-center gap-2 ${isAr ? "flex-row-reverse" : ""}`}>
               <OfflineSyncIndicator />
-              <DesignSwitch />
-              <FarmSwitcher />
+              <span data-tour="design-switch" className="inline-flex"><DesignSwitch /></span>
+              <span data-tour="farm-switcher" className="inline-flex"><FarmSwitcher /></span>
               <span className="text-xs text-muted-foreground hidden lg:inline">{t("owners.filterByOwner")}</span>
-              <OwnerFilterSelect />
+              <span data-tour="owner-filter" className="inline-flex"><OwnerFilterSelect /></span>
             </div>
           </div>
         )}
