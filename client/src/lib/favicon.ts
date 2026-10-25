@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 
-const DEFAULT_FAVICON = "/favicon.svg";
+// Keep the version in step with the icon links in client/index.html.
+const DEFAULT_FAVICON = "/favicon.svg?v=2";
 
 /** Swaps the browser tab icon between the tenant's custom favicon and the default APIS mark. */
 export function useFavicon(hasCustomFavicon: boolean | undefined) {

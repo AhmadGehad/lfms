@@ -14,22 +14,12 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import { trpc } from "./lib/trpc";
 import { useFavicon } from "./lib/favicon";
+import { isBareHost } from "./lib/bareHost";
 import { OfflineIdentityTracker } from "./lib/offline/OfflineIdentityTracker";
 import { lazy, Suspense } from "react";
 
 const Landing = lazy(() => import("./pages/Landing"));
 const DemoApp = lazy(() => import("./demo/DemoApp"));
-
-// Bare-domain visitors (no company subdomain) get the marketing page; a
-// company workspace only exists on <slug>.<base-domain>.
-function isBareHost(hostname: string): boolean {
-  const host = hostname.toLowerCase();
-  if (host === "localhost" || /^[0-9.]+$/.test(host) || host.includes(":")) return true;
-  if (host.endsWith(".localhost")) return false;
-  const labels = host.split(".");
-  if (labels[0] === "www") return true;
-  return labels.length <= 2;
-}
 
 function TenantSurface() {
   const bareHost = isBareHost(window.location.hostname);

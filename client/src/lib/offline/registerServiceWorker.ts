@@ -57,3 +57,23 @@ export function registerServiceWorker(onUpdateAvailable?: UpdatePrompt) {
     window.location.reload();
   });
 }
+
+/**
+ * Removes a previously installed worker and its caches. Used on the marketing
+ * domain, which once registered the worker and must stop serving a cached
+ * shell to returning visitors.
+ */
+export async function unregisterServiceWorker() {
+  if (typeof window === "undefined") return;
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(registration => registration.unregister()));
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(key => caches.delete(key)));
+    }
+  } catch (error) {
+    console.error("[ServiceWorker] unregister failed", error);
+  }
+}
