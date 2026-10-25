@@ -20,7 +20,6 @@ import { publicConfig } from "@/lib/publicConfig";
 import apisLogoReversed from "@/assets/brand/apis-horizontal-reversed.svg";
 import apisLogoFullColor from "@/assets/brand/apis-horizontal-full-color.svg";
 import apisSealReversed from "@/assets/brand/apis-symbol-reversed.svg";
-import apisFavicon from "@/assets/brand/favicon.svg";
 
 gsap.registerPlugin(CustomEase, ScrollTrigger, useGSAP);
 // Brand motion curve: cubic-bezier(0.2, 0, 0, 1).
@@ -96,35 +95,14 @@ function CroppedArcs({ className }: { className?: string }) {
   );
 }
 
+// The APIS favicon is the site default (client/index.html), so only the
+// title needs setting here.
 function useLandingDocumentBranding() {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = "APIS · Livestock management, clearly";
-
-    // App's useFavicon owns the first icon link; swap its href rather than
-    // adding a competing link, and restore it when the landing unmounts.
-    let icon = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-    const created = !icon;
-    if (!icon) {
-      icon = document.createElement("link");
-      icon.rel = "icon";
-      document.head.appendChild(icon);
-    }
-    const previousHref = icon.getAttribute("href");
-    const previousType = icon.getAttribute("type");
-    icon.type = "image/svg+xml";
-    icon.href = apisFavicon;
-
     return () => {
       document.title = previousTitle;
-      if (created) {
-        icon.remove();
-        return;
-      }
-      if (previousHref === null) icon.removeAttribute("href");
-      else icon.setAttribute("href", previousHref);
-      if (previousType === null) icon.removeAttribute("type");
-      else icon.setAttribute("type", previousType);
     };
   }, []);
 }

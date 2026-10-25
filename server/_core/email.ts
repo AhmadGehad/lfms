@@ -50,7 +50,7 @@ type SendEmailInput = {
 };
 
 function formatFromHeader() {
-  return `LFMS <${ENV.smtpFrom}>`;
+  return `APIS <${ENV.smtpFrom}>`;
 }
 
 async function sendViaCloudflareBridge(input: SendEmailInput) {
@@ -62,7 +62,7 @@ async function sendViaCloudflareBridge(input: SendEmailInput) {
     },
     body: JSON.stringify({
       from: ENV.smtpFrom,
-      fromName: "LFMS",
+      fromName: "APIS",
       to: input.to,
       subject: input.subject,
       text: input.text,

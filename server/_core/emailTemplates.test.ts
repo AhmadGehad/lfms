@@ -18,7 +18,7 @@ function assertWellFormed(email: { subject: string; text: string; html: string }
   expect(email.subject.length).toBeGreaterThan(0);
   expect(email.text.length).toBeGreaterThan(0);
   expect(email.html).toContain("<!doctype html>");
-  expect(email.html).toContain("LFMS");
+  expect(email.html).toContain("APIS");
 }
 
 describe("emailTemplates", () => {

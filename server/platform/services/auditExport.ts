@@ -45,7 +45,7 @@ export async function exportAuditCsv(
   });
 
   return {
-    filename: `lfms-audit-${new Date().toISOString().slice(0, 10)}.csv`,
+    filename: `apis-audit-${new Date().toISOString().slice(0, 10)}.csv`,
     content: csvDocument(header, csvRows),
     rowCount: rows.length,
     truncated: rows.length === 10_000,

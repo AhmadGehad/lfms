@@ -69,7 +69,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
       <div className="flex h-14 items-center gap-3 border-b border-[var(--admin-sidebar-border)] px-4">
         <div className="grid h-8 w-8 place-items-center bg-primary text-primary-foreground"><ShieldCheck className="h-4 w-4" /></div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">LFMS Platform</p>
+          <p className="truncate text-sm font-semibold">APIS Platform</p>
           <p className="text-[11px] text-[var(--admin-sidebar-muted)]">Operations console</p>
         </div>
         <Button variant="ghost" size="icon" className="ml-auto text-white hover:bg-white/10 md:hidden" onClick={() => setMobileOpen(false)} aria-label="Close navigation">

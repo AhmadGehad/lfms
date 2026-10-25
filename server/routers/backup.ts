@@ -59,7 +59,7 @@ export const backupRouter = router({
     };
 
     return {
-      filename: `lfms-complete-backup-${generatedAt.slice(0, 10)}.json`,
+      filename: `apis-complete-backup-${generatedAt.slice(0, 10)}.json`,
       mimeType: "application/json",
       base64: Buffer.from(JSON.stringify(snapshot, null, 2), "utf-8").toString("base64"),
       formatVersion: JSON_BACKUP_VERSION,

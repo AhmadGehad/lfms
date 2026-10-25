@@ -391,7 +391,7 @@ export function readCanonicalWorkbook(
   const version = manifest ? Number(rawCellValue(manifest.getCell("B1"))) : NaN;
   if (!SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.includes(version as 3 | 4 | 5 | 6 | 7)) {
     throw new Error(
-      `Unsupported or missing LFMS Excel data format version. Supported versions: ${SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.join(", ")}.`
+      `Unsupported or missing APIS Excel data format version. Supported versions: ${SUPPORTED_EXCEL_DATA_FORMAT_VERSIONS.join(", ")}.`
     );
   }
 

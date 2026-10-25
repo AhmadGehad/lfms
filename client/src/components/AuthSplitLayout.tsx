@@ -25,7 +25,7 @@ function BrandMark({ name, hasLogo, className }: { name: string; hasLogo: boolea
 /** Shared split-panel chrome for /login, /forgot-password, /reset-password — brand side pulls the current tenant's name/logo, form side is supplied by the caller. */
 export function AuthSplitLayout({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   const branding = trpc.tenancy.publicBranding.useQuery();
-  const farmName = branding.data?.name || "LFMS";
+  const farmName = branding.data?.name || "APIS";
   const hasLogo = Boolean(branding.data?.hasLogo);
 
   return (

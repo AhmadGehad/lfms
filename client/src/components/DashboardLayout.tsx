@@ -165,7 +165,7 @@ function DashboardLayoutContent({
   const perms = usePermissions();
   const tenantContext = trpc.auth.tenantContext.useQuery(undefined, { staleTime: 60_000, retry: false });
   const company = tenantContext.data?.company;
-  const companyName = company?.name ?? "LFMS";
+  const companyName = company?.name ?? "APIS";
 
   // Notification count
   const { data: notifications } = trpc.notifications.list.useQuery(
@@ -292,7 +292,7 @@ function DashboardLayoutContent({
                   </div>
                   <div className={`min-w-0 ${isAr ? "text-right" : ""}`}>
                     <p className="text-sm font-bold text-sidebar-foreground truncate leading-none">{companyName}</p>
-                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5">{company?.slug ?? "LFMS"}</p>
+                    <p className="text-xs text-sidebar-foreground/50 truncate mt-0.5">{company?.slug ?? "APIS"}</p>
                   </div>
                 </div>
               )}

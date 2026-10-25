@@ -151,7 +151,7 @@ function vitePluginManusDebugCollector(): Plugin {
 }
 
 /**
- * Emits the generated PWA icons.
+ * Emits the APIS favicon and PWA icons.
  *
  * They cannot live in client/public: `publicDir` is disabled for production
  * builds (that directory holds dev-only Manus tooling), so a static file there
@@ -181,14 +181,14 @@ function vitePluginPwaIcons(): Plugin {
     async configureServer(server: ViteDevServer) {
       const { buildPwaIcons } = await import("./scripts/pwaIcons.mjs");
       const icons = new Map(
-        buildPwaIcons().map(icon => [`/${icon.fileName}`, icon.contents]),
+        buildPwaIcons().map(icon => [`/${icon.fileName}`, icon]),
       );
       server.middlewares.use((req, res, next) => {
-        const contents = req.url ? icons.get(req.url.split("?")[0]) : undefined;
-        if (!contents) return next();
-        res.setHeader("Content-Type", "image/png");
+        const icon = req.url ? icons.get(req.url.split("?")[0]) : undefined;
+        if (!icon) return next();
+        res.setHeader("Content-Type", icon.contentType);
         res.setHeader("Cache-Control", "no-cache");
-        res.end(contents);
+        res.end(icon.contents);
       });
     },
   };
@@ -229,8 +229,8 @@ export default defineConfig(({ command }) => {
           ],
         },
         manifest: {
-          name: "LFMS — Livestock Farm Management",
-          short_name: "LFMS",
+          name: "APIS — Livestock Management",
+          short_name: "APIS",
           description:
             "Record weights, vaccinations, feed and new animals in the field, even with no network.",
           start_url: "/",

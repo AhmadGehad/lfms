@@ -238,7 +238,7 @@ export class SqlLifecycleJobRepository implements LifecycleJobRepository {
       let tenantFileId: number;
       const fileValues = {
         storageKey,
-        originalName: `lfms-tenant-export-${prepared.generatedAt.toISOString().slice(0, 10)}.json`,
+        originalName: `apis-tenant-export-${prepared.generatedAt.toISOString().slice(0, 10)}.json`,
         contentType: "application/json",
         sizeBytes: bytes.length,
         checksumSha256,

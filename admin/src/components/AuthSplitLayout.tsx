@@ -18,7 +18,7 @@ export function AuthSplitLayout({ title, description, children }: { title: strin
           <div className="grid h-11 w-11 place-items-center rounded-lg bg-[#1b79c9]">
             <ShieldCheck className="h-6 w-6 text-white" />
           </div>
-          <span className="font-medium tracking-tight">LFMS Platform Operations</span>
+          <span className="font-medium tracking-tight">APIS Platform Operations</span>
         </div>
         <div className="relative">
           <h1 className="max-w-md text-4xl font-medium leading-tight">
@@ -37,7 +37,7 @@ export function AuthSplitLayout({ title, description, children }: { title: strin
             <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary">
               <ShieldCheck className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="font-medium">LFMS Platform Operations</span>
+            <span className="font-medium">APIS Platform Operations</span>
           </div>
 
           <h2 className="text-2xl font-semibold">{title}</h2>

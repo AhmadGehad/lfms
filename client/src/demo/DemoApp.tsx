@@ -5,7 +5,6 @@ import { Router } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { DesignVersionProvider } from "@/contexts/DesignVersionContext";
 import OldDesign from "@/designs/old/OldDesign";
-import apisFavicon from "@/assets/brand/favicon.svg";
 import { demoLink } from "./mockLink";
 import { DEMO_STYLES, DemoBar, GuideTour, HelpMarks } from "./DemoGuide";
 
@@ -41,12 +40,8 @@ function useDemoDocumentBranding() {
   useEffect(() => {
     const previousTitle = document.title;
     document.title = "APIS · Walkthrough";
-    const icon = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-    const previousIcon = icon?.getAttribute("href") ?? null;
-    icon?.setAttribute("href", apisFavicon);
     return () => {
       document.title = previousTitle;
-      if (icon && previousIcon !== null) icon.setAttribute("href", previousIcon);
     };
   }, []);
 }
