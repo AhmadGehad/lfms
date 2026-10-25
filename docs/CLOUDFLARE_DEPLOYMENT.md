@@ -127,7 +127,7 @@ Configure every name in `secrets.required` in the Cloudflare dashboard under
 **Workers & Pages → (worker) → Settings → Variables and Secrets**, with type
 **Secret**. This includes the database, independent auth keys, private R2
 credentials, Manus server key, app ID, and analytics identifiers. Production
-(`lfms-production`) and staging (`lfms-staging`) are separate Workers with
+(`lfms`) and staging (`lfms-staging`) are separate Workers with
 separate secret sets and separate databases.
 
 Set all required secrets **before** connecting Git integration or pushing to
@@ -176,7 +176,7 @@ Cloudflare's build environment, including the container image build. No local
 Docker, local secrets file, or local Wrangler authentication is involved.
 
 Configure the Git-connected Worker in the dashboard
-(**Workers & Pages → lfms-production → Settings → Build**):
+(**Workers & Pages → lfms → Settings → Build**):
 
 - Repository: `AhmadGehad/lfms`, production branch as configured.
 - Build command: `pnpm run check:secrets && pnpm run check && pnpm run build`

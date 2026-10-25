@@ -12,7 +12,7 @@ ENV PATH=$PNPM_HOME:$PATH
 RUN npm install --global corepack@0.35.0 \
   && corepack enable \
   && corepack prepare pnpm@10.34.4 --activate
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml .pnpmfile.cjs ./
 COPY patches ./patches
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
   pnpm install --frozen-lockfile
@@ -32,7 +32,7 @@ RUN pnpm run check \
   && ! grep -q 'id="manus-runtime"' dist/public/index.html \
   && pnpm prune --prod
 
-FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian12:nonroot@sha256:13593b7570658e8477de39e2f4a1dd25db2f836d68a0ba771251572d23bb4f8e AS runtime-base
+FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13:nonroot@sha256:10747a1323be68f206aed893599d43e6697ad67257e7c42703553f99fbce3d33 AS runtime-base
 
 WORKDIR /app
 ENV NODE_ENV=production
