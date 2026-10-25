@@ -3,7 +3,6 @@ import {
   collectContainerEnvironment,
   getConfiguredBaseDomain,
   getConfiguredInstanceCount,
-  getLegacyDomainRedirect,
   isLfmsHostname,
   isPlatformHostname,
   isReservedDeploymentHostname,
@@ -37,72 +36,29 @@ describe("Cloudflare container boundary", () => {
     expect(isLfmsHostname("azal-farms.apiseg.com")).toBe(true);
     expect(isLfmsHostname("a.b.apiseg.com")).toBe(false);
     expect(isLfmsHostname("not-apiseg.com")).toBe(false);
-    expect(isLfmsHostname("l-fms.com")).toBe(false);
-    expect(normalizeEdgeHostname("ADMIN.L-FMS.COM.")).toBe("admin.l-fms.com");
-    expect(isPlatformHostname("ADMIN.L-FMS.COM.", "l-fms.com")).toBe(true);
+    expect(normalizeEdgeHostname("ADMIN.APISEG.COM.")).toBe("admin.apiseg.com");
+    expect(isPlatformHostname("ADMIN.APISEG.COM.", "apiseg.com")).toBe(true);
   });
 
   it("keeps the production wildcard away from the staging hostname tree", () => {
-    expect(isReservedDeploymentHostname("staging.l-fms.com", "l-fms.com")).toBe(
+    expect(isReservedDeploymentHostname("staging.apiseg.com", "apiseg.com")).toBe(
       true
     );
     expect(
-      isReservedDeploymentHostname("admin.staging.l-fms.com", "l-fms.com")
+      isReservedDeploymentHostname("admin.staging.apiseg.com", "apiseg.com")
     ).toBe(true);
     expect(
-      isReservedDeploymentHostname("staging.l-fms.com", "staging.l-fms.com")
+      isReservedDeploymentHostname("staging.apiseg.com", "staging.apiseg.com")
     ).toBe(false);
   });
 
   it("uses only a valid configured base domain", () => {
-    expect(getConfiguredBaseDomain({ BASE_DOMAIN: "staging.l-fms.com" })).toBe(
-      "staging.l-fms.com"
+    expect(getConfiguredBaseDomain({ BASE_DOMAIN: "staging.apiseg.com" })).toBe(
+      "staging.apiseg.com"
     );
     expect(getConfiguredBaseDomain({ BASE_DOMAIN: "https://evil.test" })).toBe(
       "apiseg.com"
     );
-  });
-
-  it("redirects old production links without replaying mutations or staging traffic", () => {
-    for (const method of ["GET", "HEAD"]) {
-      expect(
-        getLegacyDomainRedirect(
-          new Request("http://www.l-fms.com/path?q=1", { method }),
-          "apiseg.com"
-        )
-      ).toBe("https://apiseg.com/path?q=1");
-      expect(
-        getLegacyDomainRedirect(
-          new Request("https://azal-farms.l-fms.com/accept-invitation?x=1", {
-            method,
-          }),
-          "apiseg.com"
-        )
-      ).toBe("https://azal-farms.apiseg.com/accept-invitation?x=1");
-    }
-    for (const host of [
-      "staging.l-fms.com",
-      "admin.staging.l-fms.com",
-      "evil-l-fms.com",
-      "l-fms.com.evil.test",
-      "apiseg.com",
-    ]) {
-      expect(
-        getLegacyDomainRedirect(new Request(`https://${host}/`), "apiseg.com")
-      ).toBeNull();
-    }
-    expect(
-      getLegacyDomainRedirect(
-        new Request("https://admin.l-fms.com/api", { method: "POST" }),
-        "apiseg.com"
-      )
-    ).toBeNull();
-    expect(
-      getLegacyDomainRedirect(
-        new Request("https://l-fms.com/"),
-        "staging.l-fms.com"
-      )
-    ).toBeNull();
   });
 
   it("bounds the configured fixed container pool", () => {
@@ -116,7 +72,7 @@ describe("Cloudflare container boundary", () => {
 
   it("overwrites client-supplied forwarding headers", () => {
     const normalized = normalizeContainerRequest(
-      new Request("https://azal-farms.l-fms.com/animals", {
+      new Request("https://azal-farms.apiseg.com/animals", {
         headers: {
           "cf-connecting-ip": "203.0.113.7",
           forwarded: "for=attacker",
@@ -131,7 +87,7 @@ describe("Cloudflare container boundary", () => {
     expect(normalized.headers.get("forwarded")).toBeNull();
     expect(normalized.headers.get("x-forwarded-for")).toBe("203.0.113.7");
     expect(normalized.headers.get("x-forwarded-host")).toBe(
-      "azal-farms.l-fms.com"
+      "azal-farms.apiseg.com"
     );
     expect(normalized.headers.get("x-forwarded-port")).toBe("443");
     expect(normalized.headers.get("x-forwarded-proto")).toBe("https");
@@ -165,22 +121,22 @@ describe("Cloudflare container boundary", () => {
   it("proxies only server-owned paths and all state-changing requests", () => {
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/api/trpc/animals")
+        new Request("https://azal-farms.apiseg.com/api/trpc/animals")
       )
     ).toBe(true);
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/runtime-config.js")
+        new Request("https://azal-farms.apiseg.com/runtime-config.js")
       )
     ).toBe(true);
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/animals", { method: "POST" })
+        new Request("https://azal-farms.apiseg.com/animals", { method: "POST" })
       )
     ).toBe(true);
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/animals")
+        new Request("https://azal-farms.apiseg.com/animals")
       )
     ).toBe(false);
   });
@@ -214,13 +170,13 @@ describe("Cloudflare container boundary", () => {
 
   it("keeps the service worker out of the container proxy so it is cacheable", () => {
     expect(
-      shouldProxyToContainer(new Request("https://azal-farms.l-fms.com/sw.js"))
+      shouldProxyToContainer(new Request("https://azal-farms.apiseg.com/sw.js"))
     ).toBe(false);
     // The app cannot boot offline without this file, and it is container-served,
     // so the service worker has to cache it rather than treat it as an asset.
     expect(
       shouldProxyToContainer(
-        new Request("https://azal-farms.l-fms.com/runtime-config.js")
+        new Request("https://azal-farms.apiseg.com/runtime-config.js")
       )
     ).toBe(true);
   });

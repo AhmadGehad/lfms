@@ -117,7 +117,7 @@ beforeEach(() => {
   mocks.verifyPassword.mockResolvedValue(true);
   mocks.isEmailConfigured.mockReturnValue(true);
   mocks.sendTemplatedEmail.mockResolvedValue(undefined);
-  mocks.getRequestOrigin.mockReturnValue("https://azal-farms.l-fms.com");
+  mocks.getRequestOrigin.mockReturnValue("https://azal-farms.apiseg.com");
   mocks.getResolvedRequestHost.mockReturnValue({ surface: "tenant", companySlug: "azal-farms" });
   mocks.getCompanySessionIdleTimeoutMs.mockResolvedValue(null);
 
@@ -311,7 +311,7 @@ describe("POST /api/auth/forgot-password", () => {
     expect(mocks.sendTemplatedEmail).toHaveBeenCalledOnce();
     const sent = mocks.sendTemplatedEmail.mock.calls[0][0];
     expect(sent).toMatchObject({ template: "password_reset", to: "farmer@azal-farms.test" });
-    expect(sent.html).toContain("https://azal-farms.l-fms.com/reset-password?token=");
+    expect(sent.html).toContain("https://azal-farms.apiseg.com/reset-password?token=");
   });
 
   it("skips the send but still issues a token when email is unconfigured", async () => {

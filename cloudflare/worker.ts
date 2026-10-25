@@ -4,7 +4,6 @@ import {
   collectContainerEnvironment,
   getConfiguredBaseDomain,
   getConfiguredInstanceCount,
-  getLegacyDomainRedirect,
   isLfmsHostname,
   isPlatformHostname,
   isReservedDeploymentHostname,
@@ -134,17 +133,6 @@ export default {
     const requestId = request.headers.get("cf-ray") ?? crypto.randomUUID();
     const baseDomain = getConfiguredBaseDomain(env, BASE_DOMAIN);
     const hostname = normalizeEdgeHostname(url.hostname);
-    const legacyRedirect = getLegacyDomainRedirect(request, baseDomain);
-    if (legacyRedirect) {
-      return secureEdgeResponse(
-        new Response(null, {
-          status: 308,
-          headers: { Location: legacyRedirect },
-        }),
-        env,
-        requestId
-      );
-    }
     if (
       !isLfmsHostname(hostname, baseDomain) ||
       isReservedDeploymentHostname(hostname, baseDomain)

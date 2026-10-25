@@ -2,7 +2,7 @@ import { Mail, SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { publicConfig } from "@/lib/publicConfig";
 
-const fallbackSupportEmail = "support@l-fms.com";
+const fallbackSupportEmail = "support@apiseg.com";
 
 /**
  * Shown when the subdomain doesn't resolve to a real company, instead of the

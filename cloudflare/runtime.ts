@@ -125,30 +125,6 @@ export function isReservedDeploymentHostname(
   return normalized === stagingRoot || normalized.endsWith(`.${stagingRoot}`);
 }
 
-export function getLegacyDomainRedirect(request: Request, baseDomain: string) {
-  if (
-    baseDomain !== "apiseg.com" ||
-    !["GET", "HEAD"].includes(request.method)
-  ) {
-    return null;
-  }
-  const url = new URL(request.url);
-  const hostname = normalizeEdgeHostname(url.hostname);
-  if (
-    !isLfmsHostname(hostname, "l-fms.com") ||
-    isReservedDeploymentHostname(hostname, "l-fms.com")
-  ) {
-    return null;
-  }
-  url.protocol = "https:";
-  url.hostname =
-    hostname === "l-fms.com" || hostname === "www.l-fms.com"
-      ? baseDomain
-      : `${hostname.slice(0, -"l-fms.com".length)}${baseDomain}`;
-  url.port = "";
-  return url.toString();
-}
-
 export function normalizeContainerRequest(request: Request, requestId: string) {
   const url = new URL(request.url);
   const headers = new Headers(request.headers);

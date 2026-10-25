@@ -8,7 +8,7 @@ import { publicConfig } from "@/lib/publicConfig";
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 const supportEmail =
-  publicConfig.supportEmail?.trim() || "support@l-fms.com";
+  publicConfig.supportEmail?.trim() || "support@apiseg.com";
 const contactHref = `mailto:${encodeURIComponent(supportEmail)}?subject=${encodeURIComponent("LFMS walkthrough for my farm")}`;
 
 // ─── Palette ─────────────────────────────────────────────────────────────────

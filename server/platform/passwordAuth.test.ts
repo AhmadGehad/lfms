@@ -107,7 +107,7 @@ describe("POST /api/platform/auth/login", () => {
   it("issues a platform session for an active, non-MFA administrator", async () => {
     fake.queue(users, [administratorRow()]);
 
-    const response = await login({ email: "admin@l-fms.com", password: "correct-horse-battery" });
+    const response = await login({ email: "admin@apiseg.com", password: "correct-horse-battery" });
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({ success: true });
@@ -122,7 +122,7 @@ describe("POST /api/platform/auth/login", () => {
   it("burns verification time and audits an unknown administrator email", async () => {
     fake.queue(users, []);
 
-    const response = await login({ email: "nobody@l-fms.com", password: "correct-horse-battery" });
+    const response = await login({ email: "nobody@apiseg.com", password: "correct-horse-battery" });
 
     expect(response.statusCode).toBe(401);
     expect(response.body).toEqual({ error: GENERIC_LOGIN_ERROR });
@@ -135,7 +135,7 @@ describe("POST /api/platform/auth/login", () => {
     mocks.verifyPassword.mockResolvedValue(false);
     fake.queue(users, [administratorRow({ userFailedAttempts: 1 })]);
 
-    const response = await login({ email: "admin@l-fms.com", password: "wrong-password-here" });
+    const response = await login({ email: "admin@apiseg.com", password: "wrong-password-here" });
 
     expect(response.statusCode).toBe(401);
     expect(fake.writesFor(users)).toEqual([
@@ -148,7 +148,7 @@ describe("POST /api/platform/auth/login", () => {
   it("refuses a locked account before verifying the password", async () => {
     fake.queue(users, [administratorRow({ userLockedUntil: new Date(Date.now() + 60_000) })]);
 
-    const response = await login({ email: "admin@l-fms.com", password: "correct-horse-battery" });
+    const response = await login({ email: "admin@apiseg.com", password: "correct-horse-battery" });
 
     expect(response.statusCode).toBe(403);
     expect(mocks.verifyPassword).not.toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe("POST /api/platform/auth/login", () => {
   it("denies a suspended administrator even with the correct password", async () => {
     fake.queue(users, [administratorRow({ administratorStatus: "suspended" })]);
 
-    const response = await login({ email: "admin@l-fms.com", password: "correct-horse-battery" });
+    const response = await login({ email: "admin@apiseg.com", password: "correct-horse-battery" });
 
     expect(response.statusCode).toBe(403);
     expect(auditReasons(fake)).toEqual(["administrator_not_authorized"]);
@@ -168,7 +168,7 @@ describe("POST /api/platform/auth/login", () => {
   it("refuses password login for an administrator that requires workforce MFA", async () => {
     fake.queue(users, [administratorRow({ mfaRequired: true })]);
 
-    const response = await login({ email: "admin@l-fms.com", password: "correct-horse-battery" });
+    const response = await login({ email: "admin@apiseg.com", password: "correct-horse-battery" });
 
     expect(response.statusCode).toBe(403);
     expect(response.body).toEqual({
@@ -194,14 +194,14 @@ describe("POST /api/platform/auth/forgot-password", () => {
   it("emails an admin-subdomain reset link to an active administrator", async () => {
     fake.queue(users, [administratorRow()]);
 
-    const response = await forgot({ email: "admin@l-fms.com" });
+    const response = await forgot({ email: "admin@apiseg.com" });
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({ message: GENERIC_RESET_MESSAGE });
     expect(fake.writesFor(authenticationTokens)).toHaveLength(1);
 
     const sent = mocks.sendTemplatedEmail.mock.calls[0][0];
-    expect(sent).toMatchObject({ template: "platform_password_reset", to: "admin@l-fms.com" });
+    expect(sent).toMatchObject({ template: "platform_password_reset", to: "admin@apiseg.com" });
     expect(sent.html).toContain("https://admin.");
     expect(sent.html).toContain("/reset-password?token=");
   });
@@ -209,7 +209,7 @@ describe("POST /api/platform/auth/forgot-password", () => {
   it("issues nothing for an unknown email but returns the same message", async () => {
     fake.queue(users, []);
 
-    const response = await forgot({ email: "nobody@l-fms.com" });
+    const response = await forgot({ email: "nobody@apiseg.com" });
 
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({ message: GENERIC_RESET_MESSAGE });
@@ -220,7 +220,7 @@ describe("POST /api/platform/auth/forgot-password", () => {
   it("issues nothing for a suspended administrator", async () => {
     fake.queue(users, [administratorRow({ administratorStatus: "suspended" })]);
 
-    const response = await forgot({ email: "admin@l-fms.com" });
+    const response = await forgot({ email: "admin@apiseg.com" });
 
     expect(response.statusCode).toBe(200);
     expect(fake.writesFor(authenticationTokens)).toHaveLength(0);
@@ -229,7 +229,7 @@ describe("POST /api/platform/auth/forgot-password", () => {
 
   it("still returns the generic message when the lookup throws", async () => {
     mocks.getDb.mockRejectedValue(new Error("database offline"));
-    const response = await forgot({ email: "admin@l-fms.com" });
+    const response = await forgot({ email: "admin@apiseg.com" });
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({ message: GENERIC_RESET_MESSAGE });
   });
@@ -244,7 +244,7 @@ describe("POST /api/platform/auth/reset-password", () => {
     administratorStatus: "active",
     authVersion: 2,
     userStatus: "active",
-    userEmail: "admin@l-fms.com",
+    userEmail: "admin@apiseg.com",
   };
 
   it("rejects a weak password before any database work", async () => {
@@ -300,7 +300,7 @@ describe("POST /api/platform/auth/reset-password", () => {
 
     expect(mocks.issueSession).toHaveBeenCalledWith(expect.objectContaining({ authVersion: 3 }));
     expect(mocks.sendTemplatedEmail).toHaveBeenCalledWith(
-      expect.objectContaining({ template: "platform_password_changed", to: "admin@l-fms.com" }),
+      expect.objectContaining({ template: "platform_password_changed", to: "admin@apiseg.com" }),
     );
   });
 

@@ -23,10 +23,10 @@ function assertWellFormed(email: { subject: string; text: string; html: string }
 
 describe("emailTemplates", () => {
   it("passwordResetEmail includes the reset link and expiry", () => {
-    const email = passwordResetEmail({ resetUrl: "https://azal-farms.l-fms.com/reset-password?token=abc", expiresInMinutes: 60 });
+    const email = passwordResetEmail({ resetUrl: "https://azal-farms.apiseg.com/reset-password?token=abc", expiresInMinutes: 60 });
     assertWellFormed(email);
-    expect(email.text).toContain("https://azal-farms.l-fms.com/reset-password?token=abc");
-    expect(email.html).toContain("https://azal-farms.l-fms.com/reset-password?token=abc");
+    expect(email.text).toContain("https://azal-farms.apiseg.com/reset-password?token=abc");
+    expect(email.html).toContain("https://azal-farms.apiseg.com/reset-password?token=abc");
     expect(email.text).toContain("60 minutes");
   });
 
@@ -41,13 +41,13 @@ describe("emailTemplates", () => {
     const email = passwordChangedEmail();
     assertWellFormed(email);
     expect(email.text.toLowerCase()).toContain("changed");
-    expect(email.text.toLowerCase()).toContain("support@l-fms.com");
+    expect(email.text.toLowerCase()).toContain("support@apiseg.com");
   });
 
   it("membershipInvitationEmail includes the company name and accept link", () => {
     const email = membershipInvitationEmail({
       companyName: "Azal Farms",
-      acceptUrl: "https://azal-farms.l-fms.com/accept-invitation#token=xyz",
+      acceptUrl: "https://azal-farms.apiseg.com/accept-invitation#token=xyz",
       expiresInDays: 7,
     });
     assertWellFormed(email);
@@ -73,9 +73,9 @@ describe("emailTemplates", () => {
   });
 
   it("welcomeEmail links to the tenant dashboard", () => {
-    const email = welcomeEmail({ companyName: "Azal Farms", dashboardUrl: "https://azal-farms.l-fms.com/" });
+    const email = welcomeEmail({ companyName: "Azal Farms", dashboardUrl: "https://azal-farms.apiseg.com/" });
     assertWellFormed(email);
-    expect(email.html).toContain("https://azal-farms.l-fms.com/");
+    expect(email.html).toContain("https://azal-farms.apiseg.com/");
   });
 
   it("companySuspendedEmail includes the suspension reason when given", () => {
@@ -89,34 +89,34 @@ describe("emailTemplates", () => {
     const email = deletionRequestedEmail({
       companyName: "Azal Farms",
       gracePeriodEndsAt: new Date("2026-08-01T00:00:00.000Z"),
-      supportUrl: "mailto:support@l-fms.com",
+      supportUrl: "mailto:support@apiseg.com",
     });
     assertWellFormed(email);
     expect(email.html).toContain("2026");
   });
 
   it("deletionCanceledEmail correctly says the account is suspended, not active", () => {
-    const email = deletionCanceledEmail({ companyName: "Azal Farms", supportUrl: "mailto:support@l-fms.com" });
+    const email = deletionCanceledEmail({ companyName: "Azal Farms", supportUrl: "mailto:support@apiseg.com" });
     assertWellFormed(email);
     expect(email.text.toLowerCase()).toContain("suspended");
     expect(email.text.toLowerCase()).not.toContain("remains active");
   });
 
   it("subscriptionTrialEndingEmail includes days remaining and points to support, not a billing UI", () => {
-    const email = subscriptionTrialEndingEmail({ companyName: "Azal Farms", daysRemaining: 3, dashboardUrl: "https://azal-farms.l-fms.com/" });
+    const email = subscriptionTrialEndingEmail({ companyName: "Azal Farms", daysRemaining: 3, dashboardUrl: "https://azal-farms.apiseg.com/" });
     assertWellFormed(email);
     expect(email.subject).toContain("3 days");
-    expect(email.text).toContain("support@l-fms.com");
+    expect(email.text).toContain("support@apiseg.com");
   });
 
   it("subscriptionExpiredEmail points to support to renew", () => {
-    const email = subscriptionExpiredEmail({ companyName: "Azal Farms", dashboardUrl: "https://azal-farms.l-fms.com/" });
+    const email = subscriptionExpiredEmail({ companyName: "Azal Farms", dashboardUrl: "https://azal-farms.apiseg.com/" });
     assertWellFormed(email);
-    expect(email.text).toContain("support@l-fms.com");
+    expect(email.text).toContain("support@apiseg.com");
   });
 
   it("planChangedEmail includes the new plan name", () => {
-    const email = planChangedEmail({ companyName: "Azal Farms", planName: "Pro", dashboardUrl: "https://azal-farms.l-fms.com/" });
+    const email = planChangedEmail({ companyName: "Azal Farms", planName: "Pro", dashboardUrl: "https://azal-farms.apiseg.com/" });
     assertWellFormed(email);
     expect(email.html).toContain("Pro");
   });
@@ -126,7 +126,7 @@ describe("emailTemplates", () => {
       title: "Critical Feed Stock — Corn & Barley",
       message: "Corn stock is critically low",
       priority: "critical",
-      ctaUrl: "https://azal-farms.l-fms.com/notifications",
+      ctaUrl: "https://azal-farms.apiseg.com/notifications",
     });
     assertWellFormed(email);
     expect(email.subject).toBe("Critical Feed Stock — Corn & Barley");
