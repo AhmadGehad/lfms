@@ -248,7 +248,7 @@ export const importRouter = router({
       return applyCanonicalWorkbook(wb, ctx, input.mode);
     }
     if (input.mode === "replace") {
-      throw new Error("Replace mode requires a complete canonical LFMS Excel export. Manual Excel templates can only be appended.");
+      throw new Error("Replace mode requires a complete canonical APIS Excel export. Manual Excel templates can only be appended.");
     }
     const db = await getDb();
     if (!db) throw new Error("DB not available");

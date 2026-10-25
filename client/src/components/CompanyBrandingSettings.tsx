@@ -140,7 +140,7 @@ export function CompanyBrandingSettings({ className }: { className?: string }) {
           {branding.data?.logoUrl ? (
             <img src={branding.data.logoUrl} alt={`${branding.data.name} ${t("branding.logo", "logo")}`} className="h-full w-full object-contain" />
           ) : (
-            <span className="text-xs font-semibold text-muted-foreground">{(branding.data?.name ?? "LFMS").slice(0, 2).toUpperCase()}</span>
+            <span className="text-xs font-semibold text-muted-foreground">{(branding.data?.name ?? "APIS").slice(0, 2).toUpperCase()}</span>
           )}
         </div>
         {canManage && (
@@ -162,7 +162,7 @@ export function CompanyBrandingSettings({ className }: { className?: string }) {
           {branding.data?.hasFavicon ? (
             <img src="/public/company-favicon" alt={t("branding.favicon", "Favicon")} className="h-full w-full object-contain" />
           ) : (
-            <span className="text-[10px] font-semibold text-muted-foreground">{(branding.data?.name ?? "LFMS").slice(0, 2).toUpperCase()}</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">{(branding.data?.name ?? "APIS").slice(0, 2).toUpperCase()}</span>
           )}
         </div>
         {canManage && (

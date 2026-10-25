@@ -174,7 +174,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
 function SidebarBrand() {
   const tenantContext = trpc.auth.tenantContext.useQuery(undefined, { staleTime: 60_000, retry: false });
   const company = tenantContext.data?.company;
-  const companyName = company?.name ?? "LFMS";
+  const companyName = company?.name ?? "APIS";
   return (
     <div className="flex h-[60px] items-center gap-2.5 border-b border-sidebar-border px-5">
       <div className="grid h-8 w-8 place-items-center rounded-lg bg-[var(--sidebar-active)]">
@@ -186,7 +186,7 @@ function SidebarBrand() {
       </div>
       <div className="min-w-0">
         <p className="truncate text-sm font-bold leading-none text-sidebar-foreground">{companyName}</p>
-        <p className="mt-1 truncate text-xs leading-none text-sidebar-muted">{company?.slug ?? "LFMS"}</p>
+        <p className="mt-1 truncate text-xs leading-none text-sidebar-muted">{company?.slug ?? "APIS"}</p>
       </div>
     </div>
   );

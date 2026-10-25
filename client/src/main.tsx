@@ -200,7 +200,7 @@ const trpcClient = trpc.createClient({
 registerOfflineMutationDefaults(queryClient, trpcClient);
 
 registerServiceWorker(applyUpdate => {
-  toast("A new version of LFMS is ready.", {
+  toast("A new version of APIS is ready.", {
     duration: Infinity,
     action: { label: "Reload", onClick: applyUpdate },
   });

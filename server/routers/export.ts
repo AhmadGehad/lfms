@@ -37,7 +37,7 @@ function fmtDate(d: any): Date | null {
 // scoped owner report is not a whole-farm backup.
 async function buildWorkbook(companyName: string, ownerId?: number): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "LFMS Export";
+  wb.creator = "APIS Export";
   wb.created = new Date();
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -54,7 +54,7 @@ async function buildWorkbook(companyName: string, ownerId?: number): Promise<Buf
     properties: { tabColor: { argb: "FF0F6E56" } }
   });
   readme.columns = [{ width: 100 }];
-  titleRow(readme, 1, ownerId ? `${companyName} — Owner Report: ${ownerName}` : `${companyName} — LFMS Full Export`, 1);
+  titleRow(readme, 1, ownerId ? `${companyName} — Owner Report: ${ownerName}` : `${companyName} — APIS Full Export`, 1);
   readme.getCell("A2").value = `Generated: ${new Date().toLocaleString()}`;
   if (ownerId) {
     readme.getCell("A4").value = `Scoped to owner: ${ownerName}. All report numbers reflect only this owner's animals; farm-wide overhead (e.g. electricity), herd-wide costs and bulk feed purchases are excluded (feed is modelled from this owner's ration-plan consumption).`;
@@ -965,7 +965,7 @@ export const exportRouter = router({
       const branding = await getTenantCompanyBranding();
       const buf = await buildWorkbook(branding.name, ownerId);
       const date = new Date().toISOString().split("T")[0];
-      const filePrefix = branding.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "lfms";
+      const filePrefix = branding.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "apis";
       return {
         filename: ownerId ? `${filePrefix}-owner-${ownerId}-report-${date}.xlsx` : `${filePrefix}-export-${date}.xlsx`,
         mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

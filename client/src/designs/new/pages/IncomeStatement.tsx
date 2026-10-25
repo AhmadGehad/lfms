@@ -34,8 +34,8 @@ export default function NewIncomeStatement() {
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery(undefined, { enabled: canExport });
   const { data: branding } = trpc.config.getCompanyBranding.useQuery();
   const d = data as any;
-  const companyName = branding?.name ?? "LFMS";
-  const companyFilePrefix = companyName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "lfms";
+  const companyName = branding?.name ?? "APIS";
+  const companyFilePrefix = companyName.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "apis";
   const ownerLabel = ownerParam != null ? ((ownersList as any[]) ?? []).find(o => o.id === ownerParam)?.name ?? "" : "";
   const ownerSlug = ownerLabel ? "-" + ownerLabel.replace(/\s+/g, "_") : "";
 

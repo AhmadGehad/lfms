@@ -15,7 +15,7 @@ export function OverviewPage() {
 
   return (
     <>
-      <PageHeading title="Platform dashboard" description="Tenant activity, risk signals, and service status across LFMS." />
+      <PageHeading title="Platform dashboard" description="Tenant activity, risk signals, and service status across APIS." />
       {(data?.security.high ?? 0) > 0 && (
         <Alert variant="destructive" className="mb-4 rounded-none">
           <ShieldAlert className="h-4 w-4" />

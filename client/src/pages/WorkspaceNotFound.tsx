@@ -12,7 +12,7 @@ const fallbackSupportEmail = "support@apiseg.com";
 export default function WorkspaceNotFound() {
   const supportEmail =
     publicConfig.supportEmail?.trim() || fallbackSupportEmail;
-  const supportHref = `mailto:${encodeURIComponent(supportEmail)}?subject=${encodeURIComponent("LFMS workspace not found")}`;
+  const supportHref = `mailto:${encodeURIComponent(supportEmail)}?subject=${encodeURIComponent("APIS workspace not found")}`;
 
   return (
     <main className="grid min-h-dvh place-items-center bg-background px-6 text-center">

@@ -23,7 +23,7 @@ export function InstallAppBanner() {
   return (
     <div
       role="region"
-      aria-label={t("install.title", "Install LFMS")}
+      aria-label={t("install.title", "Install APIS")}
       // Sits above the mobile bottom nav, below dialogs.
       className="fixed inset-x-2 bottom-2 z-30 rounded-xl border border-border bg-card p-3 shadow-lg sm:inset-x-auto sm:end-4 sm:max-w-sm"
     >
@@ -34,7 +34,7 @@ export function InstallAppBanner() {
 
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">
-            {t("install.title", "Install LFMS on this phone")}
+            {t("install.title", "Install APIS on this phone")}
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {method === "prompt"

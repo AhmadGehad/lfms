@@ -7,7 +7,7 @@ const fallbackSupportEmail = "support@apiseg.com";
 export default function CompanySuspended() {
   const supportEmail =
     publicConfig.supportEmail?.trim() || fallbackSupportEmail;
-  const supportHref = `mailto:${encodeURIComponent(supportEmail)}?subject=${encodeURIComponent("LFMS company access suspended")}`;
+  const supportHref = `mailto:${encodeURIComponent(supportEmail)}?subject=${encodeURIComponent("APIS company access suspended")}`;
 
   return (
     <main className="grid min-h-dvh place-items-center bg-background px-6 text-center">

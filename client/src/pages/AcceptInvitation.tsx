@@ -57,7 +57,7 @@ export default function AcceptInvitation() {
           <div className="grid h-11 w-11 place-items-center bg-primary text-primary-foreground">
             <Leaf className="h-6 w-6" />
           </div>
-          <div><h1 className="text-xl font-semibold">LFMS company invitation</h1><p className="text-sm text-muted-foreground">Secure company access</p></div>
+          <div><h1 className="text-xl font-semibold">APIS company invitation</h1><p className="text-sm text-muted-foreground">Secure company access</p></div>
         </div>
 
         {preview.isPending && <p className="text-sm text-muted-foreground">Checking invitation...</p>}
