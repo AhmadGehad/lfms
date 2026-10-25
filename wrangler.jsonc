@@ -32,6 +32,7 @@
   ],
   "containers": [
     {
+      "name": "lfms-production-lfmswebcontainer",
       "class_name": "LfmsWebContainer",
       "image": "./Dockerfile",
       "max_instances": 3,
