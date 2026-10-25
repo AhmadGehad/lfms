@@ -1,12 +1,35 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin, type ViteDevServer } from "vite";
+
+/**
+ * Serves the APIS favicon set from the admin dev server. Production needs
+ * nothing here: the admin and tenant shells share one static asset directory,
+ * where the tenant build already places these files at the root.
+ */
+function vitePluginDevIcons(): Plugin {
+  return {
+    name: "apis-admin-dev-icons",
+    apply: "serve",
+    async configureServer(server: ViteDevServer) {
+      const { buildPwaIcons } = await import("./scripts/pwaIcons.mjs");
+      const icons = new Map(buildPwaIcons().map(icon => [`/${icon.fileName}`, icon]));
+      server.middlewares.use((req, res, next) => {
+        const icon = req.url ? icons.get(req.url.split("?")[0]) : undefined;
+        if (!icon) return next();
+        res.setHeader("Content-Type", icon.contentType);
+        res.setHeader("Cache-Control", "no-cache");
+        res.end(icon.contents);
+      });
+    },
+  };
+}
 
 export default defineConfig(({ command }) => {
   const isDevelopmentServer = command === "serve";
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [react(), tailwindcss(), vitePluginDevIcons()],
     root: path.resolve(import.meta.dirname, "admin"),
     envDir: isDevelopmentServer ? import.meta.dirname : false,
     envPrefix: isDevelopmentServer ? "VITE_" : "LFMS_BUILD_DISABLED_",
