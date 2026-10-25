@@ -43,23 +43,23 @@ export type OfflineMutationPath = (typeof OFFLINE_MUTATION_PATHS)[number];
  */
 function resolveMutate(
   client: TRPCClient<AppRouter>,
-  path: OfflineMutationPath,
+  path: OfflineMutationPath
 ): (input: unknown) => Promise<unknown> {
   const procedure = path
     .split(".")
-    .reduce<Record<string, unknown> | undefined>(
-      (node, segment) => node?.[segment] as Record<string, unknown> | undefined,
-      client as unknown as Record<string, unknown>,
-    );
+    .reduce<
+      Record<string, unknown> | undefined
+    >((node, segment) => node?.[segment] as Record<string, unknown> | undefined, client as unknown as Record<string, unknown>);
 
   const mutate = procedure?.["mutate"];
   if (typeof mutate !== "function") {
     throw new Error(
       `Offline mutation "${path}" does not exist on the tRPC client. ` +
-        "Update OFFLINE_MUTATION_PATHS when a procedure is renamed or removed.",
+        "Update OFFLINE_MUTATION_PATHS when a procedure is renamed or removed."
     );
   }
-  return input => (mutate as (value: unknown) => Promise<unknown>).call(procedure, input);
+  return input =>
+    (mutate as (value: unknown) => Promise<unknown>).call(procedure, input);
 }
 
 /** The React Query mutation key tRPC uses for a dot-path. */
@@ -75,37 +75,49 @@ export function mutationKeyForPath(path: OfflineMutationPath) {
  */
 export function registerOfflineMutationDefaults(
   queryClient: QueryClient,
-  client: TRPCClient<AppRouter>,
+  client: TRPCClient<AppRouter>
 ) {
   for (const path of OFFLINE_MUTATION_PATHS) {
     const mutate = resolveMutate(client, path);
-    queryClient.setMutationDefaults(mutationKeyForPath(path) as unknown as unknown[], {
-      mutationFn: input => mutate(input),
-      // "online" rather than "offlineFirst": with no network the write pauses
-      // immediately instead of firing a request that is certain to fail, so the
-      // form is never left spinning on a doomed attempt. Paused writes resume
-      // automatically on reconnect.
-      networkMode: "online",
-      // Kept short. A paused write resumes on reconnect anyway, so long backoff
-      // only prolongs how long a form looks busy when the network is flaky.
-      retry: 2,
-      retryDelay: attempt => Math.min(1_000 * 2 ** attempt, 5_000),
-      // Show the record straight away, so an offline entry is visibly saved
-      // rather than appearing to vanish.
-      onMutate: input => applyOptimisticRow(queryClient, path, input),
-      onError: (_error, _input, snapshot) => {
-        rollbackOptimisticRows(queryClient, (snapshot as OptimisticSnapshot) ?? []);
-      },
-      onSuccess: () => {
-        // Replace the provisional row with the server's record. Components that
-        // define their own onSuccess override this and invalidate themselves.
-        void queryClient.invalidateQueries({ queryKey: [path.split(".")[0]] });
-      },
-    });
+    queryClient.setMutationDefaults(
+      mutationKeyForPath(path) as unknown as unknown[],
+      {
+        mutationFn: input => mutate(input),
+        // "online" rather than "offlineFirst": with no network the write pauses
+        // immediately instead of firing a request that is certain to fail, so the
+        // form is never left spinning on a doomed attempt. Paused writes resume
+        // automatically on reconnect.
+        networkMode: "online",
+        // Failed queued records need explicit retry/discard, never timed eviction.
+        gcTime: Infinity,
+        // Kept short. A paused write resumes on reconnect anyway, so long backoff
+        // only prolongs how long a form looks busy when the network is flaky.
+        retry: 2,
+        retryDelay: attempt => Math.min(1_000 * 2 ** attempt, 5_000),
+        // Show the record straight away, so an offline entry is visibly saved
+        // rather than appearing to vanish.
+        onMutate: input => applyOptimisticRow(queryClient, path, input),
+        onError: (_error, _input, snapshot) => {
+          rollbackOptimisticRows(
+            queryClient,
+            (snapshot as OptimisticSnapshot) ?? []
+          );
+        },
+        onSuccess: () => {
+          // Replace the provisional row with the server's record. Components that
+          // define their own onSuccess override this and invalidate themselves.
+          void queryClient.invalidateQueries({
+            queryKey: [path.split(".")[0]],
+          });
+        },
+      }
+    );
   }
 }
 
 /** True when `path` is queueable offline. */
-export function isOfflineMutationPath(path: string): path is OfflineMutationPath {
+export function isOfflineMutationPath(
+  path: string
+): path is OfflineMutationPath {
   return (OFFLINE_MUTATION_PATHS as readonly string[]).includes(path);
 }

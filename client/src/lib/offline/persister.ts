@@ -6,7 +6,10 @@
  * and because writes here are async and off the main thread.
  */
 import { clear, createStore, del, get, keys, set } from "idb-keyval";
-import type { PersistedClient, Persister } from "@tanstack/react-query-persist-client";
+import type {
+  PersistedClient,
+  Persister,
+} from "@tanstack/react-query-persist-client";
 import { CACHE_PREFIX, cacheBucketFor, type OfflineIdentity } from "./identity";
 
 const store = createStore("lfms-offline", "react-query");
@@ -18,7 +21,10 @@ const store = createStore("lfms-offline", "react-query");
  * launch, or after logout) nothing is restored or written, so a fresh login
  * never reads a previous user's data.
  */
-export function createOfflinePersister(bucket: string | null): Persister {
+export function createOfflinePersister(
+  bucket: string | null,
+  cache: { buster: string; maxAge: number }
+): Persister {
   return {
     persistClient: async (client: PersistedClient) => {
       if (!bucket) return;
@@ -31,7 +37,26 @@ export function createOfflinePersister(bucket: string | null): Persister {
     restoreClient: async () => {
       if (!bucket) return undefined;
       try {
-        return await get<PersistedClient>(bucket, store);
+        const client = await get<PersistedClient>(bucket, store);
+        if (!client) return undefined;
+        if (
+          client.buster === cache.buster &&
+          Date.now() - client.timestamp <= cache.maxAge
+        ) {
+          return client;
+        }
+        // Read-cache invalidation must never discard unsynced records.
+        const mutations = client.clientState.mutations.filter(
+          mutation =>
+            mutation.state.isPaused || mutation.state.status === "error"
+        );
+        if (mutations.length === 0) return client;
+        return {
+          ...client,
+          buster: cache.buster,
+          timestamp: Date.now(),
+          clientState: { mutations, queries: [] },
+        };
       } catch {
         return undefined;
       }
@@ -62,9 +87,9 @@ export async function pruneOtherBuckets(currentBucket: string | null) {
           key =>
             typeof key === "string" &&
             key.startsWith(CACHE_PREFIX) &&
-            key !== currentBucket,
+            key !== currentBucket
         )
-        .map(key => del(key, store)),
+        .map(key => del(key, store))
     );
   } catch {
     /* ignore */

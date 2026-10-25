@@ -41,8 +41,12 @@ describe("offline mutation registry", () => {
   it("uses the same mutation key shape tRPC's useMutation registers", () => {
     // tRPC calls getMutationKeyInternal(path) -> [pathSegments]; a mismatch here
     // means a rehydrated mutation finds no default and can never resume.
-    expect(mutationKeyForPath("animals.addWeight")).toEqual([["animals", "addWeight"]]);
-    expect(mutationKeyForPath("feed.addStockEntry")).toEqual([["feed", "addStockEntry"]]);
+    expect(mutationKeyForPath("animals.addWeight")).toEqual([
+      ["animals", "addWeight"],
+    ]);
+    expect(mutationKeyForPath("feed.addStockEntry")).toEqual([
+      ["feed", "addStockEntry"],
+    ]);
   });
 
   it("registers a resumable mutationFn for every offline path", async () => {
@@ -53,21 +57,25 @@ describe("offline mutation registry", () => {
 
     for (const path of OFFLINE_MUTATION_PATHS) {
       const defaults = queryClient.getMutationDefaults(
-        mutationKeyForPath(path) as unknown as unknown[],
+        mutationKeyForPath(path) as unknown as unknown[]
       );
-      expect(defaults?.mutationFn, `no mutationFn registered for ${path}`).toBeTypeOf(
-        "function",
-      );
+      expect(
+        defaults?.mutationFn,
+        `no mutationFn registered for ${path}`
+      ).toBeTypeOf("function");
+      expect(defaults?.gcTime).toBe(Infinity);
       // networkMode is asserted in queuedSubmit.test.ts, next to the reason it
       // has to be "online".
     }
 
     // The registered function must actually reach the procedure it names.
     const addWeightDefaults = queryClient.getMutationDefaults(
-      mutationKeyForPath("animals.addWeight") as unknown as unknown[],
+      mutationKeyForPath("animals.addWeight") as unknown as unknown[]
     );
     await addWeightDefaults!.mutationFn!({ animalId: 7 } as never);
-    expect(calls).toEqual([{ path: "animals.addWeight", input: { animalId: 7 } }]);
+    expect(calls).toEqual([
+      { path: "animals.addWeight", input: { animalId: 7 } },
+    ]);
   });
 
   it("fails loudly when a listed procedure no longer exists", () => {
@@ -76,7 +84,7 @@ describe("offline mutation registry", () => {
     const { client } = fakeTrpcClient([OFFLINE_MUTATION_PATHS[0]]);
 
     expect(() => registerOfflineMutationDefaults(queryClient, client)).toThrow(
-      /does not exist on the tRPC client/,
+      /does not exist on the tRPC client/
     );
   });
 

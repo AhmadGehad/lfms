@@ -1,9 +1,14 @@
 import { trpc } from "@/lib/trpc";
 import "./lib/i18n"; // Initialize i18n before App renders
-import { UNAUTHED_ERR_MSG, NOT_ADMIN_ERR_MSG } from '@shared/const';
+import { UNAUTHED_ERR_MSG, NOT_ADMIN_ERR_MSG } from "@shared/const";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { httpBatchLink, httpLink, splitLink, TRPCClientError } from "@trpc/client";
+import {
+  httpBatchLink,
+  httpLink,
+  splitLink,
+  TRPCClientError,
+} from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import { toast } from "sonner";
@@ -16,7 +21,10 @@ import {
   isOfflineMutationPath,
   registerOfflineMutationDefaults,
 } from "./lib/offline/offlineMutations";
-import { bucketForIdentity, createOfflinePersister } from "./lib/offline/persister";
+import {
+  bucketForIdentity,
+  createOfflinePersister,
+} from "./lib/offline/persister";
 import { registerServiceWorker } from "./lib/offline/registerServiceWorker";
 import { captureInstallPrompt } from "./lib/pwa/installPromptBuffer";
 import { isAuthExpiredError } from "./lib/offline/syncQueue";
@@ -51,7 +59,14 @@ const queryClient = new QueryClient({
 // The cache bucket is named from the identity stored at the previous sign-in, so
 // it is known synchronously here — before any query resolves and before the app
 // could render another user's data.
-const offlinePersister = createOfflinePersister(bucketForIdentity(readOfflineIdentity()));
+const offlineCache = {
+  buster: import.meta.env.LFMS_BUILD_ID ?? "dev",
+  maxAge: OFFLINE_CACHE_MAX_AGE_MS,
+};
+const offlinePersister = createOfflinePersister(
+  bucketForIdentity(readOfflineIdentity()),
+  offlineCache
+);
 
 function readCsrfCookie() {
   const secureName = "__Host-lfms_tenant_csrf=";
@@ -72,7 +87,7 @@ const instrumentedFetch = instrumentFetch(globalThis.fetch.bind(globalThis));
 function authenticatedFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
-  includeFarm = true,
+  includeFarm = true
 ) {
   const headers = new Headers(init?.headers);
   const csrfToken = readCsrfCookie();
@@ -100,7 +115,8 @@ const redirectToLoginIfUnauthorized = (error: unknown) => {
   // built on requireUser can throw UNAUTHORIZED with a different message
   // (e.g. a tenant-resolution failure), and that must redirect too, not just
   // this one hardcoded string.
-  const isUnauthorized = error.data?.code === "UNAUTHORIZED" || error.message === UNAUTHED_ERR_MSG;
+  const isUnauthorized =
+    error.data?.code === "UNAUTHORIZED" || error.message === UNAUTHED_ERR_MSG;
 
   if (!isUnauthorized) return;
 
@@ -135,7 +151,9 @@ queryClient.getMutationCache().subscribe(event => {
     // out while the device had no signal. The record itself is still valid and
     // stays in the persisted queue, so say so before sending them to sign in.
     if (isAuthExpiredError(error) && isOfflineMutationPath(path)) {
-      toast.error("Your session expired. Sign in again to finish syncing your saved records.");
+      toast.error(
+        "Your session expired. Sign in again to finish syncing your saved records."
+      );
     }
 
     redirectToLoginIfUnauthorized(error);
@@ -147,7 +165,8 @@ queryClient.getMutationCache().subscribe(event => {
 const trpcClient = trpc.createClient({
   links: [
     splitLink({
-      condition: (op) => op.path === "auth.me" || op.path === "auth.tenantContext",
+      condition: op =>
+        op.path === "auth.me" || op.path === "auth.tenantContext",
       true: httpLink({
         url: "/api/trpc",
         transformer: superjson,
@@ -157,7 +176,7 @@ const trpcClient = trpc.createClient({
         // Offline-capable mutations must not be batched: a batch is one HTTP
         // request, so a single failing member would fail its unrelated
         // neighbours and make per-record retry meaningless.
-        condition: (op) =>
+        condition: op =>
           op.path.startsWith("feed.") ||
           op.path === "config.getFeedItems" ||
           isOfflineMutationPath(op.path),
@@ -193,10 +212,12 @@ createRoot(document.getElementById("root")!).render(
       client={queryClient}
       persistOptions={{
         persister: offlinePersister,
-        maxAge: OFFLINE_CACHE_MAX_AGE_MS,
-        // A deploy can change response shapes, so discard the cache when the
-        // bundle changes rather than hydrating stale structures.
-        buster: import.meta.env.LFMS_BUILD_ID ?? "dev",
+        ...offlineCache,
+        dehydrateOptions: {
+          shouldDehydrateMutation: mutation =>
+            isOfflineMutationPath(mutationPath(mutation.options.mutationKey)) &&
+            (mutation.state.isPaused || mutation.state.status === "error"),
+        },
       }}
       onSuccess={() => {
         // Writes queued before the app was closed only replay if this runs.
