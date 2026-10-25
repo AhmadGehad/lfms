@@ -1,4 +1,5 @@
 import { AuthSplitLayout } from "@/components/AuthSplitLayout";
+import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
@@ -41,14 +42,7 @@ export function AuthBoundary({ children }: { children: ReactNode }) {
   }
 
   if (session.isLoading) {
-    return (
-      <main className="grid min-h-screen place-items-center bg-background" aria-busy="true">
-        <LoaderCircle
-          className="h-6 w-6 animate-spin text-primary"
-          aria-label="Checking platform session"
-        />
-      </main>
-    );
+    return <DashboardLayoutSkeleton />;
   }
 
   if (!session.data) {

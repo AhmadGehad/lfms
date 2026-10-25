@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { LoaderCircle } from "lucide-react";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import { AdminShell } from "./components/AdminShell";
@@ -45,7 +45,7 @@ export function AdminApp() {
       <Toaster richColors position="top-right" />
       <AuthBoundary>
         <AdminShell>
-          <Suspense fallback={<div className="grid min-h-72 place-items-center"><LoaderCircle className="h-5 w-5 animate-spin text-primary" aria-label="Loading page" /></div>}>
+          <Suspense fallback={<PageSkeleton />}>
             <Switch>
               <Route path="/" component={OverviewPage} />
               <Route path="/companies" component={CompaniesPage} />

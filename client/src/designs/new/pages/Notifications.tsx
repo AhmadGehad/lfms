@@ -5,6 +5,7 @@ import { Bell, BellOff, Check, CheckCheck } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
+import { ListSkeleton } from "@/components/PageSkeleton";
 import { formatAlertType, priorityTone } from "@shared/notifications";
 
 type NotificationRow = RouterOutputs["notifications"]["list"][number];
@@ -51,7 +52,7 @@ export default function NewNotifications() {
         }
       />
 
-      {isLoading ? null : rows.length === 0 ? (
+      {isLoading ? <ListSkeleton rows={5} /> : rows.length === 0 ? (
         <EmptyState icon={BellOff} title={t("notifications.none", "No notifications")} />
       ) : (
         <ul className="flex flex-col gap-2">

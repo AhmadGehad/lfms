@@ -1,38 +1,39 @@
+import { lazy } from "react";
 import { Route, Switch } from "wouter";
 import NotFound from "@/pages/NotFound";
 import { PermissionGate } from "../routes";
 
 // New design pages (redesigned). As more pages are ported, swap the Old import
 // for the New one here — permission gating and data stay identical.
-import NewDashboard from "./pages/Dashboard";
-import NewAnimals from "./pages/Animals";
-import NewAnimalProfile from "./pages/AnimalProfile";
-import NewSales from "./pages/Sales";
-import NewExpenses from "./pages/Expenses";
-import NewNotifications from "./pages/Notifications";
-import NewAuditLog from "./pages/AuditLog";
-import NewVaccinations from "./pages/Vaccinations";
-import NewRecycleBin from "./pages/RecycleBin";
-import NewBreeding from "./pages/Breeding";
-import NewPnL from "./pages/PnL";
-import NewIncomeStatement from "./pages/IncomeStatement";
-import NewUsers from "./pages/Users";
-import NewFeed from "./pages/Feed";
-import NewData from "./pages/Data";
-import NewConfiguration from "./pages/Configuration";
+const NewDashboard = lazy(() => import("./pages/Dashboard"));
+const NewAnimals = lazy(() => import("./pages/Animals"));
+const NewAnimalProfile = lazy(() => import("./pages/AnimalProfile"));
+const NewSales = lazy(() => import("./pages/Sales"));
+const NewExpenses = lazy(() => import("./pages/Expenses"));
+const NewNotifications = lazy(() => import("./pages/Notifications"));
+const NewAuditLog = lazy(() => import("./pages/AuditLog"));
+const NewVaccinations = lazy(() => import("./pages/Vaccinations"));
+const NewRecycleBin = lazy(() => import("./pages/RecycleBin"));
+const NewBreeding = lazy(() => import("./pages/Breeding"));
+const NewPnL = lazy(() => import("./pages/PnL"));
+const NewIncomeStatement = lazy(() => import("./pages/IncomeStatement"));
+const NewUsers = lazy(() => import("./pages/Users"));
+const NewFeed = lazy(() => import("./pages/Feed"));
+const NewData = lazy(() => import("./pages/Data"));
+const NewConfiguration = lazy(() => import("./pages/Configuration"));
 
 // Pages not yet redesigned render their Old version inside the New shell. This
 // keeps every route working while the redesign rolls out page-by-page.
-import Fattening from "@/pages/Fattening";
-import FarmMap from "@/pages/FarmMap";
+const Fattening = lazy(() => import("@/pages/Fattening"));
+const FarmMap = lazy(() => import("@/pages/FarmMap"));
 
 /** Route table for the New design. */
 export function NewAppRoutes() {
   return (
     <Switch>
-      <Route path="/"><PermissionGate page="dashboard"><NewDashboard /></PermissionGate></Route>
+      <Route path="/"><PermissionGate page="dashboard" skeleton="dashboard"><NewDashboard /></PermissionGate></Route>
       <Route path="/animals"><PermissionGate page="animals"><NewAnimals /></PermissionGate></Route>
-      <Route path="/animals/:id"><PermissionGate page="animals"><NewAnimalProfile /></PermissionGate></Route>
+      <Route path="/animals/:id"><PermissionGate page="animals" skeleton="detail"><NewAnimalProfile /></PermissionGate></Route>
       <Route path="/breeding"><PermissionGate page="breeding"><NewBreeding /></PermissionGate></Route>
       <Route path="/pregnancy"><PermissionGate page="pregnancy"><NewBreeding initialTab="pregnancy" /></PermissionGate></Route>
       <Route path="/fattening"><PermissionGate page="fattening"><Fattening /></PermissionGate></Route>
@@ -42,7 +43,7 @@ export function NewAppRoutes() {
       <Route path="/pnl"><PermissionGate page="pnl"><NewPnL /></PermissionGate></Route>
       <Route path="/income-statement"><PermissionGate page="incomeStatement"><NewIncomeStatement /></PermissionGate></Route>
       <Route path="/sales"><PermissionGate page="sales"><NewSales /></PermissionGate></Route>
-      <Route path="/notifications"><PermissionGate page="notifications"><NewNotifications /></PermissionGate></Route>
+      <Route path="/notifications"><PermissionGate page="notifications" skeleton="list"><NewNotifications /></PermissionGate></Route>
       <Route path="/audit"><PermissionGate page="audit"><NewAuditLog /></PermissionGate></Route>
       <Route path="/users"><PermissionGate page="users"><NewUsers /></PermissionGate></Route>
       <Route path="/config"><PermissionGate page="configuration"><NewConfiguration /></PermissionGate></Route>

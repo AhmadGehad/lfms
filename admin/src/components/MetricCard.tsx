@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 
 export function MetricCard({
@@ -8,7 +9,7 @@ export function MetricCard({
   tone = "default",
 }: {
   label: string;
-  value: string | number;
+  value: ReactNode;
   detail: string;
   icon: LucideIcon;
   tone?: "default" | "warning" | "danger";

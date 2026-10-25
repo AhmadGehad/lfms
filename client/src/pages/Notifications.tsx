@@ -8,6 +8,7 @@ import { Bell, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "@/hooks/usePermissions";
+import { ListSkeleton } from "@/components/PageSkeleton";
 
 type NotificationRow = RouterOutputs["notifications"]["list"][number];
 
@@ -71,7 +72,7 @@ export default function Notifications() {
 
       <div className="space-y-3">
         {isLoading ? (
-          <p className="text-center text-muted-foreground py-8">{t("common.loading")}</p>
+          <ListSkeleton rows={5} />
         ) : rows.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">

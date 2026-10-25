@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TableRowsSkeleton } from "@/components/PageSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { trpc } from "@/lib/trpc";
@@ -370,7 +371,9 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-semibold">{t("dashboard.headCount")}</CardTitle>
           </CardHeader>
           <CardContent>
-            {(headCountByCategory ?? []).length > 0 ? (
+            {headCountByCategory === undefined ? (
+              <Skeleton className="h-[200px] w-full rounded-lg" aria-hidden="true" />
+            ) : headCountByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
@@ -418,7 +421,9 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {(expenseTrend ?? []).length > 0 ? (
+            {expenseTrend === undefined ? (
+              <Skeleton className="h-[200px] w-full rounded-lg" aria-hidden="true" />
+            ) : expenseTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart
                   data={(expenseTrend ?? []).map((d: any) => ({
@@ -458,7 +463,9 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {(salesTrend ?? []).length > 0 ? (
+            {salesTrend === undefined ? (
+              <Skeleton className="h-[200px] w-full rounded-lg" aria-hidden="true" />
+            ) : salesTrend.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart
                   data={(salesTrend ?? []).map((d: any) => ({
@@ -510,7 +517,9 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(feedStock ?? []).length === 0 ? (
+                {feedStock === undefined ? (
+                  <TableRowsSkeleton columns={7} rows={3} />
+                ) : feedStock.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {t("common.noData")}

@@ -14,6 +14,7 @@ import { ClipboardList, Search, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { TableRowsSkeleton } from "@/components/PageSkeleton";
 
 const ACTION_COLORS: Record<string, string> = {
   create: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-300",
@@ -121,7 +122,7 @@ export default function AuditLog() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow><TableCell colSpan={canRevert ? 8 : 7} className="text-center py-8">{t("common.loading")}</TableCell></TableRow>
+                  <TableRowsSkeleton columns={canRevert ? 8 : 7} />
                 ) : filtered.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={canRevert ? 8 : 7} className="text-center py-12 text-muted-foreground">

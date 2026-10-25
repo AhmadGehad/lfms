@@ -174,8 +174,7 @@ export function shouldProxyToContainer(request: Request) {
     ["/api", "/health", "/manus-storage"].some(prefix =>
       pathMatchesPrefix(pathname, prefix)
     ) ||
-    pathname === "/metrics" ||
-    pathname === "/runtime-config.js"
+    pathname === "/metrics"
   );
 }
 
@@ -209,7 +208,7 @@ export function secureEdgeResponse(
   response: Response,
   source: Record<string, unknown>,
   requestId: string,
-  options: { html?: boolean; platform?: boolean } = {}
+  options: { html?: boolean; platform?: boolean; immutable?: boolean } = {}
 ) {
   const headers = new Headers(response.headers);
   const storageEndpoint =
@@ -257,6 +256,10 @@ export function secureEdgeResponse(
     headers.set("Content-Type", "text/html; charset=utf-8");
   } else if (response.status >= 400) {
     headers.set("Cache-Control", "no-store");
+  } else if (options.immutable && response.status === 200) {
+    // Content-hashed build output never changes under the same name, so
+    // browsers can skip revalidating it on every visit.
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
   }
   if (options.platform) {
     headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");

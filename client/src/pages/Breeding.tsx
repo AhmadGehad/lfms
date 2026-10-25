@@ -699,14 +699,16 @@ export default function Breeding() {
             <Egg className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             {t("breeding.title")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {lambingSummary
-              ? t("breeding.recordsSummary", {
-                  total: lambingSummary.total,
-                  pending: lambingSummary.pending,
-                })
-              : t("common.loading")}
-          </p>
+          {lambingSummary ? (
+            <p className="text-sm text-muted-foreground mt-1">
+              {t("breeding.recordsSummary", {
+                total: lambingSummary.total,
+                pending: lambingSummary.pending,
+              })}
+            </p>
+          ) : (
+            <Skeleton className="mt-2 h-4 w-48" />
+          )}
         </div>
         {canCreate && <RecordBirthDialog />}
       </div>

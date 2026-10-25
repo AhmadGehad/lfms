@@ -1,5 +1,6 @@
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import type { StatusTone } from "./StatusBadge";
 
@@ -36,6 +37,7 @@ export function ActionQueue({
   emptyText = "All clear",
   viewAllHref,
   viewAllLabel = "View all",
+  loading = false,
 }: {
   icon: LucideIcon;
   title: React.ReactNode;
@@ -45,6 +47,8 @@ export function ActionQueue({
   emptyText?: React.ReactNode;
   viewAllHref?: string;
   viewAllLabel?: React.ReactNode;
+  /** First load in flight: show placeholder rows instead of the empty text. */
+  loading?: boolean;
 }) {
   const [, setLocation] = useLocation();
   return (
@@ -88,7 +92,16 @@ export function ActionQueue({
           </button>
         )}
       </header>
-      {items.length === 0 ? (
+      {loading ? (
+        <ul className="divide-y divide-border" aria-busy="true">
+          {Array.from({ length: 3 }, (_, i) => (
+            <li key={i} className="space-y-2 px-4 py-3" aria-hidden="true">
+              <Skeleton className="h-4 w-2/5" />
+              <Skeleton className="h-3 w-3/5" />
+            </li>
+          ))}
+        </ul>
+      ) : items.length === 0 ? (
         <p className="px-4 py-6 text-center text-sm text-muted-foreground">{emptyText}</p>
       ) : (
         <ul className="divide-y divide-border">

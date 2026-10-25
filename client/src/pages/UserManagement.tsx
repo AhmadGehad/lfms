@@ -25,6 +25,7 @@ import { RotateCcw, Save, ShieldCheck, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { TableRowsSkeleton } from "@/components/PageSkeleton";
 
 const ROLE_OPTIONS = ["viewer", "user", "staff", "supervisor", "admin"] as const;
 
@@ -82,11 +83,7 @@ export default function UserManagement() {
                   </TableHeader>
                   <TableBody>
                     {isLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="py-8 text-center">
-                          {t("common.loading")}
-                        </TableCell>
-                      </TableRow>
+                      <TableRowsSkeleton columns={6} rows={4} />
                     ) : (users ?? []).length === 0 ? (
                       <TableRow>
                         <TableCell
@@ -294,11 +291,7 @@ function RolePermissionEditor({ disabled }: { disabled: boolean }) {
             </TableHeader>
             <TableBody>
               {matrix.isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={2} className="py-10 text-center">
-                    {t("common.loading")}
-                  </TableCell>
-                </TableRow>
+                <TableRowsSkeleton columns={2} rows={8} />
               ) : (
                 pages.map(page => {
                   const viewAllowed = values[`${page.id}:view`] ?? false;
