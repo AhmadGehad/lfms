@@ -5,7 +5,6 @@ export type PublicRuntimeConfig = {
   analyticsWebsiteId?: string;
   appTitle?: string;
   defaultDesign: "old" | "new";
-  frontendForgeApiUrl?: string;
   supportEmail?: string;
 };
 
@@ -51,10 +50,6 @@ export function buildPublicRuntimeConfig(
     analyticsWebsiteId: trimmed(environment.VITE_ANALYTICS_WEBSITE_ID, 200),
     appTitle: trimmed(environment.VITE_APP_TITLE, 100),
     defaultDesign,
-    frontendForgeApiUrl: webUrl(
-      environment.VITE_FRONTEND_FORGE_API_URL,
-      isProduction
-    ),
     supportEmail:
       supportEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail)
         ? supportEmail

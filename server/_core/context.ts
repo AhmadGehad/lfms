@@ -5,13 +5,8 @@ import type { PermissionOverrides } from "../../shared/permissions";
 import { buildDeniedPermissionOverrides } from "../../shared/permissions";
 import { getRolePermissionOverrides } from "../permissionStore";
 import { ENV } from "./env";
-import { sdk } from "./sdk";
 import type { SessionPrincipal } from "./auth/opaqueSessions";
-import {
-  getOpaqueSessionToken,
-  getRequestCookie,
-  LEGACY_SESSION_COOKIE_NAME,
-} from "./auth/cookies";
+import { getOpaqueSessionToken } from "./auth/cookies";
 import { authenticateTenantRequest } from "./auth/runtime";
 import {
   getRequestId,
@@ -57,16 +52,6 @@ export async function createContext(
       const authentication = await authenticateTenantRequest(opts.req);
       user = authentication?.user ?? null;
       session = authentication?.principal ?? null;
-    } else if (!ENV.isProduction) {
-      const legacyUser = await sdk.authenticateRequest(opts.req);
-      user = legacyUser;
-    } else {
-      const legacyToken = getRequestCookie(opts.req, LEGACY_SESSION_COOKIE_NAME);
-      const legacySession = await sdk.verifySession(legacyToken);
-      if (legacySession?.openId.startsWith("cron_")) {
-        const legacyUser = await sdk.authenticateRequest(opts.req);
-        if (legacyUser.isCron) user = legacyUser;
-      }
     }
     timings["context.authenticateMs"] = Date.now() - started;
   } catch (error) {

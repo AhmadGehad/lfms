@@ -121,23 +121,6 @@ export function validateProductionAuthConfiguration() {
   if (!ENV.baseDomain || ENV.baseDomain === "localhost") {
     throw new Error("BASE_DOMAIN must be configured for production");
   }
-  if (!ENV.oAuthPortalUrl || !ENV.oAuthServerUrl || !ENV.appId) {
-    throw new Error("OAuth configuration is incomplete");
-  }
-  // Derive allowed OAuth hosts from the configured URLs; OAUTH_ALLOWED_HOSTS is optional.
-  const oauthHosts: string[] = ENV.oAuthAllowedHosts.length > 0
-    ? [...ENV.oAuthAllowedHosts]
-    : (() => {
-        const hosts: string[] = [];
-        try { hosts.push(new URL(ENV.oAuthServerUrl).hostname.toLowerCase()); } catch { /* ignore */ }
-        try { hosts.push(new URL(ENV.oAuthPortalUrl).hostname.toLowerCase()); } catch { /* ignore */ }
-        return [...new Set(hosts)];
-      })();
-  if (oauthHosts.length === 0) {
-    throw new Error("OAUTH_ALLOWED_HOSTS must contain the approved tenant OAuth provider hosts");
-  }
-  validateExternalServiceUrl(ENV.oAuthServerUrl, "OAUTH_SERVER_URL", oauthHosts, true);
-  validateExternalServiceUrl(ENV.oAuthPortalUrl, "VITE_OAUTH_PORTAL_URL", oauthHosts, true);
   const oidcValues = [
     ENV.adminOidcIssuer,
     ENV.adminOidcClientId,

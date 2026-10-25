@@ -3,7 +3,7 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
+import { registerDevLoginRoute } from "./devLogin";
 import { registerPasswordAuthRoutes } from "./passwordAuth";
 import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
@@ -24,7 +24,6 @@ import {
   securityHeadersMiddleware,
 } from "./security/httpSecurity";
 import { registerPlatformApi } from "../platform/http";
-import { registerPlatformManusAuthRoutes } from "../platform/manusAuth";
 import { registerPlatformOidcRoutes } from "../platform/oidc";
 import { registerPlatformPasswordAuthRoutes } from "../platform/passwordAuth";
 import { registerObservabilityRoutes, requestObservabilityMiddleware } from "../observability/http";
@@ -120,13 +119,11 @@ async function startServer() {
   app.use("/manus-storage", requireSurface("tenant"));
   registerStorageProxy(app);
   app.use("/api/dev", requireSurface("tenant"));
-  app.use("/api/oauth", requireSurface("tenant"));
-  registerOAuthRoutes(app);
+  registerDevLoginRoute(app);
   app.use("/api/auth", requireSurface("tenant"));
   registerPasswordAuthRoutes(app);
   app.use("/api/platform/auth", requireSurface("platform"));
   if (hasPlatformOidcConfiguration()) registerPlatformOidcRoutes(app);
-  else registerPlatformManusAuthRoutes(app);
   registerPlatformPasswordAuthRoutes(app);
   app.use(
     "/api/platform/trpc",
