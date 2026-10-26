@@ -115,7 +115,7 @@ function PromotionStatus({
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-1.5 text-left text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex items-center gap-1.5 text-start text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       onClick={() => onOpenAnimal(Number(record.promotedHeadId))}
     >
       <StatusBadge tone="success">{t("breeding.promoted", "Promoted")}</StatusBadge>
@@ -391,7 +391,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     {
       id: "lamb",
       header: t("breeding.lambId", "Lamb ID"),
-      cell: l => <span className="font-mono font-semibold text-primary">{l.lambId ?? "-"}</span>,
+      cell: l => <span className="whitespace-nowrap font-mono font-semibold text-primary">{l.lambId ?? "-"}</span>,
       sortValue: l => l.lambId,
       primary: true,
       mobileLabel: t("breeding.lambId", "Lamb ID"),
@@ -493,7 +493,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
             key={tile.id}
             type="button"
             onClick={() => setFilter(tile.id)}
-            className={`rounded-lg border px-4 py-3 text-left transition-colors hover:bg-surface ${
+            className={`rounded-lg border px-4 py-3 text-start transition-colors hover:bg-surface ${
               filter === tile.id ? "border-primary bg-primary-soft ring-2 ring-primary/15" : "border-border bg-card"
             }`}
           >

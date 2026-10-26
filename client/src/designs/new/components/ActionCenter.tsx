@@ -110,7 +110,7 @@ export function ActionQueue({
             const go = () => (item.onClick ? item.onClick() : item.href && setLocation(item.href));
             const rowTone = item.tone ?? tone;
             const rowClass = cn(
-              "relative flex w-full items-center justify-between gap-3 px-4 py-2.5 pl-5 text-start",
+              "relative flex w-full items-center justify-between gap-3 px-4 py-2.5 ps-5 text-start",
               "before:absolute before:inset-y-2 before:left-1.5 before:w-1 before:rounded-full",
               TONE_BAR[rowTone]
             );
@@ -146,7 +146,7 @@ export function ActionQueue({
                       <p className="truncate text-sm font-medium text-foreground">{item.title}</p>
                       {item.meta && <p className="truncate text-xs text-muted-foreground">{item.meta}</p>}
                     </div>
-                    {clickable && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+                    {clickable && <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:rotate-180" />}
                   </button>
                 )}
               </li>

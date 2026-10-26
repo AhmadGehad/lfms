@@ -15,8 +15,16 @@ import { fmtDate } from "../lib/format";
 const ASSIGNABLE_ROLES = ["viewer", "user", "staff", "supervisor", "admin"] as const;
 const CONFIGURABLE_ROLES = ["supervisor", "staff", "user", "viewer"] as const;
 
+// Page ids whose nav label lives under a different key.
+const PAGE_LABEL_KEYS: Record<string, string> = {
+  vaccinations: "nav.health",
+  audit: "nav.auditLog",
+  data: "nav.dataManagement",
+  capital: "users.capitalPage",
+};
+
 function roleTone(role: string): StatusTone {
-  if (role === "owner" || role === "admin") return "danger";
+  if (role === "owner" || role === "admin") return "success";
   if (role === "supervisor") return "warning";
   if (role === "staff") return "info";
   return "neutral";
@@ -49,12 +57,12 @@ export default function NewUsers() {
       header: t("users.role", "Role"),
       cell: u =>
         u.role === "owner" || !canEdit ? (
-          <StatusBadge tone={roleTone(u.role)}>{u.role}</StatusBadge>
+          <StatusBadge tone={roleTone(u.role)}>{String(t(`users.${u.role}`, u.role))}</StatusBadge>
         ) : (
           <Select value={u.role} onValueChange={v => updateRole.mutate({ userId: u.id, role: v as any, expectedVersion: u.version })}>
             <SelectTrigger className="h-8 w-32" onClick={e => e.stopPropagation()}><SelectValue /></SelectTrigger>
             <SelectContent>
-              {ASSIGNABLE_ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              {ASSIGNABLE_ROLES.map(r => <SelectItem key={r} value={r}>{t(`users.${r}`, r)}</SelectItem>)}
             </SelectContent>
           </Select>
         ),
@@ -119,7 +127,8 @@ function PermissionMatrix() {
     save.mutate({ role, expectedRevision: (matrix.data as any)?.revision ?? "", entries } as any);
   };
 
-  const filteredPages = pages.filter((p: any) => !search || p.page.toLowerCase().includes(search.toLowerCase()));
+  const pageLabel = (page: string) => String(t(PAGE_LABEL_KEYS[page] ?? `nav.${page}`, page));
+  const filteredPages = pages.filter((p: any) => !search || `${p.page} ${pageLabel(p.page)}`.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <section>
@@ -132,7 +141,7 @@ function PermissionMatrix() {
           </div>
           <Select value={role} onValueChange={v => setRole(v as any)}>
             <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
-            <SelectContent>{CONFIGURABLE_ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+            <SelectContent>{CONFIGURABLE_ROLES.map(r => <SelectItem key={r} value={r}>{t(`users.${r}`, r)}</SelectItem>)}</SelectContent>
           </Select>
           <button
             disabled={!dirty || save.isPending}
@@ -149,7 +158,7 @@ function PermissionMatrix() {
           <thead className="sticky top-0 bg-surface">
             <tr className="border-b border-border text-start">
               <th className="px-3 py-2.5 text-start font-semibold text-muted-foreground">{t("users.page", "Page")}</th>
-              {actions.map(a => <th key={a} className="px-2 py-2.5 text-center font-semibold text-muted-foreground">{a}</th>)}
+              {actions.map(a => <th key={a} className="px-2 py-2.5 text-center font-semibold text-muted-foreground">{t(`users.action.${a}`, a)}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -157,7 +166,7 @@ function PermissionMatrix() {
               const allowed = new Set(p.actions.map((a: any) => a.action));
               return (
                 <tr key={p.page} className="border-b border-border last:border-0">
-                  <td className="px-3 py-2 font-medium text-foreground">{p.page}</td>
+                  <td className="px-3 py-2 font-medium text-foreground">{pageLabel(p.page)}</td>
                   {actions.map(action => {
                     const key = `${p.page}:${action}`;
                     const applicable = allowed.has(action);

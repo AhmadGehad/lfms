@@ -17,6 +17,7 @@ import { DataTable, type Column } from "../components/DataTable";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
+import { chartBarCursor, chartTooltipItemStyle, chartTooltipLabelStyle, chartTooltipStyle, formatAxisNumber } from "../lib/chartTheme";
 
 /**
  * New P&L. Same getAllPnL query + owner scope as Old with the same realised
@@ -242,9 +243,6 @@ export default function NewPnL() {
   );
 }
 
-// Axis ticks like 1.5k / 2k — rounding to whole thousands repeated labels ("2k, 2k, 1k").
-const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 });
-
 /** Bar chart of net P&L for the top-20 closed animals, diverging by sign. */
 function PnLChart({ rows, fmt }: { rows: any[]; fmt: (n: number) => string }) {
   const { t } = useTranslation();
@@ -270,10 +268,13 @@ function PnLChart({ rows, fmt }: { rows: any[]; fmt: (n: number) => string }) {
           <BarChart data={closed} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} angle={-40} textAnchor="end" interval={0} height={70} />
-            <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} allowDecimals={false} tickFormatter={v => compactNumber.format(v)} />
+            <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} allowDecimals={false} tickFormatter={formatAxisNumber} />
             <Tooltip
               formatter={(v: number) => [fmt(v), t("pnl.netPnL", "Net P&L")]}
-              contentStyle={{ borderRadius: 8, fontSize: 12, background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}
+              contentStyle={chartTooltipStyle}
+              labelStyle={chartTooltipLabelStyle}
+              itemStyle={chartTooltipItemStyle}
+              cursor={chartBarCursor}
             />
             <Bar dataKey="netPnL" radius={[3, 3, 0, 0]} maxBarSize={28}>
               {closed.map((d, i) => (

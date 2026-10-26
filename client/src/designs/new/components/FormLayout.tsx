@@ -111,7 +111,7 @@ export function FormField({
     <div className={cn("flex flex-col gap-1.5", full && "sm:col-span-2")}>
       <label id={labelId} htmlFor={labelFor} className="text-sm font-medium text-foreground">
         {label}
-        {required && <span className="ml-0.5 text-danger">*</span>}
+        {required && <span className="ms-0.5 text-danger">*</span>}
       </label>
       {enhancedChildren}
       {hint && !error && <p id={messageId} className="text-xs text-muted-foreground">{hint}</p>}

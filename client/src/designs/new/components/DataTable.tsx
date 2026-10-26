@@ -192,20 +192,20 @@ export function DataTable<T>({
           <button
             onClick={() => setDensityP(density === "compact" ? "comfortable" : "compact")}
             className="grid h-11 w-11 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-surface sm:h-9 sm:w-9"
-            aria-label="Toggle density"
-            title="Density"
+            aria-label={t("table.toggleDensity", "Toggle density")}
+            title={t("table.density", "Density")}
           >
             {density === "compact" ? <Rows3 className="h-4 w-4" /> : <Rows4 className="h-4 w-4" />}
           </button>
           {columns.some(c => c.hideable) && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <button className="grid h-11 w-11 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-surface sm:h-9 sm:w-9" aria-label="Columns">
+                <button className="grid h-11 w-11 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-surface sm:h-9 sm:w-9" aria-label={t("table.columns", "Columns")}>
                   <SlidersHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Columns</DropdownMenuLabel>
+                <DropdownMenuLabel>{t("table.columns", "Columns")}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 {columns.filter(c => c.hideable).map(c => (
                   <DropdownMenuCheckboxItem
@@ -232,7 +232,7 @@ export function DataTable<T>({
       {/* Bulk bar */}
       {selection && selectedRows.length > 0 && bulkBar && (
         <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary-soft px-3 py-2 text-sm text-primary-soft-foreground">
-          <span className="font-medium">{selectedRows.length} selected</span>
+          <span className="font-medium">{t("table.selectedCount", { count: selectedRows.length, defaultValue: "{{count}} selected" })}</span>
           <div className="flex items-center gap-2 [&_button]:min-h-11 sm:[&_button]:min-h-8">{bulkBar(selectedRows)}</div>
         </div>
       )}
@@ -243,7 +243,7 @@ export function DataTable<T>({
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-11 w-full" />)}
         </div>
       ) : sorted.length === 0 ? (
-        empty ?? <EmptyState title="Nothing here yet" />
+        empty ?? <EmptyState title={t("common.noneYet", "Nothing here yet")} />
       ) : isMobile ? (
         /* Mobile card layout */
         <div className="flex flex-col gap-2">
@@ -293,14 +293,14 @@ export function DataTable<T>({
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10 bg-surface">
-              <tr className="border-b border-border text-left">
+              <tr className="border-b border-border text-start">
                 {selection && (
                   <th className={cn("w-10", cellPad)}>
-                    <Checkbox checked={allOnPageSelected} onCheckedChange={toggleAllOnPage} aria-label="Select all" />
+                    <Checkbox checked={allOnPageSelected} onCheckedChange={toggleAllOnPage} aria-label={t("table.selectAll", "Select all")} />
                   </th>
                 )}
                 {visibleColumns.map(c => (
-                  <th key={c.id} className={cn("whitespace-nowrap font-semibold text-muted-foreground", cellPad, c.align === "end" && "text-right", c.align === "center" && "text-center", c.className)}>
+                  <th key={c.id} className={cn("whitespace-nowrap font-semibold text-muted-foreground", cellPad, c.align === "end" && "text-end", c.align === "center" && "text-center", c.className)}>
                     {c.sortValue ? (
                       <button onClick={() => toggleSort(c.id)} className="inline-flex items-center gap-1 hover:text-foreground">
                         {c.header}
@@ -332,12 +332,12 @@ export function DataTable<T>({
                     </td>
                   )}
                   {visibleColumns.map(c => (
-                    <td key={c.id} className={cn("text-foreground", cellPad, c.align === "end" && "text-right", c.align === "center" && "text-center", c.className)}>
+                    <td key={c.id} className={cn("text-foreground", cellPad, c.align === "end" && "text-end", c.align === "center" && "text-center", c.className)}>
                       {c.cell(row)}
                     </td>
                   ))}
                   {rowActions && (
-                    <td className={cn("text-right", cellPad)} onClick={e => e.stopPropagation()}>
+                    <td className={cn("text-end", cellPad)} onClick={e => e.stopPropagation()}>
                       {rowActions(row)}
                     </td>
                   )}
@@ -352,7 +352,7 @@ export function DataTable<T>({
       {sorted.length > pageSize && (
         <Pagination className="justify-between">
           <span className="text-xs text-muted-foreground">
-            {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, sorted.length)} of {sorted.length}
+            {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, sorted.length)} {t("table.of", "of")} {sorted.length}
           </span>
           <PaginationContent>
             <PaginationItem>
@@ -360,9 +360,9 @@ export function DataTable<T>({
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={safePage === 0}
                 className="grid h-11 w-11 place-items-center rounded-lg border border-border disabled:opacity-40 hover:bg-surface sm:h-9 sm:w-9"
-                aria-label="Previous page"
+                aria-label={t("table.previousPage", "Previous page")}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
               </button>
             </PaginationItem>
             <PaginationItem>
@@ -373,9 +373,9 @@ export function DataTable<T>({
                 onClick={() => setPage(p => Math.min(pageCount - 1, p + 1))}
                 disabled={safePage >= pageCount - 1}
                 className="grid h-11 w-11 place-items-center rounded-lg border border-border disabled:opacity-40 hover:bg-surface sm:h-9 sm:w-9"
-                aria-label="Next page"
+                aria-label={t("table.nextPage", "Next page")}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
               </button>
             </PaginationItem>
           </PaginationContent>

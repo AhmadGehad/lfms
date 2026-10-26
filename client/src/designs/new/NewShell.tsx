@@ -407,7 +407,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
               >
                 <Bell className="h-[18px] w-[18px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-semibold text-danger-foreground">
+                  <span className="absolute end-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-danger px-1 text-[10px] font-semibold text-danger-foreground">
                     {unreadCount > 99 ? "99+" : unreadCount}
                   </span>
                 )}
@@ -434,19 +434,19 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuSeparator />
                 {perms.can("users", "view") && (
                   <DropdownMenuItem onClick={() => setLocation("/users")} className="cursor-pointer">
-                    <Users className="mr-2 h-4 w-4" />
+                    <Users className="me-2 h-4 w-4" />
                     {t("nav.users")}
                   </DropdownMenuItem>
                 )}
                 {perms.can("configuration", "view") && (
                   <DropdownMenuItem onClick={() => setLocation("/config")} className="cursor-pointer">
-                    <Cog className="mr-2 h-4 w-4" />
+                    <Cog className="me-2 h-4 w-4" />
                     {t("nav.configuration")}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="me-2 h-4 w-4" />
                   {t("auth.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>

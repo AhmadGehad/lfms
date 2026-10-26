@@ -195,7 +195,7 @@ export default function NewIncomeStatement() {
         actions={
           <div className="no-print flex flex-wrap items-center gap-2">
             <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="h-9 w-36" />
-            <span className="text-muted-foreground">→</span>
+            <span className="inline-block text-muted-foreground rtl:rotate-180">→</span>
             <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="h-9 w-36" />
             {canExport && (
               <>
@@ -275,10 +275,10 @@ export default function NewIncomeStatement() {
                   </span>
                 </div>
                 <dl className="space-y-2 text-sm">
-                  <Row label={t("incomeStatement.farmWide", "Farm-wide (general / overhead)")} value={`${fmt(d.runningCostPerMonth.farmWide ?? 0)}/mo`} />
-                  <Row label={t("incomeStatement.animalWide", "Animal-wide (feed + per-animal)")} value={`${fmt(d.runningCostPerMonth.animalWide ?? 0)}/mo`} />
+                  <Row label={t("incomeStatement.farmWide", "Farm-wide (general / overhead)")} value={`${fmt(d.runningCostPerMonth.farmWide ?? 0)}${t("incomeStatement.perMonthSuffix", "/mo")}`} />
+                  <Row label={t("incomeStatement.animalWide", "Animal-wide (feed + per-animal)")} value={`${fmt(d.runningCostPerMonth.animalWide ?? 0)}${t("incomeStatement.perMonthSuffix", "/mo")}`} />
                   <div className="my-2 border-t border-border" />
-                  <Row label={t("incomeStatement.totalRunningCost", "Total running cost")} value={`${fmt(d.runningCostPerMonth.total ?? 0)}/mo`} strong />
+                  <Row label={t("incomeStatement.totalRunningCost", "Total running cost")} value={`${fmt(d.runningCostPerMonth.total ?? 0)}${t("incomeStatement.perMonthSuffix", "/mo")}`} strong />
                 </dl>
               </section>
             )}

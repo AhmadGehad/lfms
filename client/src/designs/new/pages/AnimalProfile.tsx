@@ -23,6 +23,7 @@ import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { signedPercentPillClass, weightProgressBarClass, weightProgressTextClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { fmtDate } from "../lib/format";
+import { chartAxisTick, chartTooltipItemStyle, chartTooltipLabelStyle, chartTooltipStyle } from "../lib/chartTheme";
 
 function tone(name?: string): StatusTone {
   const l = (name ?? "").toLowerCase();
@@ -550,11 +551,11 @@ export default function NewAnimalProfile() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
+                <thead className="text-start text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="py-2 font-medium">{t("expenses.date", "Date")}</th>
                     <th className="py-2 font-medium">{t("expenses.category", "Category")}</th>
-                    <th className="py-2 text-right font-medium">{t("expenses.amount", "Amount")}</th>
+                    <th className="py-2 text-end font-medium">{t("expenses.amount", "Amount")}</th>
                     <th className="py-2 font-medium">{t("expenses.vendor", "Vendor")}</th>
                     <th className="py-2 font-medium">{t("common.notes", "Notes")}</th>
                   </tr>
@@ -564,7 +565,7 @@ export default function NewAnimalProfile() {
                     <tr key={e.id} className="border-b border-border last:border-0">
                       <td className="py-2">{fmtDate(e.expenseDate)}</td>
                       <td className="py-2">{e.categoryName ?? "—"}</td>
-                      <td className="py-2 text-right font-medium tabular-nums">{fmt(parseFloat(e.amount))}</td>
+                      <td className="py-2 text-end font-medium tabular-nums">{fmt(parseFloat(e.amount))}</td>
                       <td className="py-2">{e.vendorName ?? "—"}</td>
                       <td className="py-2 text-muted-foreground">{e.notes ?? "—"}</td>
                     </tr>
@@ -585,7 +586,7 @@ export default function NewAnimalProfile() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
+                <thead className="text-start text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="py-2 font-medium">{t("feed.item", "Feed item")}</th>
                     <th className="py-2 pe-6 font-medium">{t("feed.qtyPerHead", "Qty/head/day")}</th>
@@ -620,7 +621,7 @@ export default function NewAnimalProfile() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
+                <thead className="text-start text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="py-2 font-medium">{t("vaccine.vaccine", "Vaccine")}</th>
                     <th className="py-2 font-medium">{t("vaccine.date", "Date")}</th>
@@ -700,15 +701,15 @@ export default function NewAnimalProfile() {
                     weight: parseFloat(w.weightKg ?? w.weight ?? 0),
                   }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis dataKey="date" stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
-                    <YAxis stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
-                    <Tooltip contentStyle={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }} />
+                    <XAxis dataKey="date" stroke="var(--color-muted-foreground)" tick={chartAxisTick} />
+                    <YAxis stroke="var(--color-muted-foreground)" tick={chartAxisTick} />
+                    <Tooltip contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} itemStyle={chartTooltipItemStyle} formatter={(v: number) => [`${v} ${t("common.kg", "kg")}`, t("weight.weight", "Weight (kg)")]} />
                     <Line type="monotone" dataKey="weight" stroke="var(--color-primary)" dot={{ fill: "var(--color-primary)", r: 3 }} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
               <table className="w-full text-sm">
-                <thead className="text-left text-muted-foreground">
+                <thead className="text-start text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="py-2 font-medium">{t("weight.date", "Date")}</th>
                     <th className="py-2 font-medium">{t("weight.weight", "Weight (kg)")}</th>
@@ -727,14 +728,14 @@ export default function NewAnimalProfile() {
                       <tr key={w.id ?? i} className="border-b border-border last:border-0">
                         <td className="py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
                         <td className="py-2 font-medium tabular-nums">{currentWeight.toFixed(1)}</td>
-                        <td className="py-2 tabular-nums">{weightDiff !== null ? (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(1) : '—'}</td>
+                        <td className="py-2 tabular-nums"><span dir="ltr">{weightDiff !== null ? (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(1) : '—'}</span></td>
                         <td className="py-2 tabular-nums">
-                          <span className={`inline-flex min-w-[4rem] justify-end rounded-md px-2 py-0.5 text-xs font-semibold ${signedPercentPillClass(weightPercent)}`}>
+                          <span dir="ltr" className={`inline-flex min-w-[4rem] justify-end rounded-md px-2 py-0.5 text-xs font-semibold ${signedPercentPillClass(weightPercent)}`}>
                             {weightPercent !== null ? (weightPercent >= 0 ? '+' : '') + weightPercent.toFixed(1) + '%' : '—'}
                           </span>
                         </td>
                         {canDeleteWeight && (
-                          <td className="py-1 text-right">
+                          <td className="py-1 text-end">
                             <button
                               onClick={() => setDeleteWeightRow(w)}
                               className="grid h-7 w-7 place-items-center rounded-md text-muted-foreground hover:bg-danger-soft hover:text-danger-soft-foreground"
