@@ -356,7 +356,7 @@ export default function NewDashboard() {
         .sort((a, b) => (a.d ?? 999) - (b.d ?? 999))
         .map(({ p, d }) => ({
           id: p.id ?? p.animalId,
-          title: p.animalCode ?? p.animalId ?? `#${p.id}`,
+          title: p.animalIdStr ?? p.animalCode ?? p.animalId ?? `#${p.id}`,
           meta:
             d == null ? "--" : d < 0 ? `${t("dashboard.overdue", "Overdue")} ${-d}d` : `${t("dashboard.dueIn", "Due in")} ${d}d`,
           href: "/pregnancy",
@@ -378,7 +378,7 @@ export default function NewDashboard() {
             : t("vaccine.nextDue", "Next due");
           return {
             id: `${v.animalId}-${v.vaccineId ?? v.vaccineName}-${due?.kind ?? "due"}`,
-            title: `${v.animalCode ?? v.animalId} · ${v.vaccineName ?? ""}`,
+            title: `${v.animalIdStr ?? v.animalCode ?? v.animalId} · ${v.vaccineName ?? ""}`,
             meta: d == null ? "--" : `${doseLabel} · ${d < 0 ? `${t("dashboard.overdue", "Overdue")} ${-d}d` : `${t("dashboard.dueIn", "Due in")} ${d}d`}`,
             href: "/vaccinations",
             action: d != null && d < 0 ? <StatusBadge tone="danger">{t("dashboard.overdue", "Overdue")}</StatusBadge> : undefined,
@@ -412,9 +412,10 @@ export default function NewDashboard() {
   const unpaidItems: QueueItem[] = useMemo(
     () =>
       ((unpaidSales as any[]) ?? []).map(s => ({
-        id: s.id,
-        title: s.buyer || s.animalCode || `#${s.id}`,
-        meta: `${t("sales.outstanding", "Outstanding")}: ${fmt(parseFloat(s.outstanding ?? s.salePrice ?? 0))}`,
+        // sales.list rows nest the sale record under `sale`.
+        id: s.sale?.id,
+        title: s.sale?.buyerName || s.animalCode || `#${s.sale?.id}`,
+        meta: `${t("sales.outstanding", "Outstanding")}: ${fmt(parseFloat(s.outstanding ?? s.sale?.salePrice ?? 0))}`,
         href: "/sales",
       })),
     [unpaidSales, t, fmt]

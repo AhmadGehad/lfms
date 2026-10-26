@@ -130,7 +130,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
   const groups = useNavGroups();
   return (
-    <nav className="flex flex-col gap-1 px-3 py-3">
+    <nav className="flex flex-col gap-1 px-3 py-3" data-tour="sidebar-nav">
       {groups.map((group, gi) => (
         <div key={group.label || `g${gi}`} className="flex flex-col gap-1">
           {group.label && (
@@ -147,6 +147,7 @@ function NavList({ onNavigate }: { onNavigate?: () => void }) {
               <Link
                 key={item.path}
                 href={item.path}
+                data-tour={`nav-${item.page}`}
                 onClick={onNavigate}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                   isActive
@@ -208,7 +209,7 @@ function MobileBottomNav() {
   ].filter(item => perms.can(item.page, "view"));
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-1.5 backdrop-blur md:hidden">
+    <nav data-tour="sidebar-nav" className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.35rem)] pt-1.5 backdrop-blur md:hidden">
       <div className="grid grid-cols-4 gap-1">
         {items.slice(0, 4).map(item => {
           const active = location === item.path || (item.path !== "/" && location.startsWith(item.path));
@@ -279,7 +280,7 @@ function DisplayMenu() {
           {i18n.language === "ar" && <Check className="h-4 w-4" aria-hidden="true" />}
         </DropdownMenuItem>
         {switchable && (
-          <>
+          <div data-tour="design-switch">
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setDesign("old")} className="cursor-pointer gap-2">
               <span className="flex-1">{t("design.old", "Classic")}</span>
@@ -289,7 +290,7 @@ function DisplayMenu() {
               <span className="flex-1">{t("design.new", "New")}</span>
               {design === "new" && <Check className="h-4 w-4" aria-hidden="true" />}
             </DropdownMenuItem>
-          </>
+          </div>
         )}
       </DropdownMenuContent>
     </DropdownMenu>
@@ -358,7 +359,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
       {!isMobile && sidebarOpen && (
         <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col bg-sidebar bg-gradient-to-b from-sidebar to-sidebar-2 text-sidebar-foreground md:flex">
           <SidebarBrand />
-          <div className="border-b border-sidebar-border px-3 py-3">
+          <div className="border-b border-sidebar-border px-3 py-3" data-tour="owner-filter">
             <OwnerFilterSelect className="w-full" />
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -399,7 +400,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
                 </SheetContent>
               </Sheet>
             )}
-            <FarmSwitcherSlot />
+            <span data-tour="farm-switcher" className="inline-flex min-w-0"><FarmSwitcherSlot /></span>
             <button
               type="button"
               className="flex h-11 min-w-11 shrink-0 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-ring sm:h-9 sm:min-w-0 sm:flex-1 sm:shrink sm:max-w-72 lg:max-w-96"
@@ -414,7 +415,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex shrink-0 items-center gap-1.5">
             <OfflineSyncIndicator />
-            <DesignSwitch className="hidden sm:inline-flex" />
+            <span data-tour="design-switch" className="hidden sm:inline-flex"><DesignSwitch /></span>
             <QuickAdd className="hidden sm:flex" />
             {perms.can("notifications", "view") && (
               <button
@@ -449,7 +450,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
                   <p className="mt-1 text-xs capitalize text-muted-foreground">{user?.role}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <div className="px-2 py-1.5 sm:hidden">
+                <div className="px-2 py-1.5 sm:hidden" data-tour="design-switch">
                   <DesignSwitch />
                 </div>
                 {perms.can("users", "view") && (

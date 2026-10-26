@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { DesignVersionProvider } from "@/contexts/DesignVersionContext";
-import OldDesign from "@/designs/old/OldDesign";
+import NewDesign from "@/designs/new/NewDesign";
 import { demoLink } from "./mockLink";
 import { DEMO_STYLES, DemoBar, GuideTour, HelpMarks } from "./DemoGuide";
 
@@ -57,7 +57,7 @@ function Walkthrough() {
 
   return (
     <>
-      <OldDesign />
+      <NewDesign />
       {tourStep !== null && <GuideTour step={tourStep} onStep={setTourStep} onClose={closeTour} />}
       {tourStep === null && helpOn && <HelpMarks />}
       <DemoBar helpOn={helpOn} onToggleHelp={() => setHelpOn(on => !on)} onRestart={() => setTourStep(0)} />

@@ -417,6 +417,7 @@ export function DemoBar({ helpOn, onToggleHelp, onRestart }: { helpOn: boolean; 
     <div
       role="region"
       aria-label="Demo controls"
+      className="demo-bar"
       style={{
         position: "fixed",
         bottom: 16,
@@ -451,7 +452,7 @@ export function DemoBar({ helpOn, onToggleHelp, onRestart }: { helpOn: boolean; 
 }
 
 export const DEMO_STYLES = `
-  [data-demo] [data-tour='design-switch'] { display: none; }
+  [data-tour='design-switch'] { display: none !important; }
   .demo-mark {
     position: fixed; z-index: 996; width: 18px; height: 18px; padding: 0;
     border-radius: 999px; border: 1.5px solid #FFFFFF; background: ${GOLD}; color: ${FOREST};
@@ -462,6 +463,8 @@ export const DEMO_STYLES = `
   .demo-focus:focus-visible, .demo-mark:focus-visible { outline: 2px solid #315E83; outline-offset: 2px; }
   .demo-focus-dark:focus-visible { outline: 2px solid ${IVORY}; outline-offset: 2px; }
   @media (max-width: 640px) { .demo-bar-note { display: none; } }
+  /* Phones show the app's bottom tab bar; sit above it instead of covering it. */
+  @media (max-width: 767px) { .demo-bar { bottom: calc(env(safe-area-inset-bottom) + 76px) !important; } }
   @media (prefers-reduced-motion: reduce) {
     .demo-mark { transition: none; }
     .demo-mark:hover { transform: none; }
