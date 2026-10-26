@@ -1,29 +1,29 @@
-import { lazy } from "react";
 import { Route, Switch } from "wouter";
 import NotFound from "@/pages/NotFound";
 import { PermissionGate } from "./PermissionGate";
+import { lazyPage } from "./lazyPage";
 
 // Each page is its own chunk: the first visit downloads only the page being opened.
-const NewDashboard = lazy(() => import("./pages/Dashboard"));
-const NewAnimals = lazy(() => import("./pages/Animals"));
-const NewAnimalProfile = lazy(() => import("./pages/AnimalProfile"));
-const NewSales = lazy(() => import("./pages/Sales"));
-const NewExpenses = lazy(() => import("./pages/Expenses"));
-const NewNotifications = lazy(() => import("./pages/Notifications"));
-const NewAuditLog = lazy(() => import("./pages/AuditLog"));
-const NewVaccinations = lazy(() => import("./pages/Vaccinations"));
-const NewRecycleBin = lazy(() => import("./pages/RecycleBin"));
-const NewBreeding = lazy(() => import("./pages/Breeding"));
-const NewPnL = lazy(() => import("./pages/PnL"));
-const NewIncomeStatement = lazy(() => import("./pages/IncomeStatement"));
-const NewUsers = lazy(() => import("./pages/Users"));
-const NewFeed = lazy(() => import("./pages/Feed"));
-const NewData = lazy(() => import("./pages/Data"));
-const NewConfiguration = lazy(() => import("./pages/Configuration"));
+const NewDashboard = lazyPage(() => import("./pages/Dashboard"));
+const NewAnimals = lazyPage(() => import("./pages/Animals"));
+const NewAnimalProfile = lazyPage(() => import("./pages/AnimalProfile"));
+const NewSales = lazyPage(() => import("./pages/Sales"));
+const NewExpenses = lazyPage(() => import("./pages/Expenses"));
+const NewNotifications = lazyPage(() => import("./pages/Notifications"));
+const NewAuditLog = lazyPage(() => import("./pages/AuditLog"));
+const NewVaccinations = lazyPage(() => import("./pages/Vaccinations"));
+const NewRecycleBin = lazyPage(() => import("./pages/RecycleBin"));
+const NewBreeding = lazyPage(() => import("./pages/Breeding"));
+const NewPnL = lazyPage(() => import("./pages/PnL"));
+const NewIncomeStatement = lazyPage(() => import("./pages/IncomeStatement"));
+const NewUsers = lazyPage(() => import("./pages/Users"));
+const NewFeed = lazyPage(() => import("./pages/Feed"));
+const NewData = lazyPage(() => import("./pages/Data"));
+const NewConfiguration = lazyPage(() => import("./pages/Configuration"));
 
 // Not yet redesigned; these render inside the same shell.
-const Fattening = lazy(() => import("@/pages/Fattening"));
-const FarmMap = lazy(() => import("@/pages/FarmMap"));
+const Fattening = lazyPage(() => import("@/pages/Fattening"));
+const FarmMap = lazyPage(() => import("@/pages/FarmMap"));
 
 /** Route table for the signed-in app. */
 export function NewAppRoutes() {
