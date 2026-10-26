@@ -21,6 +21,7 @@ export default defineConfig({
       "shared/**/*.test.ts",
       "scripts/**/*.test.ts",
       "client/src/lib/**/*.test.ts",
+      "client/src/designs/**/*.test.ts",
       "cloudflare/**/*.test.ts",
     ],
   },
