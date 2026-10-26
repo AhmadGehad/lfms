@@ -2,7 +2,6 @@ export type BrowserPublicConfig = {
   analyticsEndpoint?: string;
   analyticsWebsiteId?: string;
   appTitle?: string;
-  defaultDesign?: "old" | "new";
   frontendForgeApiUrl?: string;
   supportEmail?: string;
 };
@@ -19,7 +18,6 @@ const developmentFallback: BrowserPublicConfig = import.meta.env.DEV
       analyticsEndpoint: import.meta.env.VITE_ANALYTICS_ENDPOINT,
       analyticsWebsiteId: import.meta.env.VITE_ANALYTICS_WEBSITE_ID,
       appTitle: import.meta.env.VITE_APP_TITLE,
-      defaultDesign: import.meta.env.VITE_DEFAULT_DESIGN,
       frontendForgeApiUrl: import.meta.env.VITE_FRONTEND_FORGE_API_URL,
       supportEmail: import.meta.env.VITE_SUPPORT_EMAIL,
     }
@@ -31,7 +29,6 @@ export const publicConfig: BrowserPublicConfig = {
   analyticsWebsiteId:
     runtime.analyticsWebsiteId ?? developmentFallback.analyticsWebsiteId,
   appTitle: runtime.appTitle ?? developmentFallback.appTitle,
-  defaultDesign: runtime.defaultDesign ?? developmentFallback.defaultDesign,
   frontendForgeApiUrl:
     runtime.frontendForgeApiUrl ?? developmentFallback.frontendForgeApiUrl,
   supportEmail: runtime.supportEmail ?? developmentFallback.supportEmail,

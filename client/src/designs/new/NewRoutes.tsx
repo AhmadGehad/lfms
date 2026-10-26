@@ -1,10 +1,9 @@
 import { lazy } from "react";
 import { Route, Switch } from "wouter";
 import NotFound from "@/pages/NotFound";
-import { PermissionGate } from "../routes";
+import { PermissionGate } from "./PermissionGate";
 
-// New design pages (redesigned). As more pages are ported, swap the Old import
-// for the New one here — permission gating and data stay identical.
+// Each page is its own chunk: the first visit downloads only the page being opened.
 const NewDashboard = lazy(() => import("./pages/Dashboard"));
 const NewAnimals = lazy(() => import("./pages/Animals"));
 const NewAnimalProfile = lazy(() => import("./pages/AnimalProfile"));
@@ -22,12 +21,11 @@ const NewFeed = lazy(() => import("./pages/Feed"));
 const NewData = lazy(() => import("./pages/Data"));
 const NewConfiguration = lazy(() => import("./pages/Configuration"));
 
-// Pages not yet redesigned render their Old version inside the New shell. This
-// keeps every route working while the redesign rolls out page-by-page.
+// Not yet redesigned; these render inside the same shell.
 const Fattening = lazy(() => import("@/pages/Fattening"));
 const FarmMap = lazy(() => import("@/pages/FarmMap"));
 
-/** Route table for the New design. */
+/** Route table for the signed-in app. */
 export function NewAppRoutes() {
   return (
     <Switch>

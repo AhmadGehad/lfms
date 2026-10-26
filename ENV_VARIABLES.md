@@ -107,7 +107,6 @@ Keep server credentials server-side unless their name starts with `VITE_`.
 | `VITE_FRONTEND_FORGE_API_URL` | Browser-safe Manus map proxy base URL                                                                                 |
 | `VITE_APP_TITLE`              | Browser/application title                                                                                             |
 | `VITE_SUPPORT_EMAIL`          | Public tenant support email shown on suspended/landing screens; mailbox must be monitored                             |
-| `VITE_DEFAULT_DESIGN`         | Public default tenant UI version: `old` or `new`                                                                      |
 | `VITE_ANALYTICS_ENDPOINT`     | Public analytics script endpoint                                                                                      |
 | `VITE_ANALYTICS_WEBSITE_ID`   | Public analytics website identifier                                                                                   |
 

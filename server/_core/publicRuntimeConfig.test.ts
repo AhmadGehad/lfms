@@ -10,7 +10,6 @@ describe("public runtime configuration", () => {
       buildPublicRuntimeConfig({
         NODE_ENV: "production",
         DATABASE_URL: "postgres://must-not-leak",
-        VITE_DEFAULT_DESIGN: "new",
         VITE_FRONTEND_FORGE_API_KEY: "browser-visible-key",
         VITE_FRONTEND_FORGE_API_URL: "https://forge.example.test/",
         VITE_SUPPORT_EMAIL: "support@example.test",
@@ -19,7 +18,6 @@ describe("public runtime configuration", () => {
       analyticsEndpoint: undefined,
       analyticsWebsiteId: undefined,
       appTitle: undefined,
-      defaultDesign: "new",
       frontendForgeApiUrl: "https://forge.example.test",
       supportEmail: "support@example.test",
     });

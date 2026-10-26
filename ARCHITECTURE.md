@@ -6,13 +6,11 @@ React 19 + Vite client, Express + tRPC server, MySQL via Drizzle ORM.
 ```
 client/src/          React app
   components/        Shared UI (shadcn/ui primitives + app components)
-  contexts/          ThemeContext, DesignVersionContext, OwnerFilterContext
-  designs/           Old/New design system split (see "Design versions")
-    old/             Old shell (DashboardLayout)
-    new/             New shell, components, redesigned pages
+  contexts/          ThemeContext, OwnerFilterContext
+  designs/new/       App shell, route table, design-system components, pages
   hooks/             usePermissions, usePreferences, useCurrency, ...
   lib/               trpc client, i18n (EN + AR)
-  pages/             OLD design pages — also the business/UI logic reference
+  pages/             Auth/system screens, Landing, and Fattening + FarmMap
 server/
   _core/             Infra: trpc setup, auth SDK, cookies, oauth, devAuth, env
   routers/           One tRPC router per domain (animals, sales*, feed, ...)
@@ -27,24 +25,18 @@ shared/              permissions.ts — role/permission model used by BOTH sides
 ## Layers and rules
 
 1. **Client pages** call tRPC hooks only; no direct fetch/SQL.
-2. **`designs/*` is presentation-only.** Business logic and permission gating
-   live in shared pages/hooks; Old and New designs may differ only in shell and
-   screen composition. Route table and permission gates are identical
-   (`designs/routes.tsx` vs `designs/new/NewRoutes.tsx`).
+2. **Routing and permission gating** live in `designs/new/NewRoutes.tsx` and
+   `designs/new/PermissionGate.tsx`; every page is lazy-loaded behind its gate.
 3. **Routers** validate with zod, authorize with a permission middleware, call
    `db.ts` helpers, and write an audit entry for every mutation.
 4. **`db.ts`** is the only module that touches Drizzle/SQL. Helpers accept an
    optional `tx?: DbOrTx` so routers can compose them inside transactions.
 
-## Design versions (Old / New)
+## UI design
 
-Two independent per-user axes: design version `old|new` and theme
-`light|dark|system`.
+There is one design (the former "New" design; the Old design and the design
+switch were removed 2026-10-26). Theme is a per-user `light|dark|system` choice.
 
-- Resolution order: URL `?design=` → user pref → role default → global setting
-  (`system_settings ui.designVersion`) → `VITE_DEFAULT_DESIGN` → `old`.
-- `DesignRouter` lazy-loads `old/OldDesign` or `new/NewDesign` as separate
-  bundles; New is wrapped in an error boundary that falls back to Old on crash.
 - Preferences persist in `user_settings` (server) with localStorage cache
   (`usePreferences` ↔ `server/routers/preferences.ts`).
 - New design system components (`designs/new/components/`): `DataTable`
@@ -54,9 +46,8 @@ Two independent per-user axes: design version `old|new` and theme
   `ActionCenter`, `KpiCard`, `StatusBadge`, `CommandPalette` (⌘K), `QuickAdd`,
   `AnimalWorkflows` (shared register / weigh-in / sale / bulk-sale / quick-expense
   dialogs).
-- New pages are at feature parity with Old (parity pass 2026-07-03). Two pages
-  intentionally render the Old implementation inside the New shell: `FarmMap`
-  (bespoke canvas shape editor) and `Fattening`.
+- `FarmMap` (bespoke canvas shape editor) and `Fattening` are not yet
+  redesigned; they live in `pages/` and render inside the same shell.
 
 ## AuthN / AuthZ
 
@@ -107,7 +98,7 @@ trusting `drizzle-kit generate`.
 
 Post-deploy DB step for the design switch rollout: apply
 `drizzle/0019_user_settings.sql`. It creates `user_settings`, which persists
-per-user design/theme preferences; until applied, the app falls back to
+per-user UI preferences; until applied, the app falls back to
 client-side cache and logs preference warnings.
 
 ## Testing

@@ -452,7 +452,6 @@ export function DemoBar({ helpOn, onToggleHelp, onRestart }: { helpOn: boolean; 
 }
 
 export const DEMO_STYLES = `
-  [data-tour='design-switch'] { display: none !important; }
   .demo-mark {
     position: fixed; z-index: 996; width: 18px; height: 18px; padding: 0;
     border-radius: 999px; border: 1.5px solid #FFFFFF; background: ${GOLD}; color: ${FOREST};
