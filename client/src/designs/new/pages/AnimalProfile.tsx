@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, useLocation } from "wouter";
 import { toast } from "sonner";
@@ -13,12 +13,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, ImageIcon, Pencil, ReceiptText, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
+import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, ImageIcon, MoreHorizontal, Pencil, ReceiptText, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
 import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
-import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { signedPercentPillClass, weightProgressBarClass, weightProgressTextClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
@@ -148,6 +149,10 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [form, setForm] = useState({ expenseDate: today(), categoryId: "", amount: "", vendorName: "", notes: "" });
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (open) setAttempt(0);
+  }, [open]);
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const { data: categories } = trpc.config.getExpenseCategories.useQuery();
   const create = trpc.expenses.create.useMutation({
@@ -164,7 +169,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
     onError: e => toast.error(e.message),
   });
   const submit = () => {
-    if (!form.categoryId || !(parseFloat(form.amount) > 0)) { toast.error(t("expenses.fillRequired", "Enter a category and amount")); return; }
+    if (!form.categoryId || !(parseFloat(form.amount) > 0)) { setAttempt(a => a + 1); toast.error(t("expenses.fillRequired", "Enter a category and amount")); return; }
     create.mutate({
       expenseDate: form.expenseDate,
       categoryId: Number(form.categoryId),
@@ -180,6 +185,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader><DialogTitle>{t("expenses.add", "Add expense")} · {code}</DialogTitle></DialogHeader>
+        <FormValidation attempt={attempt}>
         <FormSection>
           <FormField label={t("expenses.date", "Date")} required>
             <Input type="date" value={form.expenseDate} onChange={e => setForm(f => ({ ...f, expenseDate: e.target.value }))} />
@@ -200,6 +206,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
             <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </FormField>
         </FormSection>
+        </FormValidation>
         <FormFooter>
           <button onClick={() => onOpenChange(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
           <button disabled={create.isPending} onClick={submit} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
@@ -400,33 +407,50 @@ export default function NewAnimalProfile() {
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               {t("common.back", "Back")}
             </Button>
-            {perms.can("animals", "update") && (
-              <Button type="button" variant="outline" onClick={() => setEditOpen(true)}>
-                <Pencil className="h-4 w-4" aria-hidden="true" />
-                {t("common.edit", "Edit")}
-              </Button>
-            )}
-            {perms.can("expenses", "create") && (
-              <Button type="button" variant="outline" onClick={() => setExpenseOpen(true)}>
-                <DollarSign className="h-4 w-4" aria-hidden="true" />
-                {t("expenses.add", "Add expense")}
-              </Button>
-            )}
             {perms.can("fattening", "create") && a?.isActive !== false && (
-              <Button type="button" variant="outline" onClick={() => setWeighOpen(true)}>
+              <Button type="button" onClick={() => setWeighOpen(true)}>
                 <Scale className="h-4 w-4" aria-hidden="true" />
                 {t("weight.record", "Record Weight")}
               </Button>
             )}
             {perms.can("sales", "create") && a?.isActive !== false && (
-              <Button type="button" onClick={() => setSaleOpen(true)}>
+              <Button type="button" variant="outline" className="hidden sm:inline-flex" onClick={() => setSaleOpen(true)}>
                 <ShoppingCart className="h-4 w-4" aria-hidden="true" />
                 {t("sales.recordSale", "Record Sale")}
               </Button>
             )}
-            <Button type="button" variant="outline" onClick={() => window.print()} aria-label={t("animalProfile.downloadProfile", "Download profile")}>
-              <Download className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" aria-label={t("common.moreActions", "More actions")}>
+                  <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
+                  <span className="sm:sr-only">{t("common.more", "More")}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {perms.can("sales", "create") && a?.isActive !== false && (
+                  <DropdownMenuItem className="sm:hidden" onSelect={() => setSaleOpen(true)}>
+                    <ShoppingCart className="me-2 h-4 w-4" aria-hidden="true" />
+                    {t("sales.recordSale", "Record Sale")}
+                  </DropdownMenuItem>
+                )}
+                {perms.can("expenses", "create") && (
+                  <DropdownMenuItem onSelect={() => setExpenseOpen(true)}>
+                    <DollarSign className="me-2 h-4 w-4" aria-hidden="true" />
+                    {t("expenses.add", "Add expense")}
+                  </DropdownMenuItem>
+                )}
+                {perms.can("animals", "update") && (
+                  <DropdownMenuItem onSelect={() => setEditOpen(true)}>
+                    <Pencil className="me-2 h-4 w-4" aria-hidden="true" />
+                    {t("common.edit", "Edit")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onSelect={() => window.print()}>
+                  <Download className="me-2 h-4 w-4" aria-hidden="true" />
+                  {t("animalProfile.downloadProfile", "Download profile")}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         }
       />

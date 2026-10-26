@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { AnimalIdNumberField } from "@/components/AnimalIdNumberField";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,7 @@ import { DataTable, type Column } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
-import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { PregnancyPanel } from "./Pregnancy";
 import { fmtDate } from "../lib/format";
 import { formatAmount } from "@/hooks/useCurrency";
@@ -97,8 +97,8 @@ function PromotionStatus({
   if (record.promotedAnimalPurgedAt) {
     return (
       <div className="space-y-1">
-        <StatusBadge tone="neutral">{t("breeding.promotedAnimalPurged", "Promoted animal purged")}</StatusBadge>
-        {animalCode ? <p className="font-mono text-xs text-muted-foreground">{animalCode}</p> : null}
+        <StatusBadge tone="neutral">{t("breeding.promotedAnimalPurged", "Herd animal purged")}</StatusBadge>
+        {animalCode ? <p className="text-xs text-muted-foreground">{animalCode}</p> : null}
       </div>
     );
   }
@@ -106,8 +106,8 @@ function PromotionStatus({
   if (record.promotedAnimalDeletedAt || !record.promotedHeadId) {
     return (
       <div className="space-y-1">
-        <StatusBadge tone="warning">{t("breeding.promotedAnimalDeleted", "Promoted animal in recycle bin")}</StatusBadge>
-        {animalCode ? <p className="font-mono text-xs text-muted-foreground">{animalCode}</p> : null}
+        <StatusBadge tone="warning">{t("breeding.promotedAnimalDeleted", "Herd animal in recycle bin")}</StatusBadge>
+        {animalCode ? <p className="text-xs text-muted-foreground">{animalCode}</p> : null}
       </div>
     );
   }
@@ -118,8 +118,8 @@ function PromotionStatus({
       className="inline-flex items-center gap-1.5 text-start text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       onClick={() => onOpenAnimal(Number(record.promotedHeadId))}
     >
-      <StatusBadge tone="success">{t("breeding.promoted", "Promoted")}</StatusBadge>
-      {animalCode ? <span className="font-mono text-xs">{animalCode}</span> : null}
+      <StatusBadge tone="success">{t("breeding.promoted", "In herd")}</StatusBadge>
+      {animalCode ? <span className="text-xs">{animalCode}</span> : null}
       <ExternalLink className="h-3 w-3" aria-hidden="true" />
     </button>
   );
@@ -132,6 +132,8 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
   const perms = usePermissions();
   const canViewBreeding = perms.can("breeding", "view");
   const canViewPregnancy = perms.can("pregnancy", "view");
+  const canCreatePregnancy = perms.can("pregnancy", "create");
+  const [pregnancyCreateSignal, setPregnancyCreateSignal] = useState(0);
   const canCreate = perms.can("breeding", "create");
   const canUpdate = perms.can("breeding", "update");
   const canDelete = perms.can("breeding", "delete");
@@ -189,6 +191,15 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
   };
 
   const [birthOpen, setBirthOpen] = useState(false);
+  const [birthAttempt, setBirthAttempt] = useState(0);
+  const [promoteAttempt, setPromoteAttempt] = useState(0);
+  useEffect(() => {
+    if (birthOpen) setBirthAttempt(0);
+  }, [birthOpen]);
+  const searchStr = useSearch();
+  useEffect(() => {
+    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setBirthOpen(true);
+  }, [canCreate, searchStr]);
   const [birthIdempotencyKey, setBirthIdempotencyKey] = useState(() => crypto.randomUUID());
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>(initialTab);
   const [birth, setBirth] = useState(blankBirth);
@@ -272,7 +283,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       utils.animals.list.invalidate();
       utils.dashboard.getKPIs.invalidate();
       utils.dashboard.getHeadCountByCategory.invalidate();
-      toast.success(t("breeding.lambPromotedAs", { id: data.animalId, defaultValue: "Lamb promoted" }));
+      toast.success(t("breeding.lambPromotedAs", { id: data.animalId, defaultValue: "Lamb added to herd" }));
       setPromote(null);
     },
     onError: e => toast.error(e.message),
@@ -282,7 +293,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
   const summaryTiles = [
     { id: "all" as const, label: t("common.all", "All"), count: summary?.total ?? rows.length, tone: "text-info-soft-foreground" },
     { id: "pending" as const, label: t("common.pending", "Pending"), count: summary?.pending ?? rows.filter(l => !l.isPromoted).length, tone: "text-warning-soft-foreground" },
-    { id: "promoted" as const, label: t("breeding.promoted", "Promoted"), count: summary?.promoted ?? rows.filter(l => l.isPromoted).length, tone: "text-success-soft-foreground" },
+    { id: "promoted" as const, label: t("breeding.promoted", "In herd"), count: summary?.promoted ?? rows.filter(l => l.isPromoted).length, tone: "text-success-soft-foreground" },
   ];
 
   const startBirth = () => {
@@ -314,11 +325,13 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       categoryId: record.categoryId ? String(record.categoryId) : "",
       groupId: record.groupId ? String(record.groupId) : "",
     });
+    setPromoteAttempt(0);
     setPromote(record);
   };
 
   const submitBirth = (again: boolean) => {
     if (!birth.speciesId || !birth.categoryId || !birth.birthTypeId || !birth.birthDate) {
+      setBirthAttempt(a => a + 1);
       toast.error(t("breeding.fillRequired", "Species, category, birth date and birth type are required"));
       return;
     }
@@ -373,6 +386,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
 
   const submitPromote = () => {
     if (!promote || !promoteForm.speciesId || !promoteForm.categoryId || !promoteForm.groupId || !promoteForm.statusId || !promoteForm.acquisitionDate) {
+      setPromoteAttempt(a => a + 1);
       toast.error(t("breeding.promotionFieldsRequired", "Species, category, group, status and acquisition date are required"));
       return;
     }
@@ -391,7 +405,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     {
       id: "lamb",
       header: t("breeding.lambId", "Lamb ID"),
-      cell: l => <span className="whitespace-nowrap font-mono font-semibold text-primary">{l.lambId ?? "-"}</span>,
+      cell: l => <span className="whitespace-nowrap font-semibold text-primary">{l.lambId ?? "-"}</span>,
       sortValue: l => l.lambId,
       primary: true,
       mobileLabel: t("breeding.lambId", "Lamb ID"),
@@ -402,13 +416,13 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     { id: "category", header: t("animals.category", "Category"), cell: l => l.categoryName ?? "-", sortValue: l => l.categoryName, hideable: true, defaultHidden: true, mobileLabel: t("animals.category", "Category") },
     { id: "group", header: t("animals.group", "Group"), cell: l => l.groupCode ?? "-", sortValue: l => l.groupCode, hideable: true, defaultHidden: true, mobileLabel: t("animals.group", "Group") },
     { id: "type", header: t("breeding.birthType", "Birth type"), cell: l => l.birthTypeName ?? "-", sortValue: l => l.birthTypeName, hideable: true, mobileLabel: t("breeding.birthType", "Birth type") },
-    { id: "weight", header: t("breeding.birthWeight", "Birth weight"), cell: l => fmtWeight(l.birthWeightKg), sortValue: l => Number.parseFloat(l.birthWeightKg ?? ""), hideable: true, mobileLabel: t("breeding.birthWeight", "Birth weight") },
-    { id: "value", header: t("breeding.valueUsed", "Value used"), cell: l => fmtMoney(l.valueUsed), sortValue: l => Number.parseFloat(l.valueUsed ?? ""), hideable: true, mobileLabel: t("breeding.valueUsed", "Value used") },
+    { id: "weight", align: "end", header: t("breeding.birthWeight", "Birth weight"), cell: l => fmtWeight(l.birthWeightKg), sortValue: l => Number.parseFloat(l.birthWeightKg ?? ""), hideable: true, mobileLabel: t("breeding.birthWeight", "Birth weight") },
+    { id: "value", align: "end", header: t("breeding.valueUsed", "Value used"), cell: l => fmtMoney(l.valueUsed), sortValue: l => Number.parseFloat(l.valueUsed ?? ""), hideable: true, mobileLabel: t("breeding.valueUsed", "Value used") },
     {
       id: "dam",
       header: t("breeding.dam", "Dam"),
       cell: l => l.damAnimalId ? (
-        <button type="button" onClick={() => setLocation(`/animals/${l.effectiveDamId ?? l.damId}`)} className="font-mono text-xs text-primary hover:underline">
+        <button type="button" onClick={() => setLocation(`/animals/${l.effectiveDamId ?? l.damId}`)} className="text-xs text-primary hover:underline">
           {l.damAnimalId}
         </button>
       ) : "-",
@@ -420,7 +434,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       id: "sire",
       header: t("breeding.sire", "Sire"),
       cell: l => l.sireAnimalId ? (
-        <button type="button" onClick={() => setLocation(`/animals/${l.effectiveSireId ?? l.sireId}`)} className="font-mono text-xs text-primary hover:underline">
+        <button type="button" onClick={() => setLocation(`/animals/${l.effectiveSireId ?? l.sireId}`)} className="text-xs text-primary hover:underline">
           {l.sireAnimalId}
         </button>
       ) : "-",
@@ -454,17 +468,24 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
               <Plus className="h-4 w-4" />
               {t("breeding.recordBirth", "Record birth")}
             </button>
+          ) : activeWorkspaceTab === "pregnancy" && canCreatePregnancy ? (
+            <button type="button" onClick={() => setPregnancyCreateSignal(n => n + 1)} className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90">
+              <Plus className="h-4 w-4" />
+              {t("pregnancy.confirm", "Confirm pregnancy")}
+            </button>
           ) : undefined
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-1">
+      <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto border-b border-border">
         {canViewBreeding && (
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWorkspaceTab === "breeding"}
             onClick={() => setWorkspaceTab("breeding")}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              activeWorkspaceTab === "breeding" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground"
+            className={`h-10 whitespace-nowrap border-b-2 px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring ${
+              activeWorkspaceTab === "breeding" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {t("breeding.title", "Breeding & Lambing")}
@@ -473,9 +494,11 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
         {canViewPregnancy && (
           <button
             type="button"
+            role="tab"
+            aria-selected={activeWorkspaceTab === "pregnancy"}
             onClick={() => setWorkspaceTab("pregnancy")}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              activeWorkspaceTab === "pregnancy" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-surface hover:text-foreground"
+            className={`h-10 whitespace-nowrap border-b-2 px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring ${
+              activeWorkspaceTab === "pregnancy" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             {t("pregnancy.title", "Pregnancy Tracking")}
@@ -484,7 +507,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       </div>
 
       {activeWorkspaceTab === "pregnancy" ? (
-        <PregnancyPanel embedded />
+        <PregnancyPanel embedded createSignal={pregnancyCreateSignal} />
       ) : (
         <>
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -517,9 +540,9 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
               </button>
             )}
             {canPromote && (
-              <button type="button" onClick={() => startPromote(l)} title={t("breeding.promote", "Promote")} className="inline-flex h-8 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-primary hover:bg-surface">
+              <button type="button" onClick={() => startPromote(l)} title={t("breeding.promote", "Add to herd")} className="inline-flex h-8 items-center gap-1 rounded-md border border-border px-2 text-xs font-medium text-primary hover:bg-surface">
                 <Sparkles className="h-3.5 w-3.5" />
-                {t("breeding.promote", "Promote")}
+                {t("breeding.promote", "Add to herd")}
               </button>
             )}
             {canDelete && (
@@ -535,6 +558,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
       <Dialog open={birthOpen} onOpenChange={setBirthOpen}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader><DialogTitle>{t("breeding.recordBirth", "Record birth")}</DialogTitle></DialogHeader>
+          <FormValidation attempt={birthAttempt}>
           <FormSection>
             <FormField label={t("animals.species", "Species")} htmlFor="birth-species" required>
               <Select value={birth.speciesId} onValueChange={v => setBirth(f => ({ ...f, speciesId: v, categoryId: "", groupId: "", lambIdNumber: "" }))}>
@@ -613,6 +637,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
               <Textarea id="birth-notes" name="notes" rows={2} value={birth.notes} onChange={e => setBirth(f => ({ ...f, notes: e.target.value }))} />
             </FormField>
           </FormSection>
+          </FormValidation>
           <FormFooter>
             <button type="button" onClick={() => setBirthOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button type="button" disabled={isMutationWorking(recordBirth)} onClick={() => submitBirth(true)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface disabled:opacity-50">{t("common.saveAddAnother", "Save & add another")}</button>
@@ -696,11 +721,12 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
 
       <Dialog open={promote !== null} onOpenChange={open => !open && setPromote(null)}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader><DialogTitle>{t("breeding.promoteLambToRegistry", "Promote lamb to animal registry")}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("breeding.promoteLambToRegistry", "Add lamb to herd")}</DialogTitle></DialogHeader>
           <div className="mb-2 flex items-start gap-2 rounded-lg border border-border bg-surface p-3 text-sm">
             <Baby className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <span>{t("breeding.promoteConsequence", "This creates a full animal record from the lamb and keeps the birth history linked.")}</span>
           </div>
+          <FormValidation attempt={promoteAttempt}>
           <FormSection>
             <FormField label={t("animals.species", "Species")} htmlFor="promote-species" required>
               <Select value={promoteForm.speciesId} onValueChange={v => setPromoteForm(f => ({ ...f, speciesId: v, categoryId: "", groupId: "", animalIdNumber: "" }))}>
@@ -740,9 +766,10 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
               <Input id="promote-acquisition-date" name="acquisitionDate" type="date" value={promoteForm.acquisitionDate} onChange={e => setPromoteForm(f => ({ ...f, acquisitionDate: e.target.value }))} />
             </FormField>
           </FormSection>
+          </FormValidation>
           <FormFooter>
             <button type="button" onClick={() => setPromote(null)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
-            <button type="button" disabled={promoteLamb.isPending} onClick={submitPromote} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{t("breeding.promote", "Promote")}</button>
+            <button type="button" disabled={promoteLamb.isPending} onClick={submitPromote} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{t("breeding.promote", "Add to herd")}</button>
           </FormFooter>
         </DialogContent>
       </Dialog>

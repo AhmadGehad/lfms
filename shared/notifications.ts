@@ -30,3 +30,38 @@ export function formatAlertType(alertType: string | null | undefined): string {
   if (!alertType) return "Alert";
   return alertType.replace(/_/g, " ");
 }
+
+export type NotificationCategory = "health" | "pregnancy" | "feed" | "growth" | "other";
+
+/** Groups raw alert types (`booster_overdue`, `low_feed_stock`, …) into the farm area they concern. */
+export function notificationCategory(alertType: string | null | undefined): NotificationCategory {
+  const type = (alertType ?? "").toLowerCase();
+  if (/vaccin|booster/.test(type)) return "health";
+  if (/pregnan|birth|lambing/.test(type)) return "pregnancy";
+  if (/feed/.test(type)) return "feed";
+  if (/weight|ready_to_sell|growth/.test(type)) return "growth";
+  return "other";
+}
+
+const CATEGORY_PAGES: Record<NotificationCategory, string | null> = {
+  health: "/vaccinations",
+  pregnancy: "/pregnancy",
+  feed: "/feed",
+  growth: "/animals",
+  other: null,
+};
+
+/**
+ * Where a notification should take the user: the animal itself when the alert
+ * names one, otherwise the page that owns the alert's area. Null = no target.
+ */
+export function notificationLink(n: {
+  alertType?: string | null;
+  relatedEntityType?: string | null;
+  relatedEntityId?: string | number | null;
+}): string | null {
+  const entity = (n.relatedEntityType ?? "").toLowerCase();
+  const id = n.relatedEntityId == null ? "" : String(n.relatedEntityId);
+  if (entity === "animal" && /^\d+$/.test(id)) return `/animals/${id}`;
+  return CATEGORY_PAGES[notificationCategory(n.alertType)];
+}

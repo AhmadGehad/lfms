@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Pencil, Plus } from "lucide-react";
 import { DataTable, type Column } from "./DataTable";
 import { EmptyState } from "./EmptyState";
-import { FormSection, FormField, FormFooter } from "./FormLayout";
+import { FormSection, FormField, FormFooter, FormValidation } from "./FormLayout";
 
 export type FieldType = "text" | "number" | "textarea" | "checkbox" | "select";
 export interface FieldSpec {
@@ -61,6 +61,7 @@ export function EntityTable<T>({
 }: EntityTableProps<T>) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [attempt, setAttempt] = useState(0);
   const [editId, setEditId] = useState<number | null>(null);
   const [editRow, setEditRow] = useState<T | null>(null);
   const [form, setForm] = useState<Record<string, any>>({});
@@ -68,7 +69,7 @@ export function EntityTable<T>({
   const startCreate = () => {
     const blank: Record<string, any> = {};
     for (const f of fields) blank[f.key] = f.type === "checkbox" ? false : "";
-    setForm(blank); setEditId(null); setEditRow(null); setOpen(true);
+    setForm(blank); setEditId(null); setEditRow(null); setAttempt(0); setOpen(true);
   };
   const startEdit = (row: T) => {
     if (toForm) {
@@ -81,11 +82,12 @@ export function EntityTable<T>({
       }
       setForm(f);
     }
-    setEditId((row as any).id); setEditRow(row); setOpen(true);
+    setEditId((row as any).id); setEditRow(row); setAttempt(0); setOpen(true);
   };
   const submit = () => {
     const missing = fields.find(f => f.required && f.type !== "checkbox" && String(form[f.key] ?? "").trim() === "");
     if (missing) {
+      setAttempt(a => a + 1);
       toast.error(t("common.fieldRequired", { field: missing.label, defaultValue: "{{field}} is required" }));
       return;
     }
@@ -126,6 +128,7 @@ export function EntityTable<T>({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{editId != null ? t("common.edit", "Edit") : t("common.add", "Add")} {title}</DialogTitle></DialogHeader>
+          <FormValidation attempt={attempt}>
           <FormSection>
             {fields.filter(f => !(f.createOnly && editId != null)).map(f => (
               <FormField key={f.key} label={f.label} required={f.required} hint={f.help} full={f.type === "textarea"}>
@@ -144,6 +147,7 @@ export function EntityTable<T>({
               </FormField>
             ))}
           </FormSection>
+          </FormValidation>
           <FormFooter>
             <button onClick={() => setOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button onClick={submit} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">{t("common.save", "Save")}</button>

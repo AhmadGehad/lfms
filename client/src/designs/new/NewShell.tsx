@@ -38,6 +38,7 @@ import {
   ShoppingCart,
   Sun,
   Syringe,
+  TrendingUp,
   Trash2,
   Users,
   Wheat,
@@ -90,6 +91,8 @@ function useNavGroups(): NavGroup[] {
           page: "breeding",
         },
         { icon: Syringe, label: t("nav.health", "Health"), path: "/vaccinations", page: "vaccinations" },
+        { icon: TrendingUp, label: t("nav.fattening", "Fattening"), path: "/fattening", page: "fattening" },
+        { icon: MapPinned, label: t("nav.farmMap"), path: "/farm-map", page: "farmMap" },
       ],
     },
     {
@@ -104,13 +107,12 @@ function useNavGroups(): NavGroup[] {
       items: [
         { icon: ShoppingCart, label: t("newNav.sales", "Sales"), path: "/sales", page: "sales" },
         { icon: Activity, label: t("nav.animalPnl", "Animal P&L"), path: "/pnl", page: "pnl" },
+        { icon: FileText, label: t("nav.incomeStatement"), path: "/income-statement", page: "incomeStatement" },
       ],
     },
     {
       label: t("nav.groups.admin", "Admin"),
       items: [
-        { icon: MapPinned, label: t("nav.farmMap"), path: "/farm-map", page: "farmMap" },
-        { icon: FileText, label: t("nav.incomeStatement"), path: "/income-statement", page: "incomeStatement" },
         { icon: BookOpen, label: t("nav.auditLog"), path: "/audit", page: "audit" },
         { icon: Users, label: t("nav.users"), path: "/users", page: "users" },
         { icon: Cog, label: t("nav.configuration"), path: "/config", page: "configuration" },

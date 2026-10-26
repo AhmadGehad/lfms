@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
@@ -15,7 +16,7 @@ import { DataTable, type Column } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
-import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { daysUntil, fmtDate } from "../lib/format";
 
 const dayDiff = (d: unknown) => daysUntil(d);
@@ -49,6 +50,10 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [bulkType, setBulkType] = useState<BulkType>("animals");
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (open) setAttempt(0);
+  }, [open]);
   const blank = {
     animalIds: [] as string[],
     categoryId: "",
@@ -82,8 +87,8 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
   const isPending = toAnimals.isPending || toCategory.isPending || toCategories.isPending;
 
   const submit = () => {
-    if (!form.vaccineId) { toast.error(t("vaccine.vaccineRequired", "Pick a vaccine")); return; }
-    if (!form.vaccinationDate) { toast.error(t("vaccine.dateRequired", "Pick a date")); return; }
+    if (!form.vaccineId) { setAttempt(a => a + 1); toast.error(t("vaccine.vaccineRequired", "Pick a vaccine")); return; }
+    if (!form.vaccinationDate) { setAttempt(a => a + 1); toast.error(t("vaccine.dateRequired", "Pick a date")); return; }
     const shared = {
       vaccineId: Number(form.vaccineId),
       vaccinationDate: form.vaccinationDate,
@@ -114,6 +119,7 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader><DialogTitle>{t("vaccine.bulkApply", "Bulk apply")}</DialogTitle></DialogHeader>
+        <FormValidation attempt={attempt}>
         <FormSection>
           <FormField label={t("vaccine.applyTo", "Apply to")} required full>
             <Select value={bulkType} onValueChange={v => setBulkType(v as BulkType)}>
@@ -192,6 +198,7 @@ function BulkApplyDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
             <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
           </FormField>
         </FormSection>
+        </FormValidation>
         <FormFooter>
           <button onClick={() => onOpenChange(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
           <button disabled={isPending} onClick={submit} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
@@ -222,6 +229,14 @@ export default function NewVaccinations() {
 
   const [open, setOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (open) setAttempt(0);
+  }, [open]);
+  const searchStr = useSearch();
+  useEffect(() => {
+    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setOpen(true);
+  }, [canCreate, searchStr]);
   const blank = {
     animalId: "", vaccineId: "", vaccinationDate: today(), batchNumber: "", veterinarian: "", notes: "",
     notifyBeforeNext: "7", notifyBeforeBooster: "7",
@@ -249,7 +264,7 @@ export default function NewVaccinations() {
   const selectedVaccine = ((vaccines as any[]) ?? []).find(v => String(v.id) === form.vaccineId);
 
   const submit = (again: boolean) => {
-    if (!form.animalId || !form.vaccineId) { toast.error(t("vaccine.pickAnimalVaccine", "Pick an animal and a vaccine")); return; }
+    if (!form.animalId || !form.vaccineId) { setAttempt(a => a + 1); toast.error(t("vaccine.pickAnimalVaccine", "Pick an animal and a vaccine")); return; }
     queuedSubmit(
       add,
       {
@@ -371,6 +386,7 @@ export default function NewVaccinations() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("vaccine.record", "Record vaccination")}</DialogTitle></DialogHeader>
+          <FormValidation attempt={attempt}>
           <FormSection>
             <FormField label={t("animals.animalId", "Animal")} required>
               <Select value={form.animalId} onValueChange={v => setForm(f => ({ ...f, animalId: v }))}>
@@ -409,6 +425,7 @@ export default function NewVaccinations() {
               <Textarea rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </FormField>
           </FormSection>
+          </FormValidation>
           <FormFooter>
             <button onClick={() => setOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button disabled={isMutationWorking(add)} onClick={() => submit(true)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface disabled:opacity-50">{t("common.saveAddAnother", "Save & add another")}</button>

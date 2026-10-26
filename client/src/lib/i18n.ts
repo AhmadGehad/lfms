@@ -296,16 +296,16 @@ const en = {
     sire: "Sire (Father)",
     lambId: "Lamb ID",
     numberOfOffspring: "Number of Offspring",
-    promoteLamb: "Promote Lamb",
+    promoteLamb: "Add Lamb to Herd",
     lambingRecords: "Lambing Records",
     selectDam: "Select dam",
     selectSire: "Select sire",
-    promotionFieldsRequired: "All fields required for promotion",
+    promotionFieldsRequired: "All fields are required to add the lamb to the herd",
     birthMovedToBin: "Birth record moved to Recycle Bin",
     birthRecorded: "Birth recorded successfully",
     sexBirthTypeRequired: "Sex and birth type are required",
     birthRequiredFields: "Species, lamb category, sex, and birth type are required",
-    lambPromotedAs: "Lamb promoted as {{id}}",
+    lambPromotedAs: "Lamb added to herd as {{id}}",
     assignToGroup: "Assign to Group",
     lambCategory: "Lamb Category",
     selectLambCategory: "Select lamb category",
@@ -314,17 +314,17 @@ const en = {
     lambingLog: "Lambing Log",
     moveBirthRecord: "Move birth record",
     noBirthRecords: "No birth records yet. Record the first birth above.",
-    promote: "Promote",
-    promoteLambToRegistry: "Promote Lamb to Animal Registry",
-    promoted: "Promoted",
-    promotedAnimalDeleted: "Promoted animal deleted",
-    promotedAnimalPurged: "Promoted animal purged",
-    viewPromotedAnimal: "View promoted animal profile",
-    promoting: "Promoting…",
-    promoteToRegistry: "Promote to Registry",
+    promote: "Add to herd",
+    promoteLambToRegistry: "Add lamb to herd",
+    promoted: "In herd",
+    promotedAnimalDeleted: "Herd animal deleted",
+    promotedAnimalPurged: "Herd animal purged",
+    viewPromotedAnimal: "View animal profile",
+    promoting: "Adding…",
+    promoteToRegistry: "Add to herd",
     recordNewBirth: "Record New Birth",
     recording: "Recording…",
-    recordsSummary: "{{total}} birth records · {{pending}} pending promotion",
+    recordsSummary: "{{total}} birth records · {{pending}} waiting to join the herd",
     valueUsed: "Value (EGP)",
     lambIdNumber: "Lamb ID Number (Optional)",
     lambIdNumberPlaceholder: "Example: 00123",
@@ -1330,16 +1330,16 @@ const ar = {
     sire: "الأب",
     lambId: "رقم الحمل",
     numberOfOffspring: "عدد المواليد",
-    promoteLamb: "ترقية الحمل",
+    promoteLamb: "إضافة الحمل إلى القطيع",
     lambingRecords: "سجلات الولادة",
     selectDam: "اختر الأم",
     selectSire: "اختر الأب",
-    promotionFieldsRequired: "جميع الحقول مطلوبة للترقية",
+    promotionFieldsRequired: "جميع الحقول مطلوبة لإضافة الحمل إلى القطيع",
     birthMovedToBin: "تم نقل سجل الولادة إلى سلة المحذوفات",
     birthRecorded: "تم تسجيل الولادة بنجاح",
     birthRequiredFields: "النوع وفئة الحمل والجنس ونوع الولادة حقول مطلوبة",
     sexBirthTypeRequired: "الجنس ونوع الولادة مطلوبان",
-    lambPromotedAs: "تمت ترقية الحمل كـ {{id}}",
+    lambPromotedAs: "تمت إضافة الحمل إلى القطيع برقم {{id}}",
     assignToGroup: "تعيين لمجموعة",
     lambCategory: "فئة الحمل",
     selectLambCategory: "اختر فئة الحمل",
@@ -1348,17 +1348,17 @@ const ar = {
     lambingLog: "سجل الولادات",
     moveBirthRecord: "نقل سجل الولادة",
     noBirthRecords: "لا توجد سجلات ولادة بعد. سجّل أول ولادة أعلاه.",
-    promote: "ترقية",
-    promoteLambToRegistry: "ترقية الحمل إلى سجل الحيوانات",
-    promoted: "تمت الترقية",
-    promotedAnimalDeleted: "تم حذف الحيوان المُرقّى",
-    promotedAnimalPurged: "تم حذف الحيوان المُرقّى نهائيًا",
-    viewPromotedAnimal: "عرض ملف الحيوان المُرقّى",
-    promoting: "جارٍ الترقية…",
-    promoteToRegistry: "ترقية إلى السجل",
+    promote: "إضافة إلى القطيع",
+    promoteLambToRegistry: "إضافة الحمل إلى القطيع",
+    promoted: "في القطيع",
+    promotedAnimalDeleted: "تم حذف حيوان القطيع",
+    promotedAnimalPurged: "تم حذف حيوان القطيع نهائيًا",
+    viewPromotedAnimal: "عرض ملف الحيوان",
+    promoting: "جارٍ الإضافة…",
+    promoteToRegistry: "إضافة إلى القطيع",
     recordNewBirth: "تسجيل ولادة جديدة",
     recording: "جارٍ التسجيل…",
-    recordsSummary: "{{total}} سجل ولادة · {{pending}} بانتظار الترقية",
+    recordsSummary: "{{total}} سجل ولادة · {{pending}} بانتظار الإضافة للقطيع",
     valueUsed: "القيمة (جنيه)",
     lambIdNumber: "رقم معرّف الحمل (اختياري)",
     lambIdNumberPlaceholder: "مثال: 00123",
@@ -2113,8 +2113,8 @@ const __newEn = {
     "lamb": "Lamb",
     "none": "No births recorded yet",
     "promoteConsequence": "This creates a full animal record from the lamb and closes the lamb entry. The lamb gets a permanent animal ID.",
-    "promoteTitle": "Promote lamb to animal",
-    "promotedBadge": "Promoted",
+    "promoteTitle": "Add lamb to herd",
+    "promotedBadge": "In herd",
     "weight": "Weight"
   },
   "common": {
@@ -2394,8 +2394,8 @@ const __newAr = {
     "lamb": "مولود",
     "none": "لا توجد ولادات مسجلة بعد",
     "promoteConsequence": "ينشئ هذا سجل حيوان كامل من المولود ويغلق سجل المولود. يحصل المولود على رقم تعريف دائم.",
-    "promoteTitle": "ترقية المولود إلى حيوان",
-    "promotedBadge": "تمت الترقية",
+    "promoteTitle": "إضافة المولود إلى القطيع",
+    "promotedBadge": "في القطيع",
     "weight": "الوزن"
   },
   "common": {
@@ -2647,6 +2647,7 @@ const __gapEn = {
   "common": {
     "saved": "Saved",
     "fieldRequired": "{{field}} is required",
+    "requiredShort": "Required",
     "noneYet": "Nothing here yet"
   },
   "dashboard": {
@@ -2729,6 +2730,7 @@ const __gapAr = {
   },
   "common": {
     "fieldRequired": "{{field}} مطلوب",
+    "requiredShort": "مطلوب",
     "done": "تم",
     "finish": "إنهاء",
     "moveDown": "نقل لأسفل",
@@ -2749,8 +2751,8 @@ const __gapAr = {
   "dashboard": {
     "actionWidgets": "عناصر الإجراءات",
     "customize": "تخصيص",
-    "lambsToPromote": "مواليد للترقية",
-    "noLambsToPromote": "لا توجد مواليد بانتظار الترقية",
+    "lambsToPromote": "مواليد بانتظار الإضافة للقطيع",
+    "noLambsToPromote": "لا توجد مواليد بانتظار الإضافة للقطيع",
     "noRecentWork": "لا توجد تغييرات حديثة",
     "noneReady": "لا توجد حيوانات قريبة من الهدف",
     "readyToSell": "جاهز للبيع",
@@ -2909,10 +2911,147 @@ const __gapAr = {
     "needReorder_other": "{{count}} صنف يحتاج إعادة طلب"
   }
 };
+// Plain-language UX pass: notification areas, audit sentences, P&L explanations.
+const __uxEn = {
+  "common": { "system": "System", "moreActions": "More actions", "more": "More" },
+  "sales": { "buyers": "Buyers" },
+  "fattening": { "inFattening": "{{count}} animals in fattening" },
+  "notifications": {
+    "category": { "health": "Health", "pregnancy": "Pregnancy", "feed": "Feed", "growth": "Growth" }
+  },
+  "audit": {
+    "sentence": "{{entity}} {{ref}} {{action}}",
+    "revertedBadge": "Reverted",
+    "actionVerb": { "create": "added", "update": "updated", "delete": "deleted", "revert": "reverted", "restore": "restored" },
+    "entityName": {
+      "animal": "Animal", "vaccinationrecord": "Vaccination", "expense": "Expense", "rationplan": "Ration plan",
+      "weightlog": "Weight", "group": "Group", "feeditemprice": "Feed price", "feeditem": "Feed item",
+      "status": "Status", "species": "Species", "setting": "Setting", "sale": "Sale", "feedstock": "Feed stock",
+      "expensecategory": "Expense category", "expensesubcategory": "Expense sub-category", "category": "Category",
+      "birthtype": "Birth type", "vaccine": "Vaccine", "pregnancyrecord": "Pregnancy", "owner": "Owner",
+      "lambinglog": "Birth record", "bulk": "Bulk change", "user": "User", "backup": "Backup",
+      "rolepermissions": "Role permissions", "farm": "Farm", "company": "Company"
+    },
+    "fieldName": {
+      "statusId": "Status", "groupId": "Group", "categoryId": "Category", "speciesId": "Species", "ownerId": "Owner",
+      "currentWeight": "Current weight", "purchaseCost": "Purchase cost", "salePrice": "Sale price", "amountPaid": "Amount paid",
+      "buyerName": "Buyer", "notes": "Notes", "amount": "Amount", "name": "Name", "sex": "Sex", "birthDate": "Birth date",
+      "acquisitionDate": "Acquisition date", "isActive": "Active"
+    }
+  }
+};
+
+const __uxAr = {
+  "common": { "system": "النظام", "moreActions": "إجراءات أخرى", "more": "المزيد" },
+  "sales": { "buyers": "المشترون" },
+  "fattening": { "inFattening": "{{count}} حيوان في التسمين" },
+  "notifications": {
+    "category": { "health": "الصحة", "pregnancy": "الحمل", "feed": "الأعلاف", "growth": "النمو" }
+  },
+  "audit": {
+    "sentence": "{{action}} {{entity}} {{ref}}",
+    "revertedBadge": "تم التراجع",
+    "actionVerb": { "create": "تمت إضافة", "update": "تم تحديث", "delete": "تم حذف", "revert": "تم التراجع عن", "restore": "تمت استعادة" },
+    "entityName": {
+      "animal": "الحيوان", "vaccinationrecord": "التحصين", "expense": "المصروف", "rationplan": "خطة العليقة",
+      "weightlog": "الوزن", "group": "المجموعة", "feeditemprice": "سعر العلف", "feeditem": "صنف العلف",
+      "status": "الحالة", "species": "النوع", "setting": "الإعداد", "sale": "البيع", "feedstock": "مخزون العلف",
+      "expensecategory": "فئة المصروف", "expensesubcategory": "الفئة الفرعية للمصروف", "category": "الفئة",
+      "birthtype": "نوع الولادة", "vaccine": "اللقاح", "pregnancyrecord": "الحمل", "owner": "المالك",
+      "lambinglog": "سجل الولادة", "bulk": "تعديل جماعي", "user": "المستخدم", "backup": "النسخة الاحتياطية",
+      "rolepermissions": "صلاحيات الدور", "farm": "المزرعة", "company": "الشركة"
+    },
+    "fieldName": {
+      "statusId": "الحالة", "groupId": "المجموعة", "categoryId": "الفئة", "speciesId": "النوع", "ownerId": "المالك",
+      "currentWeight": "الوزن الحالي", "purchaseCost": "تكلفة الشراء", "salePrice": "سعر البيع", "amountPaid": "المبلغ المدفوع",
+      "buyerName": "المشتري", "notes": "ملاحظات", "amount": "المبلغ", "name": "الاسم", "sex": "الجنس", "birthDate": "تاريخ الميلاد",
+      "acquisitionDate": "تاريخ الاقتناء", "isActive": "نشط"
+    }
+  }
+};
+
 __deepFill(en, __newEn);
 __deepFill(ar, __newAr);
 __deepFill(en, __gapEn);
 __deepFill(ar, __gapAr);
+const __infoEn = {
+  "common": {
+    "whatDoesThisMean": "What does this mean?"
+  },
+  "pnl": {
+    "totalInvestedHerd": "Total invested in current herd",
+    "allTime": "All time",
+    "info": {
+      "realisedRevenue": "Total sale price of every animal you have sold, all time.",
+      "netRevenue": "Sales money still in hand after using some of it to buy new animals. Realised revenue minus purchases paid from sales.",
+      "realisedNet": "Profit on sold animals only, all time: sale price minus everything spent on those animals (purchase, feed and expenses).",
+      "runningCostMonth": "What the animals you have now cost per month in feed and expenses, averaged over each animal's time on the farm. Purchase price is not included.",
+      "feedCostMonth": "The feed part of the running cost per month.",
+      "capitalOnHoof": "What you paid for the animals you still have.",
+      "totalInvested": "Everything put into the animals you have now: purchase price plus feed plus expenses.",
+      "currentAccountValue": "Net revenue plus capital on hoof, minus the feed and expenses already spent on the current herd.",
+      "animalOperatingCost": "All feed and expenses for every animal, current and sold, all time. Purchase price is not included."
+    }
+  },
+  "incomeStatement": {
+    "info": {
+      "revenue": "Sales made in the selected dates. The small line shows how much of it has been paid.",
+      "costs": "Feed purchases + animal purchases + other expenses in the selected dates.",
+      "grossProfit": "Revenue minus total costs for the selected dates. This is profit for the period, not per animal (see Animal P&L for that).",
+      "margin": "Gross profit as a percentage of revenue.",
+      "runningCost": "Farm-wide and per-animal costs in the selected dates, divided by the number of months."
+    }
+  },
+  "dashboard": {
+    "last12Months": "Last 12 months",
+    "info": {
+      "revenue": "Sales in the last 12 months.",
+      "expenses": "Feed purchases and other expenses in the last 12 months. Animal purchase prices are not included.",
+      "pnl": "Revenue minus expenses for the last 12 months. It shows how the farm did over the period. Profit on each sold animal is on the Animal P&L page."
+    }
+  }
+};
+const __infoAr = {
+  "common": {
+    "whatDoesThisMean": "ماذا يعني هذا؟"
+  },
+  "pnl": {
+    "totalInvestedHerd": "إجمالي المستثمر في القطيع الحالي",
+    "allTime": "منذ البداية",
+    "info": {
+      "realisedRevenue": "إجمالي سعر بيع كل الحيوانات التي بعتها منذ البداية.",
+      "netRevenue": "أموال المبيعات المتبقية بعد استخدام جزء منها في شراء حيوانات جديدة. الإيرادات المحققة ناقص المشتريات المدفوعة من المبيعات.",
+      "realisedNet": "الربح من الحيوانات المباعة فقط منذ البداية: سعر البيع ناقص كل ما صُرف عليها (الشراء والعلف والمصروفات).",
+      "runningCostMonth": "تكلفة الحيوانات الموجودة حاليًا شهريًا من العلف والمصروفات، محسوبة كمتوسط على مدة بقاء كل حيوان في المزرعة. لا يشمل سعر الشراء.",
+      "feedCostMonth": "جزء العلف من تكلفة التشغيل الشهرية.",
+      "capitalOnHoof": "ما دفعته لشراء الحيوانات الموجودة حاليًا.",
+      "totalInvested": "كل ما صُرف على الحيوانات الموجودة حاليًا: سعر الشراء + العلف + المصروفات.",
+      "currentAccountValue": "صافي الإيراد + رأس المال في القطيع، ناقص العلف والمصروفات المصروفة على القطيع الحالي.",
+      "animalOperatingCost": "كل العلف والمصروفات لكل الحيوانات، الحالية والمباعة، منذ البداية. لا يشمل سعر الشراء."
+    }
+  },
+  "incomeStatement": {
+    "info": {
+      "revenue": "المبيعات خلال التواريخ المحددة. السطر الصغير يوضح المبلغ المدفوع منها.",
+      "costs": "مشتريات العلف + شراء الحيوانات + المصروفات الأخرى خلال التواريخ المحددة.",
+      "grossProfit": "الإيراد ناقص إجمالي التكاليف للتواريخ المحددة. هذا ربح الفترة وليس ربح كل حيوان (راجع صفحة ربحية الحيوان لذلك).",
+      "margin": "إجمالي الربح كنسبة مئوية من الإيراد.",
+      "runningCost": "تكاليف المزرعة العامة وتكاليف الحيوانات خلال التواريخ المحددة مقسومة على عدد الأشهر."
+    }
+  },
+  "dashboard": {
+    "last12Months": "آخر 12 شهرًا",
+    "info": {
+      "revenue": "المبيعات في آخر 12 شهرًا.",
+      "expenses": "مشتريات العلف والمصروفات الأخرى في آخر 12 شهرًا. لا يشمل سعر شراء الحيوانات.",
+      "pnl": "الإيراد ناقص المصروفات لآخر 12 شهرًا. يوضح أداء المزرعة خلال الفترة. ربح كل حيوان مباع موجود في صفحة ربحية الحيوان."
+    }
+  }
+};
+__deepFill(en, __uxEn);
+__deepFill(en, __infoEn);
+__deepFill(ar, __infoAr);
+__deepFill(ar, __uxAr);
 
 i18n
   .use(LanguageDetector)

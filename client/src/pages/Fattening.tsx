@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/designs/new/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -21,6 +21,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { trpc } from "@/lib/trpc";
 import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { Scale, Plus, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { PageHeader } from "@/designs/new/components/PageHeader";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -226,19 +227,13 @@ export default function Fattening() {
   });
 
   return (
-    <div className="p-3 md:p-6 space-y-4 md:space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <Scale className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            {t("fattening.title")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {fatteningAnimals.length} animals in fattening
-          </p>
-        </div>
-        {canCreate && <RecordWeightDialog animals={fatteningAnimals} onSuccess={() => {}} />}
-      </div>
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <PageHeader
+        title={t("fattening.title")}
+        subtitle={t("fattening.inFattening", { count: fatteningAnimals.length, defaultValue: "{{count}} animals in fattening" })}
+        crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("fattening.title") }]}
+        actions={canCreate ? <RecordWeightDialog animals={fatteningAnimals} onSuccess={() => {}} /> : undefined}
+      />
 
       <Card>
         <CardHeader><CardTitle className="text-base">{t("fattening.fatteningAnimals")}</CardTitle></CardHeader>
@@ -296,7 +291,7 @@ export default function Fattening() {
                     return (
                       <TableRow key={a.animal.id}>
                         <TableCell
-                          className="font-mono font-semibold text-primary cursor-pointer hover:underline"
+                          className="font-semibold text-primary cursor-pointer hover:underline"
                           onClick={() => setLocation(`/animals/${a.animal.id}`)}
                         >
                           {a.animal.animalId}
@@ -318,7 +313,7 @@ export default function Fattening() {
                           ) : "—"}
                         </TableCell>
                         <TableCell>
-                          <Badge className="border-transparent bg-warning-soft text-warning-soft-foreground text-xs">{a.statusName}</Badge>
+                          <StatusBadge tone="warning">{a.statusName}</StatusBadge>
                         </TableCell>
                         <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1">

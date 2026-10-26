@@ -43,6 +43,10 @@ interface DataTableProps<T> {
   loading?: boolean;
   onRowClick?: (row: T) => void;
   rowActions?: (row: T) => ReactNode;
+  /** Mobile cards: replaces `rowActions` (e.g. a single ⋯ menu). */
+  mobileRowActions?: (row: T) => ReactNode;
+  /** Mobile cards: only these column ids appear under the title. */
+  mobileColumns?: string[];
   selection?: { selectedKeys: Set<string | number>; onChange: (keys: Set<string | number>) => void };
   bulkBar?: (selected: T[]) => ReactNode;
   empty?: ReactNode;
@@ -90,6 +94,8 @@ export function DataTable<T>({
   loading,
   onRowClick,
   rowActions,
+  mobileRowActions,
+  mobileColumns,
   selection,
   bulkBar,
   empty,
@@ -249,6 +255,8 @@ export function DataTable<T>({
         <div className="flex flex-col gap-2">
           {pageRows.map(row => {
             const primary = visibleColumns.find(c => c.primary);
+            const cardActions = mobileRowActions ?? rowActions;
+            const cardColumns = visibleColumns.filter(c => !c.primary && (!mobileColumns || mobileColumns.includes(c.id)));
             return (
               <div
                 key={rowKey(row)}
@@ -267,17 +275,17 @@ export function DataTable<T>({
                     )}
                     {primary && <span className="font-semibold text-foreground">{primary.cell(row)}</span>}
                   </div>
-                    {rowActions && (
+                    {cardActions && (
                       <span
                         className="flex items-center gap-1 [&_button]:min-h-11 [&_button]:min-w-11 sm:[&_button]:min-h-8 sm:[&_button]:min-w-8"
                         onClick={e => e.stopPropagation()}
                       >
-                        {rowActions(row)}
+                        {cardActions(row)}
                       </span>
                     )}
                 </div>
-                <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5">
-                  {visibleColumns.filter(c => !c.primary).map(c => (
+                <dl className={cn("mt-2 grid gap-x-3 gap-y-1.5", mobileColumns && mobileColumns.length >= 3 ? "grid-cols-3" : "grid-cols-2")}>
+                  {cardColumns.map(c => (
                     <div key={c.id} className="min-w-0">
                       <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{c.mobileLabel ?? (typeof c.header === "string" ? c.header : "")}</dt>
                       <dd className="truncate text-sm text-foreground">{c.cell(row)}</dd>
@@ -332,7 +340,7 @@ export function DataTable<T>({
                     </td>
                   )}
                   {visibleColumns.map(c => (
-                    <td key={c.id} className={cn("text-foreground", cellPad, c.align === "end" && "text-end", c.align === "center" && "text-center", c.className)}>
+                    <td key={c.id} className={cn("text-foreground", cellPad, c.align === "end" && "text-end tabular-nums", c.align === "center" && "text-center", c.className)}>
                       {c.cell(row)}
                     </td>
                   ))}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { DataTable, type Column } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
-import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { fmtDate } from "../lib/format";
 
 type PregnancyStatusFilter = "all" | "active" | "delivered" | "aborted" | "lost";
@@ -52,7 +52,8 @@ function animalValue(row: any) {
   return animal.id == null ? "" : String(animal.id);
 }
 
-export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
+/** `createSignal`: when embedded, the host page header owns the create button and bumps this to open the form. */
+export function PregnancyPanel({ embedded = false, createSignal = 0 }: { embedded?: boolean; createSignal?: number }) {
   const { t } = useTranslation();
   const { ownerParam } = useOwnerFilter();
   const perms = usePermissions();
@@ -90,6 +91,10 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
   };
 
   const [open, setOpen] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (open) setAttempt(0);
+  }, [open]);
   const [form, setForm] = useState(blank);
   const [editRow, setEditRow] = useState<any | null>(null);
   const [editForm, setEditForm] = useState(blankEdit);
@@ -136,6 +141,10 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
     setForm({ ...blank });
     setOpen(true);
   };
+  useEffect(() => {
+    if (createSignal > 0 && canCreate) startCreate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createSignal]);
 
   const startEdit = (row: any) => {
     const record = row.record ?? row;
@@ -153,6 +162,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
 
   const submit = () => {
     if (!form.animalId || !form.confirmationDate) {
+      setAttempt(a => a + 1);
       toast.error(t("pregnancy.pickAnimal", "Pick the dam and confirmation date"));
       return;
     }
@@ -202,7 +212,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
       header: t("pregnancy.animal", "Animal"),
       cell: p => (
         <span>
-          <span className="block font-mono font-semibold text-primary">{p.animalCode}</span>
+          <span className="block font-semibold text-primary">{p.animalCode}</span>
           {p.ownerName ? <span className="block text-xs text-muted-foreground">{p.ownerName}</span> : null}
         </span>
       ),
@@ -270,8 +280,6 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
         />
       )}
 
-      {embedded && createButton && <div className="mb-4 flex justify-end">{createButton}</div>}
-
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
         {summaryCards.map(card => (
           <div key={card.label} className="rounded-lg border border-border bg-card px-4 py-3">
@@ -324,6 +332,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("pregnancy.confirm", "Confirm pregnancy")}</DialogTitle></DialogHeader>
+          <FormValidation attempt={attempt}>
           <FormSection>
             <FormField label={t("pregnancy.animal", "Dam")} htmlFor="pregnancy-animal" required>
               <Select value={form.animalId} onValueChange={v => setForm(f => ({ ...f, animalId: v }))}>
@@ -356,6 +365,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
               <Textarea id="pregnancy-notes" name="notes" rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </FormField>
           </FormSection>
+          </FormValidation>
           <FormFooter>
             <button type="button" onClick={() => setOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button type="button" disabled={create.isPending} onClick={submit} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">{t("common.save", "Save")}</button>

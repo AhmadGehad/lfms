@@ -7,7 +7,8 @@ import { CompanyBrandingSettings } from "@/components/CompanyBrandingSettings";
 import { NotificationPreferencesSettings } from "@/components/NotificationPreferencesSettings";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageTabsList, PageTabsTrigger } from "../components/PageTabs";
 import { Cog, Trash2 } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { EntityTable, type FieldSpec } from "../components/EntityTable";
@@ -109,11 +110,11 @@ export default function NewConfiguration() {
             </SelectContent>
           </Select>
         </div>
-        <TabsList className="hidden flex-wrap sm:flex">
+        <PageTabsList className="hidden sm:flex">
           {configTabs.map(tab => (
-            <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
+            <PageTabsTrigger key={tab.value} value={tab.value}>{tab.label}</PageTabsTrigger>
           ))}
-        </TabsList>
+        </PageTabsList>
 
         <TabsContent value="species" className="mt-4">
           <EntityTable

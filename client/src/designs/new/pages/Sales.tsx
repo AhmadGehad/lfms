@@ -67,7 +67,10 @@ export default function NewSales() {
   });
   const { data: animals } = trpc.animals.list.useQuery({ isActive: true, ownerId: ownerParam }, { enabled: canCreate });
   useEffect(() => {
-    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setSalePickerOpen(true);
+    const params = new URLSearchParams(searchStr);
+    if (params.get("new") === "1" && canCreate) setSalePickerOpen(true);
+    const buyer = params.get("buyer");
+    if (buyer) setFilterBuyer(buyer);
   }, [canCreate, searchStr]);
 
   const invalidate = () => {

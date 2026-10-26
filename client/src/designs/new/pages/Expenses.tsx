@@ -17,7 +17,7 @@ import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
-import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { ExpenseFormFields, blankExpenseForm, expenseFormToPayload, validateExpenseForm, type ExpenseForm } from "../components/ExpenseFormFields";
 import { fmtDate } from "../lib/format";
 
@@ -63,6 +63,9 @@ export default function NewExpenses() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ExpenseForm>(blankForm());
   const [editRow, setEditRow] = useState<any | null>(null);
+  useEffect(() => {
+    if (editRow) setEditAttempt(0);
+  }, [editRow]);
   const [editForm, setEditForm] = useState<ExpenseForm>(blankForm());
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
   const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
@@ -77,7 +80,9 @@ export default function NewExpenses() {
     utils.animals.getAllPnL.invalidate();
   };
 
-  const reset = () => setForm(blankForm());
+  const [attempt, setAttempt] = useState(0);
+  const [editAttempt, setEditAttempt] = useState(0);
+  const reset = () => { setForm(blankForm()); setAttempt(0); };
   const create = trpc.expenses.create.useMutation({
     onSuccess: (data: any) => {
       invalidate();
@@ -99,7 +104,7 @@ export default function NewExpenses() {
 
   const submit = (addAnother: boolean) => {
     const err = validateExpenseForm(form, t);
-    if (err) { toast.error(err); return; }
+    if (err) { setAttempt(a => a + 1); toast.error(err); return; }
     create.mutate({ ...toPayload(form), idempotencyKey: createIdempotencyKey } as any, { onSuccess: () => (addAnother ? reset() : setOpen(false)) });
   };
 
@@ -121,7 +126,7 @@ export default function NewExpenses() {
   const submitEdit = () => {
     if (!editRow) return;
     const err = validateExpenseForm(editForm, t, "edit");
-    if (err) { toast.error(err); return; }
+    if (err) { setEditAttempt(a => a + 1); toast.error(err); return; }
     update.mutate({ id: editRow.expense.id, expectedVersion: editRow.expense.version, ...toPayload(editForm, "edit") } as any);
   };
 
@@ -248,7 +253,9 @@ export default function NewExpenses() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("expenses.add", "Add expense")}</DialogTitle></DialogHeader>
-          <ExpenseFormFields form={form} setForm={setForm} />
+          <FormValidation attempt={attempt}>
+            <ExpenseFormFields form={form} setForm={setForm} />
+          </FormValidation>
           <FormFooter>
             <button onClick={() => setOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button disabled={create.isPending} onClick={() => submit(true)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface disabled:opacity-50">{t("common.saveAddAnother", "Save & add another")}</button>
@@ -261,7 +268,9 @@ export default function NewExpenses() {
       <Dialog open={editRow !== null} onOpenChange={o => !o && setEditRow(null)}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("expenses.editExpense", "Edit expense")}</DialogTitle></DialogHeader>
-          <ExpenseFormFields form={editForm} setForm={setEditForm} mode="edit" />
+          <FormValidation attempt={editAttempt}>
+            <ExpenseFormFields form={editForm} setForm={setEditForm} mode="edit" />
+          </FormValidation>
           <FormFooter>
             <button onClick={() => setEditRow(null)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button disabled={update.isPending} onClick={submitEdit} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">

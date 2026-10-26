@@ -10,7 +10,8 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { trpc } from "@/lib/trpc";
 import type { PermissionPage } from "@shared/permissions";
-import { DollarSign, Plus, Scale, ShoppingCart, Leaf } from "lucide-react";
+import { useLocation } from "wouter";
+import { Baby, DollarSign, Plus, Scale, ShoppingCart, Leaf, Syringe, Wheat } from "lucide-react";
 import { AnimalCreateDialog, BulkRecordSaleDialog, QuickExpenseDialog, WeighInSessionDialog } from "./AnimalWorkflows";
 
 interface QuickAction {
@@ -35,6 +36,7 @@ export function QuickAdd({ className = "" }: { className?: string }) {
   const [saleOpen, setSaleOpen] = useState(false);
   const [expenseOpen, setExpenseOpen] = useState(false);
   const [animalOpen, setAnimalOpen] = useState(false);
+  const [, setLocation] = useLocation();
   const needsAnimals = perms.can("fattening", "create") || perms.can("sales", "create");
   const { data: animals } = trpc.animals.list.useQuery(
     { isActive: true, ownerId: ownerParam },
@@ -47,6 +49,10 @@ export function QuickAdd({ className = "" }: { className?: string }) {
     { id: "expense", label: t("expenses.add", "Add expense"), icon: DollarSign, page: "expenses", onSelect: () => setExpenseOpen(true) },
     { id: "sale", label: t("sales.record", "Record sale"), icon: ShoppingCart, page: "sales", onSelect: () => setSaleOpen(true), disabled: activeAnimals.length === 0 },
     { id: "animal", label: t("animals.addAnimal", "Add animal"), icon: Leaf, page: "animals", onSelect: () => setAnimalOpen(true) },
+    // These forms live on their pages; ?new=1 opens them on arrival.
+    { id: "vaccination", label: t("vaccine.record", "Record vaccination"), icon: Syringe, page: "vaccinations", onSelect: () => setLocation("/vaccinations?new=1") },
+    { id: "birth", label: t("breeding.recordBirth", "Record birth"), icon: Baby, page: "breeding", onSelect: () => setLocation("/breeding?new=1") },
+    { id: "stock", label: t("feed.addStock", "Add feed stock"), icon: Wheat, page: "feed", onSelect: () => setLocation("/feed?new=1") },
   ] as QuickAction[]).filter(a => perms.can(a.page, "create"));
 
   if (actions.length === 0) return null;

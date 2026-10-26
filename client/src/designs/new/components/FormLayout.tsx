@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const FIELD_CONTROL_NAMES = new Set(["input", "select", "textarea", "Input", "SelectTrigger", "Switch", "Textarea"]);
@@ -49,6 +50,40 @@ function attachFieldA11y(
   });
 }
 
+/** Value of the first control in a field (Select root or input), if any. */
+function findControlValue(node: React.ReactNode): { found: boolean; value?: unknown } {
+  let result: { found: boolean; value?: unknown } = { found: false };
+  React.Children.forEach(node, child => {
+    if (result.found || !React.isValidElement(child)) return;
+    const props = child.props as Record<string, unknown>;
+    if ("value" in props) { result = { found: true, value: props.value }; return; }
+    if (props.children) result = findControlValue(props.children as React.ReactNode);
+  });
+  return result;
+}
+
+const isEmptyValue = (v: unknown) => v == null || (typeof v === "string" && v.trim() === "") || (Array.isArray(v) && v.length === 0);
+
+/** Number of failed submit attempts; 0 hides inline "Required" messages. */
+const FormValidationContext = React.createContext(0);
+
+/**
+ * Wrap a form's fields and bump `attempt` when a submit fails validation:
+ * every required FormField whose control is still empty then shows an inline
+ * "Required" message and red border, and focus moves to the first one.
+ */
+export function FormValidation({ attempt, className = "contents", children }: { attempt: number; className?: string; children: React.ReactNode }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (attempt > 0) ref.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [attempt]);
+  return (
+    <FormValidationContext.Provider value={attempt}>
+      <div ref={ref} className={className}>{children}</div>
+    </FormValidationContext.Provider>
+  );
+}
+
 /**
  * Sectioned form scaffolding (F-FORM1/2): replaces cramped 2-column modals with
  * titled sections, a 2-col responsive grid, inline help, and a sticky footer for
@@ -95,6 +130,12 @@ export function FormField({
   full?: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
+  const attempt = React.useContext(FormValidationContext);
+  if (!error && attempt > 0 && required) {
+    const control = findControlValue(children);
+    if (control.found && isEmptyValue(control.value)) error = t("common.requiredShort", "Required");
+  }
   const generatedId = React.useId();
   const controlId = htmlFor ?? `field-${generatedId}`;
   const labelId = `${controlId}-label`;
