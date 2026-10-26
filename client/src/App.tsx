@@ -6,8 +6,6 @@ import { DashboardLayoutSkeleton } from "./components/DashboardLayoutSkeleton";
 import { AuthPageSkeleton } from "./components/PageSkeleton";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { OwnerFilterProvider } from "./contexts/OwnerFilterContext";
-import { DesignVersionProvider } from "./contexts/DesignVersionContext";
-import { DesignRouter } from "./designs/DesignRouter";
 import AcceptInvitation from "./pages/AcceptInvitation";
 import CompanySuspended from "./pages/CompanySuspended";
 import WorkspaceNotFound from "./pages/WorkspaceNotFound";
@@ -21,6 +19,7 @@ import { OfflineIdentityTracker } from "./lib/offline/OfflineIdentityTracker";
 import { lazy, Suspense } from "react";
 
 const Landing = lazy(() => import("./pages/Landing"));
+const NewDesign = lazy(() => import("./designs/new/NewDesign"));
 const DemoApp = lazy(() => import("./demo/DemoApp"));
 
 function TenantSurface() {
@@ -78,7 +77,9 @@ function TenantSurface() {
     return (
       <>
         <OfflineIdentityTracker />
-        <DesignRouter />
+        <Suspense fallback={<DashboardLayoutSkeleton />}>
+          <NewDesign />
+        </Suspense>
       </>
     );
   };
@@ -98,14 +99,12 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
-        <DesignVersionProvider>
-          <OwnerFilterProvider>
+        <OwnerFilterProvider>
             <TooltipProvider>
               <Toaster richColors position="top-right" />
               <TenantSurface />
             </TooltipProvider>
-          </OwnerFilterProvider>
-        </DesignVersionProvider>
+        </OwnerFilterProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

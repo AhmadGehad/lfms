@@ -9,7 +9,6 @@ export type PublicRuntimeConfig = {
   analyticsEndpoint?: string;
   analyticsWebsiteId?: string;
   appTitle?: string;
-  defaultDesign: "old" | "new";
   frontendForgeApiUrl?: string;
   supportEmail?: string;
 };
@@ -44,8 +43,6 @@ export function buildPublicRuntimeConfig(
   environment: Record<string, unknown>
 ): PublicRuntimeConfig {
   const isProduction = environment.NODE_ENV === "production";
-  const defaultDesign =
-    environment.VITE_DEFAULT_DESIGN === "new" ? "new" : "old";
   const supportEmail = trimmed(environment.VITE_SUPPORT_EMAIL, 254);
 
   return {
@@ -55,7 +52,6 @@ export function buildPublicRuntimeConfig(
     ),
     analyticsWebsiteId: trimmed(environment.VITE_ANALYTICS_WEBSITE_ID, 200),
     appTitle: trimmed(environment.VITE_APP_TITLE, 100),
-    defaultDesign,
     frontendForgeApiUrl: webUrl(
       environment.VITE_FRONTEND_FORGE_API_URL,
       isProduction

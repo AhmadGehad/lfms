@@ -229,6 +229,6 @@ figures match the sum of Owner A's four P&L rows.
 | Exports | `server/routers/export.ts`, `client/src/lib/pdfReports.ts` | Owner‑scoped report workbook + owner‑labelled PDF |
 | Routers | `server/routers/{dashboard,animals,vaccination,breeding,export}.ts` | Accept `ownerId` |
 | Global filter | `client/src/contexts/OwnerFilterContext.tsx` | Persisted owner selection |
-| Control | `client/src/components/OwnerFilterSelect.tsx` + `DashboardLayout.tsx` | Owner selector on every page |
+| Control | `client/src/components/OwnerFilterSelect.tsx` + `designs/new/NewShell.tsx` | Owner selector on every page |
 | Pages | Dashboard, Animals, PnL, IncomeStatement, Expenses, Sales, Fattening, Breeding, AnimalVaccinations | Read global owner; redundant local owner dropdowns removed |
 | Tests | `server/ownerExpenseAllocation.test.ts` | Unit tests for the allocation math |

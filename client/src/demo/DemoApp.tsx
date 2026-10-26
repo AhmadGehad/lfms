@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { DesignVersionProvider } from "@/contexts/DesignVersionContext";
 import NewDesign from "@/designs/new/NewDesign";
 import { demoLink } from "./mockLink";
 import { DEMO_STYLES, DemoBar, GuideTour, HelpMarks } from "./DemoGuide";
@@ -74,14 +73,12 @@ export default function DemoApp() {
   return (
     <trpc.Provider client={demoTrpcClient} queryClient={demoQueryClient}>
       <QueryClientProvider client={demoQueryClient}>
-        <DesignVersionProvider>
-          <Router base="/demo">
+        <Router base="/demo">
             <div data-demo>
               <style>{DEMO_STYLES}</style>
               <Walkthrough />
             </div>
-          </Router>
-        </DesignVersionProvider>
+        </Router>
       </QueryClientProvider>
     </trpc.Provider>
   );

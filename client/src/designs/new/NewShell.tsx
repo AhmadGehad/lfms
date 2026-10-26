@@ -49,13 +49,11 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { OwnerFilterSelect } from "@/components/OwnerFilterSelect";
 import { OfflineSyncIndicator } from "@/components/OfflineSyncIndicator";
 import { DashboardLayoutSkeleton } from "@/components/DashboardLayoutSkeleton";
-import { DesignSwitch } from "@/components/DesignSwitch";
 import { FarmSwitcher } from "@/components/FarmSwitcher";
 import { Button } from "@/components/ui/button";
 import { CommandPalette } from "./components/CommandPalette";
 import { QuickAdd } from "./components/QuickAdd";
 import { useTheme, type ThemePreference } from "@/contexts/ThemeContext";
-import { useDesignVersion } from "@/contexts/DesignVersionContext";
 
 interface NavItem {
   icon: ComponentType<{ className?: string }>;
@@ -236,7 +234,6 @@ function MobileBottomNav() {
 function DisplayMenu() {
   const { t, i18n } = useTranslation();
   const { themePreference, setThemePreference } = useTheme();
-  const { design, setDesign, switchable } = useDesignVersion();
   const themeOptions: { value: ThemePreference; label: string; icon: typeof Sun }[] = [
     { value: "light", label: t("theme.light", "Light"), icon: Sun },
     { value: "dark", label: t("theme.dark", "Dark"), icon: Moon },
@@ -279,29 +276,15 @@ function DisplayMenu() {
           <span className="flex-1">العربية</span>
           {i18n.language === "ar" && <Check className="h-4 w-4" aria-hidden="true" />}
         </DropdownMenuItem>
-        {switchable && (
-          <div data-tour="design-switch">
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setDesign("old")} className="cursor-pointer gap-2">
-              <span className="flex-1">{t("design.old", "Classic")}</span>
-              {design === "old" && <Check className="h-4 w-4" aria-hidden="true" />}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setDesign("new")} className="cursor-pointer gap-2">
-              <span className="flex-1">{t("design.new", "New")}</span>
-              {design === "new" && <Check className="h-4 w-4" aria-hidden="true" />}
-            </DropdownMenuItem>
-          </div>
-        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
 /**
- * New design shell. Same auth, permissions, i18n/RTL, and owner-scope as the Old
- * shell — only presentation differs. Adds the top-bar controls the redesign
- * requires: global search (⌘K, wired in P3), Quick Add, Notifications, the
- * Light/Dark/System theme menu, and the Old/New design switch.
+ * App shell for signed-in users: sidebar (or mobile drawer and bottom tabs) plus
+ * the top bar with global search (⌘K), Quick Add, Notifications, and the
+ * theme/language menu.
  */
 export default function NewShell({ children }: { children: React.ReactNode }) {
   const { loading, user, logout } = useAuth();
@@ -415,7 +398,6 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
 
           <div className="flex shrink-0 items-center gap-1.5">
             <OfflineSyncIndicator />
-            <span data-tour="design-switch" className="hidden sm:inline-flex"><DesignSwitch /></span>
             <QuickAdd className="hidden sm:flex" />
             {perms.can("notifications", "view") && (
               <button
@@ -450,9 +432,6 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
                   <p className="mt-1 text-xs capitalize text-muted-foreground">{user?.role}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <div className="px-2 py-1.5 sm:hidden" data-tour="design-switch">
-                  <DesignSwitch />
-                </div>
                 {perms.can("users", "view") && (
                   <DropdownMenuItem onClick={() => setLocation("/users")} className="cursor-pointer">
                     <Users className="mr-2 h-4 w-4" />
