@@ -477,12 +477,11 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
         }
       />
 
-      <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto border-b border-border">
+      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border">
         {canViewBreeding && (
           <button
             type="button"
-            role="tab"
-            aria-selected={activeWorkspaceTab === "breeding"}
+            aria-pressed={activeWorkspaceTab === "breeding"}
             onClick={() => setWorkspaceTab("breeding")}
             className={`h-10 whitespace-nowrap border-b-2 px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring ${
               activeWorkspaceTab === "breeding" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"
@@ -494,8 +493,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
         {canViewPregnancy && (
           <button
             type="button"
-            role="tab"
-            aria-selected={activeWorkspaceTab === "pregnancy"}
+            aria-pressed={activeWorkspaceTab === "pregnancy"}
             onClick={() => setWorkspaceTab("pregnancy")}
             className={`h-10 whitespace-nowrap border-b-2 px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-ring ${
               activeWorkspaceTab === "pregnancy" ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"

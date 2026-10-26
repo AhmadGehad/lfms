@@ -261,9 +261,11 @@ export function DataTable<T>({
               <div
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                onKeyDown={onRowClick ? e => { if (e.key === "Enter" && e.target === e.currentTarget) onRowClick(row); } : undefined}
                 className={cn(
                   "rounded-xl border border-border bg-card p-3 shadow-[var(--shadow-sm)]",
-                  onRowClick && "cursor-pointer active:bg-card-2 focus-within:ring-2 focus-within:ring-ring"
+                  onRowClick && "cursor-pointer touch-manipulation active:bg-card-2 focus-visible:outline-2 focus-visible:outline-ring"
                 )}
               >
                 <div className="flex items-center justify-between gap-2">

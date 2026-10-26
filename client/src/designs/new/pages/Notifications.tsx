@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useLocation } from "wouter";
+import { Link } from "wouter";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Bell, BellOff, Check, CheckCheck, ChevronRight } from "lucide-react";
@@ -26,7 +26,6 @@ export default function NewNotifications() {
   const perms = usePermissions();
   const canUpdate = perms.can("notifications", "update");
   const utils = trpc.useUtils();
-  const [, setLocation] = useLocation();
 
   const { data: notifications, isLoading } = trpc.notifications.list.useQuery({});
   const markRead = trpc.notifications.markRead.useMutation({ onSuccess: () => utils.notifications.list.invalidate() });
@@ -64,26 +63,29 @@ export default function NewNotifications() {
               ? formatAlertType(n.alertType)
               : t(`notifications.category.${category}`, { defaultValue: category[0].toUpperCase() + category.slice(1) });
             const href = notificationLink(n);
+            const title = n.title || n.message || "—";
             // Opening a notification takes you to what it's about and marks it read.
-            const open = href
-              ? () => {
-                  if (canUpdate && !isRead) markRead.mutate({ id: n.id });
-                  setLocation(href);
-                }
-              : undefined;
+            // The title link is stretched over the whole card (after:inset-0); the
+            // mark-read button sits above it so both stay real, separate controls.
             return (
               <li
                 key={n.id}
-                role={open ? "link" : undefined}
-                tabIndex={open ? 0 : undefined}
-                onClick={open}
-                onKeyDown={open ? e => { if (e.key === "Enter") open(); } : undefined}
-                className={`flex items-start gap-3 rounded-xl border p-3 ${isRead ? "border-border bg-card" : "border-primary/30 bg-primary-soft/40"} ${open ? "cursor-pointer transition-colors hover:border-border-strong focus-visible:outline-2 focus-visible:outline-ring" : ""}`}
+                className={`relative flex items-start gap-3 rounded-xl border p-3 ${isRead ? "border-border bg-card" : "border-primary/30 bg-primary-soft/40"} ${href ? "transition-colors hover:border-border-strong has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-ring" : ""}`}
               >
                 <Bell className={`mt-0.5 h-4 w-4 shrink-0 ${isRead ? "text-muted-foreground" : "text-primary"}`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-foreground">{n.title || n.message || "—"}</p>
+                    {href ? (
+                      <Link
+                        href={href}
+                        onClick={() => { if (canUpdate && !isRead) markRead.mutate({ id: n.id }); }}
+                        className="text-sm font-medium text-foreground after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none"
+                      >
+                        {title}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-medium text-foreground">{title}</p>
+                    )}
                     <StatusBadge tone={priorityTone(n.priority)} icon={false}>
                       {tag}
                     </StatusBadge>
@@ -93,15 +95,16 @@ export default function NewNotifications() {
                 </div>
                 {canUpdate && !isRead && (
                   <button
-                    onClick={e => { e.stopPropagation(); markRead.mutate({ id: n.id }); }}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-surface"
+                    type="button"
+                    onClick={() => markRead.mutate({ id: n.id })}
+                    className="relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring sm:h-8 sm:w-8"
                     aria-label={t("notifications.markRead", "Mark read")}
                     title={t("notifications.markRead", "Mark read")}
                   >
                     <Check className="h-4 w-4" />
                   </button>
                 )}
-                {open && <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden="true" />}
+                {href && <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden="true" />}
               </li>
             );
           })}

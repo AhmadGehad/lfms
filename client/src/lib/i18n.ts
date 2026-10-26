@@ -2976,7 +2976,8 @@ __deepFill(en, __gapEn);
 __deepFill(ar, __gapAr);
 const __infoEn = {
   "common": {
-    "whatDoesThisMean": "What does this mean?"
+    "whatDoesThisMean": "What does this mean?",
+    "whatDoesLabelMean": "What does {{label}} mean?"
   },
   "pnl": {
     "totalInvestedHerd": "Total invested in current herd",
@@ -3013,7 +3014,8 @@ const __infoEn = {
 };
 const __infoAr = {
   "common": {
-    "whatDoesThisMean": "ماذا يعني هذا؟"
+    "whatDoesThisMean": "ماذا يعني هذا؟",
+    "whatDoesLabelMean": "ماذا يعني {{label}}؟"
   },
   "pnl": {
     "totalInvestedHerd": "إجمالي المستثمر في القطيع الحالي",

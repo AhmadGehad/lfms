@@ -132,7 +132,9 @@ export function FormField({
 }) {
   const { t } = useTranslation();
   const attempt = React.useContext(FormValidationContext);
-  if (!error && attempt > 0 && required) {
+  // Text inputs also validate on blur. Selects are skipped: their trigger blurs as the list opens.
+  const [blurred, setBlurred] = React.useState(false);
+  if (!error && (attempt > 0 || blurred) && required) {
     const control = findControlValue(children);
     if (control.found && isEmptyValue(control.value)) error = t("common.requiredShort", "Required");
   }
@@ -149,7 +151,10 @@ export function FormField({
   const labelFor = htmlFor ?? state.attachedId;
 
   return (
-    <div className={cn("flex flex-col gap-1.5", full && "sm:col-span-2")}>
+    <div
+      className={cn("flex flex-col gap-1.5", full && "sm:col-span-2")}
+      onBlur={required ? e => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setBlurred(true); } : undefined}
+    >
       <label id={labelId} htmlFor={labelFor} className="text-sm font-medium text-foreground">
         {label}
         {required && <span className="ms-0.5 text-danger">*</span>}

@@ -19,7 +19,7 @@ import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
-import { fmtDate } from "../lib/format";
+import { fmtDate, fmtNum } from "../lib/format";
 
 const toDateInput = (d: unknown) =>
   d ? (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10)) : "";
@@ -419,8 +419,8 @@ export default function NewFeed() {
   const stockRows = (stock as any[]) ?? [];
   const stockCols: Column<any>[] = [
     { id: "item", header: t("feed.item", "Feed item"), cell: i => <span className="font-medium">{i.feedItemName}</span>, sortValue: i => i.feedItemName, primary: true, mobileLabel: t("feed.item", "Feed item") },
-    { id: "onhand", align: "end", header: t("feed.onHand", "On hand"), cell: i => `${parseFloat(i.stockOnHand ?? 0).toFixed(1)} ${i.unit ?? ""}`, sortValue: i => parseFloat(i.stockOnHand ?? 0), mobileLabel: t("feed.onHand", "On hand") },
-    { id: "daily", align: "end", header: t("feed.dailyUse", "Daily use"), cell: i => t("feed.perDayUnit", { qty: parseFloat(i.dailyConsumption ?? 0).toFixed(2), unit: i.unit ?? "" }), hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
+    { id: "onhand", align: "end", header: t("feed.onHand", "On hand"), cell: i => `${fmtNum(i.stockOnHand)} ${i.unit ?? ""}`, sortValue: i => parseFloat(i.stockOnHand ?? 0), mobileLabel: t("feed.onHand", "On hand") },
+    { id: "daily", align: "end", header: t("feed.dailyUse", "Daily use"), cell: i => t("feed.perDayUnit", { qty: fmtNum(i.dailyConsumption, 2), unit: i.unit ?? "" }), hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
     { id: "days", align: "end", header: t("feed.daysLeft", "Days left"), cell: i => <span className={i.daysRemaining < 7 ? "font-medium text-danger-soft-foreground" : i.daysRemaining < 14 ? "text-warning-soft-foreground" : "text-foreground"}>{i.daysRemaining === 999 ? "∞" : i.daysRemaining}</span>, sortValue: i => i.daysRemaining, mobileLabel: t("feed.daysLeft", "Days left") },
     { id: "runout", header: t("feed.runOut", "Run-out"), cell: i => (i.runOutDate && i.daysRemaining !== 999 ? fmtDate(i.runOutDate) : "—"), sortValue: i => i.runOutDate, hideable: true, defaultHidden: true, mobileLabel: t("feed.runOut", "Run-out") },
     {
@@ -458,7 +458,7 @@ export default function NewFeed() {
     { id: "date", header: t("feed.date", "Date"), cell: e => fmtDate(e.transactionDate), sortValue: e => e.transactionDate, primary: true, mobileLabel: t("feed.date", "Date") },
     { id: "item", header: t("feed.item", "Feed item"), cell: e => e.feedItemName, sortValue: e => e.feedItemName, mobileLabel: t("feed.item", "Feed item") },
     { id: "type", header: t("feed.type", "Type"), cell: e => <StatusBadge tone={e.transactionType === "purchase" ? "info" : "neutral"} icon={false}>{String(e.transactionType ?? "").replace("_", " ")}</StatusBadge>, mobileLabel: t("feed.type", "Type") },
-    { id: "qty", align: "end", header: t("feed.qty", "Qty"), cell: e => parseFloat(e.qty ?? 0).toFixed(1), mobileLabel: t("feed.qty", "Qty") },
+    { id: "qty", align: "end", header: t("feed.qty", "Qty"), cell: e => fmtNum(e.qty), mobileLabel: t("feed.qty", "Qty") },
     { id: "unitCost", align: "end", header: t("feed.unitCost", "Unit cost"), cell: e => (e.unitCost ? fmt(parseFloat(e.unitCost)) : "—"), hideable: true, defaultHidden: true, mobileLabel: t("feed.unitCost", "Unit cost") },
     { id: "cost", align: "end", header: t("feed.totalCost", "Total"), cell: e => (e.totalCost ? fmt(parseFloat(e.totalCost)) : e.qty && e.unitCost ? fmt(parseFloat(e.qty) * parseFloat(e.unitCost)) : "—"), hideable: true, mobileLabel: t("feed.totalCost", "Total") },
     { id: "supplier", header: t("feed.supplier", "Supplier"), cell: e => e.supplierName ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("feed.supplier", "Supplier") },

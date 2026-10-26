@@ -77,7 +77,7 @@ export function KpiCard({
                 <button
                   type="button"
                   className="pointer-events-auto -m-1.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-                  aria-label={t("common.whatDoesThisMean", "What does this mean?")}
+                  aria-label={typeof label === "string" ? t("common.whatDoesLabelMean", { label, defaultValue: "What does {{label}} mean?" }) : t("common.whatDoesThisMean", "What does this mean?")}
                 >
                   <Info className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
