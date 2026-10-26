@@ -612,12 +612,12 @@ export default function NewFeed() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border text-left text-muted-foreground">
+                    <tr className="border-b border-border text-start text-muted-foreground">
                       <th className="px-2 py-2 font-semibold">{t("feed.item", "Feed item")}</th>
                       <th className="px-2 py-2 font-semibold">{t("feed.period", "Period")}</th>
-                      <th className="px-2 py-2 text-right font-semibold">{t("feed.expected", "Expected")}</th>
-                      <th className="px-2 py-2 text-right font-semibold">{t("feed.counted", "Counted")}</th>
-                      <th className="px-2 py-2 text-right font-semibold">{t("feed.shrinkage", "Shrinkage")}</th>
+                      <th className="px-2 py-2 text-end font-semibold">{t("feed.expected", "Expected")}</th>
+                      <th className="px-2 py-2 text-end font-semibold">{t("feed.counted", "Counted")}</th>
+                      <th className="px-2 py-2 text-end font-semibold">{t("feed.shrinkage", "Shrinkage")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -625,9 +625,9 @@ export default function NewFeed() {
                       <tr key={`${r.feedItemId}-${r.toDate}-${idx}`} className="border-b border-border last:border-0">
                         <td className="px-2 py-2 font-medium">{r.feedItemName}</td>
                         <td className="px-2 py-2 text-xs text-muted-foreground">{fmtDate(r.fromDate)} → {fmtDate(r.toDate)}</td>
-                        <td className="px-2 py-2 text-right tabular-nums">{r.expectedQty.toFixed(1)} {r.unit}</td>
-                        <td className="px-2 py-2 text-right tabular-nums">{r.actualQty.toFixed(1)} {r.unit}</td>
-                        <td className={`px-2 py-2 text-right font-medium tabular-nums ${r.shrinkageQty > 0 ? "text-danger-soft-foreground" : r.shrinkageQty < 0 ? "text-success-soft-foreground" : "text-muted-foreground"}`}>
+                        <td className="px-2 py-2 text-end tabular-nums">{r.expectedQty.toFixed(1)} {r.unit}</td>
+                        <td className="px-2 py-2 text-end tabular-nums">{r.actualQty.toFixed(1)} {r.unit}</td>
+                        <td className={`px-2 py-2 text-end font-medium tabular-nums ${r.shrinkageQty > 0 ? "text-danger-soft-foreground" : r.shrinkageQty < 0 ? "text-success-soft-foreground" : "text-muted-foreground"}`}>
                           {r.shrinkageQty > 0 ? "−" : r.shrinkageQty < 0 ? "+" : ""}{Math.abs(r.shrinkageQty).toFixed(1)} {r.unit}
                         </td>
                       </tr>

@@ -250,12 +250,12 @@ export default function Fattening() {
                   <TableHead>{t("animals.animalId")}</TableHead>
                   <TableHead>{t("common.category")}</TableHead>
                   <TableHead>{t("common.group")}</TableHead>
-                  <TableHead className="text-right">{t("animals.daysOnFarm")}</TableHead>
-                  <TableHead className="text-right">{t("common.currentWeight")}</TableHead>
-                  <TableHead className="text-right">{t("fattening.targetWeight")}</TableHead>
-                  <TableHead className="text-right">% to Target</TableHead>
+                  <TableHead className="text-end">{t("animals.daysOnFarm")}</TableHead>
+                  <TableHead className="text-end">{t("common.currentWeight")}</TableHead>
+                  <TableHead className="text-end">{t("fattening.targetWeight")}</TableHead>
+                  <TableHead className="text-end">% to Target</TableHead>
                   <TableHead>{t("common.status")}</TableHead>
-                  <TableHead className="text-right">{t("common.actions")}</TableHead>
+                  <TableHead className="text-end">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -303,24 +303,24 @@ export default function Fattening() {
                         </TableCell>
                         <TableCell>{a.categoryName}</TableCell>
                         <TableCell>{a.groupName ?? "—"}</TableCell>
-                        <TableCell className="text-right tabular-nums">{days}</TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="text-end tabular-nums">{days}</TableCell>
+                        <TableCell className="text-end tabular-nums">
                           {currentWeight != null ? `${currentWeight.toFixed(1)} kg` : "—"}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="text-end tabular-nums">
                           {targetWeight ? `${targetWeight.toFixed(1)} kg` : "—"}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="text-end tabular-nums">
                           {pctToTarget != null ? (
-                            <span className={pctToTarget >= 100 ? "text-green-600 font-semibold" : pctToTarget >= 75 ? "text-amber-600" : "text-muted-foreground"}>
+                            <span className={pctToTarget >= 100 ? "text-success-soft-foreground font-semibold" : pctToTarget >= 75 ? "text-warning-soft-foreground" : "text-muted-foreground"}>
                               {pctToTarget}%
                             </span>
                           ) : "—"}
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">{a.statusName}</Badge>
+                          <Badge className="border-transparent bg-warning-soft text-warning-soft-foreground text-xs">{a.statusName}</Badge>
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           <div className="flex items-center justify-end gap-1">
                             {(canCreate || canUpdateAnimal || canDeleteAnimal) && (<>
                             {/* Record weight for this animal */}

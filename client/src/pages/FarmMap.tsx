@@ -550,7 +550,7 @@ export default function FarmMap() {
                     key={group.id}
                     type="button"
                     onClick={() => setSelectedGroupId(String(group.id))}
-                    className={`flex w-full items-center gap-3 rounded-md border p-3 text-left transition-colors ${
+                    className={`flex w-full items-center gap-3 rounded-md border p-3 text-start transition-colors ${
                       selected ? "border-primary bg-primary/5" : "bg-background hover:bg-muted/60"
                     }`}
                   >

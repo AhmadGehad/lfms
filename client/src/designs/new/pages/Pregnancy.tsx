@@ -217,7 +217,7 @@ export function PregnancyPanel({ embedded = false }: { embedded?: boolean }) {
       id: "remaining",
       header: t("pregnancy.daysRemaining", "Days remaining"),
       cell: p => p.record?.status === "active" ? (
-        <span className={p.daysRemaining < 0 ? "font-medium text-danger-soft-foreground" : ""}>{p.daysRemaining ?? "-"}</span>
+        <span dir="ltr" className={p.daysRemaining < 0 ? "font-medium text-danger-soft-foreground" : ""}>{p.daysRemaining ?? "-"}</span>
       ) : "-",
       sortValue: p => p.daysRemaining,
       hideable: true,

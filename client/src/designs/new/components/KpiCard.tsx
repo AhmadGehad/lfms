@@ -47,7 +47,7 @@ export function KpiCard({
       disabled={!clickable}
       onClick={clickable ? activate : undefined}
       className={cn(
-        "relative flex h-full w-full flex-col gap-2 overflow-hidden rounded-xl border border-border bg-card p-4 text-left shadow-[var(--shadow-sm)] transition-colors before:absolute before:inset-x-0 before:top-0 before:h-1",
+        "relative flex h-full w-full flex-col gap-2 overflow-hidden rounded-xl border border-border bg-card p-4 text-start shadow-[var(--shadow-sm)] transition-colors before:absolute before:inset-x-0 before:top-0 before:h-1",
         tone === "success" && "before:bg-success",
         tone === "warning" && "before:bg-warning",
         tone === "danger" && "before:bg-danger",

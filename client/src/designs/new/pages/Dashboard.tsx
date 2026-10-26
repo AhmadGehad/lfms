@@ -357,7 +357,7 @@ export default function NewDashboard() {
           id: p.id ?? p.animalId,
           title: p.animalIdStr ?? p.animalCode ?? p.animalId ?? `#${p.id}`,
           meta:
-            d == null ? "--" : d < 0 ? `${t("dashboard.overdue", "Overdue")} ${-d}d` : `${t("dashboard.dueIn", "Due in")} ${d}d`,
+            d == null ? "--" : d < 0 ? `${t("dashboard.overdue", "Overdue")} ${t("dashboard.daysShort", { count: -d, defaultValue: "{{count}}d" })}` : `${t("dashboard.dueIn", "Due in")} ${t("dashboard.daysShort", { count: d, defaultValue: "{{count}}d" })}`,
           href: "/pregnancy",
           action: d != null && d < 0 ? <StatusBadge tone="danger">{t("dashboard.overdue", "Overdue")}</StatusBadge> : undefined,
         })),
@@ -378,7 +378,7 @@ export default function NewDashboard() {
           return {
             id: `${v.animalId}-${v.vaccineId ?? v.vaccineName}-${due?.kind ?? "due"}`,
             title: `${v.animalIdStr ?? v.animalCode ?? v.animalId} · ${v.vaccineName ?? ""}`,
-            meta: d == null ? "--" : `${doseLabel} · ${d < 0 ? `${t("dashboard.overdue", "Overdue")} ${-d}d` : `${t("dashboard.dueIn", "Due in")} ${d}d`}`,
+            meta: d == null ? "--" : `${doseLabel} · ${d < 0 ? `${t("dashboard.overdue", "Overdue")} ${t("dashboard.daysShort", { count: -d, defaultValue: "{{count}}d" })}` : `${t("dashboard.dueIn", "Due in")} ${t("dashboard.daysShort", { count: d, defaultValue: "{{count}}d" })}`}`,
             href: "/vaccinations",
             action: d != null && d < 0 ? <StatusBadge tone="danger">{t("dashboard.overdue", "Overdue")}</StatusBadge> : undefined,
           };

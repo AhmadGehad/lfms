@@ -2638,8 +2638,243 @@ function __deepFill(target: any, src: any) {
     }
   }
 }
+// Strings the UI already used with only an English fallback (no Arabic yet).
+const __gapEn = {
+  "animalProfile": {
+    "dam": "Dam",
+    "sire": "Sire"
+  },
+  "common": {
+    "saved": "Saved",
+    "noneYet": "Nothing here yet"
+  },
+  "dashboard": {
+    "daysShort": "{{count}}d"
+  },
+  "table": {
+    "toggleDensity": "Toggle density",
+    "density": "Density",
+    "columns": "Columns",
+    "selectAll": "Select all",
+    "of": "of",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "selectedCount": "{{count}} selected"
+  },
+  "users": {
+    "capitalPage": "Capital & partners",
+    "action": {
+      "view": "View",
+      "create": "Create",
+      "update": "Edit",
+      "delete": "Delete",
+      "report": "Report",
+      "export": "Export",
+      "import": "Import",
+      "restore": "Restore",
+      "revert": "Revert"
+    }
+  }
+};
+const __gapAr = {
+  "animalProfile": {
+    "activity": "النشاط",
+    "currentWeight": "الوزن الحالي",
+    "dam": "الأم",
+    "downloadProfile": "تنزيل الملف",
+    "noActivity": "لا يوجد نشاط بعد.",
+    "sire": "الأب"
+  },
+  "animals": {
+    "acquisition": "الاستحواذ",
+    "females": "الإناث",
+    "identity": "الهوية",
+    "identityHint": "النوع والفئة والمالك والرقم المُنشأ.",
+    "owner": "المالك",
+    "percentage": "% من الهدف",
+    "readyToSell": "جاهز للبيع",
+    "registered": "تم تسجيل الحيوان",
+    "searchAnimals": "البحث في الحيوانات",
+    "searchByIdCategory": "ابحث بالرقم أو الفئة أو المجموعة...",
+    "selectAnimal": "اختر حيوانًا",
+    "selected": "محدد",
+    "sold": "مباع",
+    "weightAtAcquisition": "وزن البداية"
+  },
+  "branding": {
+    "companyName": "اسم الشركة",
+    "favicon": "أيقونة الموقع",
+    "faviconRead": "تعذرت قراءة ملف الأيقونة",
+    "faviconRemoved": "تمت إزالة الأيقونة",
+    "faviconSaved": "تم تحديث الأيقونة",
+    "faviconSize": "يجب ألا يتجاوز حجم الأيقونة 2 ميجابايت",
+    "faviconType": "استخدم أيقونة بصيغة JPEG أو PNG أو WebP",
+    "logo": "الشعار",
+    "logoRead": "تعذرت قراءة ملف الشعار",
+    "logoRemoved": "تمت إزالة شعار الشركة",
+    "logoSaved": "تم تحديث شعار الشركة",
+    "logoSize": "يجب ألا يتجاوز حجم الشعار 2 ميجابايت",
+    "logoType": "استخدم شعارًا بصيغة JPEG أو PNG أو WebP",
+    "nameSaved": "تم حفظ اسم الشركة",
+    "removeFavicon": "إزالة الأيقونة",
+    "removeLogo": "إزالة الشعار",
+    "title": "هوية الشركة",
+    "uploadFavicon": "رفع أيقونة",
+    "uploadLogo": "رفع شعار"
+  },
+  "common": {
+    "done": "تم",
+    "finish": "إنهاء",
+    "moveDown": "نقل لأسفل",
+    "moveUp": "نقل لأعلى",
+    "next": "التالي",
+    "reset": "إعادة ضبط",
+    "saved": "تم الحفظ",
+    "skip": "تخطي",
+    "system": "النظام",
+    "noneYet": "لا يوجد شيء بعد"
+  },
+  "config": {
+    "readyToSell": "جاهز %",
+    "readyToSellHelp": "نسبة الوزن المستهدف لاعتبار الحيوان جاهزًا للبيع (مثال: 80 = 80% من الهدف).",
+    "readyToSellThreshold": "جاهز للبيع (%)",
+    "section": "قسم الإعدادات"
+  },
+  "dashboard": {
+    "actionWidgets": "عناصر الإجراءات",
+    "customize": "تخصيص",
+    "lambsToPromote": "مواليد للترقية",
+    "noLambsToPromote": "لا توجد مواليد بانتظار الترقية",
+    "noRecentWork": "لا توجد تغييرات حديثة",
+    "noneReady": "لا توجد حيوانات قريبة من الهدف",
+    "readyToSell": "جاهز للبيع",
+    "recentWork": "آخر الأعمال",
+    "daysShort": "{{count}} يوم"
+  },
+  "display": {
+    "label": "العرض"
+  },
+  "farm": {
+    "all": "كل المزارع",
+    "select": "اختر المزرعة",
+    "switchOffline": "اتصل بالإنترنت لتبديل المزرعة.",
+    "switchPendingSync": "انتظر حتى تنتهي مزامنة السجلات المحفوظة قبل تبديل المزرعة."
+  },
+  "install": {
+    "action": "تثبيت التطبيق",
+    "androidHint": "قائمة المتصفح (⋮) ← إضافة إلى الشاشة الرئيسية",
+    "bodyManual": "أضفه إلى الشاشة الرئيسية لتسجيل الأوزان والتطعيمات حتى دون اتصال.",
+    "bodyPrompt": "أضفه إلى الشاشة الرئيسية لتسجيل الأوزان والتطعيمات حتى دون اتصال.",
+    "dismiss": "إغلاق",
+    "iosHint": "مشاركة ← إضافة إلى الشاشة الرئيسية",
+    "title": "ثبّت APIS على هذا الهاتف"
+  },
+  "nav": {
+    "animalPnl": "ربحية الحيوان",
+    "breedingPregnancy": "التربية والحمل",
+    "toggleSidebar": "إظهار/إخفاء القائمة"
+  },
+  "newNav": {
+    "animals": "الحيوانات",
+    "expenses": "المصروفات",
+    "fattening": "التسمين",
+    "feed": "الأعلاف",
+    "sales": "المبيعات"
+  },
+  "offline": {
+    "allSynced": "تم حفظ كل شيء على الخادم.",
+    "discard": "تجاهل السجل",
+    "offline": "غير متصل",
+    "offlineTitle": "العمل دون اتصال",
+    "online": "متصل",
+    "pendingSummary": "{{count}} سجل محفوظ على هذا الجهاز بانتظار المزامنة.",
+    "retryAll": "حاول المزامنة الآن",
+    "staleWarning": "بعض السجلات تنتظر منذ أيام. اتصل قريبًا حتى لا تُفقد.",
+    "syncStatus": "حالة المزامنة",
+    "syncing": "جارٍ المزامنة"
+  },
+  "owners": {
+    "none": "بدون مالك"
+  },
+  "recycleBin": {
+    "retentionPolicy": "الحذف النهائي تديره سياسة الاحتفاظ بالمنصة"
+  },
+  "sales": {
+    "bulkExitWarning": "سيؤدي هذا إلى إخراج الحيوانات المحددة من المخزون النشط وتسجيل مدفوعات البيع وإغلاق ربحيتها.",
+    "buyerPlaceholder": "اسم المشتري...",
+    "confirmBulkSale": "تأكيد البيع",
+    "confirmSale": "تأكيد البيع",
+    "confirmSaleOf": "تأكيد بيع",
+    "consequenceExit": "{{code}} يخرج من المخزون النشط",
+    "finalExitWarning": "هذا الإجراء نهائي ويُخرج الحيوان من المخزون النشط ويغلق ربحيته.",
+    "markedPaid": "تم تعليم البيع كمدفوع",
+    "noBuyer": "بدون مشترٍ",
+    "pickAnimal": "اختر حيوانًا للبيع",
+    "pnlCloses": "تُغلق ربحية الحيوان",
+    "realizedLoss": "خسارة محققة",
+    "realizedProfit": "ربح محقق",
+    "receivableCreated": "تم إنشاء مستحق",
+    "removedSchedules": "أُزيل من جداول العلف والوزن",
+    "reviewConfirm": "مراجعة وتأكيد",
+    "saleImpact": "أثر البيع",
+    "selectAnimalsToSell": "اختر الحيوانات للبيع",
+    "selectAtLeastOne": "اختر حيوانًا واحدًا على الأقل",
+    "typeSell": "البيع بخسارة - اكتب SELL للتأكيد",
+    "partial": "مدفوع جزئيًا",
+    "unpaid": "غير مدفوع"
+  },
+  "table": {
+    "toggleDensity": "تبديل الكثافة",
+    "density": "الكثافة",
+    "columns": "الأعمدة",
+    "selectAll": "تحديد الكل",
+    "of": "من",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
+    "selectedCount": "{{count}} محدد"
+  },
+  "vaccine": {
+    "applyTo": "تطبيق على",
+    "categoryRequired": "اختر فئة",
+    "multipleAnimals": "عدة حيوانات",
+    "multipleCategories": "عدة فئات",
+    "selectAnimals": "اختر الحيوانات",
+    "selectCategories": "اختر الفئات",
+    "selectCategory": "اختر الفئة",
+    "singleCategory": "فئة واحدة"
+  },
+  "weight": {
+    "change": "التغير (كجم)",
+    "changePercent": "التغير (%)",
+    "current": "الحالي",
+    "newWeight": "الوزن الجديد (كجم)",
+    "nextAnimal": "الحيوان التالي",
+    "recorded": "تم التسجيل",
+    "required": "أدخل الوزن",
+    "session": "جلسة وزن",
+    "sinceLast": "منذ آخر وزن",
+    "target": "الهدف",
+    "targetReached": "تم بلوغ الهدف. قد يؤدي الحفظ إلى نقل هذا الحيوان إلى مرحلته التالية."
+  },
+  "users": {
+    "capitalPage": "رأس المال والشركاء",
+    "action": {
+      "view": "عرض",
+      "create": "إضافة",
+      "update": "تعديل",
+      "delete": "حذف",
+      "report": "تقارير",
+      "export": "تصدير",
+      "import": "استيراد",
+      "restore": "استعادة",
+      "revert": "تراجع"
+    }
+  }
+};
 __deepFill(en, __newEn);
 __deepFill(ar, __newAr);
+__deepFill(en, __gapEn);
+__deepFill(ar, __gapAr);
 
 i18n
   .use(LanguageDetector)
