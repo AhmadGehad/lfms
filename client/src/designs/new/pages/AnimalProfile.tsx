@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, Pencil, ReceiptText, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
+import { Activity, ArrowLeft, Baby, Download, DollarSign, GitBranch, ImageIcon, Pencil, ReceiptText, Scale, ShoppingCart, Syringe, Trash2, Wallet, Wheat } from "lucide-react";
 import { LineChart, Line, CartesianGrid, Tooltip, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { PageHeader } from "../components/PageHeader";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
@@ -117,7 +117,7 @@ function AnimalPhoto({ animalId, animalVersion }: { animalId: number; animalVers
         className={`grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl border border-border bg-surface ${url ? "cursor-zoom-in" : "cursor-default"}`}
         aria-label={t("animalProfile.photo", "Animal photo")}
       >
-        {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <span className="text-3xl" aria-hidden="true">🐑</span>}
+        {url ? <img src={url} alt="" className="h-full w-full object-cover" /> : <ImageIcon className="h-8 w-8 text-muted-foreground" aria-hidden="true" />}
       </button>
       {url && (
         <Dialog open={zoomOpen} onOpenChange={setZoomOpen}>
@@ -708,7 +708,7 @@ export default function NewAnimalProfile() {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
-              <table className="w-full text-sm">
+              <table className="w-full text-sm [&_td]:pe-3 [&_th]:pe-3">
                 <thead className="text-start text-muted-foreground">
                   <tr className="border-b border-border">
                     <th className="py-2 font-medium">{t("weight.date", "Date")}</th>
@@ -726,7 +726,7 @@ export default function NewAnimalProfile() {
                     const weightPercent = weightDiff !== null && prevWeight !== null && prevWeight > 0 ? (weightDiff / prevWeight) * 100 : null;
                     return (
                       <tr key={w.id ?? i} className="border-b border-border last:border-0">
-                        <td className="py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
+                        <td className="whitespace-nowrap py-2">{fmtDate(w.weighDate ?? w.recordedDate ?? w.date)}</td>
                         <td className="py-2 font-medium tabular-nums">{currentWeight.toFixed(1)}</td>
                         <td className="py-2 tabular-nums"><span dir="ltr">{weightDiff !== null ? (weightDiff >= 0 ? '+' : '') + weightDiff.toFixed(1) : '—'}</span></td>
                         <td className="py-2 tabular-nums">

@@ -875,7 +875,7 @@ const en = {
     title: "Data Management",
     subtitle: "Import data from Excel, create full backups, or restore from a backup file.",
     importTitle: "Import from Excel",
-    importDesc: "Upload an APIS Excel file and choose whether to append missing records or replace the full system from a canonical export.",
+    importDesc: "Upload an APIS Excel file. Missing records are added; existing records are kept.",
     appendMode: "Append missing records",
     appendModeDesc: "Keeps current data, inserts missing records, skips identical records, and aborts on conflicts.",
     appendModeDescExcel: "Canonical Excel inserts missing records and skips identical records. Manual templates append new rows, skip existing animal codes, and may duplicate other prior manual imports.",
@@ -896,14 +896,14 @@ const en = {
     downloadBackup: "Download backup (JSON)",
     generating: "Generating…",
     restoreTitle: "Restore from Backup",
-    restoreDesc: "Upload a complete versioned JSON backup and choose Append or Replace.",
+    restoreDesc: "Upload a complete APIS JSON backup. Missing records are added; existing records are kept.",
     chooseBackup: "Choose backup file",
     restoring: "Restoring…",
     restoreResults: "Restore results:",
     restored: "restored",
     restoreConfirm: "Restore this backup?",
-    exportTitle: "Export to Excel",
-    exportDesc: "Download reports plus versioned canonical sheets containing every database table, field, relationship, and soft-deleted record."
+    exportTitle: "Download backup",
+    exportDesc: "Download a complete JSON copy of all farm data, including deleted records, to keep or restore later."
   },
   animalProfile: {
     animalDetails: "Animal Details",
@@ -1954,7 +1954,7 @@ const ar = {
     title: "إدارة البيانات",
     subtitle: "استيراد البيانات من Excel، أو إنشاء نسخ احتياطية كاملة، أو الاستعادة من ملف نسخة احتياطية.",
     importTitle: "استيراد من Excel",
-    importDesc: "ارفع ملف Excel لنظام APIS واختر إضافة السجلات الناقصة أو استبدال النظام بالكامل من تصدير أساسي كامل.",
+    importDesc: "ارفع ملف Excel لنظام APIS. تُضاف السجلات الناقصة وتبقى السجلات الحالية كما هي.",
     appendMode: "إضافة السجلات الناقصة",
     appendModeDesc: "يحافظ على البيانات الحالية ويضيف السجلات الناقصة ويتجاوز السجلات المتطابقة ويلغي الاستيراد عند وجود تعارض.",
     appendModeDescExcel: "يضيف Excel الأساسي السجلات الناقصة ويتجاوز المتطابق. يضيف القالب اليدوي صفوفًا جديدة ويتجاوز أكواد الحيوانات الموجودة وقد يكرر عمليات الاستيراد اليدوية السابقة.",
@@ -1975,14 +1975,14 @@ const ar = {
     downloadBackup: "تنزيل نسخة احتياطية (JSON)",
     generating: "جارٍ الإنشاء…",
     restoreTitle: "الاستعادة من نسخة احتياطية",
-    restoreDesc: "ارفع نسخة JSON كاملة بإصدار معتمد واختر الإضافة أو الاستبدال.",
+    restoreDesc: "ارفع نسخة احتياطية JSON كاملة من APIS. تُضاف السجلات الناقصة وتبقى السجلات الحالية كما هي.",
     chooseBackup: "اختر ملف النسخة الاحتياطية",
     restoring: "جارٍ الاستعادة…",
     restoreResults: "نتائج الاستعادة:",
     restored: "مُستعاد",
     restoreConfirm: "ستضيف الاستعادة السجلات من هذه النسخة الاحتياطية إلى قاعدة البيانات الحالية. السجلات الموجودة (المطابقة برمز الحيوان) سيتم تجاهلها. هل تريد المتابعة؟",
-    exportTitle: "تصدير إلى Excel",
-    exportDesc: "نزّل التقارير مع أوراق بيانات أساسية بإصدار معتمد تشمل كل الجداول والحقول والعلاقات والسجلات المحذوفة منطقيًا."
+    exportTitle: "تنزيل نسخة احتياطية",
+    exportDesc: "نزّل نسخة JSON كاملة من كل بيانات المزرعة، بما فيها السجلات المحذوفة، للاحتفاظ بها أو استعادتها لاحقًا."
   },
   animalProfile: {
     animalDetails: "تفاصيل الحيوان",
@@ -2646,6 +2646,7 @@ const __gapEn = {
   },
   "common": {
     "saved": "Saved",
+    "fieldRequired": "{{field}} is required",
     "noneYet": "Nothing here yet"
   },
   "dashboard": {
@@ -2727,6 +2728,7 @@ const __gapAr = {
     "uploadLogo": "رفع شعار"
   },
   "common": {
+    "fieldRequired": "{{field}} مطلوب",
     "done": "تم",
     "finish": "إنهاء",
     "moveDown": "نقل لأسفل",

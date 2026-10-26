@@ -300,7 +300,7 @@ export function DataTable<T>({
                   </th>
                 )}
                 {visibleColumns.map(c => (
-                  <th key={c.id} className={cn("whitespace-nowrap font-semibold text-muted-foreground", cellPad, c.align === "end" && "text-end", c.align === "center" && "text-center", c.className)}>
+                  <th key={c.id} className={cn("whitespace-nowrap font-semibold text-muted-foreground", cellPad, c.align === "end" ? "text-end" : c.align === "center" ? "text-center" : "text-start", c.className)}>
                     {c.sortValue ? (
                       <button onClick={() => toggleSort(c.id)} className="inline-flex items-center gap-1 hover:text-foreground">
                         {c.header}

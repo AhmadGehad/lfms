@@ -51,10 +51,9 @@ import { AnimalCreateDialog, BulkRecordSaleDialog, QuickExpenseDialog, WeighInSe
 import { weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { CapitalPartnersSummary } from "@/components/CapitalPartnersSummary";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fmtDate } from "../lib/format";
+import { daysUntil, fmtDate } from "../lib/format";
 import { chartBarCursor, chartTooltipItemStyle, chartTooltipLabelStyle, chartTooltipStyle, formatAxisNumber } from "../lib/chartTheme";
 
-const MS_DAY = 86400000;
 const DASHBOARD_PREF_KEY = "lfms:new-dashboard-layout";
 const PREF_SERVER_KEY = "ui.dashboardLayout" as const;
 
@@ -78,15 +77,7 @@ const DEFAULT_PREFS: DashboardPrefs = {
   hiddenWidgets: [],
 };
 
-function dayDiff(date: unknown): number | null {
-  if (!date) return null;
-  const d = new Date(date instanceof Date ? date.toISOString() : (date as string));
-  if (Number.isNaN(d.getTime())) return null;
-  d.setHours(0, 0, 0, 0);
-  const t = new Date();
-  t.setHours(0, 0, 0, 0);
-  return Math.ceil((d.getTime() - t.getTime()) / MS_DAY);
-}
+const dayDiff = (date: unknown) => daysUntil(date);
 
 function vaccinationDueTarget(record: any): { kind: "next" | "booster"; diff: number } | null {
   const candidates = [

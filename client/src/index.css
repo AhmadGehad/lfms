@@ -218,6 +218,10 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Browsers center <th> by default; headers must line up with their cells. */
+  th {
+    text-align: start;
+  }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [type="button"]:not(:disabled),

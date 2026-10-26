@@ -123,7 +123,9 @@ export function AnimalCreateDialog({
     sex: "",
     acquisitionType: "",
     acquisitionDate: today(),
-    birthDate: today(),
+    // Blank on purpose: today is wrong for any purchased animal and an
+    // unnoticed default would record an adult as a newborn.
+    birthDate: "",
     purchaseCost: "",
     purchaseFundingSource: "",
     weightAtAcquisition: "",
@@ -165,7 +167,7 @@ export function AnimalCreateDialog({
 
   const set = (key: keyof typeof form, value: string) => setForm(prev => ({ ...prev, [key]: value }));
   const submit = (addAnother: boolean) => {
-    if (!form.speciesId || !form.categoryId || !form.groupId || !form.statusId || !form.sex || !form.acquisitionType) {
+    if (!form.speciesId || !form.categoryId || !form.groupId || !form.statusId || !form.sex || !form.acquisitionType || !form.birthDate) {
       toast.error(t("common.required", "Fill required fields"));
       return;
     }
@@ -277,7 +279,7 @@ export function AnimalCreateDialog({
               </Select>
             </FormField>
             <FormField label={t("animals.acquisitionType", "Source")} htmlFor="new-source" required>
-              <Select value={form.acquisitionType} onValueChange={value => set("acquisitionType", value)}>
+              <Select value={form.acquisitionType} onValueChange={value => setForm(f => ({ ...f, acquisitionType: value, birthDate: value === "born" && !f.birthDate ? f.acquisitionDate : f.birthDate }))}>
                 <SelectTrigger id="new-source"><SelectValue placeholder={t("common.select", "Select")} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="purchased">{t("animals.purchased", "Purchased")}</SelectItem>
@@ -288,7 +290,7 @@ export function AnimalCreateDialog({
             <FormField label={t("animals.acquisitionDate", "Acquisition Date")} htmlFor="new-acq-date">
               <Input id="new-acq-date" name="acquisitionDate" type="date" value={form.acquisitionDate} onChange={e => set("acquisitionDate", e.target.value)} />
             </FormField>
-            <FormField label={t("animals.birthDate", "Birth Date")} htmlFor="new-birth-date">
+            <FormField label={t("animals.birthDate", "Birth Date")} htmlFor="new-birth-date" required>
               <Input id="new-birth-date" name="birthDate" type="date" value={form.birthDate} onChange={e => set("birthDate", e.target.value)} />
             </FormField>
             <FormField label={t("animals.purchaseCost", "Purchase Cost")} htmlFor="new-purchase-cost">
