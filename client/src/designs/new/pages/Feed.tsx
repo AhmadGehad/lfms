@@ -17,12 +17,8 @@ import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { fmtDate } from "../lib/format";
 
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString();
-}
 const toDateInput = (d: unknown) =>
   d ? (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10)) : "";
 function stockTone(status?: string): StatusTone {
@@ -414,7 +410,7 @@ export default function NewFeed() {
   const stockCols: Column<any>[] = [
     { id: "item", header: t("feed.item", "Feed item"), cell: i => <span className="font-medium">{i.feedItemName}</span>, sortValue: i => i.feedItemName, primary: true, mobileLabel: t("feed.item", "Feed item") },
     { id: "onhand", header: t("feed.onHand", "On hand"), cell: i => `${parseFloat(i.stockOnHand ?? 0).toFixed(1)} ${i.unit ?? ""}`, sortValue: i => parseFloat(i.stockOnHand ?? 0), mobileLabel: t("feed.onHand", "On hand") },
-    { id: "daily", header: t("feed.dailyUse", "Daily use"), cell: i => `${parseFloat(i.dailyConsumption ?? 0).toFixed(2)}`, hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
+    { id: "daily", header: t("feed.dailyUse", "Daily use"), cell: i => t("feed.perDayUnit", { qty: parseFloat(i.dailyConsumption ?? 0).toFixed(2), unit: i.unit ?? "" }), hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
     { id: "days", header: t("feed.daysLeft", "Days left"), cell: i => <span className={i.daysRemaining < 7 ? "font-medium text-danger-soft-foreground" : i.daysRemaining < 14 ? "text-warning-soft-foreground" : "text-foreground"}>{i.daysRemaining === 999 ? "∞" : i.daysRemaining}</span>, sortValue: i => i.daysRemaining, mobileLabel: t("feed.daysLeft", "Days left") },
     { id: "runout", header: t("feed.runOut", "Run-out"), cell: i => (i.runOutDate && i.daysRemaining !== 999 ? fmtDate(i.runOutDate) : "—"), sortValue: i => i.runOutDate, hideable: true, defaultHidden: true, mobileLabel: t("feed.runOut", "Run-out") },
     {
@@ -433,7 +429,7 @@ export default function NewFeed() {
       hideable: true,
       mobileLabel: t("feed.shrinkage", "Shrinkage"),
     },
-    { id: "status", header: t("animals.status", "Status"), cell: i => <StatusBadge tone={stockTone(i.status)}>{i.status ?? "ok"}</StatusBadge>, sortValue: i => i.status, mobileLabel: t("animals.status", "Status") },
+    { id: "status", header: t("animals.status", "Status"), cell: i => <StatusBadge tone={stockTone(i.status)}>{String(t(`feed.stockStatus.${i.status ?? "ok"}`, i.status ?? "OK"))}</StatusBadge>, sortValue: i => i.status, mobileLabel: t("animals.status", "Status") },
   ];
 
   const rationRows = (rations as any[]) ?? [];
@@ -487,7 +483,7 @@ export default function NewFeed() {
     <div className="p-4 md:p-6">
       <PageHeader
         title={t("nav.feed", "Feed")}
-        subtitle={lowCount > 0 ? `${lowCount} ${t("feed.needReorder", "items need reorder")}` : t("feed.healthy", "Stock healthy")}
+        subtitle={lowCount > 0 ? t("feed.needReorder", { count: lowCount, defaultValue: "{{count}} items need reorder" }) : t("feed.healthy", "Stock healthy")}
         crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("nav.feed", "Feed") }]}
       />
 

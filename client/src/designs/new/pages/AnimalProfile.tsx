@@ -22,6 +22,7 @@ import { FormSection, FormField, FormFooter } from "../components/FormLayout";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { signedPercentPillClass, weightProgressBarClass, weightProgressTextClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
+import { fmtDate } from "../lib/format";
 
 function tone(name?: string): StatusTone {
   const l = (name ?? "").toLowerCase();
@@ -30,11 +31,6 @@ function tone(name?: string): StatusTone {
   if (l.includes("dead") || l.includes("mort")) return "danger";
   if (l.includes("transport")) return "warning";
   return "neutral";
-}
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString();
 }
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -363,7 +359,7 @@ export default function NewAnimalProfile() {
   const targetWeight = parseFloat((animal as any)?.targetWeightKg ?? 0);
   const progressPercent = weightTargetPercent(latestWeight, targetWeight);
   const progress = progressPercent == null ? 0 : Math.min(100, Math.round(progressPercent));
-  const progressTone = weightProgressTone(progressPercent);
+  const progressTone = weightProgressTone(progressPercent, parseFloat((animal as any)?.readyToSellThreshold ?? (animal as any)?.categoryReadyToSellThreshold ?? "80"));
   const row = animal ? {
     ...(animal as any),
     animal: a,
@@ -371,6 +367,9 @@ export default function NewAnimalProfile() {
     targetWeightKg: targetWeight || undefined,
   } : null;
   const netPnl = parseFloat(p?.netPnL ?? 0);
+  // Like the P&L page: an animal still on the farm has costs but no sale yet, so its
+  // "net" is not a loss — show it as ongoing until it is sold.
+  const pnlOngoing = Boolean(a?.isActive);
 
   const tabs = ([
     ["weight", t("weight.history", "Weight History")],
@@ -457,7 +456,7 @@ export default function NewAnimalProfile() {
               </div>
               <div className="rounded-lg bg-surface p-3">
                 <p className="text-xs text-muted-foreground">{t("pnl.netPnL", "Net P&L")}</p>
-                <p className={`font-semibold tabular-nums ${netPnl >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}`}>{pnlLoading ? <InlineSkeleton className="h-4 w-20" /> : fmt(netPnl)}</p>
+                <p className={`font-semibold tabular-nums ${pnlOngoing ? "text-muted-foreground" : netPnl >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}`}>{pnlLoading ? <InlineSkeleton className="h-4 w-20" /> : pnlOngoing ? t("pnl.ongoing", "Ongoing") : fmt(netPnl)}</p>
               </div>
             </div>
           </div>
@@ -522,7 +521,7 @@ export default function NewAnimalProfile() {
               <Stat label={t("pnl.saleRevenue", "Sale revenue")} value={fmt(parseFloat(p?.revenue ?? 0))} />
               <Stat
                 label={t("pnl.netPnL", "Net P&L")}
-                value={<span className={Number(p?.netPnL ?? 0) >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(parseFloat(p?.netPnL ?? 0))}</span>}
+                value={pnlOngoing ? <span className="text-muted-foreground">{t("pnl.ongoing", "Ongoing")}</span> : <span className={netPnl >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(netPnl)}</span>}
               />
             </dl>
           )}

@@ -50,6 +50,7 @@ import { AnimalCreateDialog, BulkRecordSaleDialog, QuickExpenseDialog, WeighInSe
 import { weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { CapitalPartnersSummary } from "@/components/CapitalPartnersSummary";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fmtDate } from "../lib/format";
 
 const MS_DAY = 86400000;
 const DASHBOARD_PREF_KEY = "lfms:new-dashboard-layout";
@@ -96,9 +97,7 @@ function vaccinationDueTarget(record: any): { kind: "next" | "booster"; diff: nu
 }
 
 function fmtShortDate(d: unknown) {
-  if (!d) return "--";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "--" : x.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return fmtDate(d, "--");
 }
 
 function uniqueOrder<T extends string>(value: unknown, defaults: readonly T[]): T[] {
@@ -505,7 +504,7 @@ export default function NewDashboard() {
         value={kpisLoading ? <Skeleton className="h-7 w-20" /> : (kpis?.totalActiveHeads ?? 0)}
         icon={Leaf}
         href="/animals"
-        hint={`${(kpis?.categoryBreakdown ?? []).length} ${t("common.category", "categories").toLowerCase()}`}
+        hint={kpis ? t("dashboard.categoryCount", { count: (kpis.categoryBreakdown ?? []).length, defaultValue: "{{count}} categories" }) : undefined}
         tone="success"
       />
     ),
@@ -524,7 +523,7 @@ export default function NewDashboard() {
         value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(kpis?.totalExpenses ?? 0)}
         icon={DollarSign}
         href="/expenses"
-        hint={kpis ? `${t("feed.title", "Feed")}: ${fmt(kpis.feedExpenses ?? 0)}` : undefined}
+        hint={kpis ? t("dashboard.feedShare", { amount: fmt(kpis.feedExpenses ?? 0), defaultValue: "Feed {{amount}}" }) : undefined}
         tone="warning"
       />
     ),
@@ -534,7 +533,6 @@ export default function NewDashboard() {
         value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(grossPnL)}
         icon={Activity}
         href="/pnl"
-        trend={kpis ? { pct: 0 } : undefined}
         tone={grossPnL < 0 ? "danger" : "info"}
       />
     ),
@@ -675,7 +673,7 @@ export default function NewDashboard() {
     { id: "weight", label: t("weight.record", "Record Weight"), icon: Scale, page: "animals", tone: "info", onClick: () => setWeighOpen(true), disabled: activeAnimals.length === 0 },
     { id: "sale", label: t("sales.recordSale", "Record Sale"), icon: ShoppingCart, page: "sales", tone: "danger", onClick: () => setBulkSaleOpen(true), disabled: activeAnimals.length === 0 },
     { id: "expense", label: t("expenses.add", "Add Expense"), icon: DollarSign, page: "expenses", tone: "warning", onClick: () => setExpenseOpen(true) },
-    { id: "animal", label: t("animals.registerAnimal", "Register Animal"), icon: Plus, page: "animals", tone: "success", onClick: () => setCreateOpen(true) },
+    { id: "animal", label: t("dashboard.addAnimal", "Add animal"), icon: Plus, page: "animals", tone: "success", onClick: () => setCreateOpen(true) },
   ];
 
   const visibleKpis = prefs.kpiOrder.filter(id => !prefs.hiddenKpis.includes(id));

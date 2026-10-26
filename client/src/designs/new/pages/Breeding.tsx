@@ -20,17 +20,13 @@ import { StatusBadge } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
 import { PregnancyPanel } from "./Pregnancy";
+import { fmtDate } from "../lib/format";
+import { formatAmount } from "@/hooks/useCurrency";
 
 type LambingFilter = "all" | "pending" | "promoted";
 type WorkspaceTab = "breeding" | "pregnancy";
 
 const today = () => new Date().toISOString().slice(0, 10);
-
-function fmtDate(d: unknown) {
-  if (!d) return "-";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "-" : x.toLocaleDateString();
-}
 
 function fmtDateInput(d: unknown) {
   if (!d) return "";
@@ -63,7 +59,7 @@ function fmtWeight(value: unknown) {
 function fmtMoney(value: unknown) {
   if (!value) return "-";
   const parsed = Number.parseFloat(String(value));
-  return Number.isNaN(parsed) ? "-" : `${parsed.toFixed(2)} EGP`;
+  return Number.isNaN(parsed) ? "-" : formatAmount(parsed);
 }
 
 function isActiveReference(record: any) {

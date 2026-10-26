@@ -483,7 +483,7 @@ const PREGNANCIES = [
     daysPregnant,
     daysRemaining,
     progressPct: Math.round((daysPregnant / entry.gestation) * 100),
-    displayStatus: daysRemaining <= 14 ? "Due soon" : "Active",
+    displayStatus: daysRemaining < 0 ? "overdue" : daysRemaining <= 7 ? "due" : "active",
     record: {
       ...audit,
       id: entry.id,
@@ -898,8 +898,8 @@ export const demoFixtures: DemoFixtures = {
     byAnimal: (input: { animalId: number }) => PREGNANCIES.filter(row => row.record.animalId === input.animalId),
     summary: {
       active: PREGNANCIES.length,
-      dueSoon: PREGNANCIES.filter(row => row.daysRemaining <= 14).length,
-      overdue: 0,
+      dueSoon: PREGNANCIES.filter(row => row.displayStatus === "due").length,
+      overdue: PREGNANCIES.filter(row => row.displayStatus === "overdue").length,
       delivered: 3,
     },
     getUpcoming: {
