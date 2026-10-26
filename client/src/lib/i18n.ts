@@ -2977,6 +2977,7 @@ __deepFill(ar, __gapAr);
 const __infoEn = {
   "common": {
     "whatDoesThisMean": "What does this mean?",
+    "mustBePositive": "Must be more than 0",
     "whatDoesLabelMean": "What does {{label}} mean?"
   },
   "pnl": {
@@ -2995,9 +2996,10 @@ const __infoEn = {
     }
   },
   "incomeStatement": {
+    "feedEstimated": "Feed (estimated from rations)",
     "info": {
       "revenue": "Sales made in the selected dates. The small line shows how much of it has been paid.",
-      "costs": "Feed purchases + animal purchases + other expenses in the selected dates.",
+      "costs": "Feed purchases + animal purchases + other expenses in the selected dates. When one owner is selected, feed is that owner's estimated use from rations.",
       "grossProfit": "Revenue minus total costs for the selected dates. This is profit for the period, not per animal (see Animal P&L for that).",
       "margin": "Gross profit as a percentage of revenue.",
       "runningCost": "Farm-wide and per-animal costs in the selected dates, divided by the number of months."
@@ -3008,13 +3010,15 @@ const __infoEn = {
     "info": {
       "revenue": "Sales in the last 12 months.",
       "expenses": "Feed purchases and other expenses in the last 12 months. Animal purchase prices are not included.",
-      "pnl": "Revenue minus expenses for the last 12 months. It shows how the farm did over the period. Profit on each sold animal is on the Animal P&L page."
+      "pnl": "Revenue minus feed and other expenses for the last 12 months. Animal purchase prices are not counted here; the Income Statement subtracts them too, so its gross profit can be lower. Profit on each sold animal is on the Animal P&L page."
     }
   }
 };
 const __infoAr = {
+  "audit": { "actionVerb": {"insert": "تمت إضافة", "create_animal": "تمت إضافة", "tx": "تم تحديث", "bulk_update": "تم تحديث جماعي:", "auto_stage": "تم نقل للمرحلة التالية:", "soft_delete": "تم نقل إلى سلة المحذوفات:", "purge": "تم حذف نهائي:", "promote": "تمت إضافة إلى القطيع:", "exit": "تم إخراج من القطيع:", "import": "تم استيراد", "view": "تم عرض", "login": "تسجيل دخول:", "update_name": "تمت إعادة تسمية", "upload_logo": "تم رفع شعار:", "remove_logo": "تمت إزالة شعار:", "upload_favicon": "تم رفع أيقونة:", "remove_favicon": "تمت إزالة أيقونة:"} },
   "common": {
     "whatDoesThisMean": "ماذا يعني هذا؟",
+    "mustBePositive": "يجب أن يكون أكبر من 0",
     "whatDoesLabelMean": "ماذا يعني {{label}}؟"
   },
   "pnl": {
@@ -3033,9 +3037,10 @@ const __infoAr = {
     }
   },
   "incomeStatement": {
+    "feedEstimated": "العلف (تقديري حسب العلائق)",
     "info": {
       "revenue": "المبيعات خلال التواريخ المحددة. السطر الصغير يوضح المبلغ المدفوع منها.",
-      "costs": "مشتريات العلف + شراء الحيوانات + المصروفات الأخرى خلال التواريخ المحددة.",
+      "costs": "مشتريات العلف + شراء الحيوانات + المصروفات الأخرى خلال التواريخ المحددة. عند اختيار مالك واحد، يكون العلف هو استهلاكه التقديري حسب العلائق.",
       "grossProfit": "الإيراد ناقص إجمالي التكاليف للتواريخ المحددة. هذا ربح الفترة وليس ربح كل حيوان (راجع صفحة ربحية الحيوان لذلك).",
       "margin": "إجمالي الربح كنسبة مئوية من الإيراد.",
       "runningCost": "تكاليف المزرعة العامة وتكاليف الحيوانات خلال التواريخ المحددة مقسومة على عدد الأشهر."
@@ -3046,7 +3051,7 @@ const __infoAr = {
     "info": {
       "revenue": "المبيعات في آخر 12 شهرًا.",
       "expenses": "مشتريات العلف والمصروفات الأخرى في آخر 12 شهرًا. لا يشمل سعر شراء الحيوانات.",
-      "pnl": "الإيراد ناقص المصروفات لآخر 12 شهرًا. يوضح أداء المزرعة خلال الفترة. ربح كل حيوان مباع موجود في صفحة ربحية الحيوان."
+      "pnl": "الإيراد ناقص العلف والمصروفات الأخرى لآخر 12 شهرًا. لا يشمل سعر شراء الحيوانات؛ قائمة الدخل تخصمه أيضًا، لذلك قد يكون إجمالي الربح فيها أقل. ربح كل حيوان مباع موجود في صفحة ربحية الحيوان."
     }
   }
 };

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -16,6 +17,11 @@ function startOfYear() {
   return `${new Date().getFullYear()}-01-01`;
 }
 const today = () => new Date().toISOString().slice(0, 10);
+/** `?from=YYYY-MM-DD` / `?to=` let other pages (e.g. the Dashboard) open a matching period. */
+const dateParam = (search: string, key: string) => {
+  const v = new URLSearchParams(search).get(key);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+};
 
 /**
  * New Income Statement. Same getIncomeStatement query + owner scope as Old,
@@ -28,8 +34,13 @@ export default function NewIncomeStatement() {
   const { fmt } = useCurrency();
   const { ownerParam } = useOwnerFilter();
   const { canExport } = usePermissions("incomeStatement");
-  const [fromDate, setFromDate] = useState(startOfYear());
-  const [toDate, setToDate] = useState(today());
+  const search = useSearch();
+  // For one owner the server can't split feed purchases, so it reports that owner's ration use instead.
+  const feedLabel = ownerParam
+    ? t("incomeStatement.feedEstimated", "Feed (estimated from rations)")
+    : t("incomeStatement.feedPurchases", "Feed purchases");
+  const [fromDate, setFromDate] = useState(() => dateParam(search, "from") ?? startOfYear());
+  const [toDate, setToDate] = useState(() => dateParam(search, "to") ?? today());
 
   const { data, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({ fromDate, toDate, ownerId: ownerParam });
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery(undefined, { enabled: canExport });
@@ -245,7 +256,7 @@ export default function NewIncomeStatement() {
                 <Row label={t("incomeStatement.outstanding", "Outstanding receivables")} value={fmt(d.revenue?.outstandingReceivables ?? 0)} muted />
                 <div className="my-2 border-t border-border" />
                 <Row label={t("incomeStatement.animalPurchases", "Animal purchases")} value={fmt(d.costs?.animalPurchases ?? 0)} />
-                <Row label={t("incomeStatement.feedPurchases", "Feed purchases")} value={fmt(d.costs?.feedPurchases ?? 0)} />
+                <Row label={feedLabel} value={fmt(d.costs?.feedPurchases ?? 0)} />
                 <Row label={t("incomeStatement.otherCosts", "Other expenses")} value={fmt(d.costs?.totalOther ?? 0)} />
                 <div className="my-2 border-t border-border" />
                 <Row label={t("incomeStatement.grossProfit", "Gross profit")} value={fmt(d.grossProfit ?? 0)} strong />
@@ -258,7 +269,7 @@ export default function NewIncomeStatement() {
               {(() => {
                 // Feed and animal purchases are costs too; list them with the expense categories so the rows add up to Total costs.
                 const rows = [
-                  { label: t("incomeStatement.feedPurchases", "Feed purchases"), total: Number(d.costs?.feedPurchases ?? 0) },
+                  { label: feedLabel, total: Number(d.costs?.feedPurchases ?? 0) },
                   { label: t("incomeStatement.animalPurchases", "Animal purchases"), total: Number(d.costs?.animalPurchases ?? 0) },
                   ...((d.costs?.byCategory ?? []) as any[]).map(c => ({ label: c.categoryName ?? t("common.uncategorized", "Uncategorized"), total: Number(c.total ?? 0) })),
                 ].filter(r => r.total !== 0).sort((a, b) => b.total - a.total);

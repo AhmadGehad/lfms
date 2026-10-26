@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,6 +11,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { trpc } from "@/lib/trpc";
 import type { PermissionPage } from "@shared/permissions";
 import {
@@ -38,12 +39,27 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
   const perms = usePermissions();
   const [query, setQuery] = useState("");
   const canSeeAnimals = perms.can("animals", "view");
-  const { data: animals } = trpc.animals.list.useQuery({}, { enabled: open && canSeeAnimals });
+  const { ownerParam } = useOwnerFilter();
+  const { data: animalData } = trpc.animals.list.useQuery({ ownerId: ownerParam }, { enabled: open && canSeeAnimals });
   const canSeeSales = perms.can("sales", "view");
-  const { data: sales } = trpc.sales.list.useQuery({}, { enabled: open && canSeeSales });
-  const searching = query.trim() !== "";
-  const saleRows = (sales as any[] | undefined) ?? [];
-  const buyers = Array.from(new Set(saleRows.map(r => r.sale?.buyerName?.trim()).filter(Boolean))) as string[];
+  const { data: sales } = trpc.sales.list.useQuery({ ownerId: ownerParam }, { enabled: open && canSeeSales });
+  const q = query.trim().toLowerCase();
+  const searching = q !== "";
+  // Show only the first few matches per group so big farms stay fast to type in.
+  const MAX = 8;
+  const animals = useMemo(
+    () => (searching ? ((animalData as any[] | undefined) ?? []).filter(a => `${a.animal?.animalId ?? ""} ${a.categoryName ?? ""}`.toLowerCase().includes(q)).slice(0, MAX) : []),
+    [animalData, q, searching]
+  );
+  const saleRows = useMemo(
+    () => (searching ? ((sales as any[] | undefined) ?? []).filter(r => `${r.sale?.id} ${r.animalCode ?? ""} ${r.sale?.buyerName ?? ""}`.toLowerCase().includes(q)).slice(0, MAX) : []),
+    [sales, q, searching]
+  );
+  const buyers = useMemo(() => {
+    if (!searching) return [];
+    const names = ((sales as any[] | undefined) ?? []).map(r => r.sale?.buyerName?.trim()).filter((b): b is string => Boolean(b) && b.toLowerCase().includes(q));
+    return Array.from(new Set(names)).slice(0, MAX);
+  }, [sales, q, searching]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -105,7 +121,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             <CommandSeparator />
           </>
         )}
-        {searching && canSeeAnimals && animals && animals.length > 0 && (
+        {animals.length > 0 && (
           <>
             <CommandGroup heading={t("nav.animals")}>
               {animals.map((a: any) => (
@@ -123,7 +139,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             <CommandSeparator />
           </>
         )}
-        {searching && buyers.length > 0 && (
+        {buyers.length > 0 && (
           <>
             <CommandGroup heading={t("sales.buyers", "Buyers")}>
               {buyers.map(b => (
@@ -136,7 +152,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
             <CommandSeparator />
           </>
         )}
-        {searching && saleRows.length > 0 && (
+        {saleRows.length > 0 && (
           <>
             <CommandGroup heading={t("nav.sales")}>
               {saleRows.map(r => (

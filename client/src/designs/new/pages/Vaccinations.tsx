@@ -18,6 +18,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { daysUntil, fmtDate } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 
 const dayDiff = (d: unknown) => daysUntil(d);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -234,9 +235,7 @@ export default function NewVaccinations() {
     if (open) setAttempt(0);
   }, [open]);
   const searchStr = useSearch();
-  useEffect(() => {
-    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setOpen(true);
-  }, [canCreate, searchStr]);
+  useOneShotParams(["new"], params => { if (params.get("new") === "1" && canCreate) { setForm({ ...blank }); setOpen(true); } }, !perms.loading);
   const blank = {
     animalId: "", vaccineId: "", vaccinationDate: today(), batchNumber: "", veterinarian: "", notes: "",
     notifyBeforeNext: "7", notifyBeforeBooster: "7",

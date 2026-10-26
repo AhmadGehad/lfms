@@ -188,6 +188,7 @@ export function AnimalCreateDialog({
     // default is pre-selected: this choice has a real effect on the Animal
     // P&L page's Net Revenue figure, so it must be an active decision.
     if (form.acquisitionType === "purchased" && !form.purchaseFundingSource) {
+      setAttempt(a => a + 1);
       toast.error(t("pnl.fundingSourceRequired", "Choose how this purchase was funded"));
       return;
     }

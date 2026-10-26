@@ -190,7 +190,7 @@ function ProfileAddExpense({ animalId, code, open, onOpenChange }: { animalId: n
           <FormField label={t("expenses.date", "Date")} required>
             <Input type="date" value={form.expenseDate} onChange={e => setForm(f => ({ ...f, expenseDate: e.target.value }))} />
           </FormField>
-          <FormField label={t("expenses.amount", "Amount")} required>
+          <FormField label={t("expenses.amount", "Amount")} required positive>
             <Input type="number" inputMode="decimal" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0.00" />
           </FormField>
           <FormField label={t("expenses.category", "Category")} required>

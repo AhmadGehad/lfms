@@ -21,6 +21,7 @@ import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { PregnancyPanel } from "./Pregnancy";
 import { fmtDate } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 import { formatAmount } from "@/hooks/useCurrency";
 
 type LambingFilter = "all" | "pending" | "promoted";
@@ -197,9 +198,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     if (birthOpen) setBirthAttempt(0);
   }, [birthOpen]);
   const searchStr = useSearch();
-  useEffect(() => {
-    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setBirthOpen(true);
-  }, [canCreate, searchStr]);
+  useOneShotParams(["new"], params => { if (params.get("new") === "1" && canCreate) startBirth(); }, !perms.loading);
   const [birthIdempotencyKey, setBirthIdempotencyKey] = useState(() => crypto.randomUUID());
   const [workspaceTab, setWorkspaceTab] = useState<WorkspaceTab>(initialTab);
   const [birth, setBirth] = useState(blankBirth);

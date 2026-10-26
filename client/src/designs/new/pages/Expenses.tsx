@@ -20,6 +20,7 @@ import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { ExpenseFormFields, blankExpenseForm, expenseFormToPayload, validateExpenseForm, type ExpenseForm } from "../components/ExpenseFormFields";
 import { fmtDate } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const monthAgo = () => {
@@ -70,9 +71,7 @@ export default function NewExpenses() {
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
   const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
 
-  useEffect(() => {
-    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setOpen(true);
-  }, [canCreate, searchStr]);
+  useOneShotParams(["new"], params => { if (params.get("new") === "1" && canCreate) setOpen(true); }, !perms.loading);
 
   const invalidate = () => {
     utils.expenses.list.invalidate();

@@ -20,6 +20,7 @@ import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
 import { fmtDate, fmtNum } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 
 const toDateInput = (d: unknown) =>
   d ? (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10)) : "";
@@ -79,7 +80,7 @@ function StockFormFields({ form, setForm, lockItem }: {
       <FormField label={t("feed.date", "Date")} required>
         <Input type="date" value={form.transactionDate} onChange={e => setForm(f => ({ ...f, transactionDate: e.target.value }))} />
       </FormField>
-      <FormField label={t("feed.qty", "Quantity")} required>
+      <FormField label={t("feed.qty", "Quantity")} required positive>
         <Input type="number" inputMode="decimal" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} />
       </FormField>
       <FormField label={t("feed.unitCost", "Unit cost")}>
@@ -198,9 +199,9 @@ export default function NewFeed() {
     if (stockOpen) setStockAttempt(0);
   }, [stockOpen]);
   const searchStr = useSearch();
-  useEffect(() => {
-    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) { setActiveTab("stock"); setStockOpen(true); }
-  }, [canCreate, searchStr]);
+  useOneShotParams(["new"], params => {
+    if (params.get("new") === "1" && canCreate) { setActiveTab("stock"); setStockForm(blankStock()); setStockOpen(true); }
+  }, !perms.loading);
   const [stockIdempotencyKey, setStockIdempotencyKey] = useState(() => crypto.randomUUID());
   const [stockForm, setStockForm] = useState<StockForm>(blankStock());
   const [editEntry, setEditEntry] = useState<any | null>(null);
@@ -498,7 +499,7 @@ export default function NewFeed() {
         crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("nav.feed", "Feed") }]}
       />
 
-      <Tabs defaultValue="stock" onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <PageTabsList>
           <PageTabsTrigger value="stock">{t("feed.stock", "Stock")}</PageTabsTrigger>
           <PageTabsTrigger value="ledger">{t("feed.ledger", "Ledger")}</PageTabsTrigger>

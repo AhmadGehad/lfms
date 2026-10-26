@@ -20,4 +20,10 @@ describe("auditSentence", () => {
     expect(auditSentence(t, { action: "create", entityType: "sale", entityId: "11" })).toBe("Sale #11 added");
     expect(auditSentence(t, { action: "update", entityType: "setting" })).toBe("Setting updated");
   });
+
+  it("words every action the server writes, whatever its casing", () => {
+    expect(auditSentence(t, { action: "promote", entityType: "lambingLog", entityId: "12" })).toBe("Lambing log #12 added to herd");
+    expect(auditSentence(t, { action: "SOFT_DELETE", entityType: "expense", entityId: "3" })).toBe("Expense #3 moved to the recycle bin");
+    expect(auditSentence(t, { action: "some_new_action", entityType: "animal" })).toBe("Animal some new action");
+  });
 });

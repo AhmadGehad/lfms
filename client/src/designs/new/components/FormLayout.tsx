@@ -119,6 +119,7 @@ export function FormField({
   hint,
   error,
   required,
+  positive,
   full,
   children,
 }: {
@@ -127,6 +128,8 @@ export function FormField({
   hint?: React.ReactNode;
   error?: React.ReactNode;
   required?: boolean;
+  /** Numeric field that must be more than 0 (amounts, quantities). */
+  positive?: boolean;
   full?: boolean;
   children: React.ReactNode;
 }) {
@@ -134,9 +137,17 @@ export function FormField({
   const attempt = React.useContext(FormValidationContext);
   // Text inputs also validate on blur. Selects are skipped: their trigger blurs as the list opens.
   const [blurred, setBlurred] = React.useState(false);
-  if (!error && (attempt > 0 || blurred) && required) {
-    const control = findControlValue(children);
-    if (control.found && isEmptyValue(control.value)) error = t("common.requiredShort", "Required");
+  const control: { found: boolean; value?: unknown } = required || positive ? findControlValue(children) : { found: false };
+  const empty = control.found && isEmptyValue(control.value);
+  // A filled field cleared by a form reset ("save & add another") starts fresh.
+  const wasEmpty = React.useRef(empty);
+  React.useEffect(() => {
+    if (empty && !wasEmpty.current) setBlurred(false);
+    wasEmpty.current = empty;
+  }, [empty]);
+  if (!error && (attempt > 0 || blurred) && required && empty) error = t("common.requiredShort", "Required");
+  else if (!error && (attempt > 0 || blurred) && positive && control.found && !empty && !(Number.parseFloat(String(control.value)) > 0)) {
+    error = t("common.mustBePositive", "Must be more than 0");
   }
   const generatedId = React.useId();
   const controlId = htmlFor ?? `field-${generatedId}`;
@@ -153,7 +164,7 @@ export function FormField({
   return (
     <div
       className={cn("flex flex-col gap-1.5", full && "sm:col-span-2")}
-      onBlur={required ? e => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setBlurred(true); } : undefined}
+      onBlur={required || positive ? e => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setBlurred(true); } : undefined}
     >
       <label id={labelId} htmlFor={labelFor} className="text-sm font-medium text-foreground">
         {label}

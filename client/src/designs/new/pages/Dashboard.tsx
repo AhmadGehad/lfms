@@ -529,7 +529,7 @@ export default function NewDashboard() {
         label={kpiLabels.pnl}
         value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(grossPnL)}
         icon={Activity}
-        href="/income-statement"
+        href={`/income-statement?from=${twelveMonthsAgo()}`}
         hint={t("dashboard.last12Months", "Last 12 months")}
         info={t("dashboard.info.pnl")}
         tone={grossPnL < 0 ? "danger" : "info"}
@@ -749,6 +749,13 @@ export default function NewDashboard() {
     </div>
   );
 }
+
+/** Same window as the server's default KPI period (today minus one year). */
+const twelveMonthsAgo = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 1);
+  return d.toISOString().slice(0, 10);
+};
 
 const monthLabel = (m: unknown) => {
   if (!m) return "—";

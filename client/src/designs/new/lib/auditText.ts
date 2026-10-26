@@ -27,14 +27,33 @@ export function auditEntityLabel(t: TFunction, entityType: string): string {
 
 const ACTION_FALLBACK: Record<string, string> = {
   create: "added",
+  insert: "added",
+  create_animal: "added",
   update: "updated",
+  tx: "updated",
+  bulk_update: "updated in bulk",
+  auto_stage: "moved to its next stage",
   delete: "deleted",
+  soft_delete: "moved to the recycle bin",
+  purge: "permanently deleted",
   revert: "reverted",
   restore: "restored",
+  promote: "added to herd",
+  exit: "removed from herd",
+  import: "imported",
+  view: "viewed",
+  login: "signed in",
+  update_name: "renamed",
+  upload_logo: "logo uploaded",
+  remove_logo: "logo removed",
+  upload_favicon: "icon uploaded",
+  remove_favicon: "icon removed",
 };
 
 export function auditActionLabel(t: TFunction, action: string): string {
-  return t(`audit.actionVerb.${action}`, { defaultValue: ACTION_FALLBACK[action] ?? action });
+  // Rows use mixed casing ("SOFT_DELETE", "RESTORE"); unknown actions still read as words.
+  const key = action.toLowerCase();
+  return t(`audit.actionVerb.${key}`, { defaultValue: ACTION_FALLBACK[key] ?? humanizeIdentifier(key).toLowerCase() });
 }
 
 /** "Animal EW-0142 updated", "Sale #11 added", "Settings updated". */

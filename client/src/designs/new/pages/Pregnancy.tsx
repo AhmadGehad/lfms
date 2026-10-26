@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -141,8 +141,12 @@ export function PregnancyPanel({ embedded = false, createSignal = 0 }: { embedde
     setForm({ ...blank });
     setOpen(true);
   };
+  // Only react to new clicks: the panel remounts on tab switches with the old signal value.
+  const handledSignal = useRef(createSignal);
   useEffect(() => {
-    if (createSignal > 0 && canCreate) startCreate();
+    if (createSignal === handledSignal.current) return;
+    handledSignal.current = createSignal;
+    if (canCreate) startCreate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [createSignal]);
 

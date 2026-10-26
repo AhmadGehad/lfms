@@ -23,6 +23,7 @@ import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { AnimalCreateDialog, BulkRecordSaleDialog, RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { weightProgressPillClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { daysUntil, fmtDate } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 import { formatAmount } from "@/hooks/useCurrency";
 
 function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photoKey?: string | null; alt?: string }) {
@@ -492,14 +493,16 @@ export default function NewAnimals() {
     if (qView === "all" || qView === "active" || qView === "fattening" || qView === "ready" || qView === "females" || qView === "sold") {
       setView(qView);
     }
-    if (query.get("new") === "1" && canCreate) setCreateOpen(true);
-    if (query.get("weigh") === "1") {
-      const animalId = query.get("animalId");
+  }, [query]);
+  useOneShotParams(["new", "weigh", "animalId"], params => {
+    if (params.get("new") === "1" && canCreate) setCreateOpen(true);
+    if (params.get("weigh") === "1") {
+      const animalId = params.get("animalId");
       setWeighStartId(animalId ? Number(animalId) : null);
       setWeighAnimals(null);
       setWeighOpen(true);
     }
-  }, [canCreate, query]);
+  }, !perms.loading);
 
   const searchMatchedRows = useMemo(() => {
     const q = search.trim().toLowerCase();
