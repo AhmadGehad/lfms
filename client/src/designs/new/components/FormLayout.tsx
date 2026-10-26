@@ -1,14 +1,18 @@
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
+import { SelectTrigger } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
-const FIELD_CONTROL_NAMES = new Set(["input", "select", "textarea", "Input", "SelectTrigger", "Switch", "Textarea"]);
+// Match control components by identity, not by function name: production builds
+// minify names, which silently dropped the label/aria wiring there.
+const FIELD_CONTROL_TAGS = new Set(["input", "select", "textarea"]);
+const FIELD_CONTROL_COMPONENTS = new Set<unknown>([Input, SelectTrigger, Switch, Textarea]);
 
-function getElementName(type: unknown) {
-  if (typeof type === "string") return type;
-  if (typeof type !== "function" && typeof type !== "object") return "";
-  const named = type as { displayName?: string; name?: string };
-  return named.displayName || named.name || "";
+function isFieldControl(type: unknown) {
+  return typeof type === "string" ? FIELD_CONTROL_TAGS.has(type) : FIELD_CONTROL_COMPONENTS.has(type);
 }
 
 function mergeIds(...ids: Array<unknown>) {
@@ -24,10 +28,9 @@ function attachFieldA11y(
     if (!React.isValidElement(child)) return child;
 
     const element = child as React.ReactElement<Record<string, unknown>>;
-    const name = getElementName(element.type);
     const childProps = element.props;
 
-    if (!state.attached && FIELD_CONTROL_NAMES.has(name)) {
+    if (!state.attached && isFieldControl(element.type)) {
       const attachedId = typeof childProps.id === "string" ? childProps.id : ids.controlId;
       state.attached = true;
       state.attachedId = attachedId;
