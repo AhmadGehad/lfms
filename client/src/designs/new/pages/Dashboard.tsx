@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "@/lib/i18n";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -51,6 +52,7 @@ import { weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { CapitalPartnersSummary } from "@/components/CapitalPartnersSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fmtDate } from "../lib/format";
+import { chartBarCursor, chartTooltipItemStyle, chartTooltipLabelStyle, chartTooltipStyle, formatAxisNumber } from "../lib/chartTheme";
 
 const MS_DAY = 86400000;
 const DASHBOARD_PREF_KEY = "lfms:new-dashboard-layout";
@@ -754,7 +756,10 @@ export default function NewDashboard() {
 const monthLabel = (m: unknown) => {
   if (!m) return "—";
   const d = new Date(`${m}-01`);
-  return Number.isNaN(d.getTime()) ? String(m) : d.toLocaleDateString(undefined, { month: "short", year: "2-digit" });
+  if (Number.isNaN(d.getTime())) return String(m);
+  // Month names follow the UI language (not the browser); digits stay Latin.
+  const locale = i18n.language?.startsWith("ar") ? "ar-EG-u-nu-latn" : "en-GB";
+  return d.toLocaleDateString(locale, { month: "short", year: "2-digit" });
 };
 
 /** Six-month revenue (bars) and expense (area) trend — one measure per plot. */
@@ -768,7 +773,6 @@ function TrendsPanel({ title, salesTrend, expenseTrend, fmt, loading }: {
   const { t } = useTranslation();
   const sales = salesTrend.map(d => ({ date: monthLabel(d.month), value: parseFloat(String(d.revenue ?? 0)) }));
   const expenses = expenseTrend.map(d => ({ date: monthLabel(d.month), value: parseFloat(String(d.total ?? 0)) }));
-  const tooltipStyle = { borderRadius: 8, fontSize: 12, background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" } as const;
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
@@ -792,8 +796,8 @@ function TrendsPanel({ title, salesTrend, expenseTrend, fmt, loading }: {
                 <BarChart data={sales}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={34} />
-                  <Tooltip formatter={(v: number) => [fmt(v), t("incomeStatement.revenue", "Revenue")]} contentStyle={tooltipStyle} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={formatAxisNumber} width={34} />
+                  <Tooltip formatter={(v: number) => [fmt(v), t("incomeStatement.revenue", "Revenue")]} contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} itemStyle={chartTooltipItemStyle} cursor={chartBarCursor} />
                   <Bar dataKey="value" fill="var(--success)" radius={[4, 4, 0, 0]} maxBarSize={26} />
                 </BarChart>
               </ResponsiveContainer>
@@ -812,8 +816,8 @@ function TrendsPanel({ title, salesTrend, expenseTrend, fmt, loading }: {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis dataKey="date" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} width={34} />
-                  <Tooltip formatter={(v: number) => [fmt(v), t("dashboard.totalExpenses", "Expenses")]} contentStyle={tooltipStyle} />
+                  <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} tickFormatter={formatAxisNumber} width={34} />
+                  <Tooltip formatter={(v: number) => [fmt(v), t("dashboard.totalExpenses", "Expenses")]} contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} itemStyle={chartTooltipItemStyle} />
                   <Area type="monotone" dataKey="value" stroke="var(--warning)" fill="url(#dashExpenseGradient)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>

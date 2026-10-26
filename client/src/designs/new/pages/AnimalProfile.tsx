@@ -23,6 +23,7 @@ import { EditAnimalDialog } from "@/components/EditAnimalDialog";
 import { RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { signedPercentPillClass, weightProgressBarClass, weightProgressTextClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { fmtDate } from "../lib/format";
+import { chartAxisTick, chartTooltipItemStyle, chartTooltipLabelStyle, chartTooltipStyle } from "../lib/chartTheme";
 
 function tone(name?: string): StatusTone {
   const l = (name ?? "").toLowerCase();
@@ -700,9 +701,9 @@ export default function NewAnimalProfile() {
                     weight: parseFloat(w.weightKg ?? w.weight ?? 0),
                   }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                    <XAxis dataKey="date" stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
-                    <YAxis stroke="var(--color-muted-foreground)" style={{ fontSize: "12px" }} />
-                    <Tooltip contentStyle={{ backgroundColor: "var(--color-surface)", border: "1px solid var(--color-border)" }} />
+                    <XAxis dataKey="date" stroke="var(--color-muted-foreground)" tick={chartAxisTick} />
+                    <YAxis stroke="var(--color-muted-foreground)" tick={chartAxisTick} />
+                    <Tooltip contentStyle={chartTooltipStyle} labelStyle={chartTooltipLabelStyle} itemStyle={chartTooltipItemStyle} formatter={(v: number) => [`${v} ${t("common.kg", "kg")}`, t("weight.weight", "Weight (kg)")]} />
                     <Line type="monotone" dataKey="weight" stroke="var(--color-primary)" dot={{ fill: "var(--color-primary)", r: 3 }} strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
