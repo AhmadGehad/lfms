@@ -2550,7 +2550,7 @@ const __newAr = {
     "allCategories": "كل الفئات",
     "allStatus": "كل الحالات",
     "lossShort": "خسارة",
-    "netByAnimalChart": "صافي الربح/الخسارة حسب الحيوان (أفضل ٢٠ مغلقاً)",
+    "netByAnimalChart": "صافي الربح/الخسارة حسب الحيوان (أفضل 20 مغلقاً)",
     "ongoing": "مستمر",
     "profitShort": "ربح"
   },
@@ -2649,7 +2649,8 @@ const __gapEn = {
     "noneYet": "Nothing here yet"
   },
   "dashboard": {
-    "daysShort": "{{count}}d"
+    "daysShort": "{{count}}d",
+    "dueToday": "Due today"
   },
   "table": {
     "toggleDensity": "Toggle density",
@@ -2674,6 +2675,9 @@ const __gapEn = {
       "restore": "Restore",
       "revert": "Revert"
     }
+  },
+  "incomeStatement": {
+    "perMonthSuffix": "/mo"
   }
 };
 const __gapAr = {
@@ -2749,7 +2753,19 @@ const __gapAr = {
     "noneReady": "لا توجد حيوانات قريبة من الهدف",
     "readyToSell": "جاهز للبيع",
     "recentWork": "آخر الأعمال",
-    "daysShort": "{{count}} يوم"
+    "daysShort": "{{count}} يوم",
+    "categoryCount_zero": "لا توجد فئات",
+    "categoryCount_one": "فئة واحدة",
+    "categoryCount_two": "فئتان",
+    "categoryCount_few": "{{count}} فئات",
+    "categoryCount_many": "{{count}} فئة",
+    "categoryCount_other": "{{count}} فئة",
+    "daysShort_one": "يوم واحد",
+    "daysShort_two": "يومان",
+    "daysShort_few": "{{count}} أيام",
+    "daysShort_many": "{{count}} يومًا",
+    "daysShort_other": "{{count}} يوم",
+    "dueToday": "مستحق اليوم"
   },
   "display": {
     "label": "العرض"
@@ -2831,7 +2847,12 @@ const __gapAr = {
     "of": "من",
     "previousPage": "الصفحة السابقة",
     "nextPage": "الصفحة التالية",
-    "selectedCount": "{{count}} محدد"
+    "selectedCount": "{{count}} محدد",
+    "selectedCount_one": "عنصر واحد محدد",
+    "selectedCount_two": "عنصران محددان",
+    "selectedCount_few": "{{count}} عناصر محددة",
+    "selectedCount_many": "{{count}} عنصرًا محددًا",
+    "selectedCount_other": "{{count}} عنصر محدد"
   },
   "vaccine": {
     "applyTo": "تطبيق على",
@@ -2869,6 +2890,21 @@ const __gapAr = {
       "restore": "استعادة",
       "revert": "تراجع"
     }
+  },
+  "incomeStatement": {
+    "perMonthSuffix": " / شهر",
+    "overMonths_one": "خلال شهر واحد",
+    "overMonths_two": "خلال شهرين",
+    "overMonths_few": "خلال {{months}} أشهر",
+    "overMonths_many": "خلال {{months}} شهرًا",
+    "overMonths_other": "خلال {{months}} شهر"
+  },
+  "feed": {
+    "needReorder_one": "صنف واحد يحتاج إعادة طلب",
+    "needReorder_two": "صنفان يحتاجان إعادة طلب",
+    "needReorder_few": "{{count}} أصناف تحتاج إعادة طلب",
+    "needReorder_many": "{{count}} صنفًا يحتاج إعادة طلب",
+    "needReorder_other": "{{count}} صنف يحتاج إعادة طلب"
   }
 };
 __deepFill(en, __newEn);

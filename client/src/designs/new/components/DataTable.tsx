@@ -362,7 +362,7 @@ export function DataTable<T>({
                 className="grid h-11 w-11 place-items-center rounded-lg border border-border disabled:opacity-40 hover:bg-surface sm:h-9 sm:w-9"
                 aria-label={t("table.previousPage", "Previous page")}
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-4 w-4 rtl:rotate-180" />
               </button>
             </PaginationItem>
             <PaginationItem>
@@ -375,7 +375,7 @@ export function DataTable<T>({
                 className="grid h-11 w-11 place-items-center rounded-lg border border-border disabled:opacity-40 hover:bg-surface sm:h-9 sm:w-9"
                 aria-label={t("table.nextPage", "Next page")}
               >
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 rtl:rotate-180" />
               </button>
             </PaginationItem>
           </PaginationContent>

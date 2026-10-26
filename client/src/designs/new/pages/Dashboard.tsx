@@ -359,7 +359,7 @@ export default function NewDashboard() {
           id: p.id ?? p.animalId,
           title: p.animalIdStr ?? p.animalCode ?? p.animalId ?? `#${p.id}`,
           meta:
-            d == null ? "--" : d < 0 ? `${t("dashboard.overdue", "Overdue")} ${t("dashboard.daysShort", { count: -d, defaultValue: "{{count}}d" })}` : `${t("dashboard.dueIn", "Due in")} ${t("dashboard.daysShort", { count: d, defaultValue: "{{count}}d" })}`,
+            d == null ? "--" : d < 0 ? `${t("dashboard.overdue", "Overdue")} ${t("dashboard.daysShort", { count: -d, defaultValue: "{{count}}d" })}` : (d === 0 ? t("dashboard.dueToday", "Due today") : `${t("dashboard.dueIn", "Due in")} ${t("dashboard.daysShort", { count: d, defaultValue: "{{count}}d" })}`),
           href: "/pregnancy",
           action: d != null && d < 0 ? <StatusBadge tone="danger">{t("dashboard.overdue", "Overdue")}</StatusBadge> : undefined,
         })),
@@ -380,7 +380,7 @@ export default function NewDashboard() {
           return {
             id: `${v.animalId}-${v.vaccineId ?? v.vaccineName}-${due?.kind ?? "due"}`,
             title: `${v.animalIdStr ?? v.animalCode ?? v.animalId} · ${v.vaccineName ?? ""}`,
-            meta: d == null ? "--" : `${doseLabel} · ${d < 0 ? `${t("dashboard.overdue", "Overdue")} ${t("dashboard.daysShort", { count: -d, defaultValue: "{{count}}d" })}` : `${t("dashboard.dueIn", "Due in")} ${t("dashboard.daysShort", { count: d, defaultValue: "{{count}}d" })}`}`,
+            meta: d == null ? "--" : `${doseLabel} · ${d < 0 ? `${t("dashboard.overdue", "Overdue")} ${t("dashboard.daysShort", { count: -d, defaultValue: "{{count}}d" })}` : (d === 0 ? t("dashboard.dueToday", "Due today") : `${t("dashboard.dueIn", "Due in")} ${t("dashboard.daysShort", { count: d, defaultValue: "{{count}}d" })}`)}`,
             href: "/vaccinations",
             action: d != null && d < 0 ? <StatusBadge tone="danger">{t("dashboard.overdue", "Overdue")}</StatusBadge> : undefined,
           };
@@ -396,7 +396,7 @@ export default function NewDashboard() {
         .map(s => ({
           id: s.feedItemId,
           title: s.feedItemName,
-          meta: `${parseFloat(s.stockOnHand).toFixed(1)} ${s.unit} · ${s.daysRemaining === 999 ? "∞" : `${s.daysRemaining}d ${t("dashboard.left", "left")}`}`,
+          meta: `${parseFloat(s.stockOnHand).toFixed(1)} ${s.unit} · ${s.daysRemaining === 999 ? "∞" : `${t("dashboard.daysShort", { count: s.daysRemaining, defaultValue: "{{count}}d" })} ${t("dashboard.left", "left")}`}`,
           action: (
             <button
               type="button"

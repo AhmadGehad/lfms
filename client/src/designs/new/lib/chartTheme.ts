@@ -20,5 +20,5 @@ export const chartBarCursor = { fill: "var(--foreground)", fillOpacity: 0.06 } a
 export const chartAxisTick = { fontSize: 11, fill: "var(--muted-foreground)" } as const;
 
 /** Axis numbers like 500 / 1.5K / 2K — never repeated rounded labels. */
-const compact = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 });
+const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 export const formatAxisNumber = (v: number) => compact.format(v);

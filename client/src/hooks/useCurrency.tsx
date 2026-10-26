@@ -4,7 +4,9 @@ import { useMemo } from "react";
 /** Thousands-separated amount; shows cents only when there are any (1,250 / 1,250.50). */
 export function formatAmount(value: number) {
   const whole = Math.abs(value - Math.round(value)) < 0.005;
-  return value.toLocaleString(undefined, {
+  // Always Western digits and comma grouping (0123, 1,250) — even on Arabic
+  // browsers — so amounts look the same everywhere in the app.
+  return value.toLocaleString("en-US", {
     minimumFractionDigits: whole ? 0 : 2,
     maximumFractionDigits: whole ? 0 : 2,
   });

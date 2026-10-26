@@ -548,7 +548,7 @@ export function WeighInSessionDialog({
           </Button>
           <Button type="button" disabled={isMutationWorking(addWeight) || !current || !(newWeight > 0)} onClick={save}>
             {index >= activeAnimals.length - 1 ? t("common.finish", "Finish") : t("weight.nextAnimal", "Next Animal")}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
           </Button>
         </DialogFooter>
       </DialogContent>
