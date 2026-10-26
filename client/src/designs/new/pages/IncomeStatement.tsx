@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Download, FileSpreadsheet, FileText, Printer, TrendingDown, TrendingUp } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { KpiCard } from "../components/KpiCard";
+import { fmtDate, fmtDateTime } from "../lib/format";
 
 function startOfYear() {
   return `${new Date().getFullYear()}-01-01`;
@@ -53,9 +54,9 @@ export default function NewIncomeStatement() {
       doc.text(t("incomeStatement.title", "Income Statement"), 105, 30, { align: "center" });
       doc.setFontSize(10);
       doc.setTextColor(120, 120, 120);
-      doc.text(`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`, 105, 38, { align: "center" });
+      doc.text(`Period: ${fmtDate(fromDate)} – ${fmtDate(toDate)}`, 105, 38, { align: "center" });
       if (ownerLabel) doc.text(`Owner: ${ownerLabel}`, 105, 44, { align: "center" });
-      doc.text(`Generated: ${new Date().toLocaleString()}`, 105, ownerLabel ? 50 : 44, { align: "center" });
+      doc.text(`Generated: ${fmtDateTime(new Date())}`, 105, ownerLabel ? 50 : 44, { align: "center" });
 
       autoTable(doc, {
         startY: 55,
@@ -143,9 +144,9 @@ export default function NewIncomeStatement() {
       const summaryData = [
         [companyName],
         [t("incomeStatement.title", "Income Statement")],
-        [`Period: ${new Date(fromDate).toLocaleDateString()} – ${new Date(toDate).toLocaleDateString()}`],
+        [`Period: ${fmtDate(fromDate)} – ${fmtDate(toDate)}`],
         ...(ownerLabel ? [[`Owner: ${ownerLabel}`]] : []),
-        [`Generated: ${new Date().toLocaleString()}`],
+        [`Generated: ${fmtDateTime(new Date())}`],
         [],
         ["REVENUE", "Amount (EGP)"],
         ["Animal Sales", d?.revenue?.animalSales ?? 0],
@@ -270,7 +271,7 @@ export default function NewIncomeStatement() {
                 <div className="mb-3 flex items-center justify-between">
                   <h2 className="text-sm font-semibold">{t("incomeStatement.runningCostMonth", "Running cost / month")}</h2>
                   <span className="text-xs text-muted-foreground">
-                    {t("incomeStatement.overMonths", "over {{months}} months", { months: d.runningCostPerMonth.monthsInPeriod ?? 0 })}
+                    {t("incomeStatement.overMonths", { count: d.runningCostPerMonth.monthsInPeriod ?? 0, months: d.runningCostPerMonth.monthsInPeriod ?? 0, defaultValue: "over {{months}} months" })}
                   </span>
                 </div>
                 <dl className="space-y-2 text-sm">

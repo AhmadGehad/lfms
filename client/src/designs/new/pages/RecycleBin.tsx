@@ -7,12 +7,7 @@ import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
-
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleString();
-}
+import { fmtDateTime as fmtDate } from "../lib/format";
 
 /** Tenant recycle bin. Permanent deletion is owned by platform retention workflows. */
 export default function NewRecycleBin() {

@@ -21,6 +21,8 @@ import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { AnimalCreateDialog, BulkRecordSaleDialog, RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { weightProgressPillClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
+import { fmtDate } from "../lib/format";
+import { formatAmount } from "@/hooks/useCurrency";
 
 function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photoKey?: string | null; alt?: string }) {
   const { data } = trpc.animals.getPhotoUrl.useQuery(
@@ -45,12 +47,6 @@ function statusTone(name?: string): StatusTone {
   if (l.includes("dead") || l.includes("mort") || l.includes("نفوق")) return "danger";
   if (l.includes("transport") || l.includes("نقل")) return "warning";
   return "neutral";
-}
-
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const date = new Date(d as string);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString();
 }
 
 function dueLabel(date: unknown, name?: string | null) {
@@ -101,7 +97,7 @@ function daysOnFarm(row: any) {
 function money(value: unknown) {
   const amount = parseFloat(String(value ?? ""));
   return Number.isFinite(amount) && amount > 0
-    ? amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    ? formatAmount(amount)
     : "—";
 }
 
@@ -545,26 +541,29 @@ export default function NewAnimals() {
     setLocation(`${location.split("?")[0]}${qs ? `?${qs}` : ""}`);
   };
 
+  // Skip the photo column until at least one animal has a photo — an empty
+  // column of placeholders only pushes the useful columns off-screen.
+  const anyPhoto = rowsBase.some(a => a.animal?.photoUrl);
   const columns: Column<any>[] = [
-    {
+    ...(anyPhoto ? [{
       id: "photo",
       header: "",
       cell: a => <AnimalPhotoCell animalId={a.animal?.id} photoKey={a.animal?.photoUrl} alt={a.animal?.animalId} />,
       sortValue: () => null,
       hideable: false,
       mobileLabel: "",
-    },
+    } satisfies Column<any>] : []),
     {
       id: "animalId",
       header: t("animals.animalId", "Animal ID"),
-      cell: a => <span className="font-medium text-foreground">{a.animal?.animalId}</span>,
+      cell: a => <span className="whitespace-nowrap font-medium text-foreground">{a.animal?.animalId}</span>,
       sortValue: a => a.animal?.animalId,
       primary: true,
       mobileLabel: t("animals.animalId", "Animal ID"),
     },
     { id: "species", header: t("animals.species", "Species"), cell: a => a.speciesName ?? "—", sortValue: a => a.speciesName, hideable: true, mobileLabel: t("animals.species", "Species") },
     { id: "category", header: t("animals.category", "Category"), cell: a => a.categoryName ?? "—", sortValue: a => a.categoryName, mobileLabel: t("animals.category", "Category") },
-    { id: "group", header: t("animals.group", "Group"), cell: a => a.groupName ?? "—", sortValue: a => a.groupName, hideable: true, mobileLabel: t("animals.group", "Group") },
+    { id: "group", header: t("animals.group", "Group"), cell: a => <span className="whitespace-nowrap">{a.groupName ?? "—"}</span>, sortValue: a => a.groupName, hideable: true, mobileLabel: t("animals.group", "Group") },
     { id: "owner", header: t("owners.owner", "Owner"), cell: a => a.ownerName ?? "—", sortValue: a => a.ownerName, hideable: true, defaultHidden: true, mobileLabel: t("owners.owner", "Owner") },
     { id: "sex", header: t("animals.sex", "Sex"), cell: a => t(`animals.${a.animal?.sex}`, a.animal?.sex), sortValue: a => a.animal?.sex, hideable: true, mobileLabel: t("animals.sex", "Sex") },
     { id: "weight", header: t("animals.currentWeight", "Current Weight (kg)"), cell: a => <span className="tabular-nums">{a.latestWeightKg ? parseFloat(a.latestWeightKg).toFixed(1) : a.animal?.weightAtAcquisition ? parseFloat(a.animal.weightAtAcquisition).toFixed(1) : "—"}</span>, sortValue: a => parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? "0"), hideable: true, mobileLabel: t("animals.currentWeight", "Current Weight") },
@@ -625,7 +624,7 @@ export default function NewAnimals() {
         }
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:border-b sm:border-border">
+      <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:gap-1 sm:px-0 sm:pb-0 sm:border-b sm:border-border">
         {([
           ["all", t("common.all", "All"), counts.all],
           ["active", t("animals.active", "Active"), counts.active],
@@ -767,8 +766,8 @@ export default function NewAnimals() {
             description={t("animals.noneHint", "Animals you register or that are born will appear here.")}
           />
         }
+        activeFilterCount={[filterSpecies, filterStatus, filterAcquisitionType].filter(v => v !== "all").length}
         toolbar={
-          <>
             <div className="relative">
               <Search className="pointer-events-none absolute inset-y-0 start-2.5 my-auto h-4 w-4 text-muted-foreground" />
               <Input
@@ -779,6 +778,9 @@ export default function NewAnimals() {
                 className="h-9 w-44 ps-8"
               />
             </div>
+        }
+        filters={
+          <>
             <Select value={filterSpecies} onValueChange={setFilterSpecies}>
               <SelectTrigger className="h-9 w-36"><SelectValue placeholder={t("animals.species", "Species")} /></SelectTrigger>
               <SelectContent>

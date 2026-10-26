@@ -2070,10 +2070,15 @@ const ar = {
 
 // ─── New-design i18n keys (auto-added; deep-merged so existing keys win) ───────
 const __newEn = {
+  "nav": {
+    "health": "Health"
+  },
   "actions": {
     "quickAdd": "Add"
   },
   "animals": {
+    "purchased": "Purchased",
+    "born": "Born",
     "allSources": "All sources",
     "deleteCascadeHint": "Its weights, expenses, sales and vaccination records go to the bin with it.",
     "deleteRecalcHint": "Dashboard KPIs, feed forecasts and P&L are recalculated.",
@@ -2113,6 +2118,7 @@ const __newEn = {
     "weight": "Weight"
   },
   "common": {
+    "filters": "Filters",
     "allSpecies": "All species",
     "back": "Back",
     "clear": "Clear",
@@ -2149,6 +2155,10 @@ const __newEn = {
     "validityUnit": "Unit"
   },
   "dashboard": {
+    "addAnimal": "Add animal",
+    "categoryCount_one": "{{count}} category",
+    "categoryCount_other": "{{count}} categories",
+    "feedShare": "Feed {{amount}}",
     "actionCenter": "Your farm at a glance — what needs attention today",
     "criticalFeed": "Low / critical feed",
     "dueIn": "Due in",
@@ -2199,6 +2209,12 @@ const __newEn = {
     "total": "Total"
   },
   "feed": {
+    "needReorder_one": "{{count}} item needs reorder",
+    "stockStatus": {
+      "ok": "OK",
+      "low": "Low",
+      "critical": "Critical"
+    },
     "active": "Active",
     "dailyUse": "Daily use",
     "date": "Date",
@@ -2216,7 +2232,7 @@ const __newEn = {
     "healthy": "Stock healthy",
     "item": "Feed item",
     "ledger": "Ledger",
-    "needReorder": "items need reorder",
+    "needReorder": "{{count}} items need reorder",
     "noLedger": "No stock transactions yet",
     "noRations": "No ration plans yet",
     "noStock": "No feed items yet",
@@ -2229,6 +2245,7 @@ const __newEn = {
     "type": "Type"
   },
   "incomeStatement": {
+    "overMonths_one": "over {{months}} month",
     "breakdown": "Breakdown",
     "costs": "Total costs",
     "costsByCategory": "Costs by category",
@@ -2321,7 +2338,7 @@ const __newEn = {
     "pickAnimalVaccine": "Pick an animal and a vaccine",
     "record": "Record vaccination",
     "recorded": "Vaccination recorded",
-    "records": "records",
+    "records": "vaccination records",
     "vaccine": "Vaccine",
     "vet": "Veterinarian"
   },
@@ -2334,10 +2351,15 @@ const __newEn = {
   }
 };
 const __newAr = {
+  "nav": {
+    "health": "الصحة"
+  },
   "actions": {
     "quickAdd": "إضافة"
   },
   "animals": {
+    "purchased": "مشترى",
+    "born": "مولود",
     "allSources": "كل المصادر",
     "deleteCascadeHint": "تنتقل أوزانه ومصروفاته ومبيعاته وسجلات تطعيمه إلى السلة معه.",
     "deleteRecalcHint": "يُعاد حساب مؤشرات لوحة التحكم وتوقعات العلف والأرباح والخسائر.",
@@ -2377,6 +2399,7 @@ const __newAr = {
     "weight": "الوزن"
   },
   "common": {
+    "filters": "التصفية",
     "allSpecies": "كل الأنواع",
     "back": "رجوع",
     "clear": "مسح",
@@ -2413,6 +2436,9 @@ const __newAr = {
     "validityUnit": "الوحدة"
   },
   "dashboard": {
+    "addAnimal": "إضافة حيوان",
+    "categoryCount": "{{count}} فئات",
+    "feedShare": "الأعلاف {{amount}}",
     "actionCenter": "مزرعتك في لمحة — ما يحتاج إلى انتباه اليوم",
     "criticalFeed": "علف منخفض / حرج",
     "dueIn": "مستحق خلال",
@@ -2463,6 +2489,11 @@ const __newAr = {
     "total": "الإجمالي"
   },
   "feed": {
+    "stockStatus": {
+      "ok": "جيد",
+      "low": "منخفض",
+      "critical": "حرج"
+    },
     "active": "نشط",
     "dailyUse": "الاستهلاك اليومي",
     "date": "التاريخ",
@@ -2480,7 +2511,7 @@ const __newAr = {
     "healthy": "المخزون جيد",
     "item": "صنف العلف",
     "ledger": "دفتر الحركات",
-    "needReorder": "أصناف تحتاج إعادة طلب",
+    "needReorder": "{{count}} أصناف تحتاج إعادة طلب",
     "noLedger": "لا توجد حركات مخزون بعد",
     "noRations": "لا توجد خطط أعلاف بعد",
     "noStock": "لا توجد أصناف علف بعد",
@@ -2585,7 +2616,7 @@ const __newAr = {
     "pickAnimalVaccine": "اختر حيواناً ولقاحاً",
     "record": "تسجيل تطعيم",
     "recorded": "تم تسجيل التطعيم",
-    "records": "سجلات",
+    "records": "سجلات تطعيم",
     "vaccine": "اللقاح",
     "vet": "الطبيب البيطري"
   },

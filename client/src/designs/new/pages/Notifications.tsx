@@ -7,13 +7,12 @@ import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ListSkeleton } from "@/components/PageSkeleton";
 import { formatAlertType, priorityTone } from "@shared/notifications";
+import { fmtDateTime } from "../lib/format";
 
 type NotificationRow = RouterOutputs["notifications"]["list"][number];
 
 function fmtTime(d: unknown) {
-  if (!d) return "";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "" : x.toLocaleString();
+  return fmtDateTime(d, "");
 }
 
 /**

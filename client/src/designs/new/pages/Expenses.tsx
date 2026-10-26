@@ -19,12 +19,8 @@ import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
 import { ExpenseFormFields, blankExpenseForm, expenseFormToPayload, validateExpenseForm, type ExpenseForm } from "../components/ExpenseFormFields";
+import { fmtDate } from "../lib/format";
 
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString();
-}
 const today = () => new Date().toISOString().slice(0, 10);
 const monthAgo = () => {
   const d = new Date();
@@ -132,6 +128,19 @@ export default function NewExpenses() {
   const rows = (expenses as any[]) ?? [];
   const total = rows.reduce((s, r) => s + parseFloat(r.expense?.amount ?? 0), 0);
 
+  // Name the target so "Per-head" / "Category" rows say which animal or category.
+  const { data: animalCategories } = trpc.config.getCategories.useQuery(undefined, { staleTime: 5 * 60 * 1000 });
+  const categoryNames = new Map(((animalCategories as any[]) ?? []).map(c => [c.id, c.name as string]));
+  const allocationText = (r: any) => {
+    const label = allocationLabel(r.expense?.targetType);
+    if (r.expense?.targetType === "head" && r.animalCode) return `${label}: ${r.animalCode}`;
+    if (r.expense?.targetType === "category") {
+      const name = categoryNames.get(r.expense?.categoryTarget);
+      if (name) return `${label}: ${name}`;
+    }
+    return label;
+  };
+
   const allocationLabel = (type: string) => {
     switch (type) {
       case "general": return t("expenses.general", "General");
@@ -146,7 +155,7 @@ export default function NewExpenses() {
     { id: "date", header: t("expenses.date", "Date"), cell: r => fmtDate(r.expense?.expenseDate), sortValue: r => r.expense?.expenseDate, primary: true, mobileLabel: t("expenses.date", "Date") },
     { id: "category", header: t("expenses.category", "Category"), cell: r => r.categoryName ?? "—", sortValue: r => r.categoryName, mobileLabel: t("expenses.category", "Category") },
     { id: "sub", header: t("expenses.subCategory", "Sub-category"), cell: r => r.subCategoryName ?? "—", hideable: true, mobileLabel: t("expenses.subCategory", "Sub-category") },
-    { id: "allocation", header: t("expenses.allocation", "Allocation"), cell: r => allocationLabel(r.expense?.targetType), sortValue: r => r.expense?.targetType, hideable: true, mobileLabel: t("expenses.allocation", "Allocation") },
+    { id: "allocation", header: t("expenses.allocation", "Allocation"), cell: r => allocationText(r), sortValue: r => r.expense?.targetType, hideable: true, mobileLabel: t("expenses.allocation", "Allocation") },
     { id: "owner", header: t("owners.owner", "Owner"), cell: r => r.ownerName ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("owners.owner", "Owner") },
     { id: "vendor", header: t("expenses.vendor", "Vendor"), cell: r => r.expense?.vendorName ?? "—", hideable: true, mobileLabel: t("expenses.vendor", "Vendor") },
     { id: "notes", header: t("expenses.notes", "Notes"), cell: r => <span className="block max-w-40 truncate text-muted-foreground">{r.expense?.notes ?? "—"}</span>, hideable: true, defaultHidden: true, mobileLabel: t("expenses.notes", "Notes") },
@@ -175,15 +184,26 @@ export default function NewExpenses() {
         rowKey={r => r.expense?.id}
         loading={isLoading}
         storageKey="expenses"
+        defaultSort={{ id: "date", dir: "desc" }}
+        activeFilterCount={filterTargetType !== "all" ? 1 : 0}
         toolbar={
+          <Input
+            className="h-9 w-44"
+            placeholder={t("expenses.searchVendor", "Search vendor…")}
+            aria-label={t("expenses.searchVendor", "Search vendor")}
+            value={filterVendor}
+            onChange={e => setFilterVendor(e.target.value)}
+          />
+        }
+        filters={
           <>
             <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
               {t("common.from", "From")}
-              <Input type="date" className="h-9 w-36" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+              <Input type="date" className="h-9 w-36 flex-1" value={fromDate} onChange={e => setFromDate(e.target.value)} />
             </label>
             <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
               {t("common.to", "To")}
-              <Input type="date" className="h-9 w-36" value={toDate} onChange={e => setToDate(e.target.value)} />
+              <Input type="date" className="h-9 w-36 flex-1" value={toDate} onChange={e => setToDate(e.target.value)} />
             </label>
             <Select value={filterTargetType} onValueChange={setFilterTargetType}>
               <SelectTrigger className="h-9 w-40"><SelectValue placeholder={t("expenses.allocation", "Allocation")} /></SelectTrigger>
@@ -195,13 +215,6 @@ export default function NewExpenses() {
                 <SelectItem value="head">{t("expenses.head", "Per-head")}</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              className="h-9 w-44"
-              placeholder={t("expenses.searchVendor", "Search vendor…")}
-              aria-label={t("expenses.searchVendor", "Search vendor")}
-              value={filterVendor}
-              onChange={e => setFilterVendor(e.target.value)}
-            />
           </>
         }
         rowActions={(canUpdate || canDelete) ? r => (

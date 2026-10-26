@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -16,6 +16,7 @@ import { KpiCard } from "../components/KpiCard";
 import { DataTable, type Column } from "../components/DataTable";
 import { StatusBadge } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * New P&L. Same getAllPnL query + owner scope as Old with the same realised
@@ -135,43 +136,45 @@ export default function NewPnL() {
     { id: "costMonth", header: t("pnl.costMonth", "Cost/month"), cell: r => money(Number(r.costPerMonth ?? 0)), sortValue: r => Number(r.costPerMonth ?? 0), align: "end", hideable: true, defaultHidden: true, mobileLabel: t("pnl.costMonth", "Cost/month") },
   ];
 
+  const kpiValue = (value: ReactNode) => (isLoading ? <Skeleton className="h-7 w-24" /> : value);
+
   return (
     <div className="p-4 md:p-6">
       <PageHeader
         title={t("nav.pnl", "Profit & Loss")}
-        subtitle={t("pnl.activeClosed", "{{active}} active · {{closed}} closed", { active: stats.activeCount, closed: stats.closedCount })}
+        subtitle={isLoading ? undefined : t("pnl.activeClosed", "{{active}} active · {{closed}} closed", { active: stats.activeCount, closed: stats.closedCount })}
         crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("nav.pnl", "Profit & Loss") }]}
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label={t("pnl.realisedRevenue", "Realised revenue")} value={fmt(stats.totalRevenue)} icon={TrendingUp} hint={t("pnl.fromSold", "From sold animals")} />
+        <KpiCard label={t("pnl.realisedRevenue", "Realised revenue")} value={kpiValue(fmt(stats.totalRevenue))} icon={TrendingUp} hint={isLoading ? undefined : t("pnl.fromSold", "From sold animals")} />
         <KpiCard
           label={t("pnl.netRevenue", "Net revenue (after reinvestment)")}
-          value={fmt(stats.netRevenue)}
+          value={kpiValue(fmt(stats.netRevenue))}
           icon={RefreshCcw}
-          hint={t("pnl.netRevenueSub", "Realised revenue minus what's been reinvested into new stock")}
+          hint={isLoading ? undefined : t("pnl.netRevenueSub", "Realised revenue minus what's been reinvested into new stock")}
         />
         <KpiCard
           label={t("pnl.realisedNet", "Realised net P&L")}
-          value={<span className={stats.realisedNet >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.realisedNet)}</span>}
+          value={kpiValue(<span className={stats.realisedNet >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.realisedNet)}</span>)}
           icon={Activity}
-          hint={`${stats.profitableCount} ${t("pnl.profitShort", "profit")} · ${stats.lossCount} ${t("pnl.lossShort", "loss")}`}
+          hint={isLoading ? undefined : `${stats.profitableCount} ${t("pnl.profitShort", "profit")} · ${stats.lossCount} ${t("pnl.lossShort", "loss")}`}
         />
-        <KpiCard label={t("pnl.runningCostMonth", "Running cost / month")} value={fmt(stats.runningCostMonthly)} icon={TrendingDown} hint={t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
-        <KpiCard label={t("pnl.feedCostMonth", "Feed cost / month")} value={fmt(stats.feedCostMonthly)} icon={Wheat} hint={t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
-        <KpiCard label={t("pnl.capitalOnHoof", "Capital on hoof")} value={fmt(stats.capitalOnHoof)} icon={Leaf} hint={t("pnl.activePurchaseCost", "Purchase cost of active herd")} />
-        <KpiCard label={t("pnl.runningCostTotal", "Running cost total")} value={fmt(stats.runningCost)} icon={TrendingDown} hint={t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
+        <KpiCard label={t("pnl.runningCostMonth", "Running cost / month")} value={kpiValue(fmt(stats.runningCostMonthly))} icon={TrendingDown} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
+        <KpiCard label={t("pnl.feedCostMonth", "Feed cost / month")} value={kpiValue(fmt(stats.feedCostMonthly))} icon={Wheat} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
+        <KpiCard label={t("pnl.capitalOnHoof", "Capital on hoof")} value={kpiValue(fmt(stats.capitalOnHoof))} icon={Leaf} hint={isLoading ? undefined : t("pnl.activePurchaseCost", "Purchase cost of active herd")} />
+        <KpiCard label={t("pnl.runningCostTotal", "Running cost total")} value={kpiValue(fmt(stats.runningCost))} icon={TrendingDown} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
         <KpiCard
           label={t("pnl.currentAccountValue", "Current account value")}
-          value={<span className={stats.currentAccountValue >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.currentAccountValue)}</span>}
+          value={kpiValue(<span className={stats.currentAccountValue >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.currentAccountValue)}</span>)}
           icon={Banknote}
-          hint={t("pnl.currentAccountValueSub", "Net revenue + capital − operating spend")}
+          hint={isLoading ? undefined : t("pnl.currentAccountValueSub", "Net revenue + capital − operating spend")}
         />
-        <KpiCard label={t("pnl.animalOperatingCost", "Animal operating cost")} value={fmt(stats.animalOperatingCost)} icon={TrendingDown} hint={t("pnl.animalOperatingCostSub", "Feed + expenses across herd")} />
+        <KpiCard label={t("pnl.animalOperatingCost", "Animal operating cost")} value={kpiValue(fmt(stats.animalOperatingCost))} icon={TrendingDown} hint={isLoading ? undefined : t("pnl.animalOperatingCostSub", "Feed + expenses across herd")} />
       </div>
 
       {/* Net P&L by animal — top 20 closed, diverging around zero */}
-      <PnLChart rows={rows} fmt={fmt} />
+      {isLoading ? <Skeleton className="mb-4 h-80 w-full rounded-xl" /> : <PnLChart rows={rows} fmt={fmt} />}
 
       <DataTable
         data={rows}
@@ -239,6 +242,9 @@ export default function NewPnL() {
   );
 }
 
+// Axis ticks like 1.5k / 2k — rounding to whole thousands repeated labels ("2k, 2k, 1k").
+const compactNumber = new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 });
+
 /** Bar chart of net P&L for the top-20 closed animals, diverging by sign. */
 function PnLChart({ rows, fmt }: { rows: any[]; fmt: (n: number) => string }) {
   const { t } = useTranslation();
@@ -264,7 +270,7 @@ function PnLChart({ rows, fmt }: { rows: any[]; fmt: (n: number) => string }) {
           <BarChart data={closed} margin={{ top: 10, right: 20, left: 0, bottom: 30 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} angle={-40} textAnchor="end" interval={0} height={70} />
-            <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+            <YAxis tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} allowDecimals={false} tickFormatter={v => compactNumber.format(v)} />
             <Tooltip
               formatter={(v: number) => [fmt(v), t("pnl.netPnL", "Net P&L")]}
               contentStyle={{ borderRadius: 8, fontSize: 12, background: "var(--card)", border: "1px solid var(--border)", color: "var(--foreground)" }}

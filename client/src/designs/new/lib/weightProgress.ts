@@ -7,11 +7,15 @@ export function weightTargetPercent(currentWeight: unknown, targetWeight: unknow
   return (current / target) * 100;
 }
 
+/**
+ * Below the category's ready-to-sell threshold an animal is still growing, which
+ * is normal — show it as informational, not as a problem. At or past the
+ * threshold it is ready (success).
+ */
 export function weightProgressTone(percent: number | null, thresholdPercent = 80): StatusTone {
   if (percent == null) return "neutral";
-  if (percent >= 100) return "success";
-  if (percent >= thresholdPercent) return "warning";
-  return "danger";
+  if (percent >= thresholdPercent) return "success";
+  return "info";
 }
 
 export function weightProgressTextClass(tone: StatusTone) {
@@ -19,6 +23,7 @@ export function weightProgressTextClass(tone: StatusTone) {
     case "success": return "text-success-soft-foreground";
     case "warning": return "text-warning-soft-foreground";
     case "danger": return "text-danger-soft-foreground";
+    case "info": return "text-info-soft-foreground";
     default: return "text-muted-foreground";
   }
 }
@@ -28,6 +33,7 @@ export function weightProgressPillClass(tone: StatusTone) {
     case "success": return "bg-success-soft text-success-soft-foreground";
     case "warning": return "bg-warning-soft text-warning-soft-foreground";
     case "danger": return "bg-danger-soft text-danger-soft-foreground";
+    case "info": return "bg-info-soft text-info-soft-foreground";
     default: return "bg-secondary text-secondary-foreground";
   }
 }
@@ -37,6 +43,7 @@ export function weightProgressBarClass(tone: StatusTone) {
     case "success": return "bg-success";
     case "warning": return "bg-warning";
     case "danger": return "bg-danger";
+    case "info": return "bg-info";
     default: return "bg-primary";
   }
 }

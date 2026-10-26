@@ -10,6 +10,7 @@ import { Search, ShieldCheck, Users } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
+import { fmtDate } from "../lib/format";
 
 const ASSIGNABLE_ROLES = ["viewer", "user", "staff", "supervisor", "admin"] as const;
 const CONFIGURABLE_ROLES = ["supervisor", "staff", "user", "viewer"] as const;
@@ -20,12 +21,6 @@ function roleTone(role: string): StatusTone {
   if (role === "staff") return "info";
   return "neutral";
 }
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString();
-}
-
 /**
  * New Users + Permissions (F-USR2). Users table with inline role change, plus a
  * searchable permission matrix per configurable role with a changed-cell

@@ -74,7 +74,7 @@ export function KpiCard({
           </span>
         )}
       </div>
-      <div className="text-2xl font-bold tabular-nums tracking-tight text-foreground">{value}</div>
+      <div className="whitespace-nowrap text-lg font-bold tabular-nums tracking-tight text-foreground sm:text-2xl">{value}</div>
       <div className="flex items-center gap-2">
         {trend && (
           <span

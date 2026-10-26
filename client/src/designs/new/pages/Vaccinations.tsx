@@ -16,13 +16,9 @@ import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { fmtDate } from "../lib/format";
 
 const MS_DAY = 86400000;
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString();
-}
 function dayDiff(d: unknown): number | null {
   if (!d) return null;
   const x = new Date(d as string);
@@ -317,7 +313,10 @@ export default function NewVaccinations() {
     { id: "vaccine", header: t("vaccine.vaccine", "Vaccine"), cell: r => r.vaccineName ?? "—", sortValue: r => r.vaccineName, mobileLabel: t("vaccine.vaccine", "Vaccine") },
     { id: "date", header: t("vaccine.date", "Date"), cell: r => fmtDate(r.vaccinationDate), sortValue: r => r.vaccinationDate, mobileLabel: t("vaccine.date", "Date") },
     { id: "next", header: t("vaccine.nextDue", "Next due"), cell: r => <DueBadge date={r.nextDueDate} leadDays={r.notifyBeforeNext ?? 7} />, sortValue: r => r.nextDueDate, mobileLabel: t("vaccine.nextDue", "Next due") },
-    { id: "booster", header: t("vaccine.booster", "Booster"), cell: r => <DueBadge date={r.boosterDueDate} leadDays={r.notifyBeforeBooster ?? 7} />, hideable: true, mobileLabel: t("vaccine.booster", "Booster") },
+    // Only vaccines with a booster schedule fill this; hide it when none do.
+    ...(rows.some(r => r.boosterDueDate)
+      ? [{ id: "booster", header: t("vaccine.booster", "Booster"), cell: (r: any) => <DueBadge date={r.boosterDueDate} leadDays={r.notifyBeforeBooster ?? 7} />, hideable: true, mobileLabel: t("vaccine.booster", "Booster") } satisfies Column<any>]
+      : []),
     { id: "status", header: t("vaccine.status", "Status"), cell: r => <RecordStatusBadge record={r} />, sortValue: r => (r.isCompleted ? 1 : 0), mobileLabel: t("vaccine.status", "Status") },
     { id: "batch", header: t("vaccine.batch", "Batch"), cell: r => r.batchNumber ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("vaccine.batch", "Batch") },
     { id: "vet", header: t("vaccine.vet", "Vet"), cell: r => r.veterinarian ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("vaccine.vet", "Vet") },
@@ -326,9 +325,9 @@ export default function NewVaccinations() {
   return (
     <div className="p-4 md:p-6">
       <PageHeader
-        title={t("vaccine.title", "Vaccinations")}
+        title={t("nav.health", "Health")}
         subtitle={`${rows.length} ${t("vaccine.records", "records")}`}
-        crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("vaccine.title", "Vaccinations") }]}
+        crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("nav.health", "Health") }]}
         actions={
           canCreate ? (
             <div className="flex items-center gap-2">

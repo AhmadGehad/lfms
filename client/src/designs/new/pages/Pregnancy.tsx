@@ -16,17 +16,12 @@ import { EmptyState } from "../components/EmptyState";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
+import { fmtDate } from "../lib/format";
 
 type PregnancyStatusFilter = "all" | "active" | "delivered" | "aborted" | "lost";
 type PregnancyStatus = Exclude<PregnancyStatusFilter, "all">;
 
 const today = () => new Date().toISOString().slice(0, 10);
-
-function fmtDate(d: unknown) {
-  if (!d) return "-";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "-" : x.toLocaleDateString();
-}
 
 function fmtDateInput(d: unknown) {
   if (!d) return "";

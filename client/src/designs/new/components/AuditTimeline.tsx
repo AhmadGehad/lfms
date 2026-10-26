@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { StatusBadge, type StatusTone } from "./StatusBadge";
 import { Plus, Pencil, Trash2, RotateCcw, Dot } from "lucide-react";
+import { fmtDateTime } from "../lib/format";
 
 export interface AuditEntry {
   id: string | number;
@@ -23,8 +24,7 @@ const ACTION_META: Record<string, { tone: StatusTone; icon: typeof Plus }> = {
 };
 
 function fmtTime(at: string | Date) {
-  const d = at instanceof Date ? at : new Date(at);
-  return Number.isNaN(d.getTime()) ? String(at) : d.toLocaleString();
+  return fmtDateTime(at, String(at));
 }
 
 /** Compact field-level diff of old → new values. */

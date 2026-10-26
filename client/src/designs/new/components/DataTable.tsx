@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/useMobile";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +17,7 @@ import {
   PaginationContent,
   PaginationItem,
 } from "@/components/ui/pagination";
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Rows3, Rows4, SlidersHorizontal } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Filter, Rows3, Rows4, SlidersHorizontal } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 
 export interface Column<T> {
@@ -47,6 +48,15 @@ interface DataTableProps<T> {
   empty?: ReactNode;
   pageSize?: number;
   toolbar?: ReactNode;
+  /**
+   * Secondary filter controls. Shown inline with the toolbar on desktop; on phones
+   * they fold behind a "Filters" button so the list is visible without scrolling.
+   */
+  filters?: ReactNode;
+  /** How many filters differ from their defaults — badges the phone "Filters" button. */
+  activeFilterCount?: number;
+  /** Initial sort, e.g. newest first for dated logs. */
+  defaultSort?: { id: string; dir: "asc" | "desc" };
   /** Persists density / hidden columns / page under this key. */
   storageKey?: string;
 }
@@ -85,16 +95,21 @@ export function DataTable<T>({
   empty,
   pageSize: pageSizeProp = 25,
   toolbar,
+  filters,
+  activeFilterCount = 0,
+  defaultSort,
   storageKey,
 }: DataTableProps<T>) {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [density, setDensity] = useState<Density>(() => loadPref(storageKey, "density", "comfortable"));
   const [hidden, setHidden] = useState<Set<string>>(
     () => new Set(loadPref<string[]>(storageKey, "hidden", columns.filter(c => c.defaultHidden).map(c => c.id)))
   );
   const [pageSize, setPageSize] = useState<number>(() => loadPref(storageKey, "pageSize", pageSizeProp));
   const [page, setPage] = useState(0);
-  const [sort, setSort] = useState<{ id: string; dir: "asc" | "desc" } | null>(null);
+  const [sort, setSort] = useState<{ id: string; dir: "asc" | "desc" } | null>(defaultSort ?? null);
 
   const visibleColumns = columns.filter(c => !hidden.has(c.id));
 
@@ -154,8 +169,26 @@ export function DataTable<T>({
     <div className="flex flex-col gap-3">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-1 flex-wrap items-center gap-2 [&_button]:min-h-11 [&_input]:min-h-11 sm:[&_button]:min-h-9 sm:[&_input]:min-h-9">{toolbar}</div>
+        <div className="flex flex-1 flex-wrap items-center gap-2 [&_button]:min-h-11 [&_input]:min-h-11 sm:[&_button]:min-h-9 sm:[&_input]:min-h-9">
+          {toolbar}
+          {filters && !isMobile && filters}
+        </div>
         <div className="flex items-center gap-1">
+          {filters && isMobile && (
+            <button
+              type="button"
+              onClick={() => setFiltersOpen(o => !o)}
+              aria-expanded={filtersOpen}
+              className={cn(
+                "flex h-11 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium",
+                filtersOpen || activeFilterCount > 0 ? "border-primary bg-primary-soft text-primary-soft-foreground" : "border-border text-muted-foreground"
+              )}
+            >
+              <Filter className="h-4 w-4" aria-hidden="true" />
+              {t("common.filters", "Filters")}
+              {activeFilterCount > 0 && <span className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{activeFilterCount}</span>}
+            </button>
+          )}
           <button
             onClick={() => setDensityP(density === "compact" ? "comfortable" : "compact")}
             className="grid h-11 w-11 place-items-center rounded-lg border border-border text-muted-foreground hover:bg-surface sm:h-9 sm:w-9"
@@ -189,6 +222,12 @@ export function DataTable<T>({
           )}
         </div>
       </div>
+
+      {filters && isMobile && filtersOpen && (
+        <div className="grid grid-cols-1 gap-2 rounded-xl border border-border bg-card p-3 [&_button]:min-h-11 [&_input]:min-h-11 [&>*]:!w-full">
+          {filters}
+        </div>
+      )}
 
       {/* Bulk bar */}
       {selection && selectedRows.length > 0 && bulkBar && (
@@ -261,7 +300,7 @@ export function DataTable<T>({
                   </th>
                 )}
                 {visibleColumns.map(c => (
-                  <th key={c.id} className={cn("font-semibold text-muted-foreground", cellPad, c.align === "end" && "text-right", c.align === "center" && "text-center", c.className)}>
+                  <th key={c.id} className={cn("whitespace-nowrap font-semibold text-muted-foreground", cellPad, c.align === "end" && "text-right", c.align === "center" && "text-center", c.className)}>
                     {c.sortValue ? (
                       <button onClick={() => toggleSort(c.id)} className="inline-flex items-center gap-1 hover:text-foreground">
                         {c.header}

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Pencil, ShoppingCart, Trash2, Wallet } from "lucide-react";
+import { Pencil, Plus, ShoppingCart, Trash2, Wallet } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
@@ -20,12 +20,8 @@ import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
 import { RecordSaleDialog } from "../components/AnimalWorkflows";
+import { fmtDate } from "../lib/format";
 
-function fmtDate(d: unknown) {
-  if (!d) return "—";
-  const x = new Date(d as string);
-  return Number.isNaN(x.getTime()) ? "—" : x.toLocaleDateString();
-}
 const toDateInput = (d: unknown) =>
   d ? (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10)) : "";
 
@@ -144,8 +140,8 @@ export default function NewSales() {
   const payNum = parseFloat(payAmount) || 0;
 
   const columns: Column<any>[] = [
-    { id: "date", header: t("sales.date", "Date"), cell: r => fmtDate(r.sale?.saleDate), sortValue: r => r.sale?.saleDate, primary: true, mobileLabel: t("sales.date", "Date") },
-    { id: "animal", header: t("animals.animalId", "Animal"), cell: r => r.animalCode ?? "—", sortValue: r => r.animalCode, mobileLabel: t("animals.animalId", "Animal") },
+    { id: "date", header: t("sales.date", "Date"), cell: r => fmtDate(r.sale?.saleDate), sortValue: r => r.sale?.saleDate, mobileLabel: t("sales.date", "Date") },
+    { id: "animal", header: t("animals.animalId", "Animal"), cell: r => <span className="whitespace-nowrap">{r.animalCode ?? "—"}</span>, sortValue: r => r.animalCode, primary: true, mobileLabel: t("animals.animalId", "Animal") },
     { id: "speciesCategory", header: t("sales.speciesCategory", "Species / Category"), cell: r => `${r.speciesName ?? "—"} / ${r.categoryName ?? "—"}`, hideable: true, defaultHidden: true, mobileLabel: t("sales.speciesCategory", "Species / Category") },
     { id: "owner", header: t("owners.owner", "Owner"), cell: r => r.ownerName ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("owners.owner", "Owner") },
     { id: "buyer", header: t("sales.buyer", "Buyer"), cell: r => r.sale?.buyerName ?? "—", sortValue: r => r.sale?.buyerName, mobileLabel: t("sales.buyer", "Buyer") },
@@ -214,6 +210,18 @@ export default function NewSales() {
             : t("sales.allSettled", "All sales settled")
         }
         crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("nav.sales", "Sales") }]}
+        actions={
+          canCreate ? (
+            <button
+              type="button"
+              onClick={() => setSalePickerOpen(true)}
+              className="flex min-h-11 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-ring sm:min-h-9"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {t("sales.recordSale", "Record Sale")}
+            </button>
+          ) : undefined
+        }
       />
 
       <DataTable
@@ -222,6 +230,7 @@ export default function NewSales() {
         rowKey={r => r.sale?.id}
         loading={isLoading}
         storageKey="sales"
+        defaultSort={{ id: "date", dir: "desc" }}
         rowActions={(canUpdate || canDelete) ? r => {
           const out = parseFloat(r.outstanding ?? 0);
           const isPending = parseFloat(r.sale?.salePrice ?? 0) === 0;
@@ -230,7 +239,7 @@ export default function NewSales() {
               {canUpdate && out > 0.001 && !isPending && (
                 <button
                   onClick={() => { setPayRow(r); setPayAmount(String(out)); }}
-                  className="flex min-h-11 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-surface sm:min-h-8"
+                  className="flex min-h-11 items-center gap-1 whitespace-nowrap rounded-md border border-border px-2 py-1 text-xs font-medium hover:bg-surface sm:min-h-8"
                 >
                   <Wallet className="h-3.5 w-3.5" />
                   {t("sales.recordPayment", "Record payment")}
@@ -274,15 +283,6 @@ export default function NewSales() {
                 value={filterBuyer}
                 onChange={e => setFilterBuyer(e.target.value)}
               />
-            {canCreate && (
-              <button
-                type="button"
-                onClick={() => setSalePickerOpen(true)}
-                className="min-h-11 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground hover:opacity-90 focus-visible:outline-2 focus-visible:outline-ring sm:min-h-9"
-              >
-                {t("sales.recordSale", "Record Sale")}
-              </button>
-            )}
           </>
         }
       />
