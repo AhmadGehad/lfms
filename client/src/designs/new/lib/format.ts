@@ -46,3 +46,9 @@ export function daysUntil(d: unknown, now: Date = new Date()): number | null {
   const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
   return Math.round((due - today) / 86400000);
 }
+
+/** Grouped number with fixed decimals, Western digits in every locale ("1,062.0"). */
+export function fmtNum(n: unknown, decimals = 1): string {
+  const v = typeof n === "number" ? n : Number.parseFloat(String(n ?? 0));
+  return (Number.isFinite(v) ? v : 0).toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}

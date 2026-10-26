@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/lib/trpc";
 import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
@@ -9,15 +10,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PageTabsList, PageTabsTrigger } from "../components/PageTabs";
 import { CalendarDays, Pencil, Plus, Trash2, Wheat } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
-import { FormSection, FormField, FormFooter } from "../components/FormLayout";
-import { fmtDate } from "../lib/format";
+import { FormSection, FormField, FormFooter, FormValidation } from "../components/FormLayout";
+import { fmtDate, fmtNum } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 
 const toDateInput = (d: unknown) =>
   d ? (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10)) : "";
@@ -77,7 +80,7 @@ function StockFormFields({ form, setForm, lockItem }: {
       <FormField label={t("feed.date", "Date")} required>
         <Input type="date" value={form.transactionDate} onChange={e => setForm(f => ({ ...f, transactionDate: e.target.value }))} />
       </FormField>
-      <FormField label={t("feed.qty", "Quantity")} required>
+      <FormField label={t("feed.qty", "Quantity")} required positive>
         <Input type="number" inputMode="decimal" value={form.qty} onChange={e => setForm(f => ({ ...f, qty: e.target.value }))} />
       </FormField>
       <FormField label={t("feed.unitCost", "Unit cost")}>
@@ -191,6 +194,14 @@ export default function NewFeed() {
 
   // ── Stock entries (add / edit / delete) ──────────────────────────────────
   const [stockOpen, setStockOpen] = useState(false);
+  const [stockAttempt, setStockAttempt] = useState(0);
+  useEffect(() => {
+    if (stockOpen) setStockAttempt(0);
+  }, [stockOpen]);
+  const searchStr = useSearch();
+  useOneShotParams(["new"], params => {
+    if (params.get("new") === "1" && canCreate) { setActiveTab("stock"); setStockForm(blankStock()); setStockOpen(true); }
+  }, !perms.loading);
   const [stockIdempotencyKey, setStockIdempotencyKey] = useState(() => crypto.randomUUID());
   const [stockForm, setStockForm] = useState<StockForm>(blankStock());
   const [editEntry, setEditEntry] = useState<any | null>(null);
@@ -216,7 +227,7 @@ export default function NewFeed() {
   });
 
   const submitStock = () => {
-    if (!stockForm.feedItemId || !(parseFloat(stockForm.qty) > 0)) { toast.error(t("feed.feedItemQtyRequired", "Pick a feed item and quantity")); return; }
+    if (!stockForm.feedItemId || !(parseFloat(stockForm.qty) > 0)) { setStockAttempt(a => a + 1); toast.error(t("feed.feedItemQtyRequired", "Pick a feed item and quantity")); return; }
     const computedTotal = stockForm.qty && stockForm.unitCost
       ? (parseFloat(stockForm.qty) * parseFloat(stockForm.unitCost)).toFixed(2)
       : stockForm.totalCost;
@@ -409,12 +420,13 @@ export default function NewFeed() {
   const stockRows = (stock as any[]) ?? [];
   const stockCols: Column<any>[] = [
     { id: "item", header: t("feed.item", "Feed item"), cell: i => <span className="font-medium">{i.feedItemName}</span>, sortValue: i => i.feedItemName, primary: true, mobileLabel: t("feed.item", "Feed item") },
-    { id: "onhand", header: t("feed.onHand", "On hand"), cell: i => `${parseFloat(i.stockOnHand ?? 0).toFixed(1)} ${i.unit ?? ""}`, sortValue: i => parseFloat(i.stockOnHand ?? 0), mobileLabel: t("feed.onHand", "On hand") },
-    { id: "daily", header: t("feed.dailyUse", "Daily use"), cell: i => t("feed.perDayUnit", { qty: parseFloat(i.dailyConsumption ?? 0).toFixed(2), unit: i.unit ?? "" }), hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
-    { id: "days", header: t("feed.daysLeft", "Days left"), cell: i => <span className={i.daysRemaining < 7 ? "font-medium text-danger-soft-foreground" : i.daysRemaining < 14 ? "text-warning-soft-foreground" : "text-foreground"}>{i.daysRemaining === 999 ? "∞" : i.daysRemaining}</span>, sortValue: i => i.daysRemaining, mobileLabel: t("feed.daysLeft", "Days left") },
+    { id: "onhand", align: "end", header: t("feed.onHand", "On hand"), cell: i => `${fmtNum(i.stockOnHand)} ${i.unit ?? ""}`, sortValue: i => parseFloat(i.stockOnHand ?? 0), mobileLabel: t("feed.onHand", "On hand") },
+    { id: "daily", align: "end", header: t("feed.dailyUse", "Daily use"), cell: i => t("feed.perDayUnit", { qty: fmtNum(i.dailyConsumption, 2), unit: i.unit ?? "" }), hideable: true, mobileLabel: t("feed.dailyUse", "Daily use") },
+    { id: "days", align: "end", header: t("feed.daysLeft", "Days left"), cell: i => <span className={i.daysRemaining < 7 ? "font-medium text-danger-soft-foreground" : i.daysRemaining < 14 ? "text-warning-soft-foreground" : "text-foreground"}>{i.daysRemaining === 999 ? "∞" : i.daysRemaining}</span>, sortValue: i => i.daysRemaining, mobileLabel: t("feed.daysLeft", "Days left") },
     { id: "runout", header: t("feed.runOut", "Run-out"), cell: i => (i.runOutDate && i.daysRemaining !== 999 ? fmtDate(i.runOutDate) : "—"), sortValue: i => i.runOutDate, hideable: true, defaultHidden: true, mobileLabel: t("feed.runOut", "Run-out") },
     {
       id: "shrinkage",
+      align: "end",
       header: t("feed.shrinkage", "Shrinkage"),
       cell: i => {
         const sh = (shrinkage as any)?.byItemLatest?.[i.feedItemId];
@@ -436,7 +448,7 @@ export default function NewFeed() {
   const rationCols: Column<any>[] = [
     { id: "category", header: t("animals.category", "Category"), cell: p => <span className="font-medium">{p.categoryName}</span>, sortValue: p => p.categoryName, primary: true, mobileLabel: t("animals.category", "Category") },
     { id: "item", header: t("feed.item", "Feed item"), cell: p => p.feedItemName, sortValue: p => p.feedItemName, mobileLabel: t("feed.item", "Feed item") },
-    { id: "qty", header: t("feed.qtyPerHead", "Qty/head/day"), cell: p => `${parseFloat(p.qtyPerHeadPerDay ?? 0).toFixed(3)} ${p.unit ?? ""}`, mobileLabel: t("feed.qtyPerHead", "Qty/head/day") },
+    { id: "qty", align: "end", header: t("feed.qtyPerHead", "Qty/head/day"), cell: p => `${parseFloat(p.qtyPerHeadPerDay ?? 0).toFixed(3)} ${p.unit ?? ""}`, mobileLabel: t("feed.qtyPerHead", "Qty/head/day") },
     { id: "eff", header: t("feed.effective", "Effective"), cell: p => fmtDate(p.effectiveDate), sortValue: p => p.effectiveDate, hideable: true, mobileLabel: t("feed.effective", "Effective") },
     { id: "end", header: t("feed.endDate", "End date"), cell: p => (p.endDate ? fmtDate(p.endDate) : t("feed.ongoing", "Ongoing")), sortValue: p => p.endDate, hideable: true, defaultHidden: true, mobileLabel: t("feed.endDate", "End date") },
     { id: "active", header: t("animals.status", "Status"), cell: p => <StatusBadge tone={p.isActive ? "success" : "neutral"}>{p.isActive ? t("feed.active", "Active") : t("feed.ended", "Ended")}</StatusBadge>, mobileLabel: t("animals.status", "Status") },
@@ -447,16 +459,16 @@ export default function NewFeed() {
     { id: "date", header: t("feed.date", "Date"), cell: e => fmtDate(e.transactionDate), sortValue: e => e.transactionDate, primary: true, mobileLabel: t("feed.date", "Date") },
     { id: "item", header: t("feed.item", "Feed item"), cell: e => e.feedItemName, sortValue: e => e.feedItemName, mobileLabel: t("feed.item", "Feed item") },
     { id: "type", header: t("feed.type", "Type"), cell: e => <StatusBadge tone={e.transactionType === "purchase" ? "info" : "neutral"} icon={false}>{String(e.transactionType ?? "").replace("_", " ")}</StatusBadge>, mobileLabel: t("feed.type", "Type") },
-    { id: "qty", header: t("feed.qty", "Qty"), cell: e => parseFloat(e.qty ?? 0).toFixed(1), mobileLabel: t("feed.qty", "Qty") },
-    { id: "unitCost", header: t("feed.unitCost", "Unit cost"), cell: e => (e.unitCost ? fmt(parseFloat(e.unitCost)) : "—"), hideable: true, defaultHidden: true, mobileLabel: t("feed.unitCost", "Unit cost") },
-    { id: "cost", header: t("feed.totalCost", "Total"), cell: e => (e.totalCost ? fmt(parseFloat(e.totalCost)) : e.qty && e.unitCost ? fmt(parseFloat(e.qty) * parseFloat(e.unitCost)) : "—"), hideable: true, mobileLabel: t("feed.totalCost", "Total") },
+    { id: "qty", align: "end", header: t("feed.qty", "Qty"), cell: e => fmtNum(e.qty), mobileLabel: t("feed.qty", "Qty") },
+    { id: "unitCost", align: "end", header: t("feed.unitCost", "Unit cost"), cell: e => (e.unitCost ? fmt(parseFloat(e.unitCost)) : "—"), hideable: true, defaultHidden: true, mobileLabel: t("feed.unitCost", "Unit cost") },
+    { id: "cost", align: "end", header: t("feed.totalCost", "Total"), cell: e => (e.totalCost ? fmt(parseFloat(e.totalCost)) : e.qty && e.unitCost ? fmt(parseFloat(e.qty) * parseFloat(e.unitCost)) : "—"), hideable: true, mobileLabel: t("feed.totalCost", "Total") },
     { id: "supplier", header: t("feed.supplier", "Supplier"), cell: e => e.supplierName ?? "—", hideable: true, defaultHidden: true, mobileLabel: t("feed.supplier", "Supplier") },
   ];
 
   const priceRows = (prices as any[]) ?? [];
   const priceCols: Column<any>[] = [
     { id: "item", header: t("feed.item", "Feed item"), cell: p => <span className="font-medium">{p.feedItemName ?? `#${p.feedItemId}`}</span>, sortValue: p => p.feedItemName, primary: true, mobileLabel: t("feed.item", "Feed item") },
-    { id: "price", header: t("feed.pricePerUnit", "Price per unit"), cell: p => <span className="tabular-nums">{fmt(parseFloat(p.pricePerUnit))}{p.unit ? `/${p.unit}` : ""}</span>, sortValue: p => parseFloat(p.pricePerUnit), mobileLabel: t("feed.pricePerUnit", "Price per unit") },
+    { id: "price", align: "end", header: t("feed.pricePerUnit", "Price per unit"), cell: p => <span className="tabular-nums">{fmt(parseFloat(p.pricePerUnit))}{p.unit ? `/${p.unit}` : ""}</span>, sortValue: p => parseFloat(p.pricePerUnit), mobileLabel: t("feed.pricePerUnit", "Price per unit") },
     { id: "eff", header: t("feed.effective", "Effective"), cell: p => fmtDate(p.effectiveDate), sortValue: p => p.effectiveDate, mobileLabel: t("feed.effective", "Effective") },
     { id: "notes", header: t("common.notes", "Notes"), cell: p => <span className="block max-w-40 truncate text-muted-foreground">{p.notes ?? "—"}</span>, hideable: true, defaultHidden: true, mobileLabel: t("common.notes", "Notes") },
     { id: "created", header: t("common.created", "Created"), cell: p => fmtDate(p.createdAt), sortValue: p => p.createdAt, hideable: true, defaultHidden: true, mobileLabel: t("common.created", "Created") },
@@ -487,14 +499,14 @@ export default function NewFeed() {
         crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("nav.feed", "Feed") }]}
       />
 
-      <Tabs defaultValue="stock" onValueChange={setActiveTab}>
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="stock">{t("feed.stock", "Stock")}</TabsTrigger>
-          <TabsTrigger value="ledger">{t("feed.ledger", "Ledger")}</TabsTrigger>
-          <TabsTrigger value="rations">{t("feed.rations", "Rations")}</TabsTrigger>
-          <TabsTrigger value="prices">{t("feed.priceHistory", "Prices")}</TabsTrigger>
-          <TabsTrigger value="shrinkage">{t("feed.shrinkage", "Shrinkage")}</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <PageTabsList>
+          <PageTabsTrigger value="stock">{t("feed.stock", "Stock")}</PageTabsTrigger>
+          <PageTabsTrigger value="ledger">{t("feed.ledger", "Ledger")}</PageTabsTrigger>
+          <PageTabsTrigger value="rations">{t("feed.rations", "Rations")}</PageTabsTrigger>
+          <PageTabsTrigger value="prices">{t("feed.priceHistory", "Prices")}</PageTabsTrigger>
+          <PageTabsTrigger value="shrinkage">{t("feed.shrinkage", "Shrinkage")}</PageTabsTrigger>
+        </PageTabsList>
 
         {/* Stock status */}
         <TabsContent value="stock" className="mt-4">
@@ -644,11 +656,14 @@ export default function NewFeed() {
       <Dialog open={stockOpen} onOpenChange={setStockOpen}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader><DialogTitle>{t("feed.addStock", "Add stock")}</DialogTitle></DialogHeader>
-          <StockFormFields form={stockForm} setForm={setStockForm} />
+          <FormValidation attempt={stockAttempt}>
+            <StockFormFields form={stockForm} setForm={setStockForm} />
+          </FormValidation>
           <FormFooter>
             <button onClick={() => setStockOpen(false)} className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-surface">{t("common.cancel", "Cancel")}</button>
             <button
-              disabled={isMutationWorking(addStock) || !stockForm.feedItemId || !(parseFloat(stockForm.qty) > 0)}
+              // Not disabled while incomplete: clicking explains what's missing.
+              disabled={isMutationWorking(addStock)}
               onClick={submitStock}
               className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >

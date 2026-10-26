@@ -13,7 +13,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
-import { DollarSign, Leaf, Pencil, Plus, Scale, Search, ShoppingCart, Syringe, Trash2 } from "lucide-react";
+import { DollarSign, Leaf, MoreHorizontal, Pencil, Plus, Scale, Search, ShoppingCart, Syringe, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
@@ -22,6 +23,7 @@ import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { AnimalCreateDialog, BulkRecordSaleDialog, RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { weightProgressPillClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { daysUntil, fmtDate } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 import { formatAmount } from "@/hooks/useCurrency";
 
 function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photoKey?: string | null; alt?: string }) {
@@ -491,14 +493,16 @@ export default function NewAnimals() {
     if (qView === "all" || qView === "active" || qView === "fattening" || qView === "ready" || qView === "females" || qView === "sold") {
       setView(qView);
     }
-    if (query.get("new") === "1" && canCreate) setCreateOpen(true);
-    if (query.get("weigh") === "1") {
-      const animalId = query.get("animalId");
+  }, [query]);
+  useOneShotParams(["new", "weigh", "animalId"], params => {
+    if (params.get("new") === "1" && canCreate) setCreateOpen(true);
+    if (params.get("weigh") === "1") {
+      const animalId = params.get("animalId");
       setWeighStartId(animalId ? Number(animalId) : null);
       setWeighAnimals(null);
       setWeighOpen(true);
     }
-  }, [canCreate, query]);
+  }, !perms.loading);
 
   const searchMatchedRows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -563,7 +567,7 @@ export default function NewAnimals() {
     { id: "group", header: t("animals.group", "Group"), cell: a => <span className="whitespace-nowrap">{a.groupName ?? "—"}</span>, sortValue: a => a.groupName, hideable: true, mobileLabel: t("animals.group", "Group") },
     { id: "owner", header: t("owners.owner", "Owner"), cell: a => a.ownerName ?? "—", sortValue: a => a.ownerName, hideable: true, defaultHidden: true, mobileLabel: t("owners.owner", "Owner") },
     { id: "sex", header: t("animals.sex", "Sex"), cell: a => t(`animals.${a.animal?.sex}`, a.animal?.sex), sortValue: a => a.animal?.sex, hideable: true, mobileLabel: t("animals.sex", "Sex") },
-    { id: "weight", header: t("animals.currentWeight", "Current Weight (kg)"), cell: a => <span className="tabular-nums">{a.latestWeightKg ? parseFloat(a.latestWeightKg).toFixed(1) : a.animal?.weightAtAcquisition ? parseFloat(a.animal.weightAtAcquisition).toFixed(1) : "—"}</span>, sortValue: a => parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? "0"), hideable: true, mobileLabel: t("animals.currentWeight", "Current Weight") },
+    { id: "weight", align: "end", header: t("animals.currentWeight", "Current Weight (kg)"), cell: a => <span className="tabular-nums">{a.latestWeightKg ? parseFloat(a.latestWeightKg).toFixed(1) : a.animal?.weightAtAcquisition ? parseFloat(a.animal.weightAtAcquisition).toFixed(1) : "—"}</span>, sortValue: a => parseFloat(a.latestWeightKg ?? a.animal?.weightAtAcquisition ?? "0"), hideable: true, mobileLabel: t("animals.currentWeight", "Current Weight") },
     {
       id: "status",
       header: t("animals.status", "Status"),
@@ -575,10 +579,10 @@ export default function NewAnimals() {
     { id: "birth", header: t("animals.birthDate", "Birth Date"), cell: a => fmtDate(a.animal?.birthDate), sortValue: a => a.animal?.birthDate, hideable: true, defaultHidden: true, mobileLabel: t("animals.birthDate", "Birth Date") },
     { id: "age", header: t("animals.age", "Age"), cell: a => formatAge(a.animal?.birthDate, t("animals.ageDaysSuffix", "d"), t("animals.ageMonthsSuffix", "m"), t("animals.ageYearsSuffix", "y")), sortValue: a => a.animal?.birthDate ? -new Date(a.animal.birthDate).getTime() : null, hideable: true, defaultHidden: true, mobileLabel: t("animals.age", "Age") },
     { id: "acq", header: t("animals.acquisitionDate", "Acquired"), cell: a => fmtDate(a.animal?.acquisitionDate), sortValue: a => a.animal?.acquisitionDate, hideable: true, mobileLabel: t("animals.acquisitionDate", "Acquired") },
-    { id: "purchaseCost", header: t("animals.purchaseCost", "Purchase Cost"), cell: a => <span className="tabular-nums">{money(a.animal?.purchaseCost)}</span>, sortValue: a => parseFloat(a.animal?.purchaseCost ?? "0"), hideable: true, defaultHidden: true, mobileLabel: t("animals.purchaseCost", "Purchase Cost") },
+    { id: "purchaseCost", align: "end", header: t("animals.purchaseCost", "Purchase Cost"), cell: a => <span className="tabular-nums">{money(a.animal?.purchaseCost)}</span>, sortValue: a => parseFloat(a.animal?.purchaseCost ?? "0"), hideable: true, defaultHidden: true, mobileLabel: t("animals.purchaseCost", "Purchase Cost") },
     { id: "nextVaccine", header: t("vaccine.nextVaccine", "Next Vaccine"), cell: a => dueLabel(a.nextVaccineDate, a.nextVaccineName), sortValue: a => a.nextVaccineDate, hideable: true, defaultHidden: true, mobileLabel: t("vaccine.nextVaccine", "Next Vaccine") },
     { id: "booster", header: t("vaccine.boosterDue", "Booster Due"), cell: a => dueLabel(a.nextBoosterDate, a.nextBoosterName), sortValue: a => a.nextBoosterDate, hideable: true, defaultHidden: true, mobileLabel: t("vaccine.boosterDue", "Booster Due") },
-    { id: "days", header: t("animals.daysOnFarm", "Days On Farm"), cell: a => <span className="tabular-nums">{daysOnFarm(a) ?? "—"}</span>, sortValue: a => daysOnFarm(a), hideable: true, defaultHidden: true, mobileLabel: t("animals.daysOnFarm", "Days On Farm") },
+    { id: "days", align: "end", header: t("animals.daysOnFarm", "Days On Farm"), cell: a => <span className="tabular-nums">{daysOnFarm(a) ?? "—"}</span>, sortValue: a => daysOnFarm(a), hideable: true, defaultHidden: true, mobileLabel: t("animals.daysOnFarm", "Days On Farm") },
     {
       id: "percentage",
       header: t("animals.percentage", "% of Target"),
@@ -651,6 +655,45 @@ export default function NewAnimals() {
         loading={isLoading}
         storageKey="animals"
         onRowClick={a => setLocation(`/animals/${a.animal?.id}`)}
+        mobileColumns={["category", "weight", "status"]}
+        mobileRowActions={a => (canEdit || canWeigh || canSell || canDelete) ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground hover:bg-surface"
+                aria-label={t("common.moreActions", "More actions")}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {canWeigh && (
+                <DropdownMenuItem onSelect={() => { setWeighAnimals([a]); setWeighStartId(a.animal?.id); setWeighOpen(true); }}>
+                  <Scale className="me-2 h-4 w-4" />{t("weight.record", "Record weight")}
+                </DropdownMenuItem>
+              )}
+              {canSell && (
+                <DropdownMenuItem onSelect={() => setSaleAnimal(a)}>
+                  <ShoppingCart className="me-2 h-4 w-4" />{t("sales.recordSale", "Record sale")}
+                </DropdownMenuItem>
+              )}
+              {canEdit && (
+                <DropdownMenuItem onSelect={() => setEditId(a.animal?.id)}>
+                  <Pencil className="me-2 h-4 w-4" />{t("common.edit", "Edit")}
+                </DropdownMenuItem>
+              )}
+              {canDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem variant="destructive" onSelect={() => setDeleteRow(a)}>
+                    <Trash2 className="me-2 h-4 w-4" />{t("animals.deleteAnimal", "Delete animal")}
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
         selection={(canEdit || canSell || canVaccinate || canWeigh) ? { selectedKeys, onChange: setSelectedKeys } : undefined}
         bulkBar={(canEdit || canSell || canVaccinate || canWeigh) ? selected => (
           <>

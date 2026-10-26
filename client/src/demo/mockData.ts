@@ -551,8 +551,8 @@ const NOTIFICATIONS = [
   { id: 2, type: "vaccination", title: "Vaccination overdue", message: "EW-0201 missed its Clostridial (8-in-1) booster 2 days ago.", priority: "critical" as const, hoursAgo: 30, read: false },
   { id: 3, type: "feed_stock", title: "Feed stock running low", message: "Concentrate 16% has about 20 days left at current use.", priority: "medium" as const, hoursAgo: 20, read: false },
   { id: 4, type: "pregnancy", title: "Birth expected soon", message: "EW-0201 is expected to give birth within 2 weeks.", priority: "medium" as const, hoursAgo: 48, read: true },
-  { id: 5, type: "growth", title: "Ready to sell", message: "FT-0091 reached 49.3 kg, close to its 50 kg target.", priority: "low" as const, hoursAgo: 72, read: true },
-].map(entry => ({
+  { id: 5, type: "growth", title: "Ready to sell", message: "FT-0091 reached 49.3 kg, close to its 50 kg target.", priority: "low" as const, hoursAgo: 72, read: true, animalId: 11 },
+].map((entry: { id: number; type: string; title: string; message: string; priority: "low" | "medium" | "high" | "critical"; hoursAgo: number; read: boolean; animalId?: number }) => ({
   isRead: entry.read,
   id: entry.id,
   publicId: pid("ntf", entry.id),
@@ -562,8 +562,8 @@ const NOTIFICATIONS = [
   alertType: entry.type,
   title: entry.title,
   message: entry.message,
-  relatedEntityType: null,
-  relatedEntityId: null,
+  relatedEntityType: entry.animalId ? "animal" : null,
+  relatedEntityId: entry.animalId ? String(entry.animalId) : null,
   priority: entry.priority,
   createdAt: new Date(Date.now() - entry.hoursAgo * 3_600_000),
   expiresAt: null,

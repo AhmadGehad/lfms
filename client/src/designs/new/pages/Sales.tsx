@@ -21,6 +21,7 @@ import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
 import { RecordSaleDialog } from "../components/AnimalWorkflows";
 import { fmtDate } from "../lib/format";
+import { useOneShotParams } from "../lib/useOneShotParams";
 
 const toDateInput = (d: unknown) =>
   d ? (d instanceof Date ? d.toISOString().slice(0, 10) : String(d).slice(0, 10)) : "";
@@ -67,8 +68,10 @@ export default function NewSales() {
   });
   const { data: animals } = trpc.animals.list.useQuery({ isActive: true, ownerId: ownerParam }, { enabled: canCreate });
   useEffect(() => {
-    if (new URLSearchParams(searchStr).get("new") === "1" && canCreate) setSalePickerOpen(true);
-  }, [canCreate, searchStr]);
+    const buyer = new URLSearchParams(searchStr).get("buyer");
+    if (buyer) setFilterBuyer(buyer);
+  }, [searchStr]);
+  useOneShotParams(["new"], params => { if (params.get("new") === "1" && canCreate) setSalePickerOpen(true); }, !perms.loading);
 
   const invalidate = () => {
     utils.sales.list.invalidate();

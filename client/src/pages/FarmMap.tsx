@@ -18,7 +18,6 @@ import { trpc } from "@/lib/trpc";
 import {
   ImageIcon,
   Maximize2,
-  MapPinned,
   MousePointer2,
   Pentagon,
   Save,
@@ -29,6 +28,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { PageHeader } from "@/designs/new/components/PageHeader";
 import { type MouseEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -323,14 +323,11 @@ export default function FarmMap() {
 
   return (
     <div className="flex h-full min-h-[calc(100vh-5rem)] flex-col gap-4 p-4 md:p-6">
-      <div className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <MapPinned className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-semibold tracking-tight">{t("farmMap.title")}</h1>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">{t("farmMap.subtitle")}</p>
-        </div>
+      <PageHeader
+        title={t("farmMap.title")}
+        subtitle={t("farmMap.subtitle")}
+        crumbs={[{ label: t("nav.dashboard", "Dashboard"), href: "/" }, { label: t("farmMap.title") }]}
+        actions={
         <div className="flex flex-wrap gap-2">
           <input
             ref={fileInputRef}
@@ -354,11 +351,13 @@ export default function FarmMap() {
             onClick={() => removeFarmMapImage.mutate()}
             disabled={!canEdit || !mapImage?.key || removeFarmMapImage.isPending}
             title={t("farmMap.removeImage")}
+            aria-label={t("farmMap.removeImage")}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-h-0 rounded-lg border bg-card p-3 shadow-xs">

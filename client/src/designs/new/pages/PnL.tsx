@@ -148,30 +148,33 @@ export default function NewPnL() {
       />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label={t("pnl.realisedRevenue", "Realised revenue")} value={kpiValue(fmt(stats.totalRevenue))} icon={TrendingUp} hint={isLoading ? undefined : t("pnl.fromSold", "From sold animals")} />
+        <KpiCard label={t("pnl.realisedRevenue", "Realised revenue")} value={kpiValue(fmt(stats.totalRevenue))} icon={TrendingUp} hint={isLoading ? undefined : `${t("pnl.fromSold", "From sold animals")} · ${t("pnl.allTime", "All time")}`} info={t("pnl.info.realisedRevenue")} />
         <KpiCard
           label={t("pnl.netRevenue", "Net revenue (after reinvestment)")}
           value={kpiValue(fmt(stats.netRevenue))}
           icon={RefreshCcw}
+          info={t("pnl.info.netRevenue")}
           hint={isLoading ? undefined : t("pnl.netRevenueSub", "Realised revenue minus what's been reinvested into new stock")}
         />
         <KpiCard
           label={t("pnl.realisedNet", "Realised net P&L")}
           value={kpiValue(<span className={stats.realisedNet >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.realisedNet)}</span>)}
           icon={Activity}
+          info={t("pnl.info.realisedNet")}
           hint={isLoading ? undefined : `${stats.profitableCount} ${t("pnl.profitShort", "profit")} · ${stats.lossCount} ${t("pnl.lossShort", "loss")}`}
         />
-        <KpiCard label={t("pnl.runningCostMonth", "Running cost / month")} value={kpiValue(fmt(stats.runningCostMonthly))} icon={TrendingDown} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
-        <KpiCard label={t("pnl.feedCostMonth", "Feed cost / month")} value={kpiValue(fmt(stats.feedCostMonthly))} icon={Wheat} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
-        <KpiCard label={t("pnl.capitalOnHoof", "Capital on hoof")} value={kpiValue(fmt(stats.capitalOnHoof))} icon={Leaf} hint={isLoading ? undefined : t("pnl.activePurchaseCost", "Purchase cost of active herd")} />
-        <KpiCard label={t("pnl.runningCostTotal", "Running cost total")} value={kpiValue(fmt(stats.runningCost))} icon={TrendingDown} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
+        <KpiCard label={t("pnl.runningCostMonth", "Running cost / month")} value={kpiValue(fmt(stats.runningCostMonthly))} icon={TrendingDown} info={t("pnl.info.runningCostMonth")} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
+        <KpiCard label={t("pnl.feedCostMonth", "Feed cost / month")} value={kpiValue(fmt(stats.feedCostMonthly))} icon={Wheat} info={t("pnl.info.feedCostMonth")} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
+        <KpiCard label={t("pnl.capitalOnHoof", "Capital on hoof")} value={kpiValue(fmt(stats.capitalOnHoof))} icon={Leaf} info={t("pnl.info.capitalOnHoof")} hint={isLoading ? undefined : t("pnl.activePurchaseCost", "Purchase cost of active herd")} />
+        <KpiCard label={t("pnl.totalInvestedHerd", "Total invested in current herd")} value={kpiValue(fmt(stats.runningCost))} icon={TrendingDown} info={t("pnl.info.totalInvested")} hint={isLoading ? undefined : t("pnl.animalsOngoing", "{{count}} ongoing", { count: stats.activeCount })} />
         <KpiCard
           label={t("pnl.currentAccountValue", "Current account value")}
           value={kpiValue(<span className={stats.currentAccountValue >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(stats.currentAccountValue)}</span>)}
           icon={Banknote}
+          info={t("pnl.info.currentAccountValue")}
           hint={isLoading ? undefined : t("pnl.currentAccountValueSub", "Net revenue + capital − operating spend")}
         />
-        <KpiCard label={t("pnl.animalOperatingCost", "Animal operating cost")} value={kpiValue(fmt(stats.animalOperatingCost))} icon={TrendingDown} hint={isLoading ? undefined : t("pnl.animalOperatingCostSub", "Feed + expenses across herd")} />
+        <KpiCard label={t("pnl.animalOperatingCost", "Animal operating cost")} value={kpiValue(fmt(stats.animalOperatingCost))} icon={TrendingDown} info={t("pnl.info.animalOperatingCost")} hint={isLoading ? undefined : t("pnl.animalOperatingCostSub", "Feed + expenses across herd")} />
       </div>
 
       {/* Net P&L by animal — top 20 closed, diverging around zero */}

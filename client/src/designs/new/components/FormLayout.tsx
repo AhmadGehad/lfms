@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const FIELD_CONTROL_NAMES = new Set(["input", "select", "textarea", "Input", "SelectTrigger", "Switch", "Textarea"]);
@@ -49,6 +50,40 @@ function attachFieldA11y(
   });
 }
 
+/** Value of the first control in a field (Select root or input), if any. */
+function findControlValue(node: React.ReactNode): { found: boolean; value?: unknown } {
+  let result: { found: boolean; value?: unknown } = { found: false };
+  React.Children.forEach(node, child => {
+    if (result.found || !React.isValidElement(child)) return;
+    const props = child.props as Record<string, unknown>;
+    if ("value" in props) { result = { found: true, value: props.value }; return; }
+    if (props.children) result = findControlValue(props.children as React.ReactNode);
+  });
+  return result;
+}
+
+const isEmptyValue = (v: unknown) => v == null || (typeof v === "string" && v.trim() === "") || (Array.isArray(v) && v.length === 0);
+
+/** Number of failed submit attempts; 0 hides inline "Required" messages. */
+const FormValidationContext = React.createContext(0);
+
+/**
+ * Wrap a form's fields and bump `attempt` when a submit fails validation:
+ * every required FormField whose control is still empty then shows an inline
+ * "Required" message and red border, and focus moves to the first one.
+ */
+export function FormValidation({ attempt, className = "contents", children }: { attempt: number; className?: string; children: React.ReactNode }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (attempt > 0) ref.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [attempt]);
+  return (
+    <FormValidationContext.Provider value={attempt}>
+      <div ref={ref} className={className}>{children}</div>
+    </FormValidationContext.Provider>
+  );
+}
+
 /**
  * Sectioned form scaffolding (F-FORM1/2): replaces cramped 2-column modals with
  * titled sections, a 2-col responsive grid, inline help, and a sticky footer for
@@ -84,6 +119,7 @@ export function FormField({
   hint,
   error,
   required,
+  positive,
   full,
   children,
 }: {
@@ -92,9 +128,27 @@ export function FormField({
   hint?: React.ReactNode;
   error?: React.ReactNode;
   required?: boolean;
+  /** Numeric field that must be more than 0 (amounts, quantities). */
+  positive?: boolean;
   full?: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
+  const attempt = React.useContext(FormValidationContext);
+  // Text inputs also validate on blur. Selects are skipped: their trigger blurs as the list opens.
+  const [blurred, setBlurred] = React.useState(false);
+  const control: { found: boolean; value?: unknown } = required || positive ? findControlValue(children) : { found: false };
+  const empty = control.found && isEmptyValue(control.value);
+  // A filled field cleared by a form reset ("save & add another") starts fresh.
+  const wasEmpty = React.useRef(empty);
+  React.useEffect(() => {
+    if (empty && !wasEmpty.current) setBlurred(false);
+    wasEmpty.current = empty;
+  }, [empty]);
+  if (!error && (attempt > 0 || blurred) && required && empty) error = t("common.requiredShort", "Required");
+  else if (!error && (attempt > 0 || blurred) && positive && control.found && !empty && !(Number.parseFloat(String(control.value)) > 0)) {
+    error = t("common.mustBePositive", "Must be more than 0");
+  }
   const generatedId = React.useId();
   const controlId = htmlFor ?? `field-${generatedId}`;
   const labelId = `${controlId}-label`;
@@ -108,7 +162,10 @@ export function FormField({
   const labelFor = htmlFor ?? state.attachedId;
 
   return (
-    <div className={cn("flex flex-col gap-1.5", full && "sm:col-span-2")}>
+    <div
+      className={cn("flex flex-col gap-1.5", full && "sm:col-span-2")}
+      onBlur={required || positive ? e => { if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setBlurred(true); } : undefined}
+    >
       <label id={labelId} htmlFor={labelFor} className="text-sm font-medium text-foreground">
         {label}
         {required && <span className="ms-0.5 text-danger">*</span>}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearch } from "wouter";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -16,6 +17,11 @@ function startOfYear() {
   return `${new Date().getFullYear()}-01-01`;
 }
 const today = () => new Date().toISOString().slice(0, 10);
+/** `?from=YYYY-MM-DD` / `?to=` let other pages (e.g. the Dashboard) open a matching period. */
+const dateParam = (search: string, key: string) => {
+  const v = new URLSearchParams(search).get(key);
+  return v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+};
 
 /**
  * New Income Statement. Same getIncomeStatement query + owner scope as Old,
@@ -28,8 +34,13 @@ export default function NewIncomeStatement() {
   const { fmt } = useCurrency();
   const { ownerParam } = useOwnerFilter();
   const { canExport } = usePermissions("incomeStatement");
-  const [fromDate, setFromDate] = useState(startOfYear());
-  const [toDate, setToDate] = useState(today());
+  const search = useSearch();
+  // For one owner the server can't split feed purchases, so it reports that owner's ration use instead.
+  const feedLabel = ownerParam
+    ? t("incomeStatement.feedEstimated", "Feed (estimated from rations)")
+    : t("incomeStatement.feedPurchases", "Feed purchases");
+  const [fromDate, setFromDate] = useState(() => dateParam(search, "from") ?? startOfYear());
+  const [toDate, setToDate] = useState(() => dateParam(search, "to") ?? today());
 
   const { data, isLoading } = trpc.dashboard.getIncomeStatement.useQuery({ fromDate, toDate, ownerId: ownerParam });
   const { data: ownersList } = trpc.config.getOwnerOptions.useQuery(undefined, { enabled: canExport });
@@ -224,14 +235,15 @@ export default function NewIncomeStatement() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <KpiCard label={t("incomeStatement.revenue", "Revenue")} value={fmt(d.revenue?.total ?? 0)} icon={TrendingUp} hint={`${t("incomeStatement.received", "Received")}: ${fmt(d.revenue?.cashReceived ?? 0)}`} />
-            <KpiCard label={t("incomeStatement.costs", "Total costs")} value={fmt(d.costs?.total ?? 0)} icon={TrendingDown} hint={`${t("incomeStatement.feed", "Feed")}: ${fmt(d.costs?.feedPurchases ?? 0)}`} />
+            <KpiCard label={t("incomeStatement.revenue", "Revenue")} value={fmt(d.revenue?.total ?? 0)} icon={TrendingUp} info={t("incomeStatement.info.revenue")} hint={`${t("incomeStatement.received", "Received")}: ${fmt(d.revenue?.cashReceived ?? 0)}`} />
+            <KpiCard label={t("incomeStatement.costs", "Total costs")} value={fmt(d.costs?.total ?? 0)} icon={TrendingDown} info={t("incomeStatement.info.costs")} hint={`${t("incomeStatement.feed", "Feed")}: ${fmt(d.costs?.feedPurchases ?? 0)}`} />
             <KpiCard
               label={t("incomeStatement.grossProfit", "Gross profit")}
               value={<span className={Number(d.grossProfit ?? 0) >= 0 ? "text-success-soft-foreground" : "text-danger-soft-foreground"}>{fmt(d.grossProfit ?? 0)}</span>}
               icon={FileText}
+              info={t("incomeStatement.info.grossProfit")}
             />
-            <KpiCard label={t("incomeStatement.margin", "Profit margin")} value={`${d.profitMargin ?? 0}%`} icon={TrendingUp} />
+            <KpiCard label={t("incomeStatement.margin", "Profit margin")} value={`${d.profitMargin ?? 0}%`} icon={TrendingUp} info={t("incomeStatement.info.margin")} />
           </div>
 
           <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -244,7 +256,7 @@ export default function NewIncomeStatement() {
                 <Row label={t("incomeStatement.outstanding", "Outstanding receivables")} value={fmt(d.revenue?.outstandingReceivables ?? 0)} muted />
                 <div className="my-2 border-t border-border" />
                 <Row label={t("incomeStatement.animalPurchases", "Animal purchases")} value={fmt(d.costs?.animalPurchases ?? 0)} />
-                <Row label={t("incomeStatement.feedPurchases", "Feed purchases")} value={fmt(d.costs?.feedPurchases ?? 0)} />
+                <Row label={feedLabel} value={fmt(d.costs?.feedPurchases ?? 0)} />
                 <Row label={t("incomeStatement.otherCosts", "Other expenses")} value={fmt(d.costs?.totalOther ?? 0)} />
                 <div className="my-2 border-t border-border" />
                 <Row label={t("incomeStatement.grossProfit", "Gross profit")} value={fmt(d.grossProfit ?? 0)} strong />
@@ -254,26 +266,35 @@ export default function NewIncomeStatement() {
             {/* Cost by category */}
             <section className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
               <h2 className="mb-3 text-sm font-semibold">{t("incomeStatement.costsByCategory", "Costs by category")}</h2>
-              {(d.costs?.byCategory ?? []).length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">{t("common.none", "None")}</p>
-              ) : (
-                <dl className="space-y-2 text-sm">
-                  {(d.costs?.byCategory as any[]).map((c, i) => (
-                    <Row key={i} label={c.categoryName ?? t("common.uncategorized", "Uncategorized")} value={fmt(c.total ?? 0)} />
-                  ))}
-                </dl>
-              )}
+              {(() => {
+                // Feed and animal purchases are costs too; list them with the expense categories so the rows add up to Total costs.
+                const rows = [
+                  { label: feedLabel, total: Number(d.costs?.feedPurchases ?? 0) },
+                  { label: t("incomeStatement.animalPurchases", "Animal purchases"), total: Number(d.costs?.animalPurchases ?? 0) },
+                  ...((d.costs?.byCategory ?? []) as any[]).map(c => ({ label: c.categoryName ?? t("common.uncategorized", "Uncategorized"), total: Number(c.total ?? 0) })),
+                ].filter(r => r.total !== 0).sort((a, b) => b.total - a.total);
+                return rows.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">{t("common.none", "None")}</p>
+                ) : (
+                  <dl className="space-y-2 text-sm">
+                    {rows.map((r, i) => <Row key={i} label={r.label} value={fmt(r.total)} />)}
+                    <div className="my-2 border-t border-border" />
+                    <Row label={t("incomeStatement.costs", "Total costs")} value={fmt(d.costs?.total ?? 0)} strong />
+                  </dl>
+                );
+              })()}
             </section>
 
             {/* Running cost per month */}
             {d.runningCostPerMonth && (
               <section className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-sm)]">
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-1 flex items-center justify-between">
                   <h2 className="text-sm font-semibold">{t("incomeStatement.runningCostMonth", "Running cost / month")}</h2>
                   <span className="text-xs text-muted-foreground">
                     {t("incomeStatement.overMonths", { count: d.runningCostPerMonth.monthsInPeriod ?? 0, months: d.runningCostPerMonth.monthsInPeriod ?? 0, defaultValue: "over {{months}} months" })}
                   </span>
                 </div>
+                <p className="mb-3 text-xs text-muted-foreground">{t("incomeStatement.info.runningCost")}</p>
                 <dl className="space-y-2 text-sm">
                   <Row label={t("incomeStatement.farmWide", "Farm-wide (general / overhead)")} value={`${fmt(d.runningCostPerMonth.farmWide ?? 0)}${t("incomeStatement.perMonthSuffix", "/mo")}`} />
                   <Row label={t("incomeStatement.animalWide", "Animal-wide (feed + per-animal)")} value={`${fmt(d.runningCostPerMonth.animalWide ?? 0)}${t("incomeStatement.perMonthSuffix", "/mo")}`} />

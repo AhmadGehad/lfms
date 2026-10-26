@@ -9,6 +9,7 @@ import { AuditTimeline, type AuditEntry } from "../components/AuditTimeline";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { EmptyState } from "../components/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
+import { auditSentence } from "../lib/auditText";
 
 /**
  * New Audit Log as a readable timeline with inline diffs (F-AUD1/2) and a
@@ -80,7 +81,7 @@ export default function NewAuditLog() {
         open={confirm !== null}
         onOpenChange={o => !o && setConfirm(null)}
         title={t("audit.revertTitle", "Revert this action?")}
-        description={confirm ? `${confirm.action} · ${confirm.entityType} #${confirm.entityId}` : ""}
+        description={confirm ? auditSentence(t, confirm) : ""}
         consequences={[
           { text: t("audit.revertConsequence", "This recreates the prior state of the record and is itself recorded as an audit entry."), tone: "warning" },
         ]}

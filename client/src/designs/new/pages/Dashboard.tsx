@@ -52,6 +52,7 @@ import { weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
 import { CapitalPartnersSummary } from "@/components/CapitalPartnersSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { daysUntil, fmtDate } from "../lib/format";
+import { auditSentence } from "../lib/auditText";
 import { chartBarCursor, chartTooltipItemStyle, chartTooltipLabelStyle, chartTooltipStyle, formatAxisNumber } from "../lib/chartTheme";
 
 const DASHBOARD_PREF_KEY = "lfms:new-dashboard-layout";
@@ -461,7 +462,7 @@ export default function NewDashboard() {
         .slice(0, 8)
         .map(row => ({
           id: row.id,
-          title: `${row.action} · ${row.entityType}`,
+          title: auditSentence(t, row),
           meta: `${row.userName ?? t("common.system", "System")} · ${fmtShortDate(row.createdAt)}`,
           href: "/audit",
         })),
@@ -483,7 +484,7 @@ export default function NewDashboard() {
     vaccinations: t("dashboard.vaccinationsDue", "Vaccinations due"),
     feed: t("dashboard.criticalFeed", "Low / critical feed"),
     ready: t("dashboard.readyToSell", "Ready To Sell"),
-    lambs: t("dashboard.lambsToPromote", "Lambs To Promote"),
+    lambs: t("dashboard.lambsToPromote", "Lambs to add to herd"),
     unpaid: t("dashboard.unpaidSales", "Unpaid sales"),
     trends: t("dashboard.trends", "Revenue & expense trend"),
     headcount: t("dashboard.headCount", "Head count by category"),
@@ -507,6 +508,8 @@ export default function NewDashboard() {
         value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(kpis?.totalRevenue ?? 0)}
         icon={TrendingUp}
         href="/sales"
+        hint={t("dashboard.last12Months", "Last 12 months")}
+        info={t("dashboard.info.revenue")}
         tone="success"
       />
     ),
@@ -516,6 +519,7 @@ export default function NewDashboard() {
         value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(kpis?.totalExpenses ?? 0)}
         icon={DollarSign}
         href="/expenses"
+        info={t("dashboard.info.expenses")}
         hint={kpis ? t("dashboard.feedShare", { amount: fmt(kpis.feedExpenses ?? 0), defaultValue: "Feed {{amount}}" }) : undefined}
         tone="warning"
       />
@@ -525,7 +529,9 @@ export default function NewDashboard() {
         label={kpiLabels.pnl}
         value={kpisLoading ? <Skeleton className="h-7 w-20" /> : fmt(grossPnL)}
         icon={Activity}
-        href="/pnl"
+        href={`/income-statement?from=${twelveMonthsAgo()}`}
+        hint={t("dashboard.last12Months", "Last 12 months")}
+        info={t("dashboard.info.pnl")}
         tone={grossPnL < 0 ? "danger" : "info"}
       />
     ),
@@ -608,7 +614,7 @@ export default function NewDashboard() {
           loading={lambsLoading}
           viewAllHref="/breeding"
           viewAllLabel={t("common.viewAll", "View all")}
-          emptyText={t("dashboard.noLambsToPromote", "No lambs waiting for promotion")}
+          emptyText={t("dashboard.noLambsToPromote", "No lambs waiting to join the herd")}
         />
       ),
     },
@@ -744,13 +750,20 @@ export default function NewDashboard() {
   );
 }
 
+/** Same window as the server's default KPI period (today minus one year). */
+const twelveMonthsAgo = () => {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
 const monthLabel = (m: unknown) => {
   if (!m) return "—";
   const d = new Date(`${m}-01`);
   if (Number.isNaN(d.getTime())) return String(m);
   // Month names follow the UI language (not the browser); digits stay Latin.
   const locale = i18n.language?.startsWith("ar") ? "ar-EG-u-nu-latn" : "en-GB";
-  return d.toLocaleDateString(locale, { month: "short", year: "2-digit" });
+  return d.toLocaleDateString(locale, { month: "short", year: "numeric" });
 };
 
 /** Six-month revenue (bars) and expense (area) trend — one measure per plot. */

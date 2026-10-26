@@ -1,12 +1,13 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "wouter";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Bell, BellOff, Check, CheckCheck } from "lucide-react";
+import { Bell, BellOff, Check, CheckCheck, ChevronRight } from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ListSkeleton } from "@/components/PageSkeleton";
-import { formatAlertType, priorityTone } from "@shared/notifications";
+import { formatAlertType, notificationCategory, notificationLink, priorityTone } from "@shared/notifications";
 import { fmtDateTime } from "../lib/format";
 
 type NotificationRow = RouterOutputs["notifications"]["list"][number];
@@ -57,17 +58,36 @@ export default function NewNotifications() {
         <ul className="flex flex-col gap-2">
           {rows.map(n => {
             const isRead = Boolean(n.isRead);
+            const category = notificationCategory(n.alertType);
+            const tag = category === "other"
+              ? formatAlertType(n.alertType)
+              : t(`notifications.category.${category}`, { defaultValue: category[0].toUpperCase() + category.slice(1) });
+            const href = notificationLink(n);
+            const title = n.title || n.message || "—";
+            // Opening a notification takes you to what it's about and marks it read.
+            // The title link is stretched over the whole card (after:inset-0); the
+            // mark-read button sits above it so both stay real, separate controls.
             return (
               <li
                 key={n.id}
-                className={`flex items-start gap-3 rounded-xl border p-3 ${isRead ? "border-border bg-card" : "border-primary/30 bg-primary-soft/40"}`}
+                className={`relative flex items-start gap-3 rounded-xl border p-3 ${isRead ? "border-border bg-card" : "border-primary/30 bg-primary-soft/40"} ${href ? "transition-colors hover:border-border-strong has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-ring" : ""}`}
               >
                 <Bell className={`mt-0.5 h-4 w-4 shrink-0 ${isRead ? "text-muted-foreground" : "text-primary"}`} />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-sm font-medium text-foreground">{n.title || n.message || "—"}</p>
+                    {href ? (
+                      <Link
+                        href={href}
+                        onClick={() => { if (canUpdate && !isRead) markRead.mutate({ id: n.id }); }}
+                        className="text-sm font-medium text-foreground after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none"
+                      >
+                        {title}
+                      </Link>
+                    ) : (
+                      <p className="text-sm font-medium text-foreground">{title}</p>
+                    )}
                     <StatusBadge tone={priorityTone(n.priority)} icon={false}>
-                      {formatAlertType(n.alertType)}
+                      {tag}
                     </StatusBadge>
                   </div>
                   {n.title && n.message && <p className="mt-0.5 text-sm text-muted-foreground">{n.message}</p>}
@@ -75,14 +95,16 @@ export default function NewNotifications() {
                 </div>
                 {canUpdate && !isRead && (
                   <button
+                    type="button"
                     onClick={() => markRead.mutate({ id: n.id })}
-                    className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-surface"
+                    className="relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring sm:h-8 sm:w-8"
                     aria-label={t("notifications.markRead", "Mark read")}
                     title={t("notifications.markRead", "Mark read")}
                   >
                     <Check className="h-4 w-4" />
                   </button>
                 )}
+                {href && <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground rtl:rotate-180" aria-hidden="true" />}
               </li>
             );
           })}

@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { isMutationWorking, useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, DollarSign, Leaf, Scale, Search, ShoppingCart } from "lucide-react";
-import { FormField, FormFooter, FormSection } from "./FormLayout";
+import { FormField, FormFooter, FormSection, FormValidation } from "./FormLayout";
 import { ExpenseFormFields, blankExpenseForm, expenseFormToPayload, validateExpenseForm, type ExpenseForm } from "./ExpenseFormFields";
 
 type AnimalRow = any;
@@ -54,7 +54,8 @@ export function QuickExpenseDialog({
   const [form, setForm] = useState<ExpenseForm>(blankExpenseForm());
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
-  const reset = () => setForm(blankExpenseForm());
+  const [attempt, setAttempt] = useState(0);
+  const reset = () => { setForm(blankExpenseForm()); setAttempt(0); };
   useEffect(() => {
     if (open) reset();
   }, [open]);
@@ -74,7 +75,7 @@ export function QuickExpenseDialog({
 
   const submit = (addAnother: boolean) => {
     const err = validateExpenseForm(form, t);
-    if (err) { toast.error(err); return; }
+    if (err) { setAttempt(a => a + 1); toast.error(err); return; }
     create.mutate({ ...expenseFormToPayload(form), idempotencyKey } as any, {
       onSuccess: () => (addAnother ? reset() : onOpenChange(false)),
     });
@@ -92,7 +93,9 @@ export function QuickExpenseDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="px-6 py-5">
-          <ExpenseFormFields form={form} setForm={setForm} />
+          <FormValidation attempt={attempt}>
+            <ExpenseFormFields form={form} setForm={setForm} />
+          </FormValidation>
           <FormFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel", "Cancel")}</Button>
             <Button type="button" variant="outline" disabled={isMutationWorking(create)} onClick={() => submit(true)}>{t("common.saveAddAnother", "Save & add another")}</Button>
@@ -142,6 +145,15 @@ export function AnimalCreateDialog({
   );
   const { data: statuses } = trpc.config.getStatuses.useQuery();
   const { data: owners } = trpc.config.getOwnerOptions.useQuery();
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (open) setAttempt(0);
+  }, [open]);
+  // Most new animals are simply "Active": preselect it so it's one less choice.
+  const activeStatusId = ((statuses as any[]) ?? []).find(s => String(s.name).trim().toLowerCase() === "active")?.id;
+  useEffect(() => {
+    if (open && activeStatusId != null) setForm(f => (f.statusId ? f : { ...f, statusId: String(activeStatusId) }));
+  }, [open, activeStatusId]);
   const selectedCategory = ((categories as any[]) ?? []).find(c => String(c.id) === form.categoryId);
   const [createIdempotencyKey, setCreateIdempotencyKey] = useState(() => crypto.randomUUID());
   const queuedSubmit = useQueuedSubmit();
@@ -168,6 +180,7 @@ export function AnimalCreateDialog({
   const set = (key: keyof typeof form, value: string) => setForm(prev => ({ ...prev, [key]: value }));
   const submit = (addAnother: boolean) => {
     if (!form.speciesId || !form.categoryId || !form.groupId || !form.statusId || !form.sex || !form.acquisitionType || !form.birthDate) {
+      setAttempt(a => a + 1);
       toast.error(t("common.required", "Fill required fields"));
       return;
     }
@@ -175,6 +188,7 @@ export function AnimalCreateDialog({
     // default is pre-selected: this choice has a real effect on the Animal
     // P&L page's Net Revenue figure, so it must be an active decision.
     if (form.acquisitionType === "purchased" && !form.purchaseFundingSource) {
+      setAttempt(a => a + 1);
       toast.error(t("pnl.fundingSourceRequired", "Choose how this purchase was funded"));
       return;
     }
@@ -230,7 +244,8 @@ export function AnimalCreateDialog({
             {t("animals.registerAnimal", "Register Animal")}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-5 px-6 py-5">
+        <div className="px-6 py-5">
+          <FormValidation attempt={attempt} className="space-y-5">
           <FormSection title={t("animals.identity", "Identity")} description={t("animals.identityHint", "Species, category, owner, and generated ID.")}>
             <FormField label={t("common.species", "Species")} htmlFor="new-species" required>
               <Select value={form.speciesId} onValueChange={value => setForm(f => ({ ...f, speciesId: value, categoryId: "", groupId: "", animalIdNumber: "" }))}>
@@ -328,6 +343,7 @@ export function AnimalCreateDialog({
               </Select>
             </FormField>
           </FormSection>
+          </FormValidation>
         </div>
         <FormFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel", "Cancel")}</Button>
