@@ -60,7 +60,7 @@ export default function NewUsers() {
           <StatusBadge tone={roleTone(u.role)}>{String(t(`users.${u.role}`, u.role))}</StatusBadge>
         ) : (
           <Select value={u.role} onValueChange={v => updateRole.mutate({ userId: u.id, role: v as any, expectedVersion: u.version })}>
-            <SelectTrigger className="h-8 w-32" onClick={e => e.stopPropagation()}><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-8 w-auto min-w-32" onClick={e => e.stopPropagation()}><SelectValue /></SelectTrigger>
             <SelectContent>
               {ASSIGNABLE_ROLES.map(r => <SelectItem key={r} value={r}>{t(`users.${r}`, r)}</SelectItem>)}
             </SelectContent>
@@ -140,7 +140,7 @@ function PermissionMatrix() {
             <Input value={search} onChange={e => setSearch(e.target.value)} placeholder={t("users.searchPages", "Search pages…")} aria-label={t("users.searchPages", "Search pages")} className="h-9 w-40 ps-8" />
           </div>
           <Select value={role} onValueChange={v => setRole(v as any)}>
-            <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-auto min-w-36"><SelectValue /></SelectTrigger>
             <SelectContent>{CONFIGURABLE_ROLES.map(r => <SelectItem key={r} value={r}>{t(`users.${r}`, r)}</SelectItem>)}</SelectContent>
           </Select>
           <button

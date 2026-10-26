@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtDate, fmtDateTime } from "./format";
+import { daysUntil, fmtDate, fmtDateTime } from "./format";
 
 describe("fmtDate", () => {
   it("formats calendar dates as dd/mm/yyyy without timezone shift", () => {
@@ -15,5 +15,26 @@ describe("fmtDate", () => {
     expect(fmtDate(null)).toBe("—");
     expect(fmtDate("", "-")).toBe("-");
     expect(fmtDate("not a date")).toBe("—");
+  });
+});
+
+describe("daysUntil", () => {
+  const now = new Date(2026, 9, 26, 15, 0); // 26 Oct 2026, afternoon local time
+
+  it("counts whole calendar days, ignoring DST changes in between", () => {
+    expect(daysUntil("2026-11-20", now)).toBe(25);
+    expect(daysUntil(new Date(Date.UTC(2026, 10, 20)), now)).toBe(25);
+  });
+
+  it("returns 0 for today and negative values for past dates", () => {
+    expect(daysUntil("2026-10-26", now)).toBe(0);
+    expect(daysUntil("2026-10-24T00:00:00.000Z", now)).toBe(-2);
+  });
+
+  it("returns null for missing or invalid values", () => {
+    expect(daysUntil(null, now)).toBeNull();
+    expect(daysUntil("", now)).toBeNull();
+    expect(daysUntil("not a date", now)).toBeNull();
+    expect(daysUntil(new Date("x"), now)).toBeNull();
   });
 });

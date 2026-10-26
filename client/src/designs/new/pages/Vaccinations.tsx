@@ -16,17 +16,9 @@ import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { FormSection, FormField, FormFooter } from "../components/FormLayout";
-import { fmtDate } from "../lib/format";
+import { daysUntil, fmtDate } from "../lib/format";
 
-const MS_DAY = 86400000;
-function dayDiff(d: unknown): number | null {
-  if (!d) return null;
-  const x = new Date(d as string);
-  if (Number.isNaN(x.getTime())) return null;
-  x.setHours(0, 0, 0, 0);
-  const t = new Date(); t.setHours(0, 0, 0, 0);
-  return Math.ceil((x.getTime() - t.getTime()) / MS_DAY);
-}
+const dayDiff = (d: unknown) => daysUntil(d);
 const today = () => new Date().toISOString().slice(0, 10);
 
 /** Due-date badge with color+text (overdue / due within lead days / ok). */

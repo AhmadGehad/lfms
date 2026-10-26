@@ -21,7 +21,7 @@ import { EmptyState } from "../components/EmptyState";
 import { ConsequenceConfirm } from "../components/ConsequenceConfirm";
 import { AnimalCreateDialog, BulkRecordSaleDialog, RecordSaleDialog, WeighInSessionDialog } from "../components/AnimalWorkflows";
 import { weightProgressPillClass, weightProgressTone, weightTargetPercent } from "../lib/weightProgress";
-import { fmtDate } from "../lib/format";
+import { daysUntil, fmtDate } from "../lib/format";
 import { formatAmount } from "@/hooks/useCurrency";
 
 function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photoKey?: string | null; alt?: string }) {
@@ -51,11 +51,8 @@ function statusTone(name?: string): StatusTone {
 
 function dueLabel(date: unknown, name?: string | null) {
   if (!date) return <span className="text-muted-foreground">—</span>;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(date as string);
-  due.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  const diff = daysUntil(date);
+  if (diff === null) return <span className="text-muted-foreground">—</span>;
   const cls = diff < 0 ? "text-danger-soft-foreground" : diff <= 7 ? "text-warning-soft-foreground" : "text-muted-foreground";
   return (
     <span className="inline-flex min-w-0 items-center gap-1.5">

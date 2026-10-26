@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -83,6 +84,11 @@ export function EntityTable<T>({
     setEditId((row as any).id); setEditRow(row); setOpen(true);
   };
   const submit = () => {
+    const missing = fields.find(f => f.required && f.type !== "checkbox" && String(form[f.key] ?? "").trim() === "");
+    if (missing) {
+      toast.error(t("common.fieldRequired", { field: missing.label, defaultValue: "{{field}} is required" }));
+      return;
+    }
     const values = coerce(fields, form);
     if (editId != null) {
       if (editRow) onUpdate(editId, values, editRow);

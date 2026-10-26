@@ -32,6 +32,8 @@ function Card({ icon: Icon, title, desc, children }: { icon: typeof Download; ti
 
 function ModeToggle({ mode, onChange, allowReplace = true }: { mode: Mode; onChange: (m: Mode) => void; allowReplace?: boolean }) {
   const { t } = useTranslation();
+  // Append is the only mode on offer: a one-option toggle is just noise.
+  if (!allowReplace) return null;
   return (
     <div className="inline-flex rounded-lg border border-border p-0.5 text-sm">
       {(["append", ...(allowReplace ? ["replace"] : [])] as Mode[]).map(m => (

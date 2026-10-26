@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,6 +11,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { usePermissions } from "@/hooks/usePermissions";
+import { trpc } from "@/lib/trpc";
 import type { PermissionPage } from "@shared/permissions";
 import {
   Activity, BarChart3, BookOpen, Cog, Database, DollarSign, Egg, FileText,
@@ -27,12 +28,16 @@ interface Target {
 /**
  * Global search / command palette (⌘K) using the unused `command` primitive
  * (F-NAV/IA6). Jump to any permitted page or fire a quick action from anywhere —
- * the keyboard-first entry point the redesign requires.
+ * the keyboard-first entry point the redesign requires. Animals are searchable
+ * by tag ID too; the list loads only while the palette is open.
  */
 export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [, setLocation] = useLocation();
   const { t } = useTranslation();
   const perms = usePermissions();
+  const [query, setQuery] = useState("");
+  const canSeeAnimals = perms.can("animals", "view");
+  const { data: animals } = trpc.animals.list.useQuery({}, { enabled: open && canSeeAnimals });
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -70,11 +75,11 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     { label: t("expenses.add", "Add expense"), icon: DollarSign, path: "/expenses?new=1", page: "expenses" },
   ] as { label: string; icon: typeof Plus; path: string; page: PermissionPage }[]).filter(q => perms.can(q.page, "create"));
 
-  const go = (path: string) => { onOpenChange(false); setLocation(path); };
+  const go = (path: string) => { onOpenChange(false); setQuery(""); setLocation(path); };
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput aria-label={t("search.placeholder", "Search")} placeholder={t("search.placeholder", "Search…")} />
+      <CommandInput value={query} onValueChange={setQuery} aria-label={t("search.placeholder", "Search")} placeholder={t("search.placeholder", "Search…")} />
       <CommandList>
         <CommandEmpty>{t("search.empty", "No results.")}</CommandEmpty>
         {quick.length > 0 && (
@@ -84,6 +89,24 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
                 <CommandItem key={q.path} value={`add ${q.label}`} onSelect={() => go(q.path)}>
                   <q.icon className="me-2 h-4 w-4" />
                   {q.label}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
+        {query.trim() !== "" && canSeeAnimals && animals && animals.length > 0 && (
+          <>
+            <CommandGroup heading={t("nav.animals")}>
+              {animals.map((a: any) => (
+                <CommandItem
+                  key={a.animal?.id}
+                  value={`${a.animal?.animalId ?? ""} ${a.categoryName ?? ""}`}
+                  onSelect={() => go(`/animals/${a.animal?.id}`)}
+                >
+                  <Leaf className="me-2 h-4 w-4" />
+                  <span className="font-medium">{a.animal?.animalId}</span>
+                  <span className="ms-2 truncate text-xs text-muted-foreground">{[a.categoryName, a.statusName].filter(Boolean).join(" · ")}</span>
                 </CommandItem>
               ))}
             </CommandGroup>
