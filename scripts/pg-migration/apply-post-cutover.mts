@@ -10,10 +10,13 @@ import { applyPostCutoverMigrations } from "./post-cutover.mts";
 async function main() {
   const url = process.env.PG_DATABASE_URL;
   if (!url) throw new Error("PG_DATABASE_URL is required");
-  const host = new URL(url).hostname;
+  const parsed = new URL(url);
+  const host = parsed.hostname;
   const local = host === "localhost" || host === "127.0.0.1" || host === "::1";
+  // node-postgres lets a URL's sslmode replace the ssl option below, CA included.
+  parsed.searchParams.delete("sslmode");
   const client = new pg.Client({
-    connectionString: url,
+    connectionString: parsed.toString(),
     ssl: local ? undefined : { ca: SUPABASE_ROOT_CA, rejectUnauthorized: true },
   });
   await client.connect();
