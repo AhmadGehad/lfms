@@ -80,7 +80,10 @@ export default function WorkerApp({ takePhoto = takeCheckinPhoto }: { takePhoto?
   // Replaces the registered default, so it has to undo the optimistic tap too.
   const record = trpc.tasks.recordAction.useMutation({ onError: refused("tasks.recordAction") });
   const report = trpc.tasks.submitReport.useMutation({ onError: refused("tasks.submitReport") });
-  const checkIn = trpc.tasks.checkIn.useMutation({ onError: refused("tasks.checkIn") });
+  // Happens behind the worker's back, so a failure isn't theirs to act on: the report says "no photo".
+  const checkIn = trpc.tasks.checkIn.useMutation({
+    onError: (_error, input, snapshot) => undoOptimisticWrite(queryClient, "tasks.checkIn", input, snapshot as OptimisticSnapshot | undefined),
+  });
   const submit = useQueuedSubmit();
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const [workerId, setWorkerId] = useState<number | null>(null);
@@ -119,8 +122,9 @@ export default function WorkerApp({ takePhoto = takeCheckinPhoto }: { takePhoto?
     void takePhoto().then(photo => {
       // A task with no photo just shows none. A name pick is still worth recording.
       if (forTask && !photo) return;
-      submit(checkIn, { workerId: forWorkerId, photo, takenAt, reportDate, ...forTask, idempotencyKey: crypto.randomUUID() });
-      if (photo) toast(t("worker.photoTaken", "Photo taken for today's report"), { className: "text-xl!" });
+      checkIn.mutate({ workerId: forWorkerId, photo, takenAt, reportDate, ...forTask, idempotencyKey: crypto.randomUUID() });
+      // Once per person: by the time a task's photo is ready, the next one may be at the screen.
+      if (photo && !forTask) toast(t("worker.photoTaken", "Photo taken for today's report"), { className: "text-xl!" });
     });
   };
 

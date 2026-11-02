@@ -28,6 +28,7 @@ import {
   recordCheckin,
   recordTaskAction,
   submitFarmReport,
+  taskPhotoFits,
 } from "../tasks/service";
 import { createTabletCode, disconnectTablets, getTabletStatus, normalizeTabletCode, redeemTabletCode } from "../tasks/tablet";
 import { notATablet } from "../tasks/tabletSeats";
@@ -160,6 +161,21 @@ suite("worker tasks", () => {
       expect([row.status, row.finishedByWorkerId]).toEqual(["done", omar]);
     });
 
+    it("keeps a queued finish tapped before someone else started the task", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const omar = await farm.worker("Omar");
+      const created = await insert("saas_azal_tasks", {
+        companyId: farm.companyId, farmId: farm.farmId, title: "Feed", dueDate: today, source: "manual",
+      });
+      await tap(farm, created, "start", ali);
+      const earlier = new Date(Date.now() - 60_000).toISOString();
+      await as(farm, () => db.transaction(tx => runWithDbTransaction(tx, () =>
+        recordTaskAction(tx, farm.tenant, { taskId: created, action: "done", workerId: omar, tappedAt: earlier }))));
+      const [row] = await db.select().from(tasks).where(eq(tasks.id, created));
+      expect([row.status, row.finishedByWorkerId]).toEqual(["done", omar]);
+    });
+
     it("refuses a switched-off name, but keeps a tap made before it was switched off", async () => {
       const farm = await seedCompany();
       const omar = await farm.worker("Omar");
@@ -241,6 +257,34 @@ suite("worker tasks", () => {
 
       await startOver(farm, today);
       expect((await shown()).photos).toEqual([]);
+    });
+
+    it("doesn't pass off an undone tap's photo as the redone tap's, nor keep one for a tap that didn't count", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const omar = await farm.worker("Omar");
+      const task = await addTask(farm, "Feed");
+      expect(await as(farm, () => taskPhotoFits(farm.tenant, task, "start", ali))).toBe(false);
+      await tap(farm, task, "done", ali);
+      await taskPhoto(farm, ali, task, "done", "old-done.jpg");
+      expect(await as(farm, () => taskPhotoFits(farm.tenant, task, "done", ali))).toBe(true);
+      expect(await as(farm, () => taskPhotoFits(farm.tenant, task, "done", omar))).toBe(false);
+      await db.update(workerCheckins).set({ takenAt: new Date(Date.now() - 60_000) }).where(eq(workerCheckins.photoKey, "old-done.jpg"));
+      await tap(farm, task, "undo", null);
+      await tap(farm, task, "done", ali);
+      const day = await as(farm, () => getDayReport(farm.tenant, today));
+      expect(day.tasks.find(row => row.id === task)!.photos).toEqual([]);
+      expect((await as(farm, () => listDayReports(farm.tenant)))[0].photoCount).toBe(0);
+    });
+
+    it("deleting a day takes a task's photos with it, whichever day they were taken", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const task = await addTask(farm, "Feed");
+      await tap(farm, task, "start", ali);
+      await as(farm, () => recordCheckin(farm.tenant, { workerId: ali, reportDate: addDays(today, -1), takenAt: new Date().toISOString(), photoKey: "yesterday.jpg", clientKey: randomUUID(), taskId: task, taskAction: "start" }));
+      const result = await startOver(farm, today);
+      expect(result.photoKeys).toContain("yesterday.jpg");
     });
 
     it("doesn't show another farm's photo on a task", async () => {

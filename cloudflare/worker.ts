@@ -136,6 +136,7 @@ async function handleInternalSendEmail(
 
 export default {
   // Hourly because farms keep their own clocks: each one is checked as its day ends.
+  // The same call deletes tablet photos past their 30 days.
   async scheduled(_controller: ScheduledController, env: WorkerBindings): Promise<void> {
     if (!env.INTERNAL_API_SECRET) throw new Error("INTERNAL_API_SECRET is not configured");
     const baseDomain = getConfiguredBaseDomain(env, BASE_DOMAIN);
@@ -149,7 +150,7 @@ export default {
     ));
     await response.body?.cancel();
     // Thrown so the failed run shows up in the Workers cron log.
-    if (!response.ok) throw new Error(`Missed-report check failed (${response.status})`);
+    if (!response.ok) throw new Error(`Hourly tablet jobs failed (${response.status})`);
   },
 
   async fetch(request: Request, env: WorkerBindings): Promise<Response> {

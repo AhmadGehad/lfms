@@ -45,5 +45,7 @@ export async function purgeOldTabletPhotos() {
       logger.warn("tasks.photo_purge_failed", { error, checkinId: row.id });
     }
   }
+  // Every one failing is storage or its credentials, and the cron log should show it.
+  if (rows.length > 0 && deleted === 0) throw new Error(`Couldn't delete any of ${failed} tablet photos`);
   return { deleted, failed };
 }

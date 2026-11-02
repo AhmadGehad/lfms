@@ -38,6 +38,7 @@ import {
   listTemplates,
   listWorkers,
   recordCheckin,
+  taskPhotoFits,
   recordTaskAction,
   requireAllowedWorker,
   requireFarmId,
@@ -215,11 +216,8 @@ export const tasksRouter = router({
       const already = await findCheckin(tenant, input.idempotencyKey);
       if (already) return { id: already.id };
       await requireAllowedWorker(db, tenant, requireFarmId(tenant), input.workerId, input.takenAt);
-      if (input.taskId) {
-        // Removed while this photo was on its way: nothing left to attach it to.
-        const [task] = await db.select({ id: tasks.id }).from(tasks)
-          .where(and(tenantScope(tenant, tasks), eq(tasks.id, input.taskId), isNull(tasks.deletedAt))).limit(1);
-        if (!task) return { id: null };
+      if (input.taskId && input.taskAction && !await taskPhotoFits(tenant, input.taskId, input.taskAction, input.workerId)) {
+        return { id: null };
       }
       // A full storage quota mustn't stop anyone working: the report says "no photo".
       const photoKey = input.photo

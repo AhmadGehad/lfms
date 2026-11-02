@@ -510,8 +510,11 @@ export async function recordTaskAction(
   if (!next) return { id: task.id, status: task.status, changed: false };
 
   // Whoever started it finishes it, unless that name has since been switched off.
+  // A queued tap from before the start stands: that tablet couldn't have known.
+  // A second's margin, as startedAt is stored in whole seconds and can round up.
   if (input.action !== "start" && input.action !== "undo"
-    && workerId !== null && task.startedByWorkerId !== null && workerId !== task.startedByWorkerId) {
+    && workerId !== null && task.startedByWorkerId !== null && workerId !== task.startedByWorkerId
+    && task.startedAt !== null && tapTime(input.tappedAt).getTime() >= task.startedAt.getTime() - 1_000) {
     const [starter] = await tx.select({ isActive: workers.isActive }).from(workers)
       .where(and(eq(workers.companyId, task.companyId), eq(workers.id, task.startedByWorkerId))).limit(1);
     if (starter?.isActive) throw new TRPCError({ code: "PRECONDITION_FAILED", message: TASK_STARTED_BY_OTHER });
@@ -841,7 +844,7 @@ async function dayCheckins(db: DbOrTx, tenant: TenantContext, from: string, to: 
     reportDate: workerCheckins.reportDate,
     takenAt: workerCheckins.takenAt,
     photoKey: workerCheckins.photoKey,
-    taskId: workerCheckins.taskId,
+    taskAction: workerCheckins.taskAction,
     workerName: workers.name,
   }).from(workerCheckins)
     .innerJoin(workers, and(eq(workerCheckins.workerId, workers.id), eq(workers.companyId, tenant.companyId)))
@@ -859,7 +862,14 @@ async function dayCheckins(db: DbOrTx, tenant: TenantContext, from: string, to: 
  * By task, not day, as a task can be started one day and finished the next. A tap
  * since undone, or redone by someone else, doesn't count.
  */
-async function photosOfTasks<T extends { id: number; status: TaskStatus; startedByWorkerId: number | null; finishedByWorkerId: number | null }>(
+async function photosOfTasks<T extends {
+  id: number;
+  status: TaskStatus;
+  startedByWorkerId: number | null;
+  startedAt: Date | null;
+  finishedByWorkerId: number | null;
+  finishedAt: Date | null;
+}>(
   db: DbOrTx,
   tenant: TenantContext,
   rows: T[],
@@ -881,14 +891,16 @@ async function photosOfTasks<T extends { id: number; status: TaskStatus; started
     ))
     .orderBy(desc(workerCheckins.takenAt));
   return rows.map(row => {
-    const shown: Array<{ action: PhotoAction; workerId: number | null }> = [
-      ...(row.status !== "todo" && row.startedByWorkerId !== null ? [{ action: "start" as const, workerId: row.startedByWorkerId }] : []),
-      ...(isFinished(row.status) ? [{ action: row.status === "done" ? "done" as const : "blocked" as const, workerId: row.finishedByWorkerId }] : []),
+    const shown: Array<{ action: PhotoAction; workerId: number | null; tappedAt: Date | null }> = [
+      ...(row.status !== "todo" && row.startedByWorkerId !== null ? [{ action: "start" as const, workerId: row.startedByWorkerId, tappedAt: row.startedAt }] : []),
+      ...(isFinished(row.status) ? [{ action: row.status === "done" ? "done" as const : "blocked" as const, workerId: row.finishedByWorkerId, tappedAt: row.finishedAt }] : []),
     ];
     return {
       ...row,
-      photos: shown.flatMap(({ action, workerId }) => {
-        const photo = taken.find(one => one.taskId === row.id && one.action === action && one.workerId === workerId);
+      photos: shown.flatMap(({ action, workerId, tappedAt }) => {
+        // Taken just after the tap, so an older one is of a tap since undone.
+        const photo = taken.find(one => one.taskId === row.id && one.action === action && one.workerId === workerId
+          && (tappedAt === null || one.takenAt >= tappedAt));
         return photo ? [{ action, workerName: photo.workerName, takenAt: photo.takenAt, photoUrl: photoUrl(photo.photoKey)! }] : [];
       }),
     };
@@ -903,11 +915,13 @@ export async function listDayReports(tenant: TenantContext, range?: { from?: str
   await materializeTasks(tenant, today);
   const to = range?.to ?? today;
   const from = range?.from ?? addDays(to, -DAY_REPORT_DAYS);
-  const [taskRows, reports, checkins] = await Promise.all([
+  const [allTasks, reports, checkins] = await Promise.all([
     dayTasks(tenant, from, to, today),
     listReports(tenant, { from, to }),
     dayCheckins(db, tenant, from, to),
   ]);
+  const taskRows = await photosOfTasks(db, tenant, allTasks);
+  const namePicks = checkins.filter(checkin => checkin.taskAction === null);
   const tasksByDay = new Map<string, typeof taskRows>();
   const addTo = (date: string, task: (typeof taskRows)[number]) => {
     const onDay = tasksByDay.get(date);
@@ -922,13 +936,13 @@ export async function listDayReports(tenant: TenantContext, range?: { from?: str
   const dates = new Set<string>([
     ...(from <= today && today <= to ? [today] : []),
     ...reports.map(report => report.reportDate),
-    ...checkins.map(checkin => checkin.reportDate),
+    ...namePicks.map(checkin => checkin.reportDate),
     ...[...tasksByDay.keys()].filter(date => from <= date && date <= to && date !== today),
   ]);
   return [...dates].sort().reverse().map(date => {
     const onDay = tasksByDay.get(date) ?? [];
     const answers = reports.filter(report => report.reportDate === date);
-    const seen = checkins.filter(checkin => checkin.reportDate === date);
+    const seen = namePicks.filter(checkin => checkin.reportDate === date);
     return {
       date,
       isToday: date === today,
@@ -938,7 +952,7 @@ export async function listDayReports(tenant: TenantContext, range?: { from?: str
       missing: missingDailyReports(answers),
       needsAttention: answers.some(report =>
         report.type === "animal_dead" || report.type === "animal_sick" || (report.type === "stock_needed" && report.answer === true)),
-      photoCount: seen.filter(checkin => checkin.photoKey).length,
+      photoCount: seen.filter(checkin => checkin.photoKey).length + onDay.reduce((count, task) => count + task.photos.length, 0),
       workerNames: [...new Set(seen.map(checkin => checkin.workerName))],
     };
   });
@@ -961,8 +975,8 @@ export async function getDayReport(tenant: TenantContext, date: string) {
     reports,
     missing: missingDailyReports(reports),
     checkins: checkins
-      .filter(checkin => checkin.taskId === null)
-      .map(({ photoKey, taskId: _taskId, ...checkin }) => ({ ...checkin, photoUrl: photoUrl(photoKey) })),
+      .filter(checkin => checkin.taskAction === null)
+      .map(({ photoKey, taskAction: _taskAction, ...checkin }) => ({ ...checkin, photoUrl: photoUrl(photoKey) })),
   };
 }
 
@@ -1028,7 +1042,11 @@ export async function deleteDayReport(
   const checkins = await tx.update(workerCheckins).set({ deletedAt: now }).where(and(
     eq(workerCheckins.companyId, tenant.companyId),
     eq(workerCheckins.farmId, farmId),
-    eq(workerCheckins.reportDate, input.date),
+    // A task's photos go with the task, which may have been started on another day.
+    or(
+      and(eq(workerCheckins.reportDate, input.date), isNull(workerCheckins.taskId)),
+      inArray(workerCheckins.taskId, [...taskIds, ...removedIds]),
+    ),
     isNull(workerCheckins.deletedAt),
   )).returning({ photoKey: workerCheckins.photoKey });
 
@@ -1055,6 +1073,20 @@ export async function findCheckin(tenant: TenantContext, clientKey: string) {
     eq(workerCheckins.clientKey, clientKey),
   )).limit(1);
   return row ?? null;
+}
+
+/** Whether this worker really did this to the task, so a refused or changed-nothing tap's photo isn't kept. */
+export async function taskPhotoFits(tenant: TenantContext, taskId: number, action: PhotoAction, workerId: number) {
+  const db = await requireDb();
+  const [task] = await db.select({
+    status: tasks.status,
+    startedByWorkerId: tasks.startedByWorkerId,
+    finishedByWorkerId: tasks.finishedByWorkerId,
+  }).from(tasks).where(and(tenantScope(tenant, tasks), eq(tasks.id, taskId), isNull(tasks.deletedAt))).limit(1);
+  if (!task) return false;
+  return action === "start"
+    ? task.startedByWorkerId === workerId
+    : task.status === action && task.finishedByWorkerId === workerId;
 }
 
 /** Records a worker picking their name or acting on a task. Null if a retry of this check-in got there first. */
