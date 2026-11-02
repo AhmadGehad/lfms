@@ -86,6 +86,8 @@
     "VITE_SUPPORT_EMAIL": "support@apiseg.com",
     "LOG_LEVEL": "info",
     "SMTP_FROM": "noreply@apiseg.com",
+    // Public by design: browsers receive it. Its private half is a secret.
+    "VAPID_PUBLIC_KEY": "BK8lQm3ce43CLVVo334pZE69r3_kviZwSU3T6cA4JnfHJJ2FKVqlZeyyNP6hJoE0K0agSpPpgwG-nxJYdC1Q6S0",
     "VAPID_SUBJECT": "mailto:noreply@apiseg.com",
   },
   "secrets": {
