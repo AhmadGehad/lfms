@@ -1,10 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { rollbackOptimisticRows, type OptimisticSnapshot } from "@/lib/offline/optimistic";
+import { undoOptimisticWrite, type OptimisticSnapshot } from "@/lib/offline/optimistic";
 import { useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
-import { farmToday, isFinished, missingDailyReports, type BlockedReason, type TaskAction } from "@shared/tasks";
-import { ClipboardList, RefreshCw, WifiOff } from "lucide-react";
+import { farmToday, isFinished, missingDailyReports, WORKER_NOT_ALLOWED, type BlockedReason, type TaskAction } from "@shared/tasks";
+import { Ban, ClipboardList, RefreshCw, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -68,19 +68,15 @@ export default function WorkerApp() {
     staleTime: 0,
   });
   const queryClient = useQueryClient();
-  const record = trpc.tasks.recordAction.useMutation({
-    // Replaces the registered default, so it has to undo the optimistic tap too.
-    onError: (_error, _input, snapshot) => {
-      rollbackOptimisticRows(queryClient, (snapshot as OptimisticSnapshot | undefined) ?? []);
-      toast.error(t("worker.actionFailed", "That didn't save. Please try again."));
-    },
-  });
-  const report = trpc.tasks.submitReport.useMutation({
-    onError: (_error, _input, snapshot) => {
-      rollbackOptimisticRows(queryClient, (snapshot as OptimisticSnapshot | undefined) ?? []);
-      toast.error(t("worker.actionFailed", "That didn't save. Please try again."));
-    },
-  });
+  const refused = (path: string) => (error: { message: string }, input: unknown, snapshot: unknown) => {
+    undoOptimisticWrite(queryClient, path, input, snapshot as OptimisticSnapshot | undefined);
+    toast.error(error.message === WORKER_NOT_ALLOWED
+      ? t("worker.nameNotAllowed", "This name isn't allowed to do tasks. Ask the farm owner.")
+      : t("worker.actionFailed", "That didn't save. Please try again."));
+  };
+  // Replaces the registered default, so it has to undo the optimistic tap too.
+  const record = trpc.tasks.recordAction.useMutation({ onError: refused("tasks.recordAction") });
+  const report = trpc.tasks.submitReport.useMutation({ onError: refused("tasks.submitReport") });
   const submit = useQueuedSubmit();
   const [screen, setScreen] = useState<Screen>({ name: "list" });
   const showList = useCallback(() => setScreen({ name: "list" }), []);
@@ -105,7 +101,7 @@ export default function WorkerApp() {
   const sendReport = (draft: ReportDraft, worker: TabletWorker) => {
     // Today by the farm's clock: an offline tablet's last loaded day may be yesterday's.
     const reportDate = day.data ? farmToday(day.data.timeZone) : null;
-    submit(report, { ...draft, workerId: worker.id, reportDate, idempotencyKey: crypto.randomUUID() }, {
+    submit(report, { ...draft, workerId: worker.id, reportDate, tappedAt: new Date().toISOString(), idempotencyKey: crypto.randomUUID() }, {
       onOnlineSuccess: () => toast.success(t("worker.report.sent", "Sent to the owner"), { className: "text-xl!" }),
     });
   };
@@ -134,6 +130,14 @@ export default function WorkerApp() {
     }
     if (!day.data.farmSelected) {
       return <MessageScreen>{t("worker.noFarm", "This tablet isn't linked to one farm. Ask the farm owner.")}</MessageScreen>;
+    }
+    if (day.data.notAllowed) {
+      return (
+        <MessageScreen>
+          <Ban aria-hidden="true" className="mx-auto mb-5 h-16 w-16 text-muted-foreground" />
+          {t("worker.notAllowed", "You aren't allowed to do tasks right now. Ask the farm owner.")}
+        </MessageScreen>
+      );
     }
     const date = day.data.date;
     if (screen.name === "report") {
@@ -169,8 +173,8 @@ export default function WorkerApp() {
           onStart={() => only
             ? act(current, "start", only.id)
             : setScreen({ name: "who", taskId: current.id, action: "start" })}
-          // Whoever started it is finishing it; only an unstarted task needs a name.
-          onDone={() => current.status === "started"
+          // Whoever started it is finishing it, unless they've since been switched off.
+          onDone={() => current.status === "started" && workers.some(worker => worker.id === current.startedByWorkerId)
             ? act(current, "done", current.startedByWorkerId)
             : only
               ? act(current, "done", only.id)

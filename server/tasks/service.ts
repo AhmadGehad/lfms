@@ -23,6 +23,7 @@ import {
   reportDay,
   tapTime,
   VACCINATION_LOOKBACK_DAYS,
+  WORKER_NOT_ALLOWED,
   type AnimalReport,
   type BlockedReason,
   type PurchaseKind,
@@ -45,6 +46,7 @@ import {
 import type { TaskAlert } from "../notifications/fanout";
 import { generatePublicId } from "../tenancy/publicIds";
 import { tenantScope } from "../tenancy/scope";
+import { syncAccountWorkers } from "./workerAccounts";
 
 async function requireDb(): Promise<DbOrTx> {
   const db = await getDb();
@@ -238,7 +240,8 @@ export async function getTabletDay(tenant: TenantContext) {
   const zone = await farmZone(db, tenant);
   const date = farmToday(zone);
   await materializeTasks(tenant, date);
-  const [rows, activeWorkers, reports] = await Promise.all([
+  await syncAccountWorkers(tenant);
+  const [rows, roster, reports] = await Promise.all([
     listTaskRows(tenant, or(
       eq(tasks.dueDate, date),
       and(
@@ -247,8 +250,8 @@ export async function getTabletDay(tenant: TenantContext) {
         or(inArray(tasks.status, ["todo", "started"]), finishedRecently()),
       ),
     )).then(found => found.filter(finishedToday(zone, date))),
-    db.select({ id: workers.id, name: workers.name }).from(workers)
-      .where(and(tenantScope(tenant, workers), eq(workers.isActive, true)))
+    db.select({ id: workers.id, name: workers.name, userId: workers.userId, isActive: workers.isActive }).from(workers)
+      .where(tenantScope(tenant, workers))
       .orderBy(asc(workers.name)),
     // Without the amount: what was paid stays off the shared screen.
     db.select({
@@ -265,7 +268,17 @@ export async function getTabletDay(tenant: TenantContext) {
       .where(and(tenantScope(tenant, farmReports), eq(farmReports.reportDate, date), isNull(farmReports.deletedAt)))
       .orderBy(desc(farmReports.id)),
   ]);
-  return { date, timeZone: zone, farmSelected: tenant.selectedFarmId !== null, tasks: rows, workers: activeWorkers, reports };
+  return {
+    date,
+    timeZone: zone,
+    farmSelected: tenant.selectedFarmId !== null,
+    // This login was switched off and no other name is left to pick, so say why.
+    notAllowed: roster.some(worker => worker.userId === tenant.userId && !worker.isActive)
+      && !roster.some(worker => worker.isActive),
+    tasks: rows,
+    workers: roster.filter(worker => worker.isActive).map(({ id, name }) => ({ id, name })),
+    reports,
+  };
 }
 
 const OVERVIEW_DAYS = 7;
@@ -298,6 +311,7 @@ export async function listTemplates(tenant: TenantContext) {
 
 export async function listWorkers(tenant: TenantContext) {
   const db = await requireDb();
+  await syncAccountWorkers(tenant);
   return db.select().from(workers)
     .where(tenantScope(tenant, workers))
     .orderBy(desc(workers.isActive), asc(workers.name));
@@ -429,6 +443,38 @@ async function notifyRecipients(
   });
 }
 
+/**
+ * Enforces the owner's "allowed to do tasks" switch: a name that's off is refused,
+ * unless the tap was made before it was switched off and only now reached the server
+ * after waiting offline. The tablet is shared, so this is about the name, not the login.
+ */
+async function requireAllowedWorker(
+  tx: DbOrTx,
+  tenant: TenantContext,
+  farmId: number,
+  workerId: number,
+  tappedAt: string | null | undefined,
+) {
+  // Measured by the database, as the trigger sets updatedAt in the session's time zone.
+  const [worker] = await tx.select({
+    name: workers.name,
+    isActive: workers.isActive,
+    secondsSinceChange: sql<string>`extract(epoch from (localtimestamp - ${workers.updatedAt}))`,
+  }).from(workers).where(and(
+      eq(workers.companyId, tenant.companyId),
+      eq(workers.farmId, farmId),
+      eq(workers.id, workerId),
+    )).limit(1);
+  if (!worker) throw new TRPCError({ code: "BAD_REQUEST", message: "Worker not found" });
+  // A second's margin: updatedAt is stored in whole seconds, and can round up.
+  const madeBeforeChange = tappedAt
+    && Date.now() - tapTime(tappedAt).getTime() >= (Number(worker.secondsSinceChange) + 1) * 1_000;
+  if (!worker.isActive && !madeBeforeChange) {
+    throw new TRPCError({ code: "PRECONDITION_FAILED", message: WORKER_NOT_ALLOWED });
+  }
+  return worker;
+}
+
 /** Applies a tablet tap. Must run inside the caller's transaction. */
 export async function recordTaskAction(
   tx: DbOrTx,
@@ -444,15 +490,8 @@ export async function recordTaskAction(
   if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
 
   const workerId = input.workerId ?? null;
-  // A hidden worker is still accepted: their tap may have been queued offline
-  // before the owner hid them.
   if (workerId !== null) {
-    const [worker] = await tx.select({ id: workers.id }).from(workers).where(and(
-      eq(workers.companyId, task.companyId),
-      eq(workers.farmId, task.farmId),
-      eq(workers.id, workerId),
-    )).limit(1);
-    if (!worker) throw new TRPCError({ code: "BAD_REQUEST", message: "Worker not found" });
+    await requireAllowedWorker(tx, tenant, task.farmId, workerId, input.tappedAt);
   } else if (input.action !== "undo" && !(input.action === "done" && task.startedByWorkerId)) {
     throw new TRPCError({ code: "BAD_REQUEST", message: "Worker is required" });
   }
@@ -512,7 +551,7 @@ export async function recordTaskAction(
   return { id: task.id, status: next.status, changed: true };
 }
 
-export type FarmReportInput = { workerId: number; reportDate?: string | null } & (
+export type FarmReportInput = { workerId: number; reportDate?: string | null; tappedAt?: string | null } & (
   | { type: "doctor_visit"; answer: boolean }
   | { type: "stock_needed"; answer: boolean; stockKinds?: StockKind[] | null; itemName?: string | null }
   | { type: AnimalReport; animalTag: string }
@@ -550,13 +589,7 @@ export async function submitFarmReport(
   onAlert?: (alert: TaskAlert) => void,
 ) {
   const farmId = requireFarmId(tenant);
-  // A hidden worker is still accepted, as with a task tap queued offline.
-  const [worker] = await tx.select({ name: workers.name }).from(workers).where(and(
-    eq(workers.companyId, tenant.companyId),
-    eq(workers.farmId, farmId),
-    eq(workers.id, input.workerId),
-  )).limit(1);
-  if (!worker) throw new TRPCError({ code: "BAD_REQUEST", message: "Worker not found" });
+  const worker = await requireAllowedWorker(tx, tenant, farmId, input.workerId, input.tappedAt);
 
   const reportDate = reportDay(input.reportDate, await farmDate(tx, tenant));
   const base = {

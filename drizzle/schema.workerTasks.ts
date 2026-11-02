@@ -27,6 +27,10 @@ export const workers = pgTable("saas_azal_workers", {
   companyId: integer("companyId").notNull(),
   farmId: integer("farmId").notNull(),
   name: varchar("name", { length: 80 }).notNull(),
+  /** The login this worker came from in Admin. Null for a name the owner typed. */
+  userId: integer("userId"),
+  /** Switched off because the login went away, not by the owner, so it comes back with the login. */
+  loginGone: boolean("loginGone").default(false).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),

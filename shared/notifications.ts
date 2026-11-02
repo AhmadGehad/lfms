@@ -1,3 +1,6 @@
+/** How often an open app looks for new alerts, so what workers do shows without a reload. */
+export const NOTIFICATIONS_REFRESH_MS = 30_000;
+
 /**
  * Shared notification presentation semantics.
  *

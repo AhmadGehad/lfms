@@ -32,7 +32,8 @@ export type TaskAlert = {
 /**
  * The email and push for a task or report, sent after its transaction commits so
  * nothing goes out for work that rolled back. Each one is a separate event, so the
- * usual repeat-alert cooldown doesn't apply.
+ * usual repeat-alert cooldown doesn't apply. The phone hears about everything a
+ * worker does; email stays for what's urgent.
  */
 export function sendTaskAlert(alert: TaskAlert): void {
   const text = (language: "en" | "ar") => taskNotificationText(alert.alertType, alert.params, language)!;
@@ -54,6 +55,7 @@ export function sendTaskAlert(alert: TaskAlert): void {
     priority: alert.priority,
     recipientUserIds: alert.recipientUserIds,
     distinctEvent: true,
+    everyPriority: true,
     contentFor: language => {
       const { title, message } = text(language);
       return { title, body: message };

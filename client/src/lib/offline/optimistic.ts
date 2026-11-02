@@ -12,10 +12,11 @@
  * other screens navigate to an animal that does not exist. Those two show up in
  * the sync queue instead.
  */
-import type { QueryClient } from "@tanstack/react-query";
+import { hashKey, type QueryClient } from "@tanstack/react-query";
 import {
   isYesNoReport,
   nextTaskProgress,
+  tapTime,
   type BlockedReason,
   type PurchaseKind,
   type ReportType,
@@ -93,6 +94,7 @@ const PLANS: Partial<Record<OfflineMutationPath, OptimisticPlan>> = {
 export type OptimisticSnapshot = Array<{ key: readonly unknown[]; previous: unknown }>;
 
 type TabletDayCache = {
+  date?: string;
   tasks: Array<TaskProgress & { id: number; startedByName: string | null; finishedByName: string | null }>;
   workers: Array<{ id: number; name: string }>;
   reports?: Array<TabletReportCache>;
@@ -107,6 +109,8 @@ type TabletReportCache = {
   purchaseKind: PurchaseKind | null;
   itemName: string | null;
   workerName: string;
+  /** The write this row stands in for, so retrying it doesn't show it twice. */
+  clientKey?: string;
 };
 
 /**
@@ -115,14 +119,14 @@ type TabletReportCache = {
  */
 function patchTabletDay(
   day: TabletDayCache,
-  input: { taskId: number; action: TaskAction; workerId?: number | null; reason?: BlockedReason | null },
+  input: { taskId: number; action: TaskAction; workerId?: number | null; reason?: BlockedReason | null; tappedAt?: string | null },
 ): TabletDayCache {
   const nameOf = (id: number | null) => day.workers.find(worker => worker.id === id)?.name ?? null;
   return {
     ...day,
     tasks: day.tasks.map(task => {
       if (task.id !== input.taskId) return task;
-      const next = nextTaskProgress(task, { action: input.action, workerId: input.workerId ?? null, reason: input.reason });
+      const next = nextTaskProgress(task, { action: input.action, workerId: input.workerId ?? null, reason: input.reason }, tapTime(input.tappedAt));
       if (!next) return task;
       return {
         ...task,
@@ -141,10 +145,17 @@ function patchTabletDay(
 /** A report shows straight away; a new yes/no answer replaces the day's old one. */
 function addTabletReport(
   day: TabletDayCache,
-  input: Partial<Omit<TabletReportCache, "id" | "workerName">> & { type: ReportType; workerId: number },
+  input: Partial<Omit<TabletReportCache, "id" | "workerName">> & {
+    type: ReportType;
+    workerId: number;
+    reportDate?: string | null;
+    idempotencyKey?: string;
+  },
 ): TabletDayCache {
+  // Written for a day this screen isn't showing, such as yesterday's after midnight.
+  if (input.reportDate && day.date && input.reportDate !== day.date) return day;
   const row: TabletReportCache = {
-    id: -Date.now(),
+    id: nextProvisionalId(),
     type: input.type,
     answer: input.answer ?? null,
     animalTag: input.animalTag ?? null,
@@ -152,9 +163,29 @@ function addTabletReport(
     purchaseKind: input.purchaseKind ?? null,
     itemName: input.itemName ?? null,
     workerName: day.workers.find(worker => worker.id === input.workerId)?.name ?? "",
+    clientKey: input.idempotencyKey,
   };
-  const kept = (day.reports ?? []).filter(report => !(isYesNoReport(input.type) && report.type === input.type));
+  const kept = (day.reports ?? []).filter(report =>
+    !(isYesNoReport(input.type) && report.type === input.type)
+    && !(input.idempotencyKey && report.clientKey === input.idempotencyKey));
   return { ...day, reports: [row, ...kept] };
+}
+
+const TABLET_DAY_KEY = offlineQueryKey("tasks.today", undefined);
+
+/** `data` as the screen should show it with this write included. Same object if unaffected. */
+function withWrite(data: unknown, key: readonly unknown[], path: string, input: any): unknown {
+  if (path === "tasks.recordAction" || path === "tasks.submitReport") {
+    if (!data || hashKey(key) !== hashKey(TABLET_DAY_KEY)) return data;
+    return path === "tasks.recordAction"
+      ? patchTabletDay(data as TabletDayCache, input)
+      : addTabletReport(data as TabletDayCache, input);
+  }
+  const plan = PLANS[path as OfflineMutationPath];
+  if (!plan || !Array.isArray(data)) return data;
+  // Only lists already in cache. Seeding a list that was never fetched would make
+  // a single provisional row look like the complete history.
+  return plan.targets(input).some(target => hashKey(target) === hashKey(key)) ? [...data, plan.row(input)] : data;
 }
 
 export function applyOptimisticRow(
@@ -162,29 +193,18 @@ export function applyOptimisticRow(
   path: OfflineMutationPath,
   input: unknown,
 ): OptimisticSnapshot {
-  if (path === "tasks.recordAction" || path === "tasks.submitReport") {
-    const key = offlineQueryKey("tasks.today", undefined);
-    const previous = queryClient.getQueryData<TabletDayCache>(key);
-    if (!previous) return [];
-    // A poll already in flight would otherwise overwrite the tap with older data.
-    void queryClient.cancelQueries({ queryKey: key });
-    queryClient.setQueryData(key, path === "tasks.recordAction"
-      ? patchTabletDay(previous, input as Parameters<typeof patchTabletDay>[1])
-      : addTabletReport(previous, input as Parameters<typeof addTabletReport>[1]));
-    return [{ key, previous }];
-  }
-
-  const plan = PLANS[path];
-  if (!plan) return [];
-
+  const keys = path === "tasks.recordAction" || path === "tasks.submitReport"
+    ? [TABLET_DAY_KEY]
+    : PLANS[path]?.targets(input) ?? [];
   const snapshot: OptimisticSnapshot = [];
-  for (const key of plan.targets(input)) {
+  for (const key of keys) {
     const previous = queryClient.getQueryData(key as unknown[]);
-    // Only patch lists already in cache. Seeding a list that was never fetched
-    // would make a single provisional row look like the complete history.
-    if (!Array.isArray(previous)) continue;
+    const next = withWrite(previous, key, path, input);
+    if (next === previous) continue;
+    // A poll already in flight would otherwise overwrite this with older data.
+    void queryClient.cancelQueries({ queryKey: key as unknown[] });
     snapshot.push({ key, previous });
-    queryClient.setQueryData(key as unknown[], [...previous, plan.row(input)]);
+    queryClient.setQueryData(key as unknown[], next);
   }
   return snapshot;
 }
@@ -196,6 +216,54 @@ export function rollbackOptimisticRows(
   for (const entry of snapshot) {
     queryClient.setQueryData(entry.key as unknown[], entry.previous);
   }
+}
+
+/** Writes still on their way to the server, oldest first, which is how they'll land. */
+function unsyncedWrites(queryClient: QueryClient) {
+  return queryClient.getMutationCache().getAll()
+    .filter(mutation => mutation.state.status === "pending")
+    .sort((a, b) => a.state.submittedAt - b.state.submittedAt || a.mutationId - b.mutationId)
+    .map(mutation => ({
+      path: ((mutation.options.mutationKey?.[0] ?? []) as string[]).join("."),
+      input: mutation.state.variables,
+    }));
+}
+
+function withWrites(data: unknown, key: readonly unknown[], writes: ReturnType<typeof unsyncedWrites>) {
+  return writes.reduce((current, write) => withWrite(current, key, write.path, write.input), data);
+}
+
+/**
+ * The server hasn't seen a queued write yet, so whatever it sends back doesn't have
+ * it. Every response is put back on top of the writes still waiting, so a poll, a
+ * reload or another write finishing can't make the screen jump back while they sync.
+ */
+export function keepUnsyncedWritesOnScreen(queryClient: QueryClient): () => void {
+  return queryClient.getQueryCache().subscribe(event => {
+    if (event.type !== "updated" || event.action.type !== "success" || event.action.manual) return;
+    const { query } = event;
+    const next = withWrites(query.state.data, query.queryKey, unsyncedWrites(queryClient));
+    if (next !== query.state.data) query.setData(next, { manual: true });
+  });
+}
+
+/**
+ * Takes a refused or discarded write off the screen. Call it while the write is still
+ * in the queue. The snapshot already has older writes but not newer ones, so those go
+ * back on top, and the server settles the rest.
+ */
+export function undoOptimisticWrite(
+  queryClient: QueryClient,
+  path: string,
+  input: unknown,
+  snapshot: OptimisticSnapshot | null | undefined,
+) {
+  const writes = unsyncedWrites(queryClient);
+  const newer = writes.slice(writes.findIndex(write => write.input === input) + 1);
+  for (const { key, previous } of snapshot ?? []) {
+    queryClient.setQueryData(key as unknown[], withWrites(previous, key, newer));
+  }
+  void queryClient.invalidateQueries({ queryKey: [[path.split(".")[0]]] });
 }
 
 /** True when a cached row is a provisional, not-yet-synced entry. */

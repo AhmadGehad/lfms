@@ -14,6 +14,7 @@ import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { usePermissions } from "@/hooks/usePermissions";
 import { trpc } from "@/lib/trpc";
+import { NOTIFICATIONS_REFRESH_MS } from "@shared/notifications";
 import type { PermissionPage } from "@shared/permissions";
 import {
   Activity,
@@ -314,7 +315,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
 
   const { data: notifications } = trpc.notifications.list.useQuery(
     { unreadOnly: true },
-    { enabled: perms.can("notifications", "view") }
+    { enabled: perms.can("notifications", "view"), refetchInterval: NOTIFICATIONS_REFRESH_MS }
   );
   const unreadCount = Array.isArray(notifications) ? notifications.length : 0;
   usePushSync(perms.can("notifications", "view"));

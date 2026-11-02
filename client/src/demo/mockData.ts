@@ -730,6 +730,7 @@ export const demoFixtures: DemoFixtures = {
       date: day(0),
       timeZone: "Africa/Cairo",
       farmSelected: true,
+      notAllowed: false,
       tasks: TABLET_TASKS,
       workers: WORKERS,
       reports: FARM_REPORTS.map(({ workerId: _workerId, ...report }) => report),
@@ -756,7 +757,7 @@ export const demoFixtures: DemoFixtures = {
       { ...TASK_ROW, id: 2, publicId: pid("tpl", 2), title: "Feed Pen A", notes: "Two scoops of the new mix per head.", weekdays: 127, isActive: true, deletedAt: null, deletedBy: null },
       { ...TASK_ROW, id: 3, publicId: pid("tpl", 3), title: "Clean the water troughs", notes: null, weekdays: 0b0100010, isActive: true, deletedAt: null, deletedBy: null },
     ],
-    listWorkers: WORKERS.map(worker => ({ ...TASK_ROW, ...worker, publicId: pid("wrk", worker.id), isActive: true })),
+    listWorkers: WORKERS.map(worker => ({ ...TASK_ROW, ...worker, publicId: pid("wrk", worker.id), userId: null, loginGone: false, isActive: true })),
   },
   auth: {
     me: userRecord(USERS[0]),

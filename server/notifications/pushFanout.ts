@@ -91,9 +91,10 @@ export async function sendPushToUsers(
 const lastSentAt = new Map<string, number>();
 
 /**
- * Pushes an urgent alert to whoever opted in. Follows the email fan-out: high and
- * critical only, and a repeat of the same alert type is held back unless the caller
- * says each one is its own event, as with two animals dying the same morning.
+ * Pushes an alert to whoever opted in. Follows the email fan-out: high and critical
+ * only unless the caller asks for every priority, and a repeat of the same alert type
+ * is held back unless the caller says each one is its own event, as with two animals
+ * dying the same morning.
  */
 export async function notifyOperationalAlertByPush(input: {
   companyId: number;
@@ -103,9 +104,10 @@ export async function notifyOperationalAlertByPush(input: {
   priority: "low" | "medium" | "high" | "critical";
   recipientUserIds?: readonly number[];
   distinctEvent?: boolean;
+  everyPriority?: boolean;
   contentFor: (language: NotificationLanguage) => { title: string; body: string };
 }): Promise<void> {
-  if (!PUSHABLE_PRIORITIES.has(input.priority) || !isPushConfigured()) return;
+  if (!(input.everyPriority || PUSHABLE_PRIORITIES.has(input.priority)) || !isPushConfigured()) return;
   const category = categoryForAlertType(input.alertType);
   if (!category) return;
 

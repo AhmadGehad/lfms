@@ -15,6 +15,7 @@ import {
   writeOfflineIdentity,
   type OfflineIdentity,
 } from "./identity";
+import { undoOptimisticWrite, type OptimisticSnapshot } from "./optimistic";
 import { bucketForIdentity, pruneOtherBuckets } from "./persister";
 import { prefetchOfflineReadSet } from "./prefetch";
 import {
@@ -119,7 +120,17 @@ export function useOfflineSync(): OfflineSyncState {
     (id: number) => {
       const cache = queryClient.getMutationCache();
       const target = cache.getAll().find(mutation => mutation.mutationId === id);
-      if (target) cache.remove(target);
+      if (!target) return;
+      // A failed write already came off the screen; a waiting one is still on it.
+      if (target.state.status === "pending") {
+        undoOptimisticWrite(
+          queryClient,
+          toQueueItem(target).path,
+          target.state.variables,
+          target.state.context as OptimisticSnapshot | undefined,
+        );
+      }
+      cache.remove(target);
     },
     [queryClient],
   );

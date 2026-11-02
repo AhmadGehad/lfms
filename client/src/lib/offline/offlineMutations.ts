@@ -17,12 +17,13 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { TRPCClient } from "@trpc/client";
 import type { AppRouter } from "../../../../server/routers";
-import { offlineQueryKey } from "./prefetch";
 import {
   applyOptimisticRow,
-  rollbackOptimisticRows,
+  keepUnsyncedWritesOnScreen,
+  undoOptimisticWrite,
   type OptimisticSnapshot,
 } from "./optimistic";
+import { isTerminalSyncError } from "./syncQueue";
 
 /** Dot-paths of the procedures that may be queued offline. */
 export const OFFLINE_MUTATION_PATHS = [
@@ -83,6 +84,7 @@ export function registerOfflineMutationDefaults(
   queryClient: QueryClient,
   client: TRPCClient<AppRouter>
 ) {
+  keepUnsyncedWritesOnScreen(queryClient);
   for (const path of OFFLINE_MUTATION_PATHS) {
     const mutate = resolveMutate(client, path);
     queryClient.setMutationDefaults(
@@ -101,26 +103,21 @@ export function registerOfflineMutationDefaults(
         gcTime: Infinity,
         // Kept short. A paused write resumes on reconnect anyway, so long backoff
         // only prolongs how long a form looks busy when the network is flaky.
-        retry: 2,
+        // A refusal won't change on a second try, so it comes off the screen at once.
+        retry: (failures, error) => failures < 2 && !isTerminalSyncError(error),
         retryDelay: attempt => Math.min(1_000 * 2 ** attempt, 5_000),
         // Show the record straight away, so an offline entry is visibly saved
         // rather than appearing to vanish.
         onMutate: input => applyOptimisticRow(queryClient, path, input),
-        onError: (_error, _input, snapshot) => {
-          rollbackOptimisticRows(
-            queryClient,
-            (snapshot as OptimisticSnapshot) ?? []
-          );
+        onError: (_error, input, snapshot) => {
+          undoOptimisticWrite(queryClient, path, input, snapshot as OptimisticSnapshot);
         },
         onSuccess: () => {
           // Replace the provisional row with the server's record. Components that
           // define their own onSuccess override this and invalidate themselves.
           void queryClient.invalidateQueries({
-            queryKey: [path.split(".")[0]],
+            queryKey: [[path.split(".")[0]]],
           });
-          if (path === "tasks.recordAction" || path === "tasks.submitReport") {
-            void queryClient.invalidateQueries({ queryKey: offlineQueryKey("tasks.today", undefined) });
-          }
         },
       }
     );

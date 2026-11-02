@@ -206,6 +206,9 @@ export function farmHour(timeZone: string | null | undefined, now: Date = new Da
   }
 }
 
+/** The server's refusal when the owner has switched a worker off, for the tablet to explain. */
+export const WORKER_NOT_ALLOWED = "WORKER_NOT_ALLOWED";
+
 /**
  * When a tap really happened. An offline tablet may send it hours later, so it
  * brings its own time, but the clock is the device's: a time in the future or
