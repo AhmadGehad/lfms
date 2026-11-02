@@ -28,7 +28,7 @@ import { sql } from "drizzle-orm";
 
 // 58 enum types, namespaced <table>_<column> because Postgres
 // enum names are global (19 tables share "status", 5 share "role").
-export const saasUsersRoleEnum = pgEnum("saas_users_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasUsersRoleEnum = pgEnum("saas_users_role", ["owner", "supervisor", "staff", "admin", "user", "viewer", "worker"]);
 export const saasUsersStatusEnum = pgEnum("saas_users_status", ["active", "locked", "disabled"]);
 export const saasCompaniesLifecyclestatusEnum = pgEnum("saas_companies_lifecyclestatus", [
     "provisioning",
@@ -39,13 +39,13 @@ export const saasCompaniesLifecyclestatusEnum = pgEnum("saas_companies_lifecycle
     "deleted",
   ]);
 export const saasFarmsStatusEnum = pgEnum("saas_farms_status", ["active", "suspended", "archived"]);
-export const saasCompanyMembershipsRoleEnum = pgEnum("saas_company_memberships_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasCompanyMembershipsRoleEnum = pgEnum("saas_company_memberships_role", ["owner", "supervisor", "staff", "admin", "user", "viewer", "worker"]);
 export const saasCompanyMembershipsStatusEnum = pgEnum("saas_company_memberships_status", ["invited", "active", "suspended", "removed"]);
 export const saasCompanyMembershipsFarmaccessmodeEnum = pgEnum("saas_company_memberships_farmaccessmode", ["all", "restricted"]);
-export const saasCompanyInvitationsRoleEnum = pgEnum("saas_company_invitations_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasCompanyInvitationsRoleEnum = pgEnum("saas_company_invitations_role", ["owner", "supervisor", "staff", "admin", "user", "viewer", "worker"]);
 export const saasCompanyInvitationsFarmaccessmodeEnum = pgEnum("saas_company_invitations_farmaccessmode", ["all", "restricted"]);
 export const saasCompanyInvitationsStatusEnum = pgEnum("saas_company_invitations_status", ["pending", "accepted", "revoked", "expired"]);
-export const saasCompanyRolePermissionsRoleEnum = pgEnum("saas_company_role_permissions_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasCompanyRolePermissionsRoleEnum = pgEnum("saas_company_role_permissions_role", ["owner", "supervisor", "staff", "admin", "user", "viewer", "worker"]);
 export const saasCompanyRolePermissionsEffectEnum = pgEnum("saas_company_role_permissions_effect", ["allow", "deny"]);
 export const saasAuthenticationTokensPurposeEnum = pgEnum("saas_authentication_tokens_purpose", ["verify_email", "reset_password", "change_email", "identity_link"]);
 export const saasMfaCredentialsMethodEnum = pgEnum("saas_mfa_credentials_method", ["totp"]);
@@ -74,7 +74,7 @@ export const saasIdempotencyKeysStatusEnum = pgEnum("saas_idempotency_keys_statu
 export const saasExportJobsStatusEnum = pgEnum("saas_export_jobs_status", ["pending", "processing", "completed", "failed", "expired", "canceled"]);
 export const saasDeletionRequestsStatusEnum = pgEnum("saas_deletion_requests_status", ["requested", "exported", "legal_hold", "approved", "purging", "completed", "canceled"]);
 export const saasTenantRestoreJobsStatusEnum = pgEnum("saas_tenant_restore_jobs_status", ["pending", "validating", "ready", "restoring", "completed", "failed", "rolled_back", "canceled"]);
-export const saasAzalRolePermissionsRoleEnum = pgEnum("saas_azal_role_permissions_role", ["owner", "supervisor", "staff", "admin", "user", "viewer"]);
+export const saasAzalRolePermissionsRoleEnum = pgEnum("saas_azal_role_permissions_role", ["owner", "supervisor", "staff", "admin", "user", "viewer", "worker"]);
 export const capitalFundingBatchesKindEnum = pgEnum("capital_funding_batches_kind", ["pro_rata", "reversal"]);
 export const capitalContributionsKindEnum = pgEnum("capital_contributions_kind", ["initial", "direct", "pro_rata", "reversal"]);
 export const capitalProfitAllocationsKindEnum = pgEnum("capital_profit_allocations_kind", ["monthly", "adjustment"]);
@@ -2303,6 +2303,7 @@ export const notifications = pgTable("saas_azal_notifications", {
   priority: saasAzalNotificationsPriorityEnum("priority").default("medium").notNull(),
   createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
   expiresAt: timestamp("expiresAt", { precision: 0 }),
+  params: json("params"),
   deduplicationKey: varchar("deduplicationKey", { length: 200 }),
   version: integer("version").default(1).notNull(),
 }, table => ({

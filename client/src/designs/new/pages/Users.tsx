@@ -56,7 +56,8 @@ export default function NewUsers() {
       id: "role",
       header: t("users.role", "Role"),
       cell: u =>
-        u.role === "owner" || !canEdit ? (
+        // The tablet account's role is set when it's invited, and it stays a tablet.
+        u.role === "owner" || u.role === "worker" || !canEdit ? (
           <StatusBadge tone={roleTone(u.role)}>{String(t(`users.${u.role}`, u.role))}</StatusBadge>
         ) : (
           <Select value={u.role} onValueChange={v => updateRole.mutate({ userId: u.id, role: v as any, expectedVersion: u.version })}>
@@ -110,7 +111,8 @@ function PermissionMatrix() {
     setServer(map);
   }, [matrix.data]);
 
-  const pages = (matrix.data as any)?.matrix ?? [];
+  // The tablet's screen isn't configurable: only the tablet account ever gets it.
+  const pages = ((matrix.data as any)?.matrix ?? []).filter((p: { page: string }) => p.page !== "workerTasks");
   const actions: string[] = (catalog.data as any)?.actions ?? ["view", "create", "update", "delete", "report", "export", "import", "restore"];
   const dirty = useMemo(() => Object.keys(local).some(k => local[k] !== server[k]), [local, server]);
 

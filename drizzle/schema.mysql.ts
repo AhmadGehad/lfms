@@ -2244,6 +2244,7 @@ export const notifications = mysqlTable("saas_azal_notifications", {
   priority: mysqlEnum("priority", ["low", "medium", "high", "critical"]).default("medium").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   expiresAt: timestamp("expiresAt"),
+  params: json("params"),
   deduplicationKey: varchar("deduplicationKey", { length: 200 }),
   version: int("version").default(1).notNull(),
 }, table => ({

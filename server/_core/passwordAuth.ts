@@ -85,6 +85,27 @@ async function hasActiveMembership(companySlug: string | null, userId: number) {
   return Boolean(membership);
 }
 
+// A farm tablet nobody signs into each morning. Its account sees only task
+// titles and worker names, and removing the membership still cuts it off.
+// The idle value is stored in a 32-bit column, which tops out just under 25 days.
+export const WORKER_SESSION_IDLE_MS = 21 * 24 * 60 * 60 * 1_000;
+const WORKER_SESSION_ABSOLUTE_MS = 90 * 24 * 60 * 60 * 1_000;
+
+async function isWorkerMembership(companySlug: string, userId: number) {
+  const database = await requireDb();
+  const [membership] = await database
+    .select({ role: companyMemberships.role })
+    .from(companyMemberships)
+    .innerJoin(companies, eq(companies.id, companyMemberships.companyId))
+    .where(and(
+      eq(companies.slug, companySlug),
+      eq(companyMemberships.userId, userId),
+      eq(companyMemberships.status, "active"),
+    ))
+    .limit(1);
+  return membership?.role === "worker";
+}
+
 async function issueTenantSessionForUser(
   req: Request,
   res: Response,
@@ -98,9 +119,13 @@ async function issueTenantSessionForUser(
     providerEmailVerified: true,
   });
   const host = getResolvedRequestHost(res);
-  const idleTimeoutMs = host?.surface === "tenant" && host.companySlug
-    ? await getCompanySessionIdleTimeoutMs(host.companySlug) ?? undefined
-    : undefined;
+  const companySlug = host?.surface === "tenant" ? host.companySlug : null;
+  const isWorker = companySlug ? await isWorkerMembership(companySlug, user.id) : false;
+  const idleTimeoutMs = isWorker
+    ? WORKER_SESSION_IDLE_MS
+    : companySlug
+      ? await getCompanySessionIdleTimeoutMs(companySlug) ?? undefined
+      : undefined;
   const session = await getTenantSessionManager().issue({
     subjectId: user.id,
     authVersion: user.authVersion,
@@ -109,6 +134,7 @@ async function issueTenantSessionForUser(
     ipAddress: req.ip,
     userAgent: req.get("user-agent"),
     idleTimeoutMs,
+    absoluteTimeoutMs: isWorker ? WORKER_SESSION_ABSOLUTE_MS : undefined,
   });
   setOpaqueSessionCookie(req, res, "tenant", session.token, session.absoluteExpiresAt);
   setCsrfCookie(req, res, { audience: "tenant", secret: getOAuthStateSecret() }, session.token);

@@ -8,6 +8,8 @@ import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ListSkeleton } from "@/components/PageSkeleton";
 import { formatAlertType, notificationCategory, notificationLink, priorityTone } from "@shared/notifications";
+import { taskNotificationText, type NotificationParams } from "@shared/notificationText";
+import { PushNotificationsPrompt } from "@/components/PushNotificationsCard";
 import { fmtDateTime } from "../lib/format";
 
 type NotificationRow = RouterOutputs["notifications"]["list"][number];
@@ -22,7 +24,7 @@ function fmtTime(d: unknown) {
  * top bar — this is the full list).
  */
 export default function NewNotifications() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const perms = usePermissions();
   const canUpdate = perms.can("notifications", "update");
   const utils = trpc.useUtils();
@@ -52,6 +54,8 @@ export default function NewNotifications() {
         }
       />
 
+      <PushNotificationsPrompt />
+
       {isLoading ? <ListSkeleton rows={5} /> : rows.length === 0 ? (
         <EmptyState icon={BellOff} title={t("notifications.none", "No notifications")} />
       ) : (
@@ -63,7 +67,11 @@ export default function NewNotifications() {
               ? formatAlertType(n.alertType)
               : t(`notifications.category.${category}`, { defaultValue: category[0].toUpperCase() + category.slice(1) });
             const href = notificationLink(n);
-            const title = n.title || n.message || "—";
+            // Task and report alerts carry their details, so they read in the viewer's language.
+            const translated = taskNotificationText(n.alertType, n.params as NotificationParams | null, i18n.language === "ar" ? "ar" : "en");
+            const titleText = translated?.title ?? n.title;
+            const message = translated?.message ?? n.message;
+            const title = titleText || message || "—";
             // Opening a notification takes you to what it's about and marks it read.
             // The title link is stretched over the whole card (after:inset-0); the
             // mark-read button sits above it so both stay real, separate controls.
@@ -90,7 +98,7 @@ export default function NewNotifications() {
                       {tag}
                     </StatusBadge>
                   </div>
-                  {n.title && n.message && <p className="mt-0.5 text-sm text-muted-foreground">{n.message}</p>}
+                  {titleText && message && <p className="mt-0.5 text-sm text-muted-foreground">{message}</p>}
                   <p className="mt-1 text-xs text-muted-foreground">{fmtTime(n.createdAt)}</p>
                 </div>
                 {canUpdate && !isRead && (

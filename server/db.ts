@@ -214,7 +214,7 @@ export async function getAllUsers() {
 
 export async function updateUserRole(
   userId: number,
-  role: "owner" | "supervisor" | "staff" | "admin" | "user" | "viewer",
+  role: "owner" | "supervisor" | "staff" | "admin" | "user" | "viewer" | "worker",
   expectedVersion: number,
   dbOrTx?: DbOrTx,
 ) {

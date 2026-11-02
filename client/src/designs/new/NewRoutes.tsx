@@ -20,6 +20,7 @@ const NewUsers = lazyPage(() => import("./pages/Users"));
 const NewFeed = lazyPage(() => import("./pages/Feed"));
 const NewData = lazyPage(() => import("./pages/Data"));
 const NewConfiguration = lazyPage(() => import("./pages/Configuration"));
+const NewTasks = lazyPage(() => import("./pages/Tasks"));
 
 // Not yet redesigned; these render inside the same shell.
 const Fattening = lazyPage(() => import("@/pages/Fattening"));
@@ -37,6 +38,7 @@ export function NewAppRoutes() {
       <Route path="/fattening"><PermissionGate page="fattening"><Fattening /></PermissionGate></Route>
       <Route path="/farm-map"><PermissionGate page="farmMap"><FarmMap /></PermissionGate></Route>
       <Route path="/feed"><PermissionGate page="feed"><NewFeed /></PermissionGate></Route>
+      <Route path="/tasks"><PermissionGate page="tasks"><NewTasks /></PermissionGate></Route>
       <Route path="/expenses"><PermissionGate page="expenses"><NewExpenses /></PermissionGate></Route>
       <Route path="/pnl"><PermissionGate page="pnl"><NewPnL /></PermissionGate></Route>
       <Route path="/income-statement"><PermissionGate page="incomeStatement"><NewIncomeStatement /></PermissionGate></Route>

@@ -148,4 +148,6 @@ export const PAGE_FEATURES = {
   farmMap: "farm_map",
   data: "data_transfer",
   recycleBin: "data_recovery",
+  tasks: "core",
+  workerTasks: "core",
 } as const;

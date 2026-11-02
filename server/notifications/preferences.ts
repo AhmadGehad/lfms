@@ -3,7 +3,7 @@ import { companyMemberships } from "../../drizzle/schema";
 import { getDb } from "../db";
 import type { DbOrTx } from "../db";
 
-export const NOTIFICATION_CATEGORIES = ["feed_stock", "vaccination", "pregnancy", "growth"] as const;
+export const NOTIFICATION_CATEGORIES = ["feed_stock", "vaccination", "pregnancy", "growth", "tasks"] as const;
 export type NotificationCategory = typeof NOTIFICATION_CATEGORIES[number];
 
 const ALERT_TYPE_TO_CATEGORY: Record<string, NotificationCategory> = {
@@ -23,13 +23,15 @@ const ALERT_TYPE_TO_CATEGORY: Record<string, NotificationCategory> = {
 };
 
 export function categoryForAlertType(alertType: string): NotificationCategory | null {
+  if (alertType.startsWith("task_")) return "tasks";
   return ALERT_TYPE_TO_CATEGORY[alertType] ?? null;
 }
 
-export type ChannelPreference = { inApp: boolean; email: boolean };
+export type ChannelPreference = { inApp: boolean; email: boolean; push: boolean };
 export type NotificationPreferences = Partial<Record<NotificationCategory, ChannelPreference>>;
 
-const DEFAULT_CHANNEL_PREFERENCE: ChannelPreference = { inApp: true, email: true };
+// Push also needs a device turned on, so on here doesn't mean anything arrives yet.
+const DEFAULT_CHANNEL_PREFERENCE: ChannelPreference = { inApp: true, email: true, push: true };
 
 function isChannelPreferenceShaped(value: unknown): value is Partial<ChannelPreference> {
   return typeof value === "object" && value !== null;
@@ -45,6 +47,7 @@ export function parseNotificationPreferences(value: unknown): NotificationPrefer
       result[category] = {
         inApp: typeof raw.inApp === "boolean" ? raw.inApp : true,
         email: typeof raw.email === "boolean" ? raw.email : true,
+        push: typeof raw.push === "boolean" ? raw.push : true,
       };
     }
   }
@@ -96,4 +99,19 @@ export async function getUserEmailPreferenceForCompany(
     .where(and(eq(companyMemberships.userId, userId), eq(companyMemberships.companyId, companyId)))
     .limit(1);
   return getChannelPreference(parseNotificationPreferences(row?.notificationPreferences), category).email;
+}
+
+/** Send-time check, as for email above. */
+export async function getUserPushPreferenceForCompany(
+  userId: number,
+  companyId: number,
+  category: NotificationCategory,
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return DEFAULT_CHANNEL_PREFERENCE.push;
+  const [row] = await db.select({ notificationPreferences: companyMemberships.notificationPreferences })
+    .from(companyMemberships)
+    .where(and(eq(companyMemberships.userId, userId), eq(companyMemberships.companyId, companyId)))
+    .limit(1);
+  return getChannelPreference(parseNotificationPreferences(row?.notificationPreferences), category).push;
 }

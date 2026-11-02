@@ -264,7 +264,12 @@ Set `WORKER_SHUTDOWN_TIMEOUT_MS` above `JOB_LEASE_MS` and configure the service
 termination grace above that shutdown timeout. Rolling shutdown drains active
 jobs and an in-flight scheduler before closing storage and database clients.
 
-Cloudflare-only worker deployment requires a separate bounded Cron/Queues
+One job does run on Cloudflare: an hourly Cron Trigger calls the web container's
+`/api/internal/missed-reports` with `INTERNAL_API_SECRET`, to alert owners when a
+farm's day ends without its daily report. It wakes the container every hour, which
+then stays up for `sleepAfter`.
+
+Moving the other jobs to Cloudflare requires a separate bounded Cron/Queues
 design. Do not claim the operational deployment complete while the worker is
 stopped.
 

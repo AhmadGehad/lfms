@@ -11,7 +11,7 @@ import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { trpc } from "@/lib/trpc";
 import type { PermissionPage } from "@shared/permissions";
 import { useLocation } from "wouter";
-import { Baby, DollarSign, Plus, Scale, ShoppingCart, Leaf, Syringe, Wheat } from "lucide-react";
+import { Baby, DollarSign, ListChecks, Plus, Scale, ShoppingCart, Leaf, Syringe, Wheat } from "lucide-react";
 import { AnimalCreateDialog, BulkRecordSaleDialog, QuickExpenseDialog, WeighInSessionDialog } from "./AnimalWorkflows";
 
 interface QuickAction {
@@ -53,6 +53,7 @@ export function QuickAdd({ className = "" }: { className?: string }) {
     { id: "vaccination", label: t("vaccine.record", "Record vaccination"), icon: Syringe, page: "vaccinations", onSelect: () => setLocation("/vaccinations?new=1") },
     { id: "birth", label: t("breeding.recordBirth", "Record birth"), icon: Baby, page: "breeding", onSelect: () => setLocation("/breeding?new=1") },
     { id: "stock", label: t("feed.addStock", "Add feed stock"), icon: Wheat, page: "feed", onSelect: () => setLocation("/feed?new=1") },
+    { id: "task", label: t("tasks.add", "Add task"), icon: ListChecks, page: "tasks", onSelect: () => setLocation("/tasks?new=1") },
   ] as QuickAction[]).filter(a => perms.can(a.page, "create"));
 
   if (actions.length === 0) return null;

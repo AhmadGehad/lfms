@@ -26,6 +26,19 @@ const DROP_NOT_NULL: { table: string; columns: string[] }[] = [
   { table: "saas_azal_audit_log", columns: ["actorType", "actionCategory"] },
 ];
 
+// The frozen MySQL schema predates this value; Postgres gained it after cutover
+// in drizzle/pg/post-cutover/0002_worker_tasks.sql. Declared here so a rebuilt
+// schema.ts keeps matching the database.
+const EXTRA_ENUM_VALUES: Record<string, string[]> = Object.fromEntries(
+  [
+    "saas_users_role",
+    "saas_company_memberships_role",
+    "saas_company_invitations_role",
+    "saas_company_role_permissions_role",
+    "saas_azal_role_permissions_role",
+  ].map((typeName) => [typeName, ["worker"]]),
+);
+
 let src = readFileSync(SRC, "utf8");
 const notes: string[] = [];
 
@@ -100,9 +113,12 @@ function identFor(typeName: string): string {
     }
     const column = colMatch[1];
     const bracketOpen = inner.indexOf("[");
-    const values = inner.slice(bracketOpen, matchDelimiter(inner, bracketOpen) + 1);
+    let values = inner.slice(bracketOpen, matchDelimiter(inner, bracketOpen) + 1);
 
     const typeName = `${tableAt(m.index)}_${column.toLowerCase()}`;
+    for (const extra of EXTRA_ENUM_VALUES[typeName] ?? []) {
+      values = values.replace(/,?\s*\]$/, `, "${extra}"]`);
+    }
     let ident = enumIdents.get(typeName);
     if (!ident) {
       ident = identFor(typeName);

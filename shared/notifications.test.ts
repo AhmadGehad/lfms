@@ -58,5 +58,6 @@ describe("notificationLink", () => {
     expect(notificationLink({ alertType: "low_feed_stock", relatedEntityType: "feed_item", relatedEntityId: "3" })).toBe("/feed");
     expect(notificationLink({ alertType: "pregnancy_due" })).toBe("/pregnancy");
     expect(notificationLink({ alertType: "unknown" })).toBeNull();
+    expect(notificationLink({ alertType: "task_report_animal_dead", relatedEntityType: "farm_report", relatedEntityId: 3 })).toBe("/tasks?tab=reports");
   });
 });

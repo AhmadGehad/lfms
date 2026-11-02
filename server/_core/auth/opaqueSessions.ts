@@ -73,6 +73,8 @@ export type IssueSessionInput = {
   userAgent?: string | null;
   /** Per-issuance idle timeout override (e.g. a per-company setting). Defaults to the manager's configured idle timeout. */
   idleTimeoutMs?: number;
+  /** Per-issuance absolute lifetime override. Defaults to the manager's configured lifetime. */
+  absoluteTimeoutMs?: number;
 };
 
 export type OpaqueSessionManagerOptions = {
@@ -163,7 +165,7 @@ export class OpaqueSessionManager {
     const token = `${this.audience === "tenant" ? "lfms_t" : "lfms_p"}_${randomBytes(32).toString("base64url")}`;
     const idleTimeoutMs = input.idleTimeoutMs ?? this.idleTimeoutMs;
     const idleExpiresAt = addMilliseconds(now, idleTimeoutMs);
-    const absoluteExpiresAt = addMilliseconds(now, this.absoluteTimeoutMs);
+    const absoluteExpiresAt = addMilliseconds(now, input.absoluteTimeoutMs ?? this.absoluteTimeoutMs);
     const authenticationMethods = [...(input.authenticationMethods ?? [])];
 
     const stored = await this.store.create({

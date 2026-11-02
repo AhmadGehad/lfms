@@ -1,3 +1,4 @@
+import { usePushSync } from "@/lib/push/usePush";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -27,6 +28,7 @@ import {
   FileText,
   HeartPulse,
   Leaf,
+  ListChecks,
   LogOut,
   MapPinned,
   Menu,
@@ -98,6 +100,7 @@ function useNavGroups(): NavGroup[] {
     {
       label: t("nav.groups.operations"),
       items: [
+        { icon: ListChecks, label: t("nav.tasks", "Tasks"), path: "/tasks", page: "tasks" },
         { icon: Wheat, label: t("newNav.feed", "Feed"), path: "/feed", page: "feed" },
         { icon: DollarSign, label: t("newNav.expenses", "Expenses"), path: "/expenses", page: "expenses" },
       ],
@@ -314,6 +317,7 @@ export default function NewShell({ children }: { children: React.ReactNode }) {
     { enabled: perms.can("notifications", "view") }
   );
   const unreadCount = Array.isArray(notifications) ? notifications.length : 0;
+  usePushSync(perms.can("notifications", "view"));
 
   if (loading) return <DashboardLayoutSkeleton />;
 

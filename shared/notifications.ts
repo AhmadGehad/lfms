@@ -31,11 +31,12 @@ export function formatAlertType(alertType: string | null | undefined): string {
   return alertType.replace(/_/g, " ");
 }
 
-export type NotificationCategory = "health" | "pregnancy" | "feed" | "growth" | "other";
+export type NotificationCategory = "health" | "pregnancy" | "feed" | "growth" | "task" | "other";
 
 /** Groups raw alert types (`booster_overdue`, `low_feed_stock`, …) into the farm area they concern. */
 export function notificationCategory(alertType: string | null | undefined): NotificationCategory {
   const type = (alertType ?? "").toLowerCase();
+  if (type.startsWith("task_")) return "task";
   if (/vaccin|booster/.test(type)) return "health";
   if (/pregnan|birth|lambing/.test(type)) return "pregnancy";
   if (/feed/.test(type)) return "feed";
@@ -48,6 +49,7 @@ const CATEGORY_PAGES: Record<NotificationCategory, string | null> = {
   pregnancy: "/pregnancy",
   feed: "/feed",
   growth: "/animals",
+  task: "/tasks",
   other: null,
 };
 
@@ -63,5 +65,8 @@ export function notificationLink(n: {
   const entity = (n.relatedEntityType ?? "").toLowerCase();
   const id = n.relatedEntityId == null ? "" : String(n.relatedEntityId);
   if (entity === "animal" && /^\d+$/.test(id)) return `/animals/${id}`;
+  // Marking one done records nothing, so send the owner where they can record it.
+  if (entity === "vaccination_task") return "/vaccinations";
+  if (entity === "farm_report") return "/tasks?tab=reports";
   return CATEGORY_PAGES[notificationCategory(n.alertType)];
 }

@@ -1,11 +1,16 @@
 import "@fontsource-variable/manrope";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Router } from "wouter";
 import { trpc } from "@/lib/trpc";
 import NewDesign from "@/designs/new/NewDesign";
+import { applyOptimisticRow } from "@/lib/offline/optimistic";
+import { offlineQueryKey } from "@/lib/offline/prefetch";
+import { demoFixtures } from "./mockData";
 import { demoLink } from "./mockLink";
 import { DEMO_STYLES, DemoBar, GuideTour, HelpMarks } from "./DemoGuide";
+
+const WorkerApp = lazy(() => import("@/worker/WorkerApp"));
 
 const TOUR_DONE_KEY = "apis-demo-tour-done";
 
@@ -34,6 +39,19 @@ const demoQueryClient = new QueryClient({
   },
 });
 const demoTrpcClient = trpc.createClient({ links: [demoLink] });
+
+// The tablet preview answers taps locally. Written back to the fixture so the
+// screen's one-minute refresh doesn't undo them.
+for (const action of ["recordAction", "submitReport"] as const) {
+  demoQueryClient.setMutationDefaults([["tasks", action]], {
+    onMutate: input => {
+      const snapshot = applyOptimisticRow(demoQueryClient, `tasks.${action}`, input);
+      const key = offlineQueryKey("tasks.today", undefined);
+      (demoFixtures.tasks as { today: unknown }).today = demoQueryClient.getQueryData(key);
+      return snapshot;
+    },
+  });
+}
 
 function useDemoDocumentBranding() {
   useEffect(() => {
@@ -76,7 +94,14 @@ export default function DemoApp() {
         <Router base="/demo">
             <div data-demo>
               <style>{DEMO_STYLES}</style>
-              <Walkthrough />
+              {/* The farm tablet's screen, full size, without the tour on top of it. */}
+              {window.location.pathname === "/demo/worker" ? (
+                <Suspense fallback={<main className="min-h-dvh bg-background" aria-busy="true" />}>
+                  <WorkerApp />
+                </Suspense>
+              ) : (
+                <Walkthrough />
+              )}
             </div>
         </Router>
       </QueryClientProvider>

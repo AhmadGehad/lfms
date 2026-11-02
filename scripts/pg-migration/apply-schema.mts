@@ -7,6 +7,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import pg from "pg";
 import { SUPABASE_ROOT_CA } from "../../server/_core/supabaseCa";
+import { applyPostCutoverMigrations } from "./post-cutover.mts";
 
 /**
  * TLS options for a Postgres URL. Supabase needs its private root pinned;
@@ -81,9 +82,14 @@ async function main() {
     console.log(`  ${ok ? "ok  " : "FAIL"} ${k}: ${n}${ok ? "" : ` (expected ${want})`}`);
   }
 
-  await client.end();
-  if (failed) throw new Error(`${failed} shape check(s) failed`);
+  if (failed) {
+    await client.end();
+    throw new Error(`${failed} shape check(s) failed`);
+  }
   console.log("\nschema verified");
+
+  await applyPostCutoverMigrations(client);
+  await client.end();
 }
 
 main().catch((e) => {

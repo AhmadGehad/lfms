@@ -21,7 +21,7 @@ import {
 import { tenantScope } from "../tenancy/scope";
 import { rethrowVersionedWriteError } from "../concurrency/trpcVersioning";
 import { executeIdempotent } from "../platform/idempotency";
-import { notifyOperationalAlertByEmail } from "../notifications/emailFanout";
+import { notifyOperationalAlert } from "../notifications/fanout";
 
 function timingHeaderValue(timings: Record<string, number>) {
   return JSON.stringify(timings);
@@ -243,7 +243,7 @@ export const feedRouter = router({
                 relatedEntityId: String(item.feedItemId),
                 priority: "critical",
               }, tx);
-              void notifyOperationalAlertByEmail({
+              notifyOperationalAlert({
                 companyId: ctx.tenant!.companyId,
                 alertType: "low_feed_stock",
                 title,
@@ -261,7 +261,7 @@ export const feedRouter = router({
                 relatedEntityId: String(item.feedItemId),
                 priority: "high",
               }, tx);
-              void notifyOperationalAlertByEmail({
+              notifyOperationalAlert({
                 companyId: ctx.tenant!.companyId,
                 alertType: "low_feed_stock",
                 title,

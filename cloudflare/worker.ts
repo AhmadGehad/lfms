@@ -67,6 +67,8 @@ type WorkerBindings = {
 
 const INTERNAL_SEND_EMAIL_PATH = "/__internal/send-email";
 const RUNTIME_CONFIG_PATH = "/runtime-config.js";
+// Same value as MISSED_REPORTS_PATH in server/observability/http.ts.
+const MISSED_REPORTS_PATH = "/api/internal/missed-reports";
 
 // Constant-time comparison so guessing INTERNAL_API_SECRET can't be sped up
 // by measuring how many leading bytes of the Authorization header matched.
@@ -133,6 +135,23 @@ async function handleInternalSendEmail(
 }
 
 export default {
+  // Hourly because farms keep their own clocks: each one is checked as its day ends.
+  async scheduled(_controller: ScheduledController, env: WorkerBindings): Promise<void> {
+    if (!env.INTERNAL_API_SECRET) throw new Error("INTERNAL_API_SECRET is not configured");
+    const baseDomain = getConfiguredBaseDomain(env, BASE_DOMAIN);
+    const container = await getRandom(env.LFMS_WEB, INSTANCE_COUNT);
+    const response = await container.fetch(normalizeContainerRequest(
+      new Request(`https://${baseDomain}${MISSED_REPORTS_PATH}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${env.INTERNAL_API_SECRET}` },
+      }),
+      crypto.randomUUID(),
+    ));
+    await response.body?.cancel();
+    // Thrown so the failed run shows up in the Workers cron log.
+    if (!response.ok) throw new Error(`Missed-report check failed (${response.status})`);
+  },
+
   async fetch(request: Request, env: WorkerBindings): Promise<Response> {
     const url = new URL(request.url);
     const requestId = request.headers.get("cf-ray") ?? crypto.randomUUID();
@@ -173,6 +192,9 @@ export default {
     }
     if (url.pathname === INTERNAL_SEND_EMAIL_PATH) {
       return handleInternalSendEmail(request, env);
+    }
+    if (url.pathname === MISSED_REPORTS_PATH) {
+      return secureEdgeResponse(new Response("Not found", { status: 404 }), env, requestId);
     }
     if (hostname === `auth.${baseDomain}`) {
       return secureEdgeResponse(

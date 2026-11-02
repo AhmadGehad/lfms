@@ -6,6 +6,8 @@ import {
   mutationKeyForPath,
   registerOfflineMutationDefaults,
 } from "./offlineMutations";
+import { applyOptimisticRow, rollbackOptimisticRows } from "./optimistic";
+import { offlineQueryKey } from "./prefetch";
 
 /** Stands in for the tRPC client: nested objects ending in a `mutate` function. */
 function fakeTrpcClient(paths: readonly string[]) {
@@ -92,5 +94,67 @@ describe("offline mutation registry", () => {
     expect(isOfflineMutationPath("animals.addWeight")).toBe(true);
     expect(isOfflineMutationPath("animals.update")).toBe(false);
     expect(isOfflineMutationPath("pregnancy.create")).toBe(false);
+  });
+});
+
+describe("tablet taps", () => {
+  const key = offlineQueryKey("tasks.today", undefined);
+  const seeded = () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(key, {
+      date: "2026-11-02",
+      workers: [{ id: 1, name: "Ali" }, { id: 2, name: "Omar" }],
+      tasks: [
+        {
+          id: 7, status: "todo", startedByWorkerId: null, startedByName: null, startedAt: null,
+          finishedByWorkerId: null, finishedByName: null, finishedAt: null, blockedReason: null,
+        },
+        {
+          id: 8, status: "todo", startedByWorkerId: null, startedByName: null, startedAt: null,
+          finishedByWorkerId: null, finishedByName: null, finishedAt: null, blockedReason: null,
+        },
+      ],
+    });
+    return queryClient;
+  };
+  const task = (queryClient: QueryClient, id: number) =>
+    queryClient.getQueryData<{ tasks: Array<Record<string, unknown>> }>(key)!.tasks.find(row => row.id === id)!;
+
+  it("shows the tap on the list straight away, with the worker's name", () => {
+    const queryClient = seeded();
+    applyOptimisticRow(queryClient, "tasks.recordAction", { taskId: 7, action: "start", workerId: 1 });
+    expect(task(queryClient, 7)).toMatchObject({ status: "started", startedByName: "Ali" });
+    expect(task(queryClient, 8)).toMatchObject({ status: "todo" });
+
+    applyOptimisticRow(queryClient, "tasks.recordAction", { taskId: 7, action: "done", workerId: 1 });
+    expect(task(queryClient, 7)).toMatchObject({ status: "done", startedByName: "Ali", finishedByName: "Ali" });
+  });
+
+  it("rolls the tap back when the server refuses it", () => {
+    const queryClient = seeded();
+    const snapshot = applyOptimisticRow(queryClient, "tasks.recordAction", { taskId: 7, action: "done", workerId: 2 });
+    rollbackOptimisticRows(queryClient, snapshot);
+    expect(task(queryClient, 7)).toMatchObject({ status: "todo", finishedByName: null });
+  });
+
+  it("leaves the cache alone when nothing is cached yet", () => {
+    const queryClient = new QueryClient();
+    expect(applyOptimisticRow(queryClient, "tasks.recordAction", { taskId: 7, action: "start", workerId: 1 })).toEqual([]);
+  });
+
+  const reports = (queryClient: QueryClient) =>
+    queryClient.getQueryData<{ reports: Array<Record<string, unknown>> }>(key)!.reports;
+
+  it("shows a report straight away, and a new answer replaces the day's old one", () => {
+    const queryClient = seeded();
+    applyOptimisticRow(queryClient, "tasks.submitReport", { type: "doctor_visit", answer: true, workerId: 1 });
+    applyOptimisticRow(queryClient, "tasks.submitReport", { type: "animal_dead", animalTag: "EW-1", workerId: 2 });
+    applyOptimisticRow(queryClient, "tasks.submitReport", { type: "doctor_visit", answer: false, workerId: 1 });
+    expect(reports(queryClient).map(row => [row.type, row.answer])).toEqual([["doctor_visit", false], ["animal_dead", null]]);
+    expect(reports(queryClient)[0]).toMatchObject({ workerName: "Ali" });
+  });
+
+  it("queues reports for replay", () => {
+    expect(isOfflineMutationPath("tasks.submitReport")).toBe(true);
   });
 });

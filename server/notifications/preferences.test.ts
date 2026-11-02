@@ -36,14 +36,14 @@ describe("parseNotificationPreferences", () => {
       feed_stock: { inApp: true, email: false },
       vaccination: { inApp: false, email: false },
     });
-    expect(parsed.feed_stock).toEqual({ inApp: true, email: false });
-    expect(parsed.vaccination).toEqual({ inApp: false, email: false });
+    expect(parsed.feed_stock).toEqual({ inApp: true, email: false, push: true });
+    expect(parsed.vaccination).toEqual({ inApp: false, email: false, push: true });
     expect(parsed.pregnancy).toBeUndefined();
   });
 
   it("defaults missing/non-boolean channel fields to true rather than dropping the category", () => {
     const parsed = parseNotificationPreferences({ growth: { inApp: false } });
-    expect(parsed.growth).toEqual({ inApp: false, email: true });
+    expect(parsed.growth).toEqual({ inApp: false, email: true, push: true });
   });
 
   it("ignores unknown categories", () => {
@@ -55,7 +55,7 @@ describe("parseNotificationPreferences", () => {
 describe("getChannelPreference", () => {
   it("defaults to both channels enabled when a category has no stored preference", () => {
     for (const category of NOTIFICATION_CATEGORIES) {
-      expect(getChannelPreference({}, category)).toEqual({ inApp: true, email: true });
+      expect(getChannelPreference({}, category)).toEqual({ inApp: true, email: true, push: true });
     }
   });
 

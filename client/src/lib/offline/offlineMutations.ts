@@ -17,6 +17,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { TRPCClient } from "@trpc/client";
 import type { AppRouter } from "../../../../server/routers";
+import { offlineQueryKey } from "./prefetch";
 import {
   applyOptimisticRow,
   rollbackOptimisticRows,
@@ -30,6 +31,11 @@ export const OFFLINE_MUTATION_PATHS = [
   "vaccination.addVaccinationRecord",
   "feed.addStockEntry",
   "breeding.recordBirth",
+  // Not a create, but safe to replay: it carries no expectedVersion, and task
+  // state only moves forward, so a late tap can't overwrite newer work.
+  "tasks.recordAction",
+  // Replayed once by its idempotency key, onto the day it was written.
+  "tasks.submitReport",
 ] as const;
 
 export type OfflineMutationPath = (typeof OFFLINE_MUTATION_PATHS)[number];
@@ -83,6 +89,9 @@ export function registerOfflineMutationDefaults(
       mutationKeyForPath(path) as unknown as unknown[],
       {
         mutationFn: input => mutate(input),
+        // Replays run in parallel otherwise, and an Undo or a corrected answer
+        // means nothing if it lands before what it corrects.
+        ...(path === "tasks.recordAction" || path === "tasks.submitReport" ? { scope: { id: path } } : {}),
         // "online" rather than "offlineFirst": with no network the write pauses
         // immediately instead of firing a request that is certain to fail, so the
         // form is never left spinning on a doomed attempt. Paused writes resume
@@ -109,6 +118,9 @@ export function registerOfflineMutationDefaults(
           void queryClient.invalidateQueries({
             queryKey: [path.split(".")[0]],
           });
+          if (path === "tasks.recordAction" || path === "tasks.submitReport") {
+            void queryClient.invalidateQueries({ queryKey: offlineQueryKey("tasks.today", undefined) });
+          }
         },
       }
     );

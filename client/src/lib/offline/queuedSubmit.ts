@@ -73,7 +73,7 @@ export function useQueuedSubmit() {
       const cache = queryClient.getMutationCache();
       const mine = cache
         .getAll()
-        .reduce<{ mutationId: number; state: { isPaused: boolean } } | null>(
+        .reduce<ReturnType<typeof cache.getAll>[number] | null>(
           (newest, candidate) =>
             !newest || candidate.mutationId > newest.mutationId ? candidate : newest,
           null,
@@ -98,7 +98,9 @@ export function useQueuedSubmit() {
         unsubscribe = cache.subscribe(event => {
           const changed = "mutation" in event ? event.mutation : undefined;
           if (!changed || changed.mutationId !== mine.mutationId) return;
-          if (changed.state.isPaused) {
+          // A mutation waiting behind another in its scope also reads as paused,
+          // but it's only waiting its turn, not stuck on the network.
+          if (changed.state.isPaused && cache.canRun(changed)) {
             queuedNow();
           } else if (
             changed.state.status === "success" ||
@@ -113,7 +115,7 @@ export function useQueuedSubmit() {
       }
 
       // Fast path: already known to be offline, no need to wait for the pause.
-      if (mine?.state.isPaused || !onlineManager.isOnline()) queuedNow();
+      if ((mine?.state.isPaused && cache.canRun(mine)) || !onlineManager.isOnline()) queuedNow();
       return settled;
     },
     [queryClient, t],

@@ -1,3 +1,4 @@
+import { forgetPushDevice } from "@/lib/push/usePush";
 import { getLoginUrl } from "@/const";
 import { clearOfflineIdentity } from "@/lib/offline/identity";
 import { clearAllOfflineData } from "@/lib/offline/persister";
@@ -27,6 +28,8 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    // A shared phone mustn't keep showing this person's alerts to whoever's next.
+    await forgetPushDevice(endpoint => utils.client.notifications.push.unsubscribe.mutate({ endpoint }));
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {

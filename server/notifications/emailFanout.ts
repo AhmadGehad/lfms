@@ -1,5 +1,5 @@
-import { and, eq, gt } from "drizzle-orm";
-import { emailLog } from "../../drizzle/schema";
+import { and, eq, gt, inArray } from "drizzle-orm";
+import { emailLog, users } from "../../drizzle/schema";
 import { ENV } from "../_core/env";
 import { isEmailConfigured } from "../_core/email";
 import { operationalAlertEmail } from "../_core/emailTemplates";
@@ -32,6 +32,10 @@ export async function notifyOperationalAlertByEmail(input: {
   title: string;
   message: string;
   priority: "low" | "medium" | "high" | "critical";
+  /** Instead of owner and admins, for alerts already addressed to named people. */
+  recipientUserIds?: readonly number[];
+  /** Each one is its own event, so a recent email of this type doesn't hold it back. */
+  distinctEvent?: boolean;
 }): Promise<void> {
   if (!EMAILABLE_PRIORITIES.has(input.priority)) return;
   if (!isEmailConfigured()) return;
@@ -40,21 +44,26 @@ export async function notifyOperationalAlertByEmail(input: {
   const template = `operational_alert.${input.alertType}`;
   const db = await getDb();
   if (!db) return;
-  const [recent] = await db.select({ id: emailLog.id }).from(emailLog)
-    .where(and(
-      eq(emailLog.companyId, input.companyId),
-      eq(emailLog.template, template),
-      gt(emailLog.createdAt, new Date(Date.now() - COOLDOWN_MS)),
-    ))
-    .limit(1);
-  if (recent) return;
+  if (!input.distinctEvent) {
+    const [recent] = await db.select({ id: emailLog.id }).from(emailLog)
+      .where(and(
+        eq(emailLog.companyId, input.companyId),
+        eq(emailLog.template, template),
+        gt(emailLog.createdAt, new Date(Date.now() - COOLDOWN_MS)),
+      ))
+      .limit(1);
+    if (recent) return;
+  }
   const owner = await getCompanyOwner(input.companyId);
   if (!owner) return;
   const admins = await getCompanyAdmins(input.companyId);
-  const recipients = [
-    { userId: owner.userId, email: owner.email },
-    ...admins.filter(admin => admin.userId !== owner.userId),
-  ];
+  const recipients: Array<{ userId: number; email: string | null }> = input.recipientUserIds
+    ? await db.select({ userId: users.id, email: users.email }).from(users)
+      .where(inArray(users.id, [...input.recipientUserIds]))
+    : [
+        { userId: owner.userId, email: owner.email },
+        ...admins.filter(admin => admin.userId !== owner.userId),
+      ];
   const email = operationalAlertEmail({
     title: input.title,
     message: input.message,
@@ -62,6 +71,7 @@ export async function notifyOperationalAlertByEmail(input: {
     ctaUrl: `https://${owner.companySlug}.${ENV.baseDomain}/notifications`,
   });
   for (const recipient of recipients) {
+    if (!recipient.email) continue;
     const wantsEmail = await getUserEmailPreferenceForCompany(recipient.userId, input.companyId, category);
     if (!wantsEmail) continue;
     await sendTemplatedEmail({

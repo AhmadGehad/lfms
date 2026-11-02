@@ -143,6 +143,7 @@ export async function assertFeatureAccess(
 // Higher number = more privilege. A user satisfies a tier if their rank >= the
 // tier's rank. owner and admin are top-level (full control).
 const ROLE_RANK: Record<string, number> = {
+  worker: -2,     // farm tablet: its own task screen only
   viewer: -1,     // view-only, no mutations allowed
   user: 0,        // read-only
   staff: 1,       // record day-to-day data (animals, weights, sales, expenses, feed)
