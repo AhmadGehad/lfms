@@ -1,18 +1,19 @@
 // The task rules that only a real engine can prove: ON CONFLICT generation, the
 // partial and expression indexes, row locks, and the FK clearing a single column.
 
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
 import { createTestDb, hasTestDatabase } from "./setup";
 import { animalStatusHistory, animalStatuses, animals, auditLog, companyMemberships, notifications } from "../../drizzle/schema";
-import { farmReports, tabletAccounts, taskTemplates, tasks, workers } from "../../drizzle/schema.workerTasks";
-import { addDays, farmToday, TABLET_BLOCKED, VACCINATION_LOOKBACK_DAYS, WORKER_NOT_ALLOWED } from "../../shared/tasks";
+import { farmReports, tabletAccounts, taskTemplates, tasks, workerCheckins, workers } from "../../drizzle/schema.workerTasks";
+import { addDays, farmToday, TABLET_BLOCKED, TASK_STARTED_BY_OTHER, VACCINATION_LOOKBACK_DAYS, WORKER_NOT_ALLOWED } from "../../shared/tasks";
 import type { TenantContext } from "../../shared/tenancy";
 import { runWithDbTransaction, type DbOrTx } from "../db";
 import { revertAuditEntry } from "../revert";
 import { sendMissedReportAlerts } from "../tasks/missedReports";
+import { purgeOldTabletPhotos } from "../tasks/photoRetention";
 import {
   confirmReportedDeath,
   deleteDayReport,
@@ -32,6 +33,15 @@ import { createTabletCode, disconnectTablets, getTabletStatus, normalizeTabletCo
 import { notATablet } from "../tasks/tabletSeats";
 import { generatePublicId } from "../tenancy/publicIds";
 import { runWithTenantContext } from "../tenancy/runtime";
+
+const storage = vi.hoisted(() => ({ deleted: [] as string[], failOn: null as string | null }));
+vi.mock("../storageBackend", async original => ({
+  ...await original<typeof import("../storageBackend")>(),
+  deletePrivateObject: async (key: string) => {
+    if (key === storage.failOn) throw new Error("storage down");
+    storage.deleted.push(key);
+  },
+}));
 
 const suite = hasTestDatabase ? describe : describe.skip;
 
@@ -131,6 +141,25 @@ suite("worker tasks", () => {
       expect((await as(farm, () => getTabletDay(farm.tenant))).workers).toEqual([]);
     });
 
+    it("only lets whoever started a task finish it, until that name is switched off", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const omar = await farm.worker("Omar");
+      const created = await insert("saas_azal_tasks", {
+        companyId: farm.companyId, farmId: farm.farmId, title: "Feed", dueDate: today, source: "manual",
+      });
+      await tap(farm, created, "start", ali);
+      await expect(tap(farm, created, "done", omar)).rejects.toThrow(TASK_STARTED_BY_OTHER);
+      await expect(tap(farm, created, "blocked", omar)).rejects.toThrow(TASK_STARTED_BY_OTHER);
+      const [held] = await db.select().from(tasks).where(eq(tasks.id, created));
+      expect(held.status).toBe("started");
+
+      await db.update(workers).set({ isActive: false }).where(eq(workers.id, ali));
+      await tap(farm, created, "done", omar);
+      const [row] = await db.select().from(tasks).where(eq(tasks.id, created));
+      expect([row.status, row.finishedByWorkerId]).toEqual(["done", omar]);
+    });
+
     it("refuses a switched-off name, but keeps a tap made before it was switched off", async () => {
       const farm = await seedCompany();
       const omar = await farm.worker("Omar");
@@ -181,6 +210,89 @@ suite("worker tasks", () => {
       as(farm, () => db.transaction(tx => runWithDbTransaction(tx, () => deleteDayReport(tx, farm.tenant, { date }))));
     const checkIn = (farm: Fixture, workerId: number, clientKey: string, photoKey: string | null = null, reportDate = today) =>
       as(farm, () => recordCheckin(farm.tenant, { workerId, reportDate, takenAt: new Date().toISOString(), photoKey, clientKey }));
+
+    const taskPhoto = (farm: Fixture, workerId: number, taskId: number, taskAction: "start" | "done" | "blocked", photoKey: string) =>
+      as(farm, () => recordCheckin(farm.tenant, { workerId, reportDate: today, takenAt: new Date().toISOString(), photoKey, clientKey: randomUUID(), taskId, taskAction }));
+
+    it("shows each task's photos, keeps them off the name-pick list, and drops an undone tap's", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const task = await addTask(farm, "Feed");
+      await checkIn(farm, ali, randomUUID(), "pick.jpg");
+      await tap(farm, task, "start", ali);
+      await taskPhoto(farm, ali, task, "start", "start.jpg");
+      await tap(farm, task, "done", ali);
+      await taskPhoto(farm, ali, task, "done", "done.jpg");
+
+      const shown = async () => {
+        const day = await as(farm, () => getDayReport(farm.tenant, today));
+        return { day, photos: day.tasks.find(row => row.id === task)!.photos.map(photo => [photo.action, photo.photoUrl, photo.workerName]) };
+      };
+      const { day, photos } = await shown();
+      expect(photos).toEqual([
+        ["start", "/manus-storage/start.jpg", "Ali"],
+        ["done", "/manus-storage/done.jpg", "Ali"],
+      ]);
+      expect(day.checkins.map(checkin => checkin.photoUrl)).toEqual(["/manus-storage/pick.jpg"]);
+      expect((await as(farm, () => listDayReports(farm.tenant)))[0].photoCount).toBe(3);
+
+      await tap(farm, task, "undo", null);
+      expect((await shown()).photos).toEqual([["start", "/manus-storage/start.jpg", "Ali"]]);
+
+      await startOver(farm, today);
+      expect((await shown()).photos).toEqual([]);
+    });
+
+    it("doesn't show another farm's photo on a task", async () => {
+      const farm = await seedCompany();
+      const other = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const bad = await other.worker("Bad");
+      const task = await addTask(farm, "Feed");
+      await tap(farm, task, "start", ali);
+      await as(other, () => recordCheckin(other.tenant, { workerId: bad, reportDate: today, takenAt: new Date().toISOString(), photoKey: "theirs.jpg", clientKey: randomUUID(), taskId: task, taskAction: "start" }));
+      const day = await as(farm, () => getDayReport(farm.tenant, today));
+      expect(day.tasks.find(row => row.id === task)!.photos).toEqual([]);
+    });
+
+    it("purges photos over 30 days old from storage, and retries one that failed", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const task = await addTask(farm, "Feed");
+      const key = `old-${randomUUID()}.jpg`;
+      const stuck = `stuck-${randomUUID()}.jpg`;
+      const fresh = `fresh-${randomUUID()}.jpg`;
+      await taskPhoto(farm, ali, task, "start", key);
+      await checkIn(farm, ali, randomUUID(), stuck);
+      await checkIn(farm, ali, randomUUID(), fresh);
+      await db.update(workerCheckins).set({ createdAt: sql`localtimestamp - interval '31 days'` as never })
+        .where(inArray(workerCheckins.photoKey, [key, stuck]));
+      await db.update(workerCheckins).set({ createdAt: sql`localtimestamp - interval '29 days'` as never })
+        .where(eq(workerCheckins.photoKey, fresh));
+      await insert("saas_tenant_files", {
+        publicId: generatePublicId(), companyId: farm.companyId, farmId: farm.farmId, storageKey: key, originalName: "old.jpg",
+        contentType: "image/jpeg", sizeBytes: 10, checksumSha256: "0".repeat(64), status: "clean", uploadedByMembershipId: farm.tenant.membershipId,
+      });
+
+      storage.deleted.length = 0;
+      storage.failOn = stuck;
+      const purge = () => runWithDbTransaction(db, () => purgeOldTabletPhotos());
+      const first = await purge();
+      expect(first.failed).toBe(1);
+      expect(storage.deleted).toContain(key);
+      expect(storage.deleted).not.toContain(fresh);
+      const keysOf = async () => (await db.select({ key: workerCheckins.photoKey }).from(workerCheckins)
+        .where(eq(workerCheckins.companyId, farm.companyId))).map(row => row.key);
+      expect((await keysOf()).sort()).toEqual([fresh, stuck, null].sort());
+      const file = await db.execute(sql`SELECT status FROM saas_tenant_files WHERE "storageKey" = ${key}`);
+      expect(JSON.stringify(file)).toContain("deleted");
+
+      storage.failOn = null;
+      await purge();
+      expect(storage.deleted).toContain(stuck);
+      expect(await keysOf()).toContain(fresh);
+      expect((await keysOf()).filter(Boolean)).toEqual([fresh]);
+    });
 
     it("has one line per day, always today, and follows task and answer changes", async () => {
       const farm = await seedCompany();

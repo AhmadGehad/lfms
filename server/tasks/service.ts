@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, asc, desc, eq, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import {
   animalStatuses,
   animals,
@@ -24,8 +24,10 @@ import {
   tapTime,
   VACCINATION_LOOKBACK_DAYS,
   WORKER_NOT_ALLOWED,
+  TASK_STARTED_BY_OTHER,
   type AnimalReport,
   type BlockedReason,
+  type PhotoAction,
   type PurchaseKind,
   type StockKind,
   type TaskAction,
@@ -507,6 +509,14 @@ export async function recordTaskAction(
   }, tapTime(input.tappedAt));
   if (!next) return { id: task.id, status: task.status, changed: false };
 
+  // Whoever started it finishes it, unless that name has since been switched off.
+  if (input.action !== "start" && input.action !== "undo"
+    && workerId !== null && task.startedByWorkerId !== null && workerId !== task.startedByWorkerId) {
+    const [starter] = await tx.select({ isActive: workers.isActive }).from(workers)
+      .where(and(eq(workers.companyId, task.companyId), eq(workers.id, task.startedByWorkerId))).limit(1);
+    if (starter?.isActive) throw new TRPCError({ code: "PRECONDITION_FAILED", message: TASK_STARTED_BY_OTHER });
+  }
+
   await tx.update(tasks).set({
     status: next.status,
     startedByWorkerId: next.startedByWorkerId,
@@ -831,6 +841,7 @@ async function dayCheckins(db: DbOrTx, tenant: TenantContext, from: string, to: 
     reportDate: workerCheckins.reportDate,
     takenAt: workerCheckins.takenAt,
     photoKey: workerCheckins.photoKey,
+    taskId: workerCheckins.taskId,
     workerName: workers.name,
   }).from(workerCheckins)
     .innerJoin(workers, and(eq(workerCheckins.workerId, workers.id), eq(workers.companyId, tenant.companyId)))
@@ -841,6 +852,47 @@ async function dayCheckins(db: DbOrTx, tenant: TenantContext, from: string, to: 
       isNull(workerCheckins.deletedAt),
     ))
     .orderBy(desc(workerCheckins.takenAt));
+}
+
+/**
+ * The photos behind what a task shows now: of who started it and who finished it.
+ * By task, not day, as a task can be started one day and finished the next. A tap
+ * since undone, or redone by someone else, doesn't count.
+ */
+async function photosOfTasks<T extends { id: number; status: TaskStatus; startedByWorkerId: number | null; finishedByWorkerId: number | null }>(
+  db: DbOrTx,
+  tenant: TenantContext,
+  rows: T[],
+) {
+  const taken = rows.length === 0 ? [] : await db.select({
+    taskId: workerCheckins.taskId,
+    action: workerCheckins.taskAction,
+    workerId: workerCheckins.workerId,
+    workerName: workers.name,
+    takenAt: workerCheckins.takenAt,
+    photoKey: workerCheckins.photoKey,
+  }).from(workerCheckins)
+    .innerJoin(workers, and(eq(workerCheckins.workerId, workers.id), eq(workers.companyId, tenant.companyId)))
+    .where(and(
+      tenantScope(tenant, workerCheckins),
+      inArray(workerCheckins.taskId, rows.map(row => row.id)),
+      isNotNull(workerCheckins.photoKey),
+      isNull(workerCheckins.deletedAt),
+    ))
+    .orderBy(desc(workerCheckins.takenAt));
+  return rows.map(row => {
+    const shown: Array<{ action: PhotoAction; workerId: number | null }> = [
+      ...(row.status !== "todo" && row.startedByWorkerId !== null ? [{ action: "start" as const, workerId: row.startedByWorkerId }] : []),
+      ...(isFinished(row.status) ? [{ action: row.status === "done" ? "done" as const : "blocked" as const, workerId: row.finishedByWorkerId }] : []),
+    ];
+    return {
+      ...row,
+      photos: shown.flatMap(({ action, workerId }) => {
+        const photo = taken.find(one => one.taskId === row.id && one.action === action && one.workerId === workerId);
+        return photo ? [{ action, workerName: photo.workerName, takenAt: photo.takenAt, photoUrl: photoUrl(photo.photoKey)! }] : [];
+      }),
+    };
+  });
 }
 
 /** One line per day. Worked out from the day's tasks, answers and photos, so it's always current. */
@@ -905,10 +957,12 @@ export async function getDayReport(tenant: TenantContext, date: string) {
   return {
     date,
     isToday: date === today,
-    tasks: taskRows.filter(task => belongsToDay(task, date, today, zone)),
+    tasks: await photosOfTasks(db, tenant, taskRows.filter(task => belongsToDay(task, date, today, zone))),
     reports,
     missing: missingDailyReports(reports),
-    checkins: checkins.map(({ photoKey, ...checkin }) => ({ ...checkin, photoUrl: photoUrl(photoKey) })),
+    checkins: checkins
+      .filter(checkin => checkin.taskId === null)
+      .map(({ photoKey, taskId: _taskId, ...checkin }) => ({ ...checkin, photoUrl: photoUrl(photoKey) })),
   };
 }
 
@@ -1003,10 +1057,10 @@ export async function findCheckin(tenant: TenantContext, clientKey: string) {
   return row ?? null;
 }
 
-/** Records a worker picking their name. Null if a retry of this check-in got there first. */
+/** Records a worker picking their name or acting on a task. Null if a retry of this check-in got there first. */
 export async function recordCheckin(
   tenant: TenantContext,
-  input: { workerId: number; reportDate?: string | null; takenAt?: string | null; photoKey: string | null; clientKey: string },
+  input: { workerId: number; reportDate?: string | null; takenAt?: string | null; photoKey: string | null; clientKey: string; taskId?: number | null; taskAction?: PhotoAction | null },
 ) {
   const db = await requireDb();
   const [row] = await db.insert(workerCheckins).values({
@@ -1016,6 +1070,8 @@ export async function recordCheckin(
     reportDate: reportDay(input.reportDate, await farmDate(db, tenant)),
     takenAt: tapTime(input.takenAt),
     photoKey: input.photoKey,
+    taskId: input.taskId ?? null,
+    taskAction: input.taskAction ?? null,
     clientKey: input.clientKey,
     createdBy: tenant.userId,
   }).onConflictDoNothing().returning({ id: workerCheckins.id });

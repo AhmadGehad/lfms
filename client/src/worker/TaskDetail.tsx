@@ -43,6 +43,8 @@ function useUndoAvailable(task: TabletTask) {
 export function TaskDetail({
   task,
   date,
+  finishLockedTo,
+  undoLocked,
   onBack,
   onStart,
   onDone,
@@ -51,6 +53,9 @@ export function TaskDetail({
 }: {
   task: TabletTask;
   date: string;
+  /** Who started it, when that's someone else: only they can finish it. */
+  finishLockedTo: string | null;
+  undoLocked: boolean;
   onBack: () => void;
   onStart: () => void;
   onDone: () => void;
@@ -69,11 +74,15 @@ export function TaskDetail({
       {reason && <p className="text-2xl text-muted-foreground">{reason}</p>}
 
       {isFinished(task.status) ? (
-        undoAvailable && (
+        undoAvailable && !undoLocked && (
           <BigButton tone="plain" icon={Undo2} onClick={onUndo} className="sm:max-w-md">
             {t("worker.undo", "Undo")}
           </BigButton>
         )
+      ) : finishLockedTo ? (
+        <p className="text-2xl font-semibold text-foreground">
+          {t("worker.onlyStarter", { defaultValue: "Only {{name}} can finish this", name: finishLockedTo })}
+        </p>
       ) : (
         <div className="mt-auto grid gap-4 pb-2 sm:grid-cols-[repeat(auto-fit,minmax(14rem,1fr))]">
           {task.status === "todo" && (

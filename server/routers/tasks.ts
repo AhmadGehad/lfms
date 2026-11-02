@@ -11,6 +11,7 @@ import {
   PURCHASE_KINDS,
   STOCK_KINDS,
   TASK_ACTIONS,
+  PHOTO_ACTIONS,
 } from "../../shared/tasks";
 import { hasPermission } from "../../shared/permissions";
 import type { TenantContext } from "../../shared/tenancy";
@@ -204,14 +205,22 @@ export const tasksRouter = router({
       photo: photoDataUrl.nullable(),
       takenAt: z.string().datetime().nullable().optional(),
       reportDate: isoDate.nullable().optional(),
+      taskId: z.number().int().positive().nullable().optional(),
+      taskAction: z.enum(PHOTO_ACTIONS).nullable().optional(),
       idempotencyKey: z.string().min(8).max(200),
-    }))
+    }).refine(input => !input.taskId === !input.taskAction, { message: "A task photo needs both the task and the action" }))
     .mutation(async ({ input, ctx }) => {
       const db = await requireDb();
       const tenant = ctx.tenant!;
       const already = await findCheckin(tenant, input.idempotencyKey);
       if (already) return { id: already.id };
       await requireAllowedWorker(db, tenant, requireFarmId(tenant), input.workerId, input.takenAt);
+      if (input.taskId) {
+        // Removed while this photo was on its way: nothing left to attach it to.
+        const [task] = await db.select({ id: tasks.id }).from(tasks)
+          .where(and(tenantScope(tenant, tasks), eq(tasks.id, input.taskId), isNull(tasks.deletedAt))).limit(1);
+        if (!task) return { id: null };
+      }
       // A full storage quota mustn't stop anyone working: the report says "no photo".
       const photoKey = input.photo
         ? await storePhoto(`checkins/${input.workerId}`, input.photo).catch(error => {
@@ -224,6 +233,8 @@ export const tasksRouter = router({
         reportDate: input.reportDate,
         takenAt: input.takenAt,
         photoKey,
+        taskId: input.taskId,
+        taskAction: input.taskAction,
         clientKey: input.idempotencyKey,
       });
       if (!row && photoKey) await retireFarmImages([photoKey]);

@@ -763,7 +763,7 @@ export const demoFixtures: DemoFixtures = {
     dayReport: {
       date: day(0),
       isToday: true,
-      tasks: TABLET_TASKS,
+      tasks: TABLET_TASKS.map(task => ({ ...task, photos: [] })),
       reports: DEMO_REPORT_ROWS,
       missing: [],
       checkins: [

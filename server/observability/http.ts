@@ -1,4 +1,5 @@
 import { sendMissedReportAlerts } from "../tasks/missedReports";
+import { purgeOldTabletPhotos } from "../tasks/photoRetention";
 import { timingSafeEqual } from "node:crypto";
 import type { Express, RequestHandler } from "express";
 import { ENV } from "../_core/env";
@@ -85,7 +86,7 @@ export function registerObservabilityRoutes(app: Express) {
       .status(snapshot.status === "unavailable" ? 503 : 200)
       .json(publicReadiness(snapshot));
   });
-  // Called hourly by the Cloudflare cron. The edge refuses this path from outside,
+  // Called hourly by the Cloudflare cron, for the end-of-day check and the photo purge. The edge refuses this path from outside,
   // and the secret stops anything else that reaches the container.
   app.post(MISSED_REPORTS_PATH, async (req, res) => {
     const expected = ENV.internalApiSecret;
@@ -94,14 +95,18 @@ export function registerObservabilityRoutes(app: Express) {
       res.status(404).send("Not found");
       return;
     }
-    try {
-      res.json(await sendMissedReportAlerts());
-    } catch (error) {
-      logger.error("tasks.missed_report_run_failed", {
-        errorName: error instanceof Error ? error.name : "NonErrorThrown",
-      });
-      res.status(500).send("Failed");
+    // Separate jobs: one failing mustn't cost the other its run.
+    const [alerts, photos] = await Promise.allSettled([sendMissedReportAlerts(), purgeOldTabletPhotos()]);
+    if (alerts.status === "fulfilled" && photos.status === "fulfilled") {
+      res.json({ ...alerts.value, photos: photos.value });
+      return;
     }
+    for (const [event, run] of [["tasks.missed_report_run_failed", alerts], ["tasks.photo_purge_run_failed", photos]] as const) {
+      if (run.status === "rejected") {
+        logger.error(event, { errorName: run.reason instanceof Error ? run.reason.name : "NonErrorThrown" });
+      }
+    }
+    res.status(500).send("Failed");
   });
   app.get("/metrics", (req, res) => {
     const expected = ENV.metricsBearerToken;

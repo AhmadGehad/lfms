@@ -3,7 +3,7 @@ import { undoOptimisticWrite, type OptimisticSnapshot } from "@/lib/offline/opti
 import { useQueuedSubmit } from "@/lib/offline/queuedSubmit";
 import { trpc } from "@/lib/trpc";
 import { Skeleton } from "@/components/ui/skeleton";
-import { farmToday, isFinished, missingDailyReports, WORKER_NOT_ALLOWED, type BlockedReason, type TaskAction } from "@shared/tasks";
+import { farmToday, isFinished, missingDailyReports, TASK_STARTED_BY_OTHER, WORKER_NOT_ALLOWED, type BlockedReason, type PhotoAction, type TaskAction } from "@shared/tasks";
 import { ClipboardList, RefreshCw, WifiOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -73,7 +73,9 @@ export default function WorkerApp({ takePhoto = takeCheckinPhoto }: { takePhoto?
     undoOptimisticWrite(queryClient, path, input, snapshot as OptimisticSnapshot | undefined);
     toast.error(error.message === WORKER_NOT_ALLOWED
       ? t("worker.nameNotAllowed", "This name isn't allowed to do tasks. Ask the farm owner.")
-      : t("worker.actionFailed", "That didn't save. Please try again."));
+      : error.message === TASK_STARTED_BY_OTHER
+        ? t("worker.startedByOther", "Only the worker who started this can finish it.")
+        : t("worker.actionFailed", "That didn't save. Please try again."));
   };
   // Replaces the registered default, so it has to undo the optimistic tap too.
   const record = trpc.tasks.recordAction.useMutation({ onError: refused("tasks.recordAction") });
@@ -108,18 +110,28 @@ export default function WorkerApp({ takePhoto = takeCheckinPhoto }: { takePhoto?
   // Today by the farm's clock: an offline tablet's last loaded day may be yesterday's.
   const reportDate = day.data ? farmToday(day.data.timeZone) : null;
 
-  const pick = (picked: TabletWorker) => {
-    setWorkerId(picked.id);
+  // Another name still on the tablet, who a task's next step belongs to.
+  const heldByOther = (id: number | null) => id !== null && id !== workerId && workers.some(other => other.id === id);
+
+  // In the background: nobody should wait on the camera to get on with their work.
+  const snap = (forWorkerId: number, forTask?: { taskId: number; taskAction: PhotoAction }) => {
     const takenAt = new Date().toISOString();
-    // In the background: nobody should wait on the camera to start work.
     void takePhoto().then(photo => {
-      submit(checkIn, { workerId: picked.id, photo, takenAt, reportDate, idempotencyKey: crypto.randomUUID() });
+      // A task with no photo just shows none. A name pick is still worth recording.
+      if (forTask && !photo) return;
+      submit(checkIn, { workerId: forWorkerId, photo, takenAt, reportDate, ...forTask, idempotencyKey: crypto.randomUUID() });
       if (photo) toast(t("worker.photoTaken", "Photo taken for today's report"), { className: "text-xl!" });
     });
   };
 
+  const pick = (picked: TabletWorker) => {
+    setWorkerId(picked.id);
+    snap(picked.id);
+  };
+
   const act = (task: TabletTask, action: TaskAction, reason?: BlockedReason) => {
     submit(record, { taskId: task.id, action, workerId: action === "undo" ? null : workerId, reason: reason ?? null, tappedAt: new Date().toISOString(), idempotencyKey: crypto.randomUUID() });
+    if (action !== "undo" && workerId !== null) snap(workerId, { taskId: task.id, taskAction: action });
     showList();
   };
 
@@ -190,6 +202,8 @@ export default function WorkerApp({ takePhoto = takeCheckinPhoto }: { takePhoto?
         <TaskDetail
           task={current}
           date={date}
+          finishLockedTo={current.status === "started" && heldByOther(current.startedByWorkerId) ? current.startedByName : null}
+          undoLocked={heldByOther(current.finishedByWorkerId)}
           onBack={showList}
           onStart={() => act(current, "start")}
           onDone={() => act(current, "done")}
