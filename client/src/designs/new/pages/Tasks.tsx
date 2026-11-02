@@ -227,7 +227,9 @@ function DayReports({ today }: { today: string }) {
     LIVE,
   );
   const remove = trpc.tasks.deleteDayReport.useMutation({
-    onSuccess: () => toast.success(t("tasks.dayDeleted", "Report deleted. The tablet will ask again.")),
+    onSuccess: (_, { date }) => toast.success(date < today
+      ? t("tasks.pastDayDeleted", "Report deleted.")
+      : t("tasks.dayDeleted", "Report deleted. The tablet will ask again.")),
     onError: error => toast.error(errorText(error.message)),
   });
 
@@ -271,8 +273,13 @@ function DayReports({ today }: { today: string }) {
         onOpenChange={open => { if (!open) setDeletingDay(null); }}
         title={t("tasks.deleteDayTitle", { defaultValue: "Delete the report for {{date}}?", date: deletingDay ? fmtDate(deletingDay) : "" })}
         consequences={[
-          { text: t("tasks.deleteDayTasks", "That day's tasks go back to not started, so they can be done again."), tone: "warning" },
-          { text: t("tasks.deleteDayAnswers", "The answers and photos are removed, and the tablet asks the questions again."), tone: "warning" },
+          ...(deletingDay && deletingDay < today ? [
+            { text: t("tasks.deletePastDayTasks", "That day's repeating tasks are removed. Its one-time tasks come back on today's list, not started."), tone: "warning" as const },
+            { text: t("tasks.deletePastDayAnswers", "The answers and photos are removed."), tone: "warning" as const },
+          ] : [
+            { text: t("tasks.deleteDayTasks", "That day's tasks go back to not started, so they can be done again."), tone: "warning" as const },
+            { text: t("tasks.deleteDayAnswers", "The answers and photos are removed, and the tablet asks the questions again."), tone: "warning" as const },
+          ]),
           { text: t("tasks.deleteDayDeaths", "A death you already confirmed stays recorded."), tone: "info" },
         ]}
         confirmLabel={t("tasks.deleteConfirm", "Delete")}

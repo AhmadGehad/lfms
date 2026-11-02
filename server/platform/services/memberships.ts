@@ -11,6 +11,7 @@ import { invalidLifecycle, notFound, versionConflict } from "../errors";
 import { appendPlatformAudit, type PlatformAuditActor } from "../repositories/audit";
 import { affectedRows, requirePlatformDb } from "../repositories/db";
 import { findMembershipByPublicId } from "../repositories/memberships";
+import { notATablet } from "../../tasks/tabletSeats";
 import { assertWithinLimit, getEffectiveLimit, lockCompanyQuota } from "../../entitlements/limits";
 
 export async function updateMembership(input: {
@@ -38,6 +39,7 @@ export async function updateMembership(input: {
         .where(and(
           eq(companyMemberships.companyId, membership.companyId),
           ne(companyMemberships.status, "removed"),
+          notATablet,
         ));
       const limit = await getEffectiveLimit(tx, membership.companyId, "users_limit");
       assertWithinLimit(Number(count?.count ?? 0), 1, limit, "users");

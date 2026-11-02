@@ -173,25 +173,20 @@ function addTabletReport(
 
 const TABLET_DAY_KEY = offlineQueryKey("tasks.today", undefined);
 
-/** Takes the matching rows out of a list, or out of the lists on a response object. */
-function withoutRows(data: unknown, match: (row: any) => boolean): unknown {
-  if (Array.isArray(data)) {
-    const kept = data.filter(row => !match(row));
-    return kept.length === data.length ? data : kept;
-  }
-  if (!data || typeof data !== "object") return data;
-  let result = data;
-  for (const [name, value] of Object.entries(data)) {
-    if (!Array.isArray(value)) continue;
-    const kept = withoutRows(value, match);
-    if (kept !== value) result = { ...result, [name]: kept };
-  }
-  return result;
+function withoutRow(rows: any[], rowId: (row: any) => unknown, id: unknown) {
+  const kept = rows.filter(row => rowId(row) !== id);
+  return kept.length === rows.length ? rows : kept;
 }
 
 /** A row's id can sit under the entity's name, so each list says where to look. */
 const removeBy = (rowId: (row: any) => unknown = row => row.id) =>
-  (data: unknown, input: any) => withoutRows(data, row => rowId(row) === input.id);
+  (rows: any[], input: any) => withoutRow(rows, rowId, input.id);
+
+/** For a response holding several lists: ids are only unique within one of them. */
+const removeFrom = (list: string) => (data: any, input: any) => {
+  const kept = withoutRow(data[list] ?? [], row => row.id, input.id);
+  return kept === data[list] ? data : { ...data, [list]: kept };
+};
 
 const taskStartedOver = (task: any) => ({
   ...task,
@@ -221,9 +216,9 @@ const INSTANT_DELETES: Record<string, Record<string, (data: any, input: any, key
   "config.deleteVaccine": { "config.getVaccines": removeBy() },
   "config.deleteFeedItemPrice": { "config.getAllFeedItemPrices": removeBy() },
   "vaccination.deleteVaccinationRecord": { "vaccination.getVaccinationRecords": removeBy() },
-  "tasks.delete": { "tasks.overview": removeBy(), "tasks.today": removeBy(), "tasks.dayReport": removeBy() },
+  "tasks.delete": { "tasks.overview": removeFrom("tasks"), "tasks.today": removeFrom("tasks"), "tasks.dayReport": removeFrom("tasks") },
   "tasks.deleteTemplate": { "tasks.listTemplates": removeBy() },
-  "tasks.deleteReport": { "tasks.dayReport": removeBy(), "tasks.dayReports": data => data },
+  "tasks.deleteReport": { "tasks.dayReport": removeFrom("reports"), "tasks.dayReports": data => data },
   "tasks.deleteDayReport": {
     // Today always has a report, so it starts again instead of going away.
     "tasks.dayReports": (rows: any[], input) => rows.flatMap(row => {

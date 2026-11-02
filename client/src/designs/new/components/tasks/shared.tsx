@@ -20,6 +20,7 @@ export const ICON_BUTTON = "grid h-9 w-9 shrink-0 place-items-center rounded-lg 
 export function useErrorText() {
   const { t } = useTranslation();
   return (message: string) => {
+    if (message === "TABLET_BLOCKED") return t("tasks.tabletBlocked", "The tablet login for this farm was suspended or removed in Admin. Restore it there first.");
     if (message === "WORKER_NAME_TAKEN") return t("tasks.nameTaken", "A worker with this name already exists.");
     if (message === "FARM_SELECTION_REQUIRED") return t("tasks.chooseFarm", "Choose a farm first, from the switcher at the top.");
     if (message === "ANIMAL_NOT_MATCHED") return t("tasks.reportNoMatch", "No animal with this number");

@@ -105,6 +105,17 @@ describe("installInstantDeletes", () => {
   const send = (queryClient: QueryClient, path: string[], input: unknown, mutationFn: () => Promise<unknown>) =>
     new MutationObserver(queryClient, { mutationKey: [path], mutationFn, retry: false }).mutate(input as void);
 
+  it("only takes the row from its own list, as ids repeat between lists", async () => {
+    const queryClient = new QueryClient();
+    const stop = installInstantDeletes(queryClient);
+    const key = [["tasks", "dayReport"], { input: { date: "2026-11-02" }, type: "query" }];
+    const day = { date: "2026-11-02", tasks: [{ id: 7 }], reports: [{ id: 7 }, { id: 8 }], checkins: [{ id: 7 }] };
+    queryClient.setQueryData(key, day);
+    await send(queryClient, ["tasks", "deleteReport"], { id: 7 }, () => Promise.resolve({}));
+    expect(queryClient.getQueryData(key)).toEqual({ ...day, reports: [{ id: 8 }] });
+    stop();
+  });
+
   it("takes the row off before the server answers", async () => {
     const { queryClient, stop } = setup();
     let answer!: (value: unknown) => void;

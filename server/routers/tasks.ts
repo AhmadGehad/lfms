@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { animals } from "../../drizzle/schema";
 import { farmReports, taskTemplates, tasks, workers } from "../../drizzle/schema.workerTasks";
@@ -13,6 +13,7 @@ import {
   TASK_ACTIONS,
 } from "../../shared/tasks";
 import { hasPermission } from "../../shared/permissions";
+import type { TenantContext } from "../../shared/tenancy";
 import { getClientIp } from "../_core/audit";
 import { isDuplicateEntryError } from "../_core/databaseErrors";
 import { logger } from "../observability/logger";
@@ -95,6 +96,20 @@ async function requireDb(): Promise<DbOrTx> {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
   return db;
+}
+
+/** With no farm selected a template can be any farm's, so it brings its own farm and clock. */
+async function templateInScope(db: DbOrTx, tenant: TenantContext, id: number) {
+  const [template] = await db.select({ id: taskTemplates.id, farmId: taskTemplates.farmId, isActive: taskTemplates.isActive })
+    .from(taskTemplates)
+    .where(and(tenantScope(tenant, taskTemplates), eq(taskTemplates.id, id), isNull(taskTemplates.deletedAt)))
+    .limit(1);
+  requireUpdated(template ? [template] : [], "Repeating task");
+  return template;
+}
+
+async function todaysCopyKey(db: DbOrTx, tenant: TenantContext, template: { id: number; farmId: number }) {
+  return `template:${template.id}:${await farmDate(db, { ...tenant, selectedFarmId: template.farmId })}`;
 }
 
 function requireUpdated(rows: unknown[], what: string) {
@@ -388,7 +403,10 @@ export const tasksRouter = router({
       const db = await requireDb();
       const tenant = ctx.tenant!;
       const result = await db.transaction(tx => deleteDayReport(tx, tenant, { date: input.date, ipAddress: getClientIp(ctx) }));
-      await retireFarmImages(result.photoKeys);
+      // The day is already deleted, so a failure here mustn't report that it wasn't.
+      await retireFarmImages(result.photoKeys).catch(error => {
+        logger.warn("tasks.retire_photos_failed", { error, count: result.photoKeys.length });
+      });
       return { answers: result.answers, tasksReset: result.tasksReset };
     }),
 
@@ -423,27 +441,41 @@ export const tasksRouter = router({
       const db = await requireDb();
       const tenant = ctx.tenant!;
       const { id, expectedVersion, ...data } = input;
-      if (data.assignedWorkerId) await assertWorkerInFarm(db, tenant.companyId, requireFarmId(tenant), data.assignedWorkerId);
-      const rows = await db.update(taskTemplates).set({ ...data, version: expectedVersion + 1 }).where(and(
-        tenantScope(tenant, taskTemplates),
-        eq(taskTemplates.id, id),
-        eq(taskTemplates.version, expectedVersion),
-        isNull(taskTemplates.deletedAt),
-      )).returning({ id: taskTemplates.id });
-      requireUpdated(rows, "Repeating task");
-      // Today's copy is already made, so a change wouldn't show until tomorrow.
-      await db.update(tasks).set({
-        title: data.title, notes: data.notes ?? null, assignedWorkerId: data.assignedWorkerId ?? null,
-        version: sql`${tasks.version} + 1`,
-      }).where(and(
-        tenantScope(tenant, tasks),
-        eq(tasks.sourceKey, `template:${id}:${await farmDate(db, tenant)}`),
-        eq(tasks.status, "todo"),
-        isNull(tasks.deletedAt),
-      ));
-      await createAuditEntry({
-        userId: ctx.user.id, entityType: "taskTemplate", entityId: String(id), action: "update",
-        newValues: data as any, ipAddress: getClientIp(ctx),
+      await db.transaction(async tx => {
+        const template = await templateInScope(tx, tenant, id);
+        if (data.assignedWorkerId) await assertWorkerInFarm(tx, tenant.companyId, template.farmId, data.assignedWorkerId);
+        const rows = await tx.update(taskTemplates).set({ ...data, version: expectedVersion + 1 }).where(and(
+          tenantScope(tenant, taskTemplates),
+          eq(taskTemplates.id, id),
+          eq(taskTemplates.version, expectedVersion),
+          isNull(taskTemplates.deletedAt),
+        )).returning({ id: taskTemplates.id });
+        requireUpdated(rows, "Repeating task");
+        const sourceKey = await todaysCopyKey(tx, tenant, template);
+        const todaysCopy = (deleted: boolean) => and(
+          eq(tasks.companyId, tenant.companyId),
+          eq(tasks.farmId, template.farmId),
+          eq(tasks.sourceKey, sourceKey),
+          eq(tasks.status, "todo"),
+          deleted ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
+        );
+        // Today's copy is already made, so a change wouldn't show until tomorrow.
+        // Pausing takes it off the tablet, and switching back on the same day returns it.
+        if (template.isActive && !data.isActive) {
+          await tx.update(tasks).set({ deletedAt: new Date(), deletedBy: ctx.user.id, version: sql`${tasks.version} + 1` })
+            .where(todaysCopy(false));
+        } else if (!template.isActive && data.isActive) {
+          await tx.update(tasks).set({ deletedAt: null, deletedBy: null, version: sql`${tasks.version} + 1` })
+            .where(todaysCopy(true));
+        }
+        await tx.update(tasks).set({
+          title: data.title, notes: data.notes ?? null, assignedWorkerId: data.assignedWorkerId ?? null,
+          version: sql`${tasks.version} + 1`,
+        }).where(todaysCopy(false));
+        await createAuditEntry({
+          userId: ctx.user.id, entityType: "taskTemplate", entityId: String(id), action: "update",
+          newValues: data as any, ipAddress: getClientIp(ctx),
+        }, tx);
       });
       return { success: true };
     }),
@@ -452,25 +484,30 @@ export const tasksRouter = router({
     .input(z.object(versioned))
     .mutation(async ({ input, ctx }) => {
       const db = await requireDb();
-      const rows = await db.update(taskTemplates).set({
-        deletedAt: new Date(), deletedBy: ctx.user.id, version: input.expectedVersion + 1,
-      }).where(and(
-        tenantScope(ctx.tenant!, taskTemplates),
-        eq(taskTemplates.id, input.id),
-        eq(taskTemplates.version, input.expectedVersion),
-        isNull(taskTemplates.deletedAt),
-      )).returning({ id: taskTemplates.id });
-      requireUpdated(rows, "Repeating task");
-      await db.update(tasks).set({
-        deletedAt: new Date(), deletedBy: ctx.user.id, version: sql`${tasks.version} + 1`,
-      }).where(and(
-        tenantScope(ctx.tenant!, tasks),
-        eq(tasks.sourceKey, `template:${input.id}:${await farmDate(db, ctx.tenant!)}`),
-        eq(tasks.status, "todo"),
-        isNull(tasks.deletedAt),
-      ));
-      await createAuditEntry({
-        userId: ctx.user.id, entityType: "taskTemplate", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx),
+      const tenant = ctx.tenant!;
+      await db.transaction(async tx => {
+        const template = await templateInScope(tx, tenant, input.id);
+        const rows = await tx.update(taskTemplates).set({
+          deletedAt: new Date(), deletedBy: ctx.user.id, version: input.expectedVersion + 1,
+        }).where(and(
+          tenantScope(tenant, taskTemplates),
+          eq(taskTemplates.id, input.id),
+          eq(taskTemplates.version, input.expectedVersion),
+          isNull(taskTemplates.deletedAt),
+        )).returning({ id: taskTemplates.id });
+        requireUpdated(rows, "Repeating task");
+        await tx.update(tasks).set({
+          deletedAt: new Date(), deletedBy: ctx.user.id, version: sql`${tasks.version} + 1`,
+        }).where(and(
+          eq(tasks.companyId, tenant.companyId),
+          eq(tasks.farmId, template.farmId),
+          eq(tasks.sourceKey, await todaysCopyKey(tx, tenant, template)),
+          eq(tasks.status, "todo"),
+          isNull(tasks.deletedAt),
+        ));
+        await createAuditEntry({
+          userId: ctx.user.id, entityType: "taskTemplate", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx),
+        }, tx);
       });
       return { success: true };
     }),

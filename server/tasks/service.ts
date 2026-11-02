@@ -856,14 +856,25 @@ export async function listDayReports(tenant: TenantContext, range?: { from?: str
     listReports(tenant, { from, to }),
     dayCheckins(db, tenant, from, to),
   ]);
+  const tasksByDay = new Map<string, typeof taskRows>();
+  const addTo = (date: string, task: (typeof taskRows)[number]) => {
+    const onDay = tasksByDay.get(date);
+    if (onDay) onDay.push(task);
+    else tasksByDay.set(date, [task]);
+  };
+  for (const task of taskRows) {
+    const date = taskDay(task, zone);
+    addTo(date, task);
+    if (date !== today && belongsToDay(task, today, today, zone)) addTo(today, task);
+  }
   const dates = new Set<string>([
     ...(from <= today && today <= to ? [today] : []),
     ...reports.map(report => report.reportDate),
     ...checkins.map(checkin => checkin.reportDate),
-    ...taskRows.map(task => taskDay(task, zone)).filter(date => from <= date && date <= to),
+    ...[...tasksByDay.keys()].filter(date => from <= date && date <= to && date !== today),
   ]);
   return [...dates].sort().reverse().map(date => {
-    const onDay = taskRows.filter(task => belongsToDay(task, date, today, zone));
+    const onDay = tasksByDay.get(date) ?? [];
     const answers = reports.filter(report => report.reportDate === date);
     const seen = checkins.filter(checkin => checkin.reportDate === date);
     return {
@@ -934,8 +945,13 @@ export async function deleteDayReport(
       input.date === today ? and(lt(tasks.dueDate, today), eq(tasks.status, "started")) : undefined,
     ),
   )).limit(DAY_REPORT_TASK_LIMIT);
-  const taskIds = candidates
-    .filter(task => task.status !== "todo" && belongsToDay(task, input.date, today, zone))
+  const onDay = candidates.filter(task => belongsToDay(task, input.date, today, zone));
+  // That day is over, so nothing can be redone on it. Repeating chores go with its
+  // report, and one-offs still need doing, so they move to today's list.
+  const isPast = input.date < today;
+  const removedIds = onDay.filter(task => isPast && task.source === "template").map(task => task.id);
+  const taskIds = onDay
+    .filter(task => isPast ? task.source !== "template" : task.status !== "todo")
     .map(task => task.id);
   if (taskIds.length > 0) {
     await tx.update(tasks).set({
@@ -945,8 +961,14 @@ export async function deleteDayReport(
       finishedByWorkerId: null,
       finishedAt: null,
       blockedReason: null,
+      ...(isPast ? { dueDate: today } : {}),
       version: sql`${tasks.version} + 1`,
     }).where(and(eq(tasks.companyId, tenant.companyId), inArray(tasks.id, taskIds)));
+  }
+  if (removedIds.length > 0) {
+    await tx.update(tasks).set({
+      deletedAt: now, deletedBy: tenant.userId, version: sql`${tasks.version} + 1`,
+    }).where(and(eq(tasks.companyId, tenant.companyId), inArray(tasks.id, removedIds)));
   }
 
   const checkins = await tx.update(workerCheckins).set({ deletedAt: now }).where(and(
@@ -963,11 +985,11 @@ export async function deleteDayReport(
     action: "day_report_delete",
     farmId,
     ipAddress: input.ipAddress ?? undefined,
-    metadata: { answers: removed.length, tasksReset: taskIds.length, photos: checkins.filter(row => row.photoKey).length },
+    metadata: { answers: removed.length, tasksReset: taskIds.length, tasksRemoved: removedIds.length, photos: checkins.filter(row => row.photoKey).length },
   }, tx);
   return {
     answers: removed.length,
-    tasksReset: taskIds.length,
+    tasksReset: taskIds.length + removedIds.length,
     photoKeys: checkins.flatMap(row => row.photoKey ? [row.photoKey] : []),
   };
 }

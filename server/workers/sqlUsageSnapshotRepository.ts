@@ -9,6 +9,7 @@ import {
   tenantFiles,
   usageCounters,
 } from "../../drizzle/schema";
+import { tabletAccounts } from "../../drizzle/schema.workerTasks";
 import { getDb } from "../db";
 import { generatePublicId } from "../tenancy/publicIds";
 import type { LeasedJob } from "./leasedWorker";
@@ -66,7 +67,7 @@ export class SqlUsageSnapshotRepository implements UsageSnapshotRepository {
       const metrics = [
         {
           code: "users_limit",
-          value: sql`(SELECT COUNT(*) FROM ${companyMemberships} m WHERE m."companyId" = ${companies.id} AND m.status != 'removed')`,
+          value: sql`(SELECT COUNT(*) FROM ${companyMemberships} m WHERE m."companyId" = ${companies.id} AND m.status != 'removed' AND NOT EXISTS (SELECT 1 FROM ${tabletAccounts} t WHERE t."companyId" = m."companyId" AND t."userId" = m."userId"))`,
         },
         {
           code: "farms_limit",

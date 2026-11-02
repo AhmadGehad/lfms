@@ -2,13 +2,13 @@
 // partial and expression indexes, row locks, and the FK clearing a single column.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
 import { createTestDb, hasTestDatabase } from "./setup";
-import { animalStatusHistory, animalStatuses, animals, auditLog, notifications } from "../../drizzle/schema";
+import { animalStatusHistory, animalStatuses, animals, auditLog, companyMemberships, notifications } from "../../drizzle/schema";
 import { farmReports, tabletAccounts, taskTemplates, tasks, workers } from "../../drizzle/schema.workerTasks";
-import { addDays, farmToday, VACCINATION_LOOKBACK_DAYS, WORKER_NOT_ALLOWED } from "../../shared/tasks";
+import { addDays, farmToday, TABLET_BLOCKED, VACCINATION_LOOKBACK_DAYS, WORKER_NOT_ALLOWED } from "../../shared/tasks";
 import type { TenantContext } from "../../shared/tenancy";
 import { runWithDbTransaction, type DbOrTx } from "../db";
 import { revertAuditEntry } from "../revert";
@@ -29,6 +29,7 @@ import {
   submitFarmReport,
 } from "../tasks/service";
 import { createTabletCode, disconnectTablets, getTabletStatus, normalizeTabletCode, redeemTabletCode } from "../tasks/tablet";
+import { notATablet } from "../tasks/tabletSeats";
 import { generatePublicId } from "../tenancy/publicIds";
 import { runWithTenantContext } from "../tenancy/runtime";
 
@@ -196,6 +197,31 @@ suite("worker tasks", () => {
       expect(line.missing).not.toContain("doctor_visit");
     });
 
+    it("deleting a past day moves its one-offs to today and removes its repeating chores", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const yesterday = addDays(today, -1);
+      const oneOff = await addTask(farm, "Fix fence", yesterday);
+      const unfinished = await addTask(farm, "Buy salt", yesterday);
+      const chore = await insert("saas_azal_tasks", {
+        companyId: farm.companyId, farmId: farm.farmId, title: "Feed", dueDate: yesterday, source: "template", sourceKey: `template:1:${yesterday}`,
+      });
+      await db.update(tasks).set({ status: "done", finishedAt: new Date(`${yesterday}T12:00:00Z`), finishedByWorkerId: ali }).where(eq(tasks.id, oneOff));
+      await report(farm, { type: "doctor_visit", answer: true, workerId: ali, reportDate: yesterday });
+
+      expect(await startOver(farm, yesterday)).toMatchObject({ answers: 1, tasksReset: 3 });
+
+      const rows = await db.select().from(tasks).where(inArray(tasks.id, [oneOff, unfinished, chore]));
+      const row = (id: number) => rows.find(other => other.id === id)!;
+      expect(row(oneOff)).toMatchObject({ status: "todo", dueDate: today, finishedAt: null, finishedByWorkerId: null });
+      expect(row(unfinished)).toMatchObject({ status: "todo", dueDate: today });
+      expect(row(chore).deletedAt).not.toBeNull();
+      // The day's line goes, and the one-offs show as today's, not overdue.
+      const lines = await as(farm, () => listDayReports(farm.tenant));
+      expect(lines.map(line => line.date)).toEqual([today]);
+      expect(lines[0].tasksTotal).toBe(2);
+    });
+
     it("counts a task on the day it was finished, and an open one-off on today as well", async () => {
       const farm = await seedCompany();
       const ali = await farm.worker("Ali");
@@ -352,8 +378,38 @@ suite("worker tasks", () => {
     it("won't bring back a tablet taken away in Admin", async () => {
       const farm = await seedCompany();
       const user = await redeem(await slug(farm), (await newCode(farm)).code);
+      const { code } = await newCode(farm);
       await pool.query(`UPDATE "saas_company_memberships" SET status = 'removed' WHERE "userId" = $1`, [user!.id]);
-      expect(await redeem(await slug(farm), (await newCode(farm)).code)).toBeNull();
+      // A code made before it was taken away is dead, and no new one can be made.
+      expect(await redeem(await slug(farm), code)).toBeNull();
+      await expect(newCode(farm)).rejects.toThrow(TABLET_BLOCKED);
+    });
+
+    it("won't bring back a tablet suspended in Admin, even after a disconnect", async () => {
+      const farm = await seedCompany();
+      const user = await redeem(await slug(farm), (await newCode(farm)).code);
+      const { code } = await newCode(farm);
+      await pool.query(`UPDATE "saas_company_memberships" SET status = 'suspended' WHERE "userId" = $1`, [user!.id]);
+      expect(await redeem(await slug(farm), code)).toBeNull();
+      await as(farm, () => disconnectTablets(farm.tenant));
+      await expect(newCode(farm)).rejects.toThrow(TABLET_BLOCKED);
+      const { rows } = await pool.query(`SELECT status FROM "saas_company_memberships" WHERE "userId" = $1`, [user!.id]);
+      expect(rows[0].status).toBe("suspended");
+    });
+
+    it("doesn't take a seat, while a worker with their own login does", async () => {
+      const farm = await seedCompany();
+      const seats = async () => {
+        const [row] = await db.select({ count: sql<number>`COUNT(*)` }).from(companyMemberships)
+          .where(and(eq(companyMemberships.companyId, farm.companyId), notATablet));
+        return Number(row.count);
+      };
+      const before = await seats();
+      await redeem(await slug(farm), (await newCode(farm)).code);
+      expect(await seats()).toBe(before);
+      const userId = await insert("saas_users", { openId: `person_${randomUUID()}`, name: "Person" });
+      await insert("saas_company_memberships", { companyId: farm.companyId, userId, role: "worker", status: "active" });
+      expect(await seats()).toBe(before + 1);
     });
 
     it("normalizes what people type", () => {

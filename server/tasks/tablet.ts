@@ -3,6 +3,7 @@ import { and, eq, gt, ne, sql } from "drizzle-orm";
 import { createHmac, randomInt } from "node:crypto";
 import { companies, companyMemberships, farmMemberships, users } from "../../drizzle/schema";
 import { tabletAccounts } from "../../drizzle/schema.workerTasks";
+import { TABLET_BLOCKED } from "../../shared/tasks";
 import type { TenantContext } from "../../shared/tenancy";
 import { getOAuthStateSecret } from "../_core/auth/runtime";
 import { getDb } from "../db";
@@ -22,6 +23,14 @@ export function normalizeTabletCode(input: unknown): string | null {
   if (typeof input !== "string") return null;
   const code = input.toUpperCase().replace(/[^0-9A-Z]/g, "");
   return code.length === CODE_LENGTH ? code : null;
+}
+
+/**
+ * Only a tablet never connected, or disconnected by the farm, comes back. One
+ * suspended or removed in Admin stays that way, and its sessions stay dead.
+ */
+function mayConnect(status: string | undefined, connectedAt: Date | null) {
+  return status === "active" || (status === "suspended" && connectedAt === null);
 }
 
 async function requireDb() {
@@ -66,12 +75,21 @@ export async function createTabletCode(tenant: TenantContext) {
   const code = Array.from({ length: CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join("");
   const expiresAt = new Date(Date.now() + CODE_TTL_MS);
   await db.transaction(async tx => {
-    const [existing] = await tx.select({ id: tabletAccounts.id }).from(tabletAccounts).where(and(
+    const [existing] = await tx.select({
+      id: tabletAccounts.id, userId: tabletAccounts.userId, connectedAt: tabletAccounts.connectedAt,
+    }).from(tabletAccounts).where(and(
       eq(tabletAccounts.companyId, tenant.companyId),
       eq(tabletAccounts.farmId, farmId),
     )).limit(1);
     const secret = { codeHash: hashCode(tenant.companyId, code), codeExpiresAt: expiresAt };
     if (existing) {
+      const [membership] = await tx.select({ status: companyMemberships.status }).from(companyMemberships)
+        .where(and(eq(companyMemberships.companyId, tenant.companyId), eq(companyMemberships.userId, existing.userId)))
+        .limit(1);
+      if (!mayConnect(membership?.status, existing.connectedAt)) {
+        // A code here could never work, so say why now, not at the tablet.
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: TABLET_BLOCKED });
+      }
       await tx.update(tabletAccounts).set(secret).where(eq(tabletAccounts.id, existing.id));
       return;
     }
@@ -101,10 +119,18 @@ export async function disconnectTablets(tenant: TenantContext) {
   const account = await findAccount(tenant, requireFarmId(tenant));
   if (!account) return;
   await db.transaction(async tx => {
-    await tx.update(tabletAccounts).set({ codeHash: null, codeExpiresAt: null, connectedAt: null })
-      .where(eq(tabletAccounts.id, account.id));
-    await tx.update(companyMemberships).set({ status: "suspended", authorizationVersion: sql`${companyMemberships.authorizationVersion} + 1` })
-      .where(and(eq(companyMemberships.companyId, tenant.companyId), eq(companyMemberships.userId, account.userId)));
+    const [membership] = await tx.select({ status: companyMemberships.status }).from(companyMemberships)
+      .where(and(eq(companyMemberships.companyId, tenant.companyId), eq(companyMemberships.userId, account.userId)))
+      .limit(1);
+    // connectedAt stays set on one suspended in Admin, so a disconnect can't make it reconnectable.
+    if (membership?.status === "active") {
+      await tx.update(tabletAccounts).set({ codeHash: null, codeExpiresAt: null, connectedAt: null })
+        .where(eq(tabletAccounts.id, account.id));
+      await tx.update(companyMemberships).set({ status: "suspended", authorizationVersion: sql`${companyMemberships.authorizationVersion} + 1` })
+        .where(and(eq(companyMemberships.companyId, tenant.companyId), eq(companyMemberships.userId, account.userId)));
+    } else {
+      await tx.update(tabletAccounts).set({ codeHash: null, codeExpiresAt: null }).where(eq(tabletAccounts.id, account.id));
+    }
     // Ends the sessions those tablets hold, so a later code can't bring them back.
     await tx.update(users).set({ authVersion: sql`${users.authVersion} + 1` }).where(eq(users.id, account.userId));
   });
@@ -119,25 +145,30 @@ export async function redeemTabletCode(companySlug: string, code: string) {
       ne(companies.lifecycleStatus, "deleted"),
     )).limit(1);
     if (!company) return null;
-    const [account] = await tx.update(tabletAccounts).set({
-      codeHash: null, codeExpiresAt: null, connectedAt: new Date(),
-    }).where(and(
+    const [account] = await tx.select().from(tabletAccounts).where(and(
       eq(tabletAccounts.companyId, company.id),
       eq(tabletAccounts.codeHash, hashCode(company.id, code)),
       gt(tabletAccounts.codeExpiresAt, new Date()),
-    )).returning({ userId: tabletAccounts.userId });
+    )).limit(1).for("update");
     if (!account) return null;
-    // Taken away in Admin stays taken away: only a disconnected tablet comes back.
-    const reactivated = await tx.update(companyMemberships).set({
-      status: "active",
-      joinedAt: new Date(),
-      authorizationVersion: sql`${companyMemberships.authorizationVersion} + 1`,
-    }).where(and(
-      eq(companyMemberships.companyId, company.id),
-      eq(companyMemberships.userId, account.userId),
-      ne(companyMemberships.status, "removed"),
-    )).returning({ id: companyMemberships.id });
-    if (reactivated.length === 0) return null;
+    const [membership] = await tx.select({ id: companyMemberships.id, status: companyMemberships.status })
+      .from(companyMemberships)
+      .where(and(eq(companyMemberships.companyId, company.id), eq(companyMemberships.userId, account.userId)))
+      .limit(1).for("update");
+    const allowed = mayConnect(membership?.status, account.connectedAt);
+    await tx.update(tabletAccounts).set({
+      codeHash: null,
+      codeExpiresAt: null,
+      ...(allowed ? { connectedAt: new Date() } : {}),
+    }).where(eq(tabletAccounts.id, account.id));
+    if (!allowed) return null;
+    if (membership.status !== "active") {
+      await tx.update(companyMemberships).set({
+        status: "active",
+        joinedAt: new Date(),
+        authorizationVersion: sql`${companyMemberships.authorizationVersion} + 1`,
+      }).where(eq(companyMemberships.id, membership.id));
+    }
     const [user] = await tx.select().from(users).where(eq(users.id, account.userId)).limit(1);
     return user ?? null;
   });
