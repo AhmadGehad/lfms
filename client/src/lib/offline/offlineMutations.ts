@@ -96,8 +96,11 @@ export function registerOfflineMutationDefaults(
       {
         mutationFn: input => mutate(input),
         // Replays run in parallel otherwise, and an Undo or a corrected answer
-        // means nothing if it lands before what it corrects.
-        ...(path === "tasks.recordAction" || path === "tasks.submitReport" ? { scope: { id: path } } : {}),
+        // means nothing if it lands before what it corrects. A task's photo
+        // follows its tap, as the server checks the tap happened.
+        ...(path === "tasks.recordAction" || path === "tasks.checkIn"
+          ? { scope: { id: "tasks.tablet" } }
+          : path === "tasks.submitReport" ? { scope: { id: path } } : {}),
         // "online" rather than "offlineFirst": with no network the write pauses
         // immediately instead of firing a request that is certain to fail, so the
         // form is never left spinning on a doomed attempt. Paused writes resume

@@ -1,4 +1,4 @@
-import { isYesNoReport } from "@shared/tasks";
+import { isYesNoReport, TABLET_PHOTO_DAYS } from "@shared/tasks";
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -113,7 +113,10 @@ export function DayReportSheet({
       <SheetContent side={i18n.language === "ar" ? "left" : "right"} className="block w-full overflow-y-auto sm:max-w-xl">
         <SheetHeader>
           <SheetTitle dir="ltr" className="text-start rtl:text-end">{date ? fmtDate(date) : ""}</SheetTitle>
-          <SheetDescription>{t("tasks.dayReportHint", "This report keeps updating as the tablet is used.")}</SheetDescription>
+          <SheetDescription>
+            {t("tasks.dayReportHint", "This report keeps updating as the tablet is used.")}{" "}
+            {t("tasks.photosKept", { defaultValue: "Photos are deleted after {{count}} days.", count: TABLET_PHOTO_DAYS })}
+          </SheetDescription>
         </SheetHeader>
         {!day ? (
           <div className="space-y-3 p-4" aria-busy="true">
@@ -143,6 +146,19 @@ export function DayReportSheet({
                       </div>
                       <TaskStatus task={task} today={today} />
                       <WhoAndWhen task={task} />
+                      {task.photos.length > 0 && (
+                        <ul className="flex basis-full flex-wrap gap-3">
+                          {task.photos.map(photo => (
+                            <li key={photo.action} className="w-24 text-xs">
+                              <a href={photo.photoUrl} target="_blank" rel="noreferrer">
+                                <img src={photo.photoUrl} alt={photo.workerName} loading="lazy" className="aspect-square w-full rounded-lg border border-border bg-surface object-cover" />
+                              </a>
+                              <p className="mt-1 break-words font-medium text-foreground">{t(`tasks.photoAction.${photo.action}`)}</p>
+                              <p className="tabular-nums text-muted-foreground" dir="ltr">{fmtDateTime(photo.takenAt)}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </li>
                   ))}
                 </ul>

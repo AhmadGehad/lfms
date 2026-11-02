@@ -12,6 +12,11 @@ export type TaskStatus = (typeof TASK_STATUSES)[number];
 export const TASK_ACTIONS = ["start", "done", "blocked", "undo"] as const;
 export type TaskAction = (typeof TASK_ACTIONS)[number];
 
+/** The taps that take a photo. Undo only takes one back. */
+export const PHOTO_ACTIONS = ["start", "done", "blocked"] as const;
+export type PhotoAction = (typeof PHOTO_ACTIONS)[number];
+export const TABLET_PHOTO_DAYS = 30;
+
 export const BLOCKED_REASONS = ["no_supplies", "animal_problem", "no_time", "other"] as const;
 export type BlockedReason = (typeof BLOCKED_REASONS)[number];
 
@@ -208,6 +213,7 @@ export function farmHour(timeZone: string | null | undefined, now: Date = new Da
 
 /** The server's refusal when the owner has switched a worker off, for the tablet to explain. */
 export const WORKER_NOT_ALLOWED = "WORKER_NOT_ALLOWED";
+export const TASK_STARTED_BY_OTHER = "TASK_STARTED_BY_OTHER";
 export const TABLET_BLOCKED = "TABLET_BLOCKED";
 
 /**

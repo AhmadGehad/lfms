@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -149,6 +150,12 @@ export async function putPrivateObject(input: {
     redirect: "error",
   });
   if (!response.ok) throw new Error(`Storage upload failed (${response.status})`);
+}
+
+/** Forge has no delete, so there the file proxy refusing the key is all that can be done. */
+export async function deletePrivateObject(key: string) {
+  if (!hasS3Configuration()) return;
+  await getS3Client().send(new DeleteObjectCommand({ Bucket: ENV.objectStorageBucket, Key: key }));
 }
 
 export async function getPrivateObjectUrl(key: string) {

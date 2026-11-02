@@ -19,6 +19,7 @@ import {
   TASK_SOURCES,
   TASK_STATUSES,
   type StockKind,
+  PHOTO_ACTIONS,
 } from "../shared/tasks";
 
 export const workers = pgTable("saas_azal_workers", {
@@ -85,7 +86,7 @@ export const tasks = pgTable("saas_azal_tasks", {
   version: integer("version").default(1).notNull(),
 });
 
-/** A worker picking their name on the tablet, with the photo taken then, if the camera allowed it. */
+/** A worker picking their name or acting on a task on the tablet, with the photo taken then, if the camera allowed it. */
 export const workerCheckins = pgTable("saas_azal_worker_checkins", {
   id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
   companyId: integer("companyId").notNull(),
@@ -94,6 +95,9 @@ export const workerCheckins = pgTable("saas_azal_worker_checkins", {
   reportDate: date("reportDate").notNull(),
   takenAt: timestamp("takenAt", { precision: 0 }).notNull(),
   photoKey: varchar("photoKey", { length: 500 }),
+  /** Set when the photo is of a task being started, finished or refused, not of a name being picked. */
+  taskId: integer("taskId"),
+  taskAction: varchar("taskAction", { length: 20, enum: PHOTO_ACTIONS }),
   clientKey: varchar("clientKey", { length: 200 }).notNull(),
   createdBy: integer("createdBy"),
   createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
