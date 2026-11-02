@@ -53,8 +53,8 @@ function useStateText() {
       case "unsupported": return t("push.unsupported", "This browser can't receive notifications.");
       case "not-configured": return t("push.notConfigured", "Notifications to your phone aren't available yet.");
       case "denied": return t("push.denied", "Notifications are blocked for this site. Allow them in your browser or phone settings, then come back.");
-      case "off": return t("push.off", "Get urgent alerts on this device, even when the app is closed.");
-      case "on": return t("push.on", "On for this device. Urgent alerts arrive even when the app is closed.");
+      case "off": return t("push.off", "Get what workers do and urgent alerts on this device, even when the app is closed.");
+      case "on": return t("push.on", "On for this device. What workers do and urgent alerts arrive even when the app is closed.");
       default: return null;
     }
   };

@@ -471,12 +471,17 @@ function WorkersTab({ creating, onCreatingChange }: TabProps) {
   });
 
   const columns: Column<WorkerRow>[] = [
-    { id: "name", header: t("tasks.name", "Name"), primary: true, cell: row => <span className="font-medium text-foreground">{row.name}</span> },
-    { id: "active", header: t("tasks.onTablet", "On the tablet"), mobileLabel: t("tasks.onTablet", "On the tablet"), cell: row => (
+    { id: "name", header: t("tasks.name", "Name"), primary: true, cell: row => (
+      <span className="flex flex-wrap items-center gap-2 font-medium text-foreground">
+        {row.name}
+        {row.userId !== null && <StatusBadge tone="neutral">{t("tasks.adminLogin", "Admin login")}</StatusBadge>}
+      </span>
+    ) },
+    { id: "active", header: t("tasks.allowed", "Allowed to do tasks"), mobileLabel: t("tasks.allowed", "Allowed to do tasks"), cell: row => (
       <Switch
         checked={row.isActive}
         disabled={!canUpdate || toggle.isPending}
-        aria-label={`${t("tasks.onTablet", "On the tablet")}: ${row.name}`}
+        aria-label={`${t("tasks.allowed", "Allowed to do tasks")}: ${row.name}`}
         onCheckedChange={isActive => toggle.mutate({ id: row.id, expectedVersion: row.version, name: row.name, isActive })}
       />
     ) },

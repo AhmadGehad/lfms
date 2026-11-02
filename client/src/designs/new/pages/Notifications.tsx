@@ -7,7 +7,7 @@ import { PageHeader } from "../components/PageHeader";
 import { EmptyState } from "../components/EmptyState";
 import { StatusBadge } from "../components/StatusBadge";
 import { ListSkeleton } from "@/components/PageSkeleton";
-import { formatAlertType, notificationCategory, notificationLink, priorityTone } from "@shared/notifications";
+import { formatAlertType, NOTIFICATIONS_REFRESH_MS, notificationCategory, notificationLink, priorityTone } from "@shared/notifications";
 import { taskNotificationText, type NotificationParams } from "@shared/notificationText";
 import { PushNotificationsPrompt } from "@/components/PushNotificationsCard";
 import { fmtDateTime } from "../lib/format";
@@ -29,7 +29,7 @@ export default function NewNotifications() {
   const canUpdate = perms.can("notifications", "update");
   const utils = trpc.useUtils();
 
-  const { data: notifications, isLoading } = trpc.notifications.list.useQuery({});
+  const { data: notifications, isLoading } = trpc.notifications.list.useQuery({}, { refetchInterval: NOTIFICATIONS_REFRESH_MS });
   const markRead = trpc.notifications.markRead.useMutation({ onSuccess: () => utils.notifications.list.invalidate() });
   const markAllRead = trpc.notifications.markAllRead.useMutation({ onSuccess: () => utils.notifications.list.invalidate() });
 

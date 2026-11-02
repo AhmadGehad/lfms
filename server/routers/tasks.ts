@@ -44,6 +44,7 @@ const versioned = { id: z.number().int().positive(), expectedVersion: z.number()
 const reportBase = {
   workerId: z.number().int().positive(),
   reportDate: isoDate.nullable().optional(),
+  tappedAt: z.string().datetime().nullable().optional(),
   idempotencyKey: z.string().min(8).max(200),
 };
 

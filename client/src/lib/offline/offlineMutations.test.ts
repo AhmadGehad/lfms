@@ -6,7 +6,13 @@ import {
   mutationKeyForPath,
   registerOfflineMutationDefaults,
 } from "./offlineMutations";
-import { applyOptimisticRow, rollbackOptimisticRows } from "./optimistic";
+import {
+  applyOptimisticRow,
+  isPendingSyncRow,
+  keepUnsyncedWritesOnScreen,
+  rollbackOptimisticRows,
+  undoOptimisticWrite,
+} from "./optimistic";
 import { offlineQueryKey } from "./prefetch";
 
 /** Stands in for the tRPC client: nested objects ending in a `mutate` function. */
@@ -152,6 +158,109 @@ describe("tablet taps", () => {
     applyOptimisticRow(queryClient, "tasks.submitReport", { type: "doctor_visit", answer: false, workerId: 1 });
     expect(reports(queryClient).map(row => [row.type, row.answer])).toEqual([["doctor_visit", false], ["animal_dead", null]]);
     expect(reports(queryClient)[0]).toMatchObject({ workerName: "Ali" });
+  });
+
+  describe("while a write waits to sync", () => {
+    const queued = (queryClient: QueryClient, path: string, input: Record<string, unknown>, status: "pending" | "success" = "pending") => {
+      const cache = queryClient.getMutationCache();
+      return cache.build(queryClient, { mutationKey: [path.split(".")] }, {
+        context: undefined, data: undefined, error: null, failureCount: 0, failureReason: null,
+        isPaused: true, status, variables: input, submittedAt: cache.getAll().length + 1,
+      });
+    };
+    const fromServer = (queryClient: QueryClient) => queryClient.fetchQuery({
+      queryKey: key,
+      staleTime: 0,
+      queryFn: () => ({
+        date: "2026-11-02",
+        workers: [{ id: 1, name: "Ali" }, { id: 2, name: "Omar" }],
+        reports: [],
+        tasks: [{
+          id: 7, status: "todo", startedByWorkerId: null, startedByName: null, startedAt: null,
+          finishedByWorkerId: null, finishedByName: null, finishedAt: null, blockedReason: null,
+        }],
+      }),
+    });
+
+    it("keeps the tap on screen when the server answers without it", async () => {
+      const queryClient = seeded();
+      keepUnsyncedWritesOnScreen(queryClient);
+      queued(queryClient, "tasks.recordAction", { taskId: 7, action: "start", workerId: 1 });
+      await fromServer(queryClient);
+      expect(task(queryClient, 7)).toMatchObject({ status: "started", startedByName: "Ali" });
+    });
+
+    it("replays waiting taps in the order they were made", async () => {
+      const queryClient = seeded();
+      keepUnsyncedWritesOnScreen(queryClient);
+      queued(queryClient, "tasks.recordAction", { taskId: 7, action: "start", workerId: 2 });
+      queued(queryClient, "tasks.recordAction", { taskId: 7, action: "done", workerId: 2 });
+      await fromServer(queryClient);
+      expect(task(queryClient, 7)).toMatchObject({ status: "done", finishedByName: "Omar" });
+    });
+
+    it("keeps a waiting report, once, and not one written for another day", async () => {
+      const queryClient = seeded();
+      keepUnsyncedWritesOnScreen(queryClient);
+      queued(queryClient, "tasks.submitReport", { type: "animal_dead", animalTag: "EW-1", workerId: 1, idempotencyKey: "key-0001" });
+      queued(queryClient, "tasks.submitReport", { type: "animal_dead", animalTag: "EW-2", workerId: 1, reportDate: "2026-11-01" });
+      await fromServer(queryClient);
+      await fromServer(queryClient);
+      expect(reports(queryClient).map(row => row.animalTag)).toEqual(["EW-1"]);
+    });
+
+    it("lets the server's answer through once nothing is waiting", async () => {
+      const queryClient = seeded();
+      keepUnsyncedWritesOnScreen(queryClient);
+      queued(queryClient, "tasks.recordAction", { taskId: 7, action: "start", workerId: 1 }, "success");
+      await fromServer(queryClient);
+      expect(task(queryClient, 7)).toMatchObject({ status: "todo" });
+    });
+
+    it("keeps a waiting weight on its list too", async () => {
+      const queryClient = new QueryClient();
+      keepUnsyncedWritesOnScreen(queryClient);
+      queued(queryClient, "animals.addWeight", { animalId: 3, weighDate: "2026-11-02", weightKg: 40 });
+      const rows = await queryClient.fetchQuery({
+        queryKey: offlineQueryKey("animals.getWeightLog", { animalId: 3 }),
+        queryFn: () => [{ id: 1, weightKg: 35 }],
+      }).then(() => queryClient.getQueryData<Array<Record<string, unknown>>>(offlineQueryKey("animals.getWeightLog", { animalId: 3 }))!);
+      expect(rows.map(row => row.weightKg)).toEqual([35, 40]);
+      expect(isPendingSyncRow(rows[1])).toBe(true);
+    });
+
+    it("a refused tap comes off without taking newer taps with it", () => {
+      const queryClient = seeded();
+      const input = { taskId: 7, action: "start", workerId: 1 };
+      const snapshot = applyOptimisticRow(queryClient, "tasks.recordAction", input);
+      queued(queryClient, "tasks.recordAction", { taskId: 8, action: "start", workerId: 2 });
+      undoOptimisticWrite(queryClient, "tasks.recordAction", input, snapshot);
+      expect(task(queryClient, 7)).toMatchObject({ status: "todo" });
+      expect(task(queryClient, 8)).toMatchObject({ status: "started", startedByName: "Omar" });
+    });
+
+    it("taking a write off doesn't repeat older ones already on the list", () => {
+      const queryClient = new QueryClient();
+      const list = offlineQueryKey("animals.getWeightLog", { animalId: 3 });
+      queryClient.setQueryData(list, []);
+      const add = (weightKg: number) => {
+        const input = { animalId: 3, weighDate: "2026-11-02", weightKg };
+        const snapshot = applyOptimisticRow(queryClient, "animals.addWeight", input);
+        queued(queryClient, "animals.addWeight", input);
+        return { input, snapshot };
+      };
+      add(40);
+      const second = add(41);
+      undoOptimisticWrite(queryClient, "animals.addWeight", second.input, second.snapshot);
+      expect(queryClient.getQueryData<Array<{ weightKg: number }>>(list)!.map(row => row.weightKg)).toEqual([40]);
+    });
+
+    it("refreshes every list of the same area after a write", () => {
+      const queryClient = seeded();
+      const write = queued(queryClient, "tasks.recordAction", { taskId: 7, action: "start", workerId: 1 });
+      undoOptimisticWrite(queryClient, "tasks.recordAction", write.state.variables, []);
+      expect(queryClient.getQueryState(key)?.isInvalidated).toBe(true);
+    });
   });
 
   it("queues reports for replay", () => {
