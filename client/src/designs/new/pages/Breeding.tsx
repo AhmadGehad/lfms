@@ -272,7 +272,6 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
     onSuccess: () => {
       invalidate();
       toast.success(t("breeding.birthMovedToBin", "Birth moved to recycle bin"));
-      setDeleteRow(null);
     },
     onError: e => toast.error(e.message),
   });
@@ -779,8 +778,7 @@ export default function NewBreeding({ initialTab = "breeding" }: { initialTab?: 
         consequences={[{ text: t("breeding.deleteBirthRecordDescription", { id: deleteRow?.lambId ?? "", defaultValue: "This birth record will be soft-deleted and recoverable from the Recycle Bin." }), tone: "warning" }]}
         confirmLabel={t("common.moveToBin", "Move to bin")}
         destructive
-        loading={deleteLambingLog.isPending}
-        onConfirm={() => deleteRow && deleteLambingLog.mutate({ id: deleteRow.id, expectedVersion: deleteRow.version })}
+        onConfirm={() => { if (deleteRow) { deleteLambingLog.mutate({ id: deleteRow.id, expectedVersion: deleteRow.version }); setDeleteRow(null); } }}
       />
         </>
       )}

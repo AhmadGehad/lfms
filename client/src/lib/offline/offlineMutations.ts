@@ -19,6 +19,7 @@ import type { TRPCClient } from "@trpc/client";
 import type { AppRouter } from "../../../../server/routers";
 import {
   applyOptimisticRow,
+  installInstantDeletes,
   keepUnsyncedWritesOnScreen,
   undoOptimisticWrite,
   type OptimisticSnapshot,
@@ -37,6 +38,8 @@ export const OFFLINE_MUTATION_PATHS = [
   "tasks.recordAction",
   // Replayed once by its idempotency key, onto the day it was written.
   "tasks.submitReport",
+  // Replayed once by its idempotency key, with the photo taken at the time.
+  "tasks.checkIn",
 ] as const;
 
 export type OfflineMutationPath = (typeof OFFLINE_MUTATION_PATHS)[number];
@@ -85,6 +88,7 @@ export function registerOfflineMutationDefaults(
   client: TRPCClient<AppRouter>
 ) {
   keepUnsyncedWritesOnScreen(queryClient);
+  installInstantDeletes(queryClient);
   for (const path of OFFLINE_MUTATION_PATHS) {
     const mutate = resolveMutate(client, path);
     queryClient.setMutationDefaults(

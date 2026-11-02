@@ -142,7 +142,7 @@ export function securityHeadersMiddleware(options?: {
     res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
     res.setHeader(
       "Permissions-Policy",
-      "camera=(), geolocation=(self), microphone=(self), payment=(), usb=()"
+      "camera=(self), geolocation=(self), microphone=(self), payment=(), usb=()"
     );
     res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");

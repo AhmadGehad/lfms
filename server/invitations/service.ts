@@ -127,6 +127,8 @@ async function assertInvitationSeatAvailable(tx: PlatformDb, companyId: number, 
   const [members] = await tx.select({ count: sql<number>`COUNT(*)` }).from(companyMemberships).where(and(
     eq(companyMemberships.companyId, companyId),
     ne(companyMemberships.status, "removed"),
+    // A farm tablet isn't a person using up a seat.
+    ne(companyMemberships.role, "worker"),
   ));
   const [pending] = await tx.select({ count: sql<number>`COUNT(*)` }).from(companyInvitations).where(and(
     eq(companyInvitations.companyId, companyId),
@@ -624,6 +626,7 @@ export async function acceptInvitation(input: {
     const [memberCount] = await tx.select({ count: sql<number>`COUNT(*)` }).from(companyMemberships).where(and(
       eq(companyMemberships.companyId, record.companyId),
       ne(companyMemberships.status, "removed"),
+      ne(companyMemberships.role, "worker"),
     ));
     const limit = await getEffectiveLimit(tx, record.companyId, "users_limit");
     assertWithinLimit(Number(memberCount?.count ?? 0), 1, limit, "users");

@@ -81,7 +81,7 @@ export function WorkerHeader({ date, doneCount, total }: { date?: string; doneCo
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl">{t("worker.signOutTitle", "Sign this tablet out?")}</AlertDialogTitle>
             <AlertDialogDescription className="text-lg">
-              {t("worker.signOutBody", "Someone will need the tablet's password to sign back in.")}
+              {t("worker.signOutBody", "Connecting it again takes a new code from the farm owner.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

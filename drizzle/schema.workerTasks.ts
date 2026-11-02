@@ -27,10 +27,10 @@ export const workers = pgTable("saas_azal_workers", {
   companyId: integer("companyId").notNull(),
   farmId: integer("farmId").notNull(),
   name: varchar("name", { length: 80 }).notNull(),
-  /** The login this worker came from in Admin. Null for a name the owner typed. */
+  /** Written only by the short-lived Admin link. Nothing reads them; kept until dropped on purpose. */
   userId: integer("userId"),
-  /** Switched off because the login went away, not by the owner, so it comes back with the login. */
   loginGone: boolean("loginGone").default(false).notNull(),
+  photoKey: varchar("photoKey", { length: 500 }),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
@@ -47,6 +47,7 @@ export const taskTemplates = pgTable("saas_azal_task_templates", {
   notes: text("notes"),
   /** Bit 0 is Sunday, bit 6 is Saturday. */
   weekdays: smallint("weekdays").default(127).notNull(),
+  assignedWorkerId: integer("assignedWorkerId"),
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
   updatedAt: timestamp("updatedAt", { precision: 0 }).defaultNow().notNull(),
@@ -64,6 +65,8 @@ export const tasks = pgTable("saas_azal_tasks", {
   title: varchar("title", { length: 200 }).notNull(),
   notes: text("notes"),
   animalId: integer("animalId"),
+  /** Null means anyone can do it. */
+  assignedWorkerId: integer("assignedWorkerId"),
   dueDate: date("dueDate").notNull(),
   source: varchar("source", { length: 20, enum: TASK_SOURCES }).default("manual").notNull(),
   /** Set on generated rows; the unique index is what stops them duplicating. */
@@ -80,6 +83,34 @@ export const tasks = pgTable("saas_azal_tasks", {
   deletedAt: timestamp("deletedAt", { precision: 0 }),
   deletedBy: integer("deletedBy"),
   version: integer("version").default(1).notNull(),
+});
+
+/** A worker picking their name on the tablet, with the photo taken then, if the camera allowed it. */
+export const workerCheckins = pgTable("saas_azal_worker_checkins", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  workerId: integer("workerId").notNull(),
+  reportDate: date("reportDate").notNull(),
+  takenAt: timestamp("takenAt", { precision: 0 }).notNull(),
+  photoKey: varchar("photoKey", { length: 500 }),
+  clientKey: varchar("clientKey", { length: 200 }).notNull(),
+  createdBy: integer("createdBy"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt", { precision: 0 }),
+});
+
+/** The sign-in behind a farm's tablets, and the one-time code that connects one. */
+export const tabletAccounts = pgTable("saas_azal_tablet_accounts", {
+  id: integer("id").generatedByDefaultAsIdentity().primaryKey(),
+  companyId: integer("companyId").notNull(),
+  farmId: integer("farmId").notNull(),
+  userId: integer("userId").notNull(),
+  codeHash: varchar("codeHash", { length: 64 }),
+  codeExpiresAt: timestamp("codeExpiresAt", { precision: 0 }),
+  connectedAt: timestamp("connectedAt", { precision: 0 }),
+  createdBy: integer("createdBy"),
+  createdAt: timestamp("createdAt", { precision: 0 }).defaultNow().notNull(),
 });
 
 /** A note from the tablet to the owner. Changes no record until the owner acts on it. */

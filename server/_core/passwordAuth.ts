@@ -8,6 +8,7 @@ import {
   users,
 } from "../../drizzle/schema";
 import { getDb } from "../db";
+import { normalizeTabletCode, redeemTabletCode } from "../tasks/tablet";
 import {
   getOAuthStateSecret,
   getRateLimitStore,
@@ -110,14 +111,17 @@ async function issueTenantSessionForUser(
   req: Request,
   res: Response,
   user: typeof users.$inferSelect,
+  authenticationMethod: "password" | "tablet_code" = "password",
 ) {
-  await recordOAuthIdentity({
-    userId: user.id,
-    provider: "password",
-    providerSubject: user.normalizedEmail ?? String(user.id),
-    providerEmail: user.email,
-    providerEmailVerified: true,
-  });
+  if (authenticationMethod === "password") {
+    await recordOAuthIdentity({
+      userId: user.id,
+      provider: "password",
+      providerSubject: user.normalizedEmail ?? String(user.id),
+      providerEmail: user.email,
+      providerEmailVerified: true,
+    });
+  }
   const host = getResolvedRequestHost(res);
   const companySlug = host?.surface === "tenant" ? host.companySlug : null;
   const isWorker = companySlug ? await isWorkerMembership(companySlug, user.id) : false;
@@ -130,7 +134,7 @@ async function issueTenantSessionForUser(
     subjectId: user.id,
     authVersion: user.authVersion,
     authLevel: "primary",
-    authenticationMethods: ["password"],
+    authenticationMethods: [authenticationMethod],
     ipAddress: req.ip,
     userAgent: req.get("user-agent"),
     idleTimeoutMs,
@@ -139,6 +143,8 @@ async function issueTenantSessionForUser(
   setOpaqueSessionCookie(req, res, "tenant", session.token, session.absoluteExpiresAt);
   setCsrfCookie(req, res, { audience: "tenant", secret: getOAuthStateSecret() }, session.token);
 }
+
+const TABLET_CONNECT_ERROR = "That code isn't right, or it has expired. Ask the farm owner for a new one.";
 
 export function registerPasswordAuthRoutes(app: Express) {
   const loginLimit = createRateLimitMiddleware({
@@ -242,6 +248,36 @@ export function registerPasswordAuthRoutes(app: Express) {
     } catch (error) {
       logger.error("auth.tenant_password_login_failed", { error });
       res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  // Separate from the password limit: a farm with a few tablets behind one
+  // connection shouldn't lock out the people signing in from there.
+  const tabletConnectLimit = createRateLimitMiddleware({
+    namespace: "tablet-connect",
+    secret: getOAuthStateSecret(),
+    store: getRateLimitStore(),
+    maximumRequests: 10,
+    windowMs: 10 * 60 * 1_000,
+    key: getClientAddress,
+  });
+
+  app.post("/api/auth/tablet-connect", tabletConnectLimit, async (req: Request, res: Response) => {
+    try {
+      const host = getResolvedRequestHost(res);
+      const companySlug = host?.surface === "tenant" ? host.companySlug : null;
+      const code = normalizeTabletCode(req.body?.code);
+      const user = companySlug && code ? await redeemTabletCode(companySlug, code) : null;
+      if (!user || !(await hasActiveMembership(companySlug, user.id))) {
+        res.status(401).json({ error: TABLET_CONNECT_ERROR });
+        return;
+      }
+      await issueTenantSessionForUser(req, res, user, "tablet_code");
+      res.setHeader("Cache-Control", "no-store");
+      res.status(200).json({ success: true });
+    } catch (error) {
+      logger.error("auth.tablet_connect_failed", { error });
+      res.status(500).json({ error: "Connecting failed" });
     }
   });
 

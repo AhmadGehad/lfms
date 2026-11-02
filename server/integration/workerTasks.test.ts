@@ -2,18 +2,33 @@
 // partial and expression indexes, row locks, and the FK clearing a single column.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import type pg from "pg";
 import { createTestDb, hasTestDatabase } from "./setup";
 import { animalStatusHistory, animalStatuses, animals, auditLog, notifications } from "../../drizzle/schema";
-import { farmReports, taskTemplates, tasks, workers } from "../../drizzle/schema.workerTasks";
+import { farmReports, tabletAccounts, taskTemplates, tasks, workers } from "../../drizzle/schema.workerTasks";
 import { addDays, farmToday, VACCINATION_LOOKBACK_DAYS, WORKER_NOT_ALLOWED } from "../../shared/tasks";
 import type { TenantContext } from "../../shared/tenancy";
 import { runWithDbTransaction, type DbOrTx } from "../db";
 import { revertAuditEntry } from "../revert";
 import { sendMissedReportAlerts } from "../tasks/missedReports";
-import { confirmReportedDeath, getOwnerOverview, getReportStatus, getTabletDay, listReports, listWorkers, recordTaskAction, submitFarmReport } from "../tasks/service";
+import {
+  confirmReportedDeath,
+  deleteDayReport,
+  findCheckin,
+  getDayReport,
+  getOwnerOverview,
+  getReportStatus,
+  getTabletDay,
+  listDayReports,
+  listReports,
+  listWorkers,
+  recordCheckin,
+  recordTaskAction,
+  submitFarmReport,
+} from "../tasks/service";
+import { createTabletCode, disconnectTablets, getTabletStatus, normalizeTabletCode, redeemTabletCode } from "../tasks/tablet";
 import { generatePublicId } from "../tenancy/publicIds";
 import { runWithTenantContext } from "../tenancy/runtime";
 
@@ -99,73 +114,20 @@ suite("worker tasks", () => {
     await pool?.end();
   });
 
-  describe("worker logins from Admin", () => {
-    const roster = (farm: Fixture) => db.select().from(workers).where(eq(workers.companyId, farm.companyId));
-    const addLogin = async (farm: Fixture, name: string, farmAccessMode = "all") => {
-      const userId = await insert("saas_users", { openId: randomUUID(), name });
-      const membershipId = await insert("saas_company_memberships", {
-        companyId: farm.companyId, userId, role: "worker", status: "active", farmAccessMode,
-      });
-      return { userId, membershipId };
-    };
-    const asLogin = (farm: Fixture, login: { userId: number; membershipId: number }): Fixture => ({
-      ...farm,
-      tenant: { ...farm.tenant, userId: login.userId, membershipId: login.membershipId } as TenantContext,
-    });
-
-    it("shows a login on the list by itself, once, even when read concurrently", async () => {
+  describe("workers", () => {
+    it("hides a switched-off worker from the tablet", async () => {
       const farm = await seedCompany();
-      const ali = await addLogin(farm, "Ali Hassan");
-      await Promise.all([1, 2, 3, 4].map(() => as(farm, () => listWorkers(farm.tenant))));
-      const rows = (await roster(farm)).filter(row => row.userId === ali.userId);
-      expect(rows.map(row => [row.name, row.isActive])).toEqual([["Ali Hassan", true]]);
+      const ali = await farm.worker("Ali");
+      await farm.worker("Omar");
+      await db.update(workers).set({ isActive: false }).where(eq(workers.id, ali));
       const day = await as(farm, () => getTabletDay(farm.tenant));
-      expect(day.workers.map(worker => worker.name)).toContain("Ali Hassan");
+      expect(day.workers.map(worker => worker.name)).toEqual(["Omar"]);
+      expect((await as(farm, () => listWorkers(farm.tenant))).map(worker => worker.name)).toEqual(["Omar", "Ali"]);
     });
 
-    it("links a name the owner already typed, without repeating it", async () => {
+    it("doesn't turn the tablet's own account into a name", async () => {
       const farm = await seedCompany();
-      const typed = await farm.worker("Omar");
-      await pool.query(`UPDATE "saas_azal_workers" SET "isActive" = false WHERE id = $1`, [typed]);
-      const omar = await addLogin(farm, "omar");
-      await as(farm, () => listWorkers(farm.tenant));
-      const rows = (await roster(farm)).filter(row => row.name.toLowerCase() === "omar");
-      expect(rows).toHaveLength(1);
-      expect(rows[0]).toMatchObject({ id: typed, userId: omar.userId, isActive: true });
-    });
-
-    it("leaves out a login restricted to another farm", async () => {
-      const farm = await seedCompany();
-      const elsewhere = await addLogin(farm, "Elsewhere", "restricted");
-      await as(farm, () => listWorkers(farm.tenant));
-      expect((await roster(farm)).some(row => row.userId === elsewhere.userId)).toBe(false);
-    });
-
-    it("keeps the owner's switch, and hides a switched-off worker from the tablet", async () => {
-      const farm = await seedCompany();
-      const ali = await addLogin(farm, "Ali");
-      await as(farm, () => listWorkers(farm.tenant));
-      await db.update(workers).set({ isActive: false }).where(eq(workers.userId, ali.userId));
-      await as(farm, () => listWorkers(farm.tenant));
-      const [row] = (await roster(farm)).filter(worker => worker.userId === ali.userId);
-      expect(row.isActive).toBe(false);
-      expect((await as(farm, () => getTabletDay(farm.tenant))).workers.map(worker => worker.id)).not.toContain(row.id);
-    });
-
-    it("keeps a switched-off login working under the other names, until none are left", async () => {
-      const farm = await seedCompany();
-      const ali = await addLogin(farm, "Ali");
-      const signedIn = asLogin(farm, ali);
-      await as(farm, () => listWorkers(farm.tenant));
-      await db.update(workers).set({ isActive: false }).where(eq(workers.userId, ali.userId));
-      const other = await farm.worker("Omar");
-      const created = await insert("saas_azal_tasks", {
-        companyId: farm.companyId, farmId: farm.farmId, title: "Feed", dueDate: today, source: "manual",
-      });
-      expect((await as(signedIn, () => getTabletDay(signedIn.tenant))).notAllowed).toBe(false);
-      await tap(signedIn, created, "start", other);
-      await db.update(workers).set({ isActive: false }).where(eq(workers.companyId, farm.companyId));
-      expect((await as(signedIn, () => getTabletDay(signedIn.tenant))).notAllowed).toBe(true);
+      expect((await as(farm, () => getTabletDay(farm.tenant))).workers).toEqual([]);
     });
 
     it("refuses a switched-off name, but keeps a tap made before it was switched off", async () => {
@@ -187,19 +149,217 @@ suite("worker tasks", () => {
       const [row] = await db.select().from(tasks).where(eq(tasks.id, created));
       expect(row.status).toBe("started");
     });
+  });
 
-    it("switches a worker off when their login is removed, and back on when it returns", async () => {
+  describe("assigned tasks", () => {
+    it("copies a recurring task's worker onto the day's task", async () => {
       const farm = await seedCompany();
-      const ali = await addLogin(farm, "Ali");
-      await as(farm, () => listWorkers(farm.tenant));
-      await pool.query(`UPDATE "saas_company_memberships" SET status = 'removed' WHERE id = $1`, [ali.membershipId]);
-      await as(farm, () => listWorkers(farm.tenant));
-      const [row] = (await roster(farm)).filter(worker => worker.userId === ali.userId);
-      expect(row.isActive).toBe(false);
-      await pool.query(`UPDATE "saas_company_memberships" SET status = 'active' WHERE id = $1`, [ali.membershipId]);
-      await as(farm, () => listWorkers(farm.tenant));
-      const [back] = (await roster(farm)).filter(worker => worker.userId === ali.userId);
-      expect(back).toMatchObject({ isActive: true, loginGone: false });
+      const ali = await farm.worker("Ali");
+      await insert("saas_azal_task_templates", {
+        companyId: farm.companyId, farmId: farm.farmId, title: "Feed", weekdays: 127, assignedWorkerId: ali,
+      });
+      const day = await as(farm, () => getTabletDay(farm.tenant));
+      expect(day.tasks).toMatchObject([{ title: "Feed", assignedWorkerId: ali, assignedName: "Ali" }]);
+    });
+
+    it("can't point at another company's worker", async () => {
+      const farm = await seedCompany();
+      const other = await seedCompany();
+      const theirs = await other.worker("Theirs");
+      await expect(insert("saas_azal_tasks", {
+        companyId: farm.companyId, farmId: farm.farmId, title: "Feed", dueDate: today, source: "manual", assignedWorkerId: theirs,
+      })).rejects.toThrow(/tasks_assigned_worker_fk/);
+    });
+  });
+
+  describe("day reports", () => {
+    const addTask = (farm: Fixture, title: string, dueDate = today) => insert("saas_azal_tasks", {
+      companyId: farm.companyId, farmId: farm.farmId, title, dueDate, source: "manual",
+    });
+    const startOver = (farm: Fixture, date: string) =>
+      as(farm, () => db.transaction(tx => runWithDbTransaction(tx, () => deleteDayReport(tx, farm.tenant, { date }))));
+    const checkIn = (farm: Fixture, workerId: number, clientKey: string, photoKey: string | null = null, reportDate = today) =>
+      as(farm, () => recordCheckin(farm.tenant, { workerId, reportDate, takenAt: new Date().toISOString(), photoKey, clientKey }));
+
+    it("has one line per day, always today, and follows task and answer changes", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const task = await addTask(farm, "Feed");
+      const first = await as(farm, () => listDayReports(farm.tenant));
+      expect(first.map(line => [line.date, line.isToday, line.tasksDone, line.tasksTotal, line.answerCount])).toEqual([[today, true, 0, 1, 0]]);
+
+      await tap(farm, task, "done", ali);
+      await report(farm, { type: "doctor_visit", answer: true, workerId: ali });
+      await checkIn(farm, ali, randomUUID(), "photo-key");
+      const [line] = await as(farm, () => listDayReports(farm.tenant));
+      expect(line).toMatchObject({ tasksDone: 1, tasksTotal: 1, answerCount: 1, photoCount: 1, workerNames: ["Ali"] });
+      expect(line.missing).not.toContain("doctor_visit");
+    });
+
+    it("counts a task on the day it was finished, and an open one-off on today as well", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const yesterday = addDays(today, -1);
+      const lateDone = await addTask(farm, "Late", yesterday);
+      await tap(farm, lateDone, "done", ali);
+      const stillOpen = await addTask(farm, "Open", yesterday);
+
+      const todayReport = await as(farm, () => getDayReport(farm.tenant, today));
+      expect(todayReport.tasks.map(task => task.id).sort()).toEqual([lateDone, stillOpen].sort());
+      const yesterdayReport = await as(farm, () => getDayReport(farm.tenant, yesterday));
+      expect(yesterdayReport.tasks.map(task => task.id)).toEqual([stillOpen]);
+    });
+
+    it("shows the photos with the worker's name, and says when there's none", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      await checkIn(farm, ali, randomUUID(), "tenants/x/photo.jpg");
+      await checkIn(farm, ali, randomUUID(), null);
+      const { checkins } = await as(farm, () => getDayReport(farm.tenant, today));
+      expect(checkins.map(row => [row.workerName, row.photoUrl]).sort()).toEqual([
+        ["Ali", "/manus-storage/tenants/x/photo.jpg"],
+        ["Ali", null],
+      ].sort());
+    });
+
+    it("keeps one check-in per client key, so a retry stores nothing twice", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const key = randomUUID();
+      expect(await checkIn(farm, ali, key)).not.toBeNull();
+      expect(await checkIn(farm, ali, key)).toBeNull();
+      expect(await as(farm, () => findCheckin(farm.tenant, key))).not.toBeNull();
+      expect((await as(farm, () => getDayReport(farm.tenant, today))).checkins).toHaveLength(1);
+    });
+
+    it("starts the day over: tasks to do, answers and photos gone, and the tablet asks again", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const done = await addTask(farm, "Done");
+      const started = await addTask(farm, "Started");
+      await tap(farm, done, "done", ali);
+      await tap(farm, started, "start", ali);
+      await report(farm, { type: "doctor_visit", answer: true, workerId: ali });
+      await checkIn(farm, ali, randomUUID(), "photo-key");
+
+      const result = await startOver(farm, today);
+      expect(result).toMatchObject({ answers: 1, tasksReset: 2, photoKeys: ["photo-key"] });
+
+      const day = await as(farm, () => getTabletDay(farm.tenant));
+      expect(day.tasks.map(task => [task.status, task.startedByName, task.finishedByName])).toEqual([
+        ["todo", null, null],
+        ["todo", null, null],
+      ]);
+      expect(day.reports).toEqual([]);
+      const detail = await as(farm, () => getDayReport(farm.tenant, today));
+      expect(detail.checkins).toEqual([]);
+      expect(detail.missing).toContain("doctor_visit");
+
+      // Answerable again, and doable again.
+      await report(farm, { type: "doctor_visit", answer: false, workerId: ali });
+      await tap(farm, done, "done", ali);
+      expect((await as(farm, () => getDayReport(farm.tenant, today))).reports).toHaveLength(1);
+    });
+
+    it("leaves other days and other companies alone", async () => {
+      const farm = await seedCompany();
+      const other = await seedCompany();
+      const ali = await farm.worker("Ali");
+      const theirWorker = await other.worker("Omar");
+      const yesterday = addDays(today, -1);
+      const theirs = await addTask(other, "Theirs");
+      await tap(other, theirs, "done", theirWorker);
+      const earlier = await addTask(farm, "Earlier", yesterday);
+      await db.update(tasks).set({ status: "done", finishedByWorkerId: ali, finishedAt: new Date(`${yesterday}T12:00:00Z`) }).where(eq(tasks.id, earlier));
+
+      await startOver(farm, today);
+      const rows = await db.select({ id: tasks.id, status: tasks.status }).from(tasks).where(inArray(tasks.id, [theirs, earlier]));
+      expect(rows.every(row => row.status === "done")).toBe(true);
+    });
+
+    it("keeps a confirmed death when the day starts over", async () => {
+      const farm = await seedCompany();
+      const ali = await farm.worker("Ali");
+      await farm.animal("EW-1");
+      const sent = await report(farm, { type: "animal_dead", animalTag: "EW-1", workerId: ali });
+      await db.update(farmReports).set({ confirmedAt: new Date() }).where(eq(farmReports.id, sent.id));
+      const result = await startOver(farm, today);
+      expect(result.answers).toBe(0);
+      expect((await as(farm, () => getDayReport(farm.tenant, today))).reports).toHaveLength(1);
+    });
+  });
+
+  describe("connecting a tablet", () => {
+    const slug = async (farm: Fixture) => (await pool.query(`SELECT slug FROM "saas_companies" WHERE id = $1`, [farm.companyId])).rows[0].slug as string;
+    const newCode = (farm: Fixture) => as(farm, () => createTabletCode(farm.tenant));
+    const redeem = (companySlug: string, code: string) =>
+      runWithDbTransaction(db, () => redeemTabletCode(companySlug, normalizeTabletCode(code)!));
+
+    beforeAll(() => {
+      process.env.OAUTH_STATE_SECRET ??= "integration-only-state-secret-0123456789";
+    });
+
+    it("signs a tablet in once with a code, as a worker on that farm only, with no email", async () => {
+      const farm = await seedCompany();
+      const { code } = await newCode(farm);
+      expect(code).toMatch(/^[2-9A-Z]{4}-[2-9A-Z]{4}$/);
+      const user = await redeem(await slug(farm), code);
+      expect(user).toMatchObject({ email: null, loginMethod: "tablet_code" });
+      const memberships = await pool.query(
+        `SELECT m.role, m.status, m."farmAccessMode", f."farmId" FROM "saas_company_memberships" m
+         JOIN "saas_farm_memberships" f ON f."companyMembershipId" = m.id WHERE m."userId" = $1`, [user!.id]);
+      expect(memberships.rows).toEqual([{ role: "worker", status: "active", farmAccessMode: "restricted", farmId: farm.farmId }]);
+      expect((await as(farm, () => getTabletStatus(farm.tenant))).connected).toBe(true);
+      // Single use, even on the right address.
+      expect(await redeem(await slug(farm), code)).toBeNull();
+    });
+
+    it("stores only a hash of the code", async () => {
+      const farm = await seedCompany();
+      const { code } = await newCode(farm);
+      const { rows } = await pool.query(`SELECT "codeHash" FROM "saas_azal_tablet_accounts" WHERE "companyId" = $1`, [farm.companyId]);
+      expect(rows[0].codeHash).toMatch(/^[0-9a-f]{64}$/);
+      expect(rows[0].codeHash).not.toContain(code.replace("-", ""));
+    });
+
+    it("refuses an expired code, a replaced code, and another company's address", async () => {
+      const farm = await seedCompany();
+      const other = await seedCompany();
+      const first = await newCode(farm);
+      const second = await newCode(farm);
+      expect(await redeem(await slug(farm), first.code)).toBeNull();
+      expect(await redeem(await slug(other), second.code)).toBeNull();
+      await db.update(tabletAccounts).set({ codeExpiresAt: new Date(Date.now() - 60_000) }).where(eq(tabletAccounts.companyId, farm.companyId));
+      expect(await redeem(await slug(farm), second.code)).toBeNull();
+    });
+
+    it("reuses one account for every tablet, and disconnecting ends its sessions", async () => {
+      const farm = await seedCompany();
+      const one = await redeem(await slug(farm), (await newCode(farm)).code);
+      const two = await redeem(await slug(farm), (await newCode(farm)).code);
+      expect(two!.id).toBe(one!.id);
+      await as(farm, () => disconnectTablets(farm.tenant));
+      const { rows } = await pool.query(`SELECT "authVersion" FROM "saas_users" WHERE id = $1`, [one!.id]);
+      expect(rows[0].authVersion).toBeGreaterThan(one!.authVersion);
+      expect((await as(farm, () => getTabletStatus(farm.tenant))).connected).toBe(false);
+      const membership = await pool.query(`SELECT status FROM "saas_company_memberships" WHERE "userId" = $1`, [one!.id]);
+      expect(membership.rows[0].status).toBe("suspended");
+      // An old code can't undo a disconnect, a new one can.
+      const again = await redeem(await slug(farm), (await newCode(farm)).code);
+      expect(again!.id).toBe(one!.id);
+    });
+
+    it("won't bring back a tablet taken away in Admin", async () => {
+      const farm = await seedCompany();
+      const user = await redeem(await slug(farm), (await newCode(farm)).code);
+      await pool.query(`UPDATE "saas_company_memberships" SET status = 'removed' WHERE "userId" = $1`, [user!.id]);
+      expect(await redeem(await slug(farm), (await newCode(farm)).code)).toBeNull();
+    });
+
+    it("normalizes what people type", () => {
+      expect(normalizeTabletCode(" abcd-2345 ")).toBe("ABCD2345");
+      expect(normalizeTabletCode("short")).toBeNull();
+      expect(normalizeTabletCode({ code: "ABCD2345" })).toBeNull();
     });
   });
 

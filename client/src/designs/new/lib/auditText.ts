@@ -54,6 +54,9 @@ const ACTION_FALLBACK: Record<string, string> = {
   task_undo: "undone",
   report_create: "reported",
   report_delete: "report deleted",
+  day_report_delete: "day report deleted",
+  tablet_code: "tablet code created",
+  tablet_disconnect: "tablets disconnected",
 };
 
 export function auditActionLabel(t: TFunction, action: string): string {

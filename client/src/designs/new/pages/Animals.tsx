@@ -485,7 +485,6 @@ export default function NewAnimals() {
       utils.dashboard.getKPIs.invalidate();
       utils.feed.getStockStatus.invalidate();
       utils.animals.getAllPnL.invalidate();
-      setDeleteRow(null);
     },
     onError: e => toast.error(e.message),
   });
@@ -868,8 +867,7 @@ export default function NewAnimals() {
         confirmLabel={t("common.moveToBin", "Move to Bin")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={deleteAnimal.isPending}
-        onConfirm={() => deleteRow && deleteAnimal.mutate({ id: deleteRow.animal.id, expectedVersion: deleteRow.animal.version })}
+        onConfirm={() => { if (deleteRow) { deleteAnimal.mutate({ id: deleteRow.animal.id, expectedVersion: deleteRow.animal.version }); setDeleteRow(null); } }}
       />
 
       <EditAnimalDialog animalId={editId} open={editId !== null} onOpenChange={o => !o && setEditId(null)} />

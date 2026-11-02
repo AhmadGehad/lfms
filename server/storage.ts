@@ -179,6 +179,22 @@ export async function retireCompanyAsset(storageKey: string): Promise<void> {
   ));
 }
 
+/** Takes farm photos out of use: the file proxy stops serving them at once. */
+export async function retireFarmImages(storageKeys: readonly string[]): Promise<void> {
+  if (storageKeys.length === 0) return;
+  const tenant = requireTenantUserContext();
+  const db = await requireDb();
+  await db.update(tenantFiles).set({
+    status: "deleted",
+    deletedAt: new Date(),
+    version: sql`${tenantFiles.version} + 1`,
+  }).where(and(
+    eq(tenantFiles.companyId, tenant.companyId),
+    inArray(tenantFiles.storageKey, [...storageKeys]),
+    isNull(tenantFiles.deletedAt),
+  ));
+}
+
 export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
   return { key, url: `/manus-storage/${key}` };

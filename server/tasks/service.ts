@@ -9,7 +9,7 @@ import {
   vaccinationRecords,
   vaccines,
 } from "../../drizzle/schema";
-import { farmReports, taskTemplates, tasks, workers } from "../../drizzle/schema.workerTasks";
+import { farmReports, taskTemplates, tasks, workerCheckins, workers } from "../../drizzle/schema.workerTasks";
 import {
   addDays,
   farmToday,
@@ -46,7 +46,6 @@ import {
 import type { TaskAlert } from "../notifications/fanout";
 import { generatePublicId } from "../tenancy/publicIds";
 import { tenantScope } from "../tenancy/scope";
-import { syncAccountWorkers } from "./workerAccounts";
 
 async function requireDb(): Promise<DbOrTx> {
   const db = await getDb();
@@ -70,7 +69,7 @@ async function farmZone(db: DbOrTx, tenant: TenantContext): Promise<string> {
   return farm?.timezone ?? "UTC";
 }
 
-async function farmDate(db: DbOrTx, tenant: TenantContext): Promise<string> {
+export async function farmDate(db: DbOrTx, tenant: TenantContext): Promise<string> {
   return farmToday(await farmZone(db, tenant));
 }
 
@@ -89,6 +88,7 @@ type GeneratedTask = {
   title: string;
   notes?: string | null;
   animalId?: number | null;
+  assignedWorkerId?: number | null;
   source: TaskSource;
   sourceKey: string;
 };
@@ -128,6 +128,7 @@ async function generatedTasksFor(db: DbOrTx, tenant: TenantContext, farmId: numb
     generated.push({
       title: template.title,
       notes: template.notes,
+      assignedWorkerId: template.assignedWorkerId,
       source: "template",
       sourceKey: `template:${template.id}:${date}`,
     });
@@ -200,7 +201,12 @@ export async function materializeTasks(tenant: TenantContext, date: string) {
   }))).onConflictDoNothing();
 }
 
-async function listTaskRows(tenant: TenantContext, where: ReturnType<typeof and>) {
+/** Served by the file proxy, which checks the session and the farm on every request. */
+function photoUrl(key: string | null) {
+  return key ? `/manus-storage/${key}` : null;
+}
+
+async function listTaskRows(tenant: TenantContext, where: ReturnType<typeof and>, limit = 500) {
   const db = await requireDb();
   const [rows, names] = await Promise.all([
     db.select({
@@ -210,7 +216,7 @@ async function listTaskRows(tenant: TenantContext, where: ReturnType<typeof and>
       .leftJoin(animals, and(eq(tasks.animalId, animals.id), eq(animals.companyId, tenant.companyId)))
       .where(and(tenantScope(tenant, tasks), isNull(tasks.deletedAt), where))
       .orderBy(asc(tasks.dueDate), asc(tasks.id))
-      .limit(500),
+      .limit(limit),
     db.select({ id: workers.id, name: workers.name }).from(workers).where(tenantScope(tenant, workers)),
   ]);
   const nameOf = new Map(names.map(worker => [worker.id, worker.name]));
@@ -222,6 +228,8 @@ async function listTaskRows(tenant: TenantContext, where: ReturnType<typeof and>
     source: task.source,
     animalId: task.animalId,
     animalTag,
+    assignedWorkerId: task.assignedWorkerId,
+    assignedName: task.assignedWorkerId ? nameOf.get(task.assignedWorkerId) ?? null : null,
     dueDate: task.dueDate,
     status: task.status,
     startedByWorkerId: task.startedByWorkerId,
@@ -240,7 +248,6 @@ export async function getTabletDay(tenant: TenantContext) {
   const zone = await farmZone(db, tenant);
   const date = farmToday(zone);
   await materializeTasks(tenant, date);
-  await syncAccountWorkers(tenant);
   const [rows, roster, reports] = await Promise.all([
     listTaskRows(tenant, or(
       eq(tasks.dueDate, date),
@@ -250,8 +257,8 @@ export async function getTabletDay(tenant: TenantContext) {
         or(inArray(tasks.status, ["todo", "started"]), finishedRecently()),
       ),
     )).then(found => found.filter(finishedToday(zone, date))),
-    db.select({ id: workers.id, name: workers.name, userId: workers.userId, isActive: workers.isActive }).from(workers)
-      .where(tenantScope(tenant, workers))
+    db.select({ id: workers.id, name: workers.name, photoKey: workers.photoKey }).from(workers)
+      .where(and(tenantScope(tenant, workers), eq(workers.isActive, true)))
       .orderBy(asc(workers.name)),
     // Without the amount: what was paid stays off the shared screen.
     db.select({
@@ -272,11 +279,8 @@ export async function getTabletDay(tenant: TenantContext) {
     date,
     timeZone: zone,
     farmSelected: tenant.selectedFarmId !== null,
-    // This login was switched off and no other name is left to pick, so say why.
-    notAllowed: roster.some(worker => worker.userId === tenant.userId && !worker.isActive)
-      && !roster.some(worker => worker.isActive),
     tasks: rows,
-    workers: roster.filter(worker => worker.isActive).map(({ id, name }) => ({ id, name })),
+    workers: roster.map(({ id, name, photoKey }) => ({ id, name, photoUrl: photoUrl(photoKey) })),
     reports,
   };
 }
@@ -311,10 +315,10 @@ export async function listTemplates(tenant: TenantContext) {
 
 export async function listWorkers(tenant: TenantContext) {
   const db = await requireDb();
-  await syncAccountWorkers(tenant);
-  return db.select().from(workers)
+  const rows = await db.select().from(workers)
     .where(tenantScope(tenant, workers))
     .orderBy(desc(workers.isActive), asc(workers.name));
+  return rows.map(row => ({ ...row, photoUrl: photoUrl(row.photoKey) }));
 }
 
 const REPORT_HISTORY_DAYS = 30;
@@ -448,7 +452,7 @@ async function notifyRecipients(
  * unless the tap was made before it was switched off and only now reached the server
  * after waiting offline. The tablet is shared, so this is about the name, not the login.
  */
-async function requireAllowedWorker(
+export async function requireAllowedWorker(
   tx: DbOrTx,
   tenant: TenantContext,
   farmId: number,
@@ -791,4 +795,207 @@ export async function confirmReportedDeath(
     ipAddress: input.ipAddress ?? undefined,
   }, tx);
   return { changed: true };
+}
+
+const DAY_REPORT_DAYS = 30;
+const DAY_REPORT_TASK_LIMIT = 5_000;
+
+/** The day a task counts towards: when it was finished, otherwise when it was due. */
+function taskDay(task: { dueDate: string; status: TaskStatus; finishedAt: Date | null }, zone: string) {
+  return isFinished(task.status) && task.finishedAt ? farmToday(zone, task.finishedAt) : task.dueDate;
+}
+
+/** A one-off left open keeps showing on the tablet, so it's part of today too. */
+function belongsToDay(
+  task: { dueDate: string; status: TaskStatus; finishedAt: Date | null; source: TaskSource },
+  date: string,
+  today: string,
+  zone: string,
+) {
+  if (taskDay(task, zone) === date) return true;
+  return date === today && !isFinished(task.status) && task.dueDate < today && task.source !== "template";
+}
+
+async function dayTasks(tenant: TenantContext, from: string, to: string, today: string) {
+  return listTaskRows(tenant, or(
+    and(gte(tasks.dueDate, from), lte(tasks.dueDate, to)),
+    // Finished in the range, whenever it was due. A day either side covers time zones.
+    and(gte(tasks.finishedAt, new Date(`${addDays(from, -1)}T00:00:00Z`)), lte(tasks.finishedAt, new Date(`${addDays(to, 1)}T23:59:59Z`))),
+    to >= today ? and(lt(tasks.dueDate, today), inArray(tasks.status, ["todo", "started"])) : undefined,
+  ), DAY_REPORT_TASK_LIMIT);
+}
+
+async function dayCheckins(db: DbOrTx, tenant: TenantContext, from: string, to: string) {
+  return db.select({
+    id: workerCheckins.id,
+    reportDate: workerCheckins.reportDate,
+    takenAt: workerCheckins.takenAt,
+    photoKey: workerCheckins.photoKey,
+    workerName: workers.name,
+  }).from(workerCheckins)
+    .innerJoin(workers, and(eq(workerCheckins.workerId, workers.id), eq(workers.companyId, tenant.companyId)))
+    .where(and(
+      tenantScope(tenant, workerCheckins),
+      gte(workerCheckins.reportDate, from),
+      lte(workerCheckins.reportDate, to),
+      isNull(workerCheckins.deletedAt),
+    ))
+    .orderBy(desc(workerCheckins.takenAt));
+}
+
+/** One line per day. Worked out from the day's tasks, answers and photos, so it's always current. */
+export async function listDayReports(tenant: TenantContext, range?: { from?: string; to?: string }) {
+  const db = await requireDb();
+  const zone = await farmZone(db, tenant);
+  const today = farmToday(zone);
+  await materializeTasks(tenant, today);
+  const to = range?.to ?? today;
+  const from = range?.from ?? addDays(to, -DAY_REPORT_DAYS);
+  const [taskRows, reports, checkins] = await Promise.all([
+    dayTasks(tenant, from, to, today),
+    listReports(tenant, { from, to }),
+    dayCheckins(db, tenant, from, to),
+  ]);
+  const dates = new Set<string>([
+    ...(from <= today && today <= to ? [today] : []),
+    ...reports.map(report => report.reportDate),
+    ...checkins.map(checkin => checkin.reportDate),
+    ...taskRows.map(task => taskDay(task, zone)).filter(date => from <= date && date <= to),
+  ]);
+  return [...dates].sort().reverse().map(date => {
+    const onDay = taskRows.filter(task => belongsToDay(task, date, today, zone));
+    const answers = reports.filter(report => report.reportDate === date);
+    const seen = checkins.filter(checkin => checkin.reportDate === date);
+    return {
+      date,
+      isToday: date === today,
+      tasksTotal: onDay.length,
+      tasksDone: onDay.filter(task => isFinished(task.status)).length,
+      answerCount: answers.length,
+      missing: missingDailyReports(answers),
+      needsAttention: answers.some(report =>
+        report.type === "animal_dead" || report.type === "animal_sick" || (report.type === "stock_needed" && report.answer === true)),
+      photoCount: seen.filter(checkin => checkin.photoKey).length,
+      workerNames: [...new Set(seen.map(checkin => checkin.workerName))],
+    };
+  });
+}
+
+export async function getDayReport(tenant: TenantContext, date: string) {
+  const db = await requireDb();
+  const zone = await farmZone(db, tenant);
+  const today = farmToday(zone);
+  await materializeTasks(tenant, today);
+  const [taskRows, reports, checkins] = await Promise.all([
+    dayTasks(tenant, date, date, today),
+    listReports(tenant, { from: date, to: date }),
+    dayCheckins(db, tenant, date, date),
+  ]);
+  return {
+    date,
+    isToday: date === today,
+    tasks: taskRows.filter(task => belongsToDay(task, date, today, zone)),
+    reports,
+    missing: missingDailyReports(reports),
+    checkins: checkins.map(({ photoKey, ...checkin }) => ({ ...checkin, photoUrl: photoUrl(photoKey) })),
+  };
+}
+
+/**
+ * Starts a day over: the answers go, the tasks go back to not started, and the tablet
+ * asks again. A confirmed death stays, as it's the record of why the animal left the herd.
+ */
+export async function deleteDayReport(
+  tx: DbOrTx,
+  tenant: TenantContext,
+  input: { date: string; ipAddress?: string | null },
+) {
+  const farmId = requireFarmId(tenant);
+  const zone = await farmZone(tx, tenant);
+  const today = farmToday(zone);
+  const now = new Date();
+  const removed = await tx.update(farmReports).set({
+    deletedAt: now, deletedBy: tenant.userId, version: sql`${farmReports.version} + 1`,
+  }).where(and(
+    eq(farmReports.companyId, tenant.companyId),
+    eq(farmReports.farmId, farmId),
+    eq(farmReports.reportDate, input.date),
+    isNull(farmReports.deletedAt),
+    isNull(farmReports.confirmedAt),
+  )).returning({ id: farmReports.id });
+
+  const candidates = await tx.select().from(tasks).where(and(
+    eq(tasks.companyId, tenant.companyId),
+    eq(tasks.farmId, farmId),
+    isNull(tasks.deletedAt),
+    or(
+      eq(tasks.dueDate, input.date),
+      and(gte(tasks.finishedAt, new Date(`${addDays(input.date, -1)}T00:00:00Z`)), lte(tasks.finishedAt, new Date(`${addDays(input.date, 1)}T23:59:59Z`))),
+      input.date === today ? and(lt(tasks.dueDate, today), eq(tasks.status, "started")) : undefined,
+    ),
+  )).limit(DAY_REPORT_TASK_LIMIT);
+  const taskIds = candidates
+    .filter(task => task.status !== "todo" && belongsToDay(task, input.date, today, zone))
+    .map(task => task.id);
+  if (taskIds.length > 0) {
+    await tx.update(tasks).set({
+      status: "todo",
+      startedByWorkerId: null,
+      startedAt: null,
+      finishedByWorkerId: null,
+      finishedAt: null,
+      blockedReason: null,
+      version: sql`${tasks.version} + 1`,
+    }).where(and(eq(tasks.companyId, tenant.companyId), inArray(tasks.id, taskIds)));
+  }
+
+  const checkins = await tx.update(workerCheckins).set({ deletedAt: now }).where(and(
+    eq(workerCheckins.companyId, tenant.companyId),
+    eq(workerCheckins.farmId, farmId),
+    eq(workerCheckins.reportDate, input.date),
+    isNull(workerCheckins.deletedAt),
+  )).returning({ photoKey: workerCheckins.photoKey });
+
+  await createAuditEntry({
+    userId: tenant.userId,
+    entityType: "dayReport",
+    entityId: input.date,
+    action: "day_report_delete",
+    farmId,
+    ipAddress: input.ipAddress ?? undefined,
+    metadata: { answers: removed.length, tasksReset: taskIds.length, photos: checkins.filter(row => row.photoKey).length },
+  }, tx);
+  return {
+    answers: removed.length,
+    tasksReset: taskIds.length,
+    photoKeys: checkins.flatMap(row => row.photoKey ? [row.photoKey] : []),
+  };
+}
+
+export async function findCheckin(tenant: TenantContext, clientKey: string) {
+  const db = await requireDb();
+  const [row] = await db.select({ id: workerCheckins.id }).from(workerCheckins).where(and(
+    eq(workerCheckins.companyId, tenant.companyId),
+    eq(workerCheckins.clientKey, clientKey),
+  )).limit(1);
+  return row ?? null;
+}
+
+/** Records a worker picking their name. Null if a retry of this check-in got there first. */
+export async function recordCheckin(
+  tenant: TenantContext,
+  input: { workerId: number; reportDate?: string | null; takenAt?: string | null; photoKey: string | null; clientKey: string },
+) {
+  const db = await requireDb();
+  const [row] = await db.insert(workerCheckins).values({
+    companyId: tenant.companyId,
+    farmId: requireFarmId(tenant),
+    workerId: input.workerId,
+    reportDate: reportDay(input.reportDate, await farmDate(db, tenant)),
+    takenAt: tapTime(input.takenAt),
+    photoKey: input.photoKey,
+    clientKey: input.clientKey,
+    createdBy: tenant.userId,
+  }).onConflictDoNothing().returning({ id: workerCheckins.id });
+  return row ?? null;
 }

@@ -97,7 +97,7 @@ export default function NewExpenses() {
     onError: e => toast.error(e.message),
   });
   const deleteExpense = trpc.recycleBin.deleteExpense.useMutation({
-    onSuccess: () => { invalidate(); toast.success(t("expenses.movedToBin", "Expense moved to Recycle Bin")); setDeleteRow(null); },
+    onSuccess: () => { invalidate(); toast.success(t("expenses.movedToBin", "Expense moved to Recycle Bin")); },
     onError: e => toast.error(e.message),
   });
 
@@ -292,8 +292,7 @@ export default function NewExpenses() {
         confirmLabel={t("common.moveToBin", "Move to Bin")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={deleteExpense.isPending}
-        onConfirm={() => deleteRow && deleteExpense.mutate({ id: deleteRow.expense.id, expectedVersion: deleteRow.expense.version })}
+        onConfirm={() => { if (deleteRow) { deleteExpense.mutate({ id: deleteRow.expense.id, expectedVersion: deleteRow.expense.version }); setDeleteRow(null); } }}
       />
     </div>
   );

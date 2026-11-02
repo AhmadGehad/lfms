@@ -72,7 +72,7 @@ export default function NewConfiguration() {
     createVaccine: trpc.config.createVaccine.useMutation(ok(saved, () => utils.config.getVaccines.invalidate())),
     updateVaccine: trpc.config.updateVaccine.useMutation(ok(saved, () => utils.config.getVaccines.invalidate())),
     deleteVaccine: trpc.config.deleteVaccine.useMutation({
-      onSuccess: () => { utils.config.getVaccines.invalidate(); toast.success(saved); setDeleteVaccineRow(null); },
+      onSuccess: () => { utils.config.getVaccines.invalidate(); toast.success(saved); },
       onError: (e: { message: string }) => toast.error(e.message),
     }),
   };
@@ -266,8 +266,7 @@ export default function NewConfiguration() {
             confirmLabel={t("common.delete", "Delete")}
             cancelLabel={t("common.cancel", "Cancel")}
             destructive
-            loading={m.deleteVaccine.isPending}
-            onConfirm={() => deleteVaccineRow && m.deleteVaccine.mutate({ id: deleteVaccineRow.id, expectedVersion: deleteVaccineRow.version })}
+            onConfirm={() => { if (deleteVaccineRow) { m.deleteVaccine.mutate({ id: deleteVaccineRow.id, expectedVersion: deleteVaccineRow.version }); setDeleteVaccineRow(null); } }}
           />
         </TabsContent>
 

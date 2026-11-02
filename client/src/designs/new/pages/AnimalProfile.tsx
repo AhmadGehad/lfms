@@ -341,7 +341,6 @@ export default function NewAnimalProfile() {
       utils.animals.getWeightLog.invalidate({ animalId });
       utils.animals.getById.invalidate({ id: animalId });
       utils.animals.getPnL.invalidate({ animalId });
-      setDeleteWeightRow(null);
     },
     onError: e => toast.error(e.message),
   });
@@ -820,8 +819,7 @@ export default function NewAnimalProfile() {
         confirmLabel={t("common.delete", "Delete")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={deleteWeight.isPending}
-        onConfirm={() => deleteWeightRow && deleteWeight.mutate({ id: deleteWeightRow.id, expectedVersion: deleteWeightRow.version })}
+        onConfirm={() => { if (deleteWeightRow) { deleteWeight.mutate({ id: deleteWeightRow.id, expectedVersion: deleteWeightRow.version }); setDeleteWeightRow(null); } }}
       />
     </div>
   );
