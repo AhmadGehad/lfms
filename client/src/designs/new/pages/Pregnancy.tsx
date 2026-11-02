@@ -129,11 +129,9 @@ export function PregnancyPanel({ embedded = false, createSignal = 0 }: { embedde
     onSuccess: () => {
       invalidate();
       toast.success(t("pregnancy.deleted", "Record removed"));
-      setDelRow(null);
     },
     onError: e => {
       toast.error(e.message);
-      setDelRow(null);
     },
   });
 
@@ -432,8 +430,7 @@ export function PregnancyPanel({ embedded = false, createSignal = 0 }: { embedde
         consequences={[{ text: t("pregnancy.deleteConsequence", "Soft-deleted and recoverable from the Recycle Bin."), tone: "warning" }]}
         confirmLabel={t("common.delete", "Delete")}
         destructive
-        loading={del.isPending}
-        onConfirm={() => delRow && del.mutate({ id: delRow.record.id, expectedVersion: delRow.record.version })}
+        onConfirm={() => { if (delRow) { del.mutate({ id: delRow.record.id, expectedVersion: delRow.record.version }); setDelRow(null); } }}
       />
     </div>
   );

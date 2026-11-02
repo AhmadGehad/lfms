@@ -14,10 +14,9 @@ import { Activity, ArrowRight, Check, HeartOff, Package, Pill, ShoppingCart, Syr
 import { useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { BigButton } from "./BigButton";
-import { onlyWorker, WhoAreYou } from "./Pickers";
 import { WorkerScreen } from "./TaskDetail";
 import { stockNeeds } from "./taskText";
-import type { TabletDay, TabletReport, TabletWorker } from "./types";
+import type { TabletDay, TabletReport } from "./types";
 
 export type ReportDraft =
   | { type: "doctor_visit"; answer: boolean }
@@ -30,8 +29,7 @@ type Step =
   | { name: "home" }
   | { name: "animal"; type: AnimalReport }
   | { name: "purchase" }
-  | { name: "stock" }
-  | { name: "who"; draft: ReportDraft };
+  | { name: "stock" };
 
 const TILE = "min-h-[136px] flex-col gap-2 text-2xl";
 
@@ -223,8 +221,8 @@ function StockForm({
 
 /**
  * What the worker tells the owner at the end of the day: the doctor, animals,
- * stock and purchases. Every report says who's reporting, like a task does, and
- * goes to the owner without changing any farm record.
+ * stock and purchases. It goes to the owner under the name picked on the first
+ * screen, without changing any farm record.
  */
 export function DailyReport({
   day,
@@ -233,15 +231,13 @@ export function DailyReport({
 }: {
   day: TabletDay;
   onBack: () => void;
-  onSubmit: (draft: ReportDraft, worker: TabletWorker) => void;
+  onSubmit: (draft: ReportDraft) => void;
 }) {
   const { t, i18n } = useTranslation();
   const [step, setStep] = useState<Step>({ name: "home" });
   const home = () => setStep({ name: "home" });
-  const only = onlyWorker(day.workers);
   const ask = (draft: ReportDraft) => {
-    if (!only) return setStep({ name: "who", draft });
-    onSubmit(draft, only);
+    onSubmit(draft);
     home();
   };
 
@@ -250,18 +246,6 @@ export function DailyReport({
   }
   if (step.name === "purchase") return <PurchaseForm onBack={home} onNext={ask} />;
   if (step.name === "stock") return <StockForm current={day.reports.find(report => report.type === "stock_needed")} onBack={home} onNext={ask} />;
-  if (step.name === "who") {
-    return (
-      <WhoAreYou
-        workers={day.workers}
-        onBack={home}
-        onPick={worker => {
-          onSubmit(step.draft, worker);
-          home();
-        }}
-      />
-    );
-  }
 
   const answerTo = (type: YesNoReport) => day.reports.find(report => report.type === type);
   const stock = answerTo("stock_needed");

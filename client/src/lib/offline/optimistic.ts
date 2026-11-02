@@ -173,8 +173,81 @@ function addTabletReport(
 
 const TABLET_DAY_KEY = offlineQueryKey("tasks.today", undefined);
 
+function withoutRow(rows: any[], rowId: (row: any) => unknown, id: unknown) {
+  const kept = rows.filter(row => rowId(row) !== id);
+  return kept.length === rows.length ? rows : kept;
+}
+
+/** A row's id can sit under the entity's name, so each list says where to look. */
+const removeBy = (rowId: (row: any) => unknown = row => row.id) =>
+  (rows: any[], input: any) => withoutRow(rows, rowId, input.id);
+
+/** For a response holding several lists: ids are only unique within one of them. */
+const removeFrom = (list: string) => (data: any, input: any) => {
+  const kept = withoutRow(data[list] ?? [], row => row.id, input.id);
+  return kept === data[list] ? data : { ...data, [list]: kept };
+};
+
+const taskStartedOver = (task: any) => ({
+  ...task,
+  status: "todo",
+  startedByWorkerId: null,
+  startedByName: null,
+  startedAt: null,
+  finishedByWorkerId: null,
+  finishedByName: null,
+  finishedAt: null,
+  blockedReason: null,
+});
+
+/**
+ * What each delete takes off the screen, by the query it shows in. A delete is
+ * gone the moment it's confirmed, and only comes back if the server refuses it.
+ */
+const INSTANT_DELETES: Record<string, Record<string, (data: any, input: any, key: readonly unknown[]) => unknown>> = {
+  "recycleBin.deleteAnimal": { "animals.list": removeBy(row => row.animal?.id) },
+  "recycleBin.deleteSale": { "sales.list": removeBy(row => row.sale?.id) },
+  "recycleBin.deleteExpense": { "expenses.list": removeBy(row => row.expense?.id) },
+  "recycleBin.deleteFeedStock": { "feed.getStockLedger": removeBy() },
+  "recycleBin.deleteRationPlan": { "feed.getRationPlans": removeBy() },
+  "recycleBin.deleteLambingLog": { "breeding.listLambing": removeBy() },
+  "pregnancy.delete": { "pregnancy.list": removeBy(row => row.record?.id) },
+  "animals.deleteWeight": { "animals.getWeightLog": removeBy() },
+  "config.deleteVaccine": { "config.getVaccines": removeBy() },
+  "config.deleteFeedItemPrice": { "config.getAllFeedItemPrices": removeBy() },
+  "vaccination.deleteVaccinationRecord": { "vaccination.getVaccinationRecords": removeBy() },
+  "tasks.delete": { "tasks.overview": removeFrom("tasks"), "tasks.today": removeFrom("tasks"), "tasks.dayReport": removeFrom("tasks") },
+  "tasks.deleteTemplate": { "tasks.listTemplates": removeBy() },
+  "tasks.deleteReport": { "tasks.dayReport": removeFrom("reports"), "tasks.dayReports": data => data },
+  "tasks.deleteDayReport": {
+    // Today always has a report, so it starts again instead of going away.
+    "tasks.dayReports": (rows: any[], input) => rows.flatMap(row => {
+      if (row.date !== input.date) return [row];
+      return row.isToday
+        ? [{ ...row, tasksDone: 0, answerCount: 0, photoCount: 0, needsAttention: false, workerNames: [] }]
+        : [];
+    }),
+    "tasks.dayReport": (day: any, input) => day.date !== input.date ? day : {
+      ...day,
+      tasks: day.tasks.map(taskStartedOver),
+      reports: day.reports.filter((report: any) => report.confirmedAt),
+      checkins: [],
+    },
+    "tasks.overview": (overview: any, input) => overview.date !== input.date ? overview : {
+      ...overview,
+      tasks: overview.tasks.map((task: any) => task.status === "todo" ? task : taskStartedOver(task)),
+    },
+  },
+};
+
+function queryPath(key: readonly unknown[]) {
+  return Array.isArray(key[0]) ? key[0].join(".") : "";
+}
+
 /** `data` as the screen should show it with this write included. Same object if unaffected. */
 function withWrite(data: unknown, key: readonly unknown[], path: string, input: any): unknown {
+  const instantDelete = INSTANT_DELETES[path]?.[queryPath(key)];
+  if (instantDelete) return data ? instantDelete(data, input, key) : data;
   if (path === "tasks.recordAction" || path === "tasks.submitReport") {
     if (!data || hashKey(key) !== hashKey(TABLET_DAY_KEY)) return data;
     return path === "tasks.recordAction"
@@ -264,6 +337,44 @@ export function undoOptimisticWrite(
     queryClient.setQueryData(key as unknown[], withWrites(previous, key, newer));
   }
   void queryClient.invalidateQueries({ queryKey: [[path.split(".")[0]]] });
+}
+
+/**
+ * Makes every delete in INSTANT_DELETES instant, whichever screen sends it. It stays
+ * off the screen through polls for as long as it's queued, like any other write.
+ */
+export function installInstantDeletes(queryClient: QueryClient): () => void {
+  const snapshots = new WeakMap<object, OptimisticSnapshot>();
+  const refresh = (lists: Record<string, unknown>) => {
+    for (const list of Object.keys(lists)) {
+      void queryClient.invalidateQueries({ queryKey: [list.split(".")] });
+    }
+  };
+  return queryClient.getMutationCache().subscribe(event => {
+    if (event.type !== "updated") return;
+    const { mutation, action } = event;
+    const path = ((mutation.options.mutationKey?.[0] ?? []) as string[]).join(".");
+    const lists = INSTANT_DELETES[path];
+    if (!lists) return;
+    if (action.type === "pending") {
+      const snapshot: OptimisticSnapshot = [];
+      const showing = queryClient.getQueryCache().findAll({ predicate: query => queryPath(query.queryKey) in lists });
+      for (const query of showing) {
+        const previous = query.state.data;
+        const next = withWrite(previous, query.queryKey, path, mutation.state.variables);
+        if (next === previous) continue;
+        void queryClient.cancelQueries({ queryKey: query.queryKey, exact: true });
+        snapshot.push({ key: query.queryKey, previous });
+        queryClient.setQueryData(query.queryKey, next);
+      }
+      snapshots.set(mutation, snapshot);
+    } else if (action.type === "error") {
+      undoOptimisticWrite(queryClient, path, mutation.state.variables, snapshots.get(mutation));
+      refresh(lists);
+    } else if (action.type === "success") {
+      refresh(lists);
+    }
+  });
 }
 
 /** True when a cached row is a provisional, not-yet-synced entry. */

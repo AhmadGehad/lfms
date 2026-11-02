@@ -70,6 +70,6 @@ export function notificationLink(n: {
   if (entity === "animal" && /^\d+$/.test(id)) return `/animals/${id}`;
   // Marking one done records nothing, so send the owner where they can record it.
   if (entity === "vaccination_task") return "/vaccinations";
-  if (entity === "farm_report") return "/tasks?tab=reports";
+  if (entity === "farm_report") return "/tasks";
   return CATEGORY_PAGES[notificationCategory(n.alertType)];
 }

@@ -100,7 +100,6 @@ export default function NewSales() {
     onSuccess: () => {
       invalidate();
       toast.success(t("sales.movedToBin", "Sale moved to Recycle Bin"));
-      setDeleteRow(null);
     },
     onError: e => toast.error(e.message),
   });
@@ -383,8 +382,7 @@ export default function NewSales() {
         confirmLabel={t("common.moveToBin", "Move to Bin")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={deleteSale.isPending}
-        onConfirm={() => deleteRow && deleteSale.mutate({ id: deleteRow.sale.id, expectedVersion: deleteRow.sale.version })}
+        onConfirm={() => { if (deleteRow) { deleteSale.mutate({ id: deleteRow.sale.id, expectedVersion: deleteRow.sale.version }); setDeleteRow(null); } }}
       />
 
       <Dialog open={salePickerOpen} onOpenChange={setSalePickerOpen}>

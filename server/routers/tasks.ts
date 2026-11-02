@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { animals } from "../../drizzle/schema";
 import { farmReports, taskTemplates, tasks, workers } from "../../drizzle/schema.workerTasks";
@@ -13,25 +13,36 @@ import {
   TASK_ACTIONS,
 } from "../../shared/tasks";
 import { hasPermission } from "../../shared/permissions";
+import type { TenantContext } from "../../shared/tenancy";
 import { getClientIp } from "../_core/audit";
 import { isDuplicateEntryError } from "../_core/databaseErrors";
+import { logger } from "../observability/logger";
 import { permissionProcedure, router } from "../_core/trpc";
 import { isoDate } from "../_core/validators";
 import { createAuditEntry, getDb, type DbOrTx } from "../db";
 import { sendTaskAlert, type TaskAlert } from "../notifications/fanout";
 import { executeIdempotent } from "../platform/idempotency";
+import { retireFarmImages, storagePut } from "../storage";
 import {
   confirmReportedDeath,
+  deleteDayReport,
+  farmDate,
+  findCheckin,
+  getDayReport,
   getOwnerOverview,
   getTabletDay,
   getReportStatus,
+  listDayReports,
   listReports,
   listTemplates,
   listWorkers,
+  recordCheckin,
   recordTaskAction,
+  requireAllowedWorker,
   requireFarmId,
   submitFarmReport,
 } from "../tasks/service";
+import { createTabletCode, disconnectTablets, getTabletStatus } from "../tasks/tablet";
 import { generatePublicId } from "../tenancy/publicIds";
 import { tenantScope } from "../tenancy/scope";
 
@@ -39,6 +50,11 @@ const title = z.string().trim().min(1).max(200);
 const notes = z.string().trim().max(2000).nullable().optional();
 const workerName = z.string().trim().min(1).max(80);
 const weekdays = z.number().int().min(1).max(ALL_WEEKDAYS);
+const assignedWorkerId = z.number().int().positive().nullable().optional();
+const MAX_PHOTO_BYTES = 3 * 1024 * 1024;
+const photoDataUrl = z.string()
+  .max(Math.ceil(MAX_PHOTO_BYTES * 4 / 3) + 40)
+  .regex(/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/, "Must be a JPEG, PNG, or WebP image");
 const versioned = { id: z.number().int().positive(), expectedVersion: z.number().int().positive() };
 
 const reportBase = {
@@ -82,6 +98,20 @@ async function requireDb(): Promise<DbOrTx> {
   return db;
 }
 
+/** With no farm selected a template can be any farm's, so it brings its own farm and clock. */
+async function templateInScope(db: DbOrTx, tenant: TenantContext, id: number) {
+  const [template] = await db.select({ id: taskTemplates.id, farmId: taskTemplates.farmId, isActive: taskTemplates.isActive })
+    .from(taskTemplates)
+    .where(and(tenantScope(tenant, taskTemplates), eq(taskTemplates.id, id), isNull(taskTemplates.deletedAt)))
+    .limit(1);
+  requireUpdated(template ? [template] : [], "Repeating task");
+  return template;
+}
+
+async function todaysCopyKey(db: DbOrTx, tenant: TenantContext, template: { id: number; farmId: number }) {
+  return `template:${template.id}:${await farmDate(db, { ...tenant, selectedFarmId: template.farmId })}`;
+}
+
 function requireUpdated(rows: unknown[], what: string) {
   if (rows.length === 0) {
     throw new TRPCError({ code: "CONFLICT", message: `${what} changed since it was loaded. Refresh and try again.` });
@@ -102,6 +132,23 @@ async function assertAnimalInFarm(db: DbOrTx, companyId: number, farmId: number,
     isNull(animals.deletedAt),
   )).limit(1);
   if (!animal) throw new TRPCError({ code: "BAD_REQUEST", message: "Animal not found on this farm" });
+}
+
+async function assertWorkerInFarm(db: DbOrTx, companyId: number, farmId: number, workerId: number) {
+  const [worker] = await db.select({ id: workers.id }).from(workers).where(and(
+    eq(workers.companyId, companyId),
+    eq(workers.farmId, farmId),
+    eq(workers.id, workerId),
+  )).limit(1);
+  if (!worker) throw new TRPCError({ code: "BAD_REQUEST", message: "Worker not found on this farm" });
+}
+
+async function storePhoto(path: string, dataUrl: string) {
+  const [, type, base64] = dataUrl.match(/^data:image\/([a-z]+);base64,(.+)$/)!;
+  const bytes = Buffer.from(base64, "base64");
+  if (bytes.length > MAX_PHOTO_BYTES) throw new TRPCError({ code: "BAD_REQUEST", message: "Image too large (max 3MB)" });
+  const { key } = await storagePut(`${path}.${type === "jpeg" ? "jpg" : type}`, bytes, `image/${type}`);
+  return key;
 }
 
 export const tasksRouter = router({
@@ -149,6 +196,38 @@ export const tasksRouter = router({
       }, () => submitFarmReport(tx, ctx.tenant!, { ...data, ipAddress: getClientIp(ctx) }, alert => alerts.push(alert))));
       alerts.forEach(sendTaskAlert);
       return result;
+    }),
+
+  checkIn: permissionProcedure("workerTasks", "update")
+    .input(z.object({
+      workerId: z.number().int().positive(),
+      photo: photoDataUrl.nullable(),
+      takenAt: z.string().datetime().nullable().optional(),
+      reportDate: isoDate.nullable().optional(),
+      idempotencyKey: z.string().min(8).max(200),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await requireDb();
+      const tenant = ctx.tenant!;
+      const already = await findCheckin(tenant, input.idempotencyKey);
+      if (already) return { id: already.id };
+      await requireAllowedWorker(db, tenant, requireFarmId(tenant), input.workerId, input.takenAt);
+      // A full storage quota mustn't stop anyone working: the report says "no photo".
+      const photoKey = input.photo
+        ? await storePhoto(`checkins/${input.workerId}`, input.photo).catch(error => {
+            logger.warn("tasks.checkin_photo_failed", { error });
+            return null;
+          })
+        : null;
+      const row = await recordCheckin(tenant, {
+        workerId: input.workerId,
+        reportDate: input.reportDate,
+        takenAt: input.takenAt,
+        photoKey,
+        clientKey: input.idempotencyKey,
+      });
+      if (!row && photoKey) await retireFarmImages([photoKey]);
+      return { id: row?.id ?? null };
     }),
 
   // ─── OWNER: DAILY REPORTS ─────────────────────────────────────────────────
@@ -210,6 +289,7 @@ export const tasksRouter = router({
       title,
       notes,
       animalId: z.number().int().positive().nullable().optional(),
+      assignedWorkerId,
       dueDate: isoDate,
     }))
     .mutation(async ({ input, ctx }) => {
@@ -217,6 +297,7 @@ export const tasksRouter = router({
       const tenant = ctx.tenant!;
       const farmId = requireFarmId(tenant);
       if (input.animalId) await assertAnimalInFarm(db, tenant.companyId, farmId, input.animalId);
+      if (input.assignedWorkerId) await assertWorkerInFarm(db, tenant.companyId, farmId, input.assignedWorkerId);
       const [row] = await db.insert(tasks).values({
         ...input,
         publicId: generatePublicId(),
@@ -242,6 +323,7 @@ export const tasksRouter = router({
       title,
       notes,
       animalId: z.number().int().positive().nullable().optional(),
+      assignedWorkerId,
       dueDate: isoDate,
     }))
     .mutation(async ({ input, ctx }) => {
@@ -255,6 +337,7 @@ export const tasksRouter = router({
       // A generated task's text comes from its template or vaccination record.
       if (task.source !== "manual") throw new TRPCError({ code: "BAD_REQUEST", message: "Only hand-added tasks can be edited" });
       if (data.animalId) await assertAnimalInFarm(db, tenant.companyId, task.farmId, data.animalId);
+      if (data.assignedWorkerId) await assertWorkerInFarm(db, tenant.companyId, task.farmId, data.assignedWorkerId);
       const rows = await db.update(tasks).set({ ...data, version: expectedVersion + 1 }).where(and(
         tenantScope(tenant, tasks), eq(tasks.id, id), eq(tasks.version, expectedVersion), isNull(tasks.deletedAt),
       )).returning({ id: tasks.id });
@@ -282,20 +365,67 @@ export const tasksRouter = router({
       return { success: true };
     }),
 
+  assign: permissionProcedure("tasks", "update")
+    .input(z.object({ ...versioned, assignedWorkerId: z.number().int().positive().nullable() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await requireDb();
+      const tenant = ctx.tenant!;
+      const [task] = await db.select({ farmId: tasks.farmId }).from(tasks).where(and(
+        tenantScope(tenant, tasks), eq(tasks.id, input.id), isNull(tasks.deletedAt),
+      )).limit(1);
+      if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
+      if (input.assignedWorkerId) await assertWorkerInFarm(db, tenant.companyId, task.farmId, input.assignedWorkerId);
+      const rows = await db.update(tasks).set({
+        assignedWorkerId: input.assignedWorkerId, version: input.expectedVersion + 1,
+      }).where(and(
+        tenantScope(tenant, tasks), eq(tasks.id, input.id), eq(tasks.version, input.expectedVersion), isNull(tasks.deletedAt),
+      )).returning({ id: tasks.id });
+      requireUpdated(rows, "Task");
+      await createAuditEntry({
+        userId: ctx.user.id, entityType: "task", entityId: String(input.id), action: "update",
+        newValues: { assignedWorkerId: input.assignedWorkerId }, ipAddress: getClientIp(ctx),
+      });
+      return { success: true };
+    }),
+
+  // ─── OWNER: DAY REPORTS ───────────────────────────────────────────────────
+  dayReports: permissionProcedure("tasks", "view")
+    .input(z.object({ from: isoDate.optional(), to: isoDate.optional() }).optional())
+    .query(({ input, ctx }) => listDayReports(ctx.tenant!, input)),
+
+  dayReport: permissionProcedure("tasks", "view")
+    .input(z.object({ date: isoDate }))
+    .query(({ input, ctx }) => getDayReport(ctx.tenant!, input.date)),
+
+  deleteDayReport: permissionProcedure("tasks", "delete")
+    .input(z.object({ date: isoDate }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await requireDb();
+      const tenant = ctx.tenant!;
+      const result = await db.transaction(tx => deleteDayReport(tx, tenant, { date: input.date, ipAddress: getClientIp(ctx) }));
+      // The day is already deleted, so a failure here mustn't report that it wasn't.
+      await retireFarmImages(result.photoKeys).catch(error => {
+        logger.warn("tasks.retire_photos_failed", { error, count: result.photoKeys.length });
+      });
+      return { answers: result.answers, tasksReset: result.tasksReset };
+    }),
+
   // ─── OWNER: REPEATING TASKS ───────────────────────────────────────────────
   listTemplates: permissionProcedure("tasks", "view")
     .query(({ ctx }) => listTemplates(ctx.tenant!)),
 
   createTemplate: permissionProcedure("tasks", "create")
-    .input(z.object({ title, notes, weekdays }))
+    .input(z.object({ title, notes, weekdays, assignedWorkerId }))
     .mutation(async ({ input, ctx }) => {
       const db = await requireDb();
       const tenant = ctx.tenant!;
+      const farmId = requireFarmId(tenant);
+      if (input.assignedWorkerId) await assertWorkerInFarm(db, tenant.companyId, farmId, input.assignedWorkerId);
       const [row] = await db.insert(taskTemplates).values({
         ...input,
         publicId: generatePublicId(),
         companyId: tenant.companyId,
-        farmId: requireFarmId(tenant),
+        farmId,
         createdBy: ctx.user.id,
       }).returning({ id: taskTemplates.id });
       await createAuditEntry({
@@ -306,20 +436,46 @@ export const tasksRouter = router({
     }),
 
   updateTemplate: permissionProcedure("tasks", "update")
-    .input(z.object({ ...versioned, title, notes, weekdays, isActive: z.boolean() }))
+    .input(z.object({ ...versioned, title, notes, weekdays, isActive: z.boolean(), assignedWorkerId }))
     .mutation(async ({ input, ctx }) => {
       const db = await requireDb();
+      const tenant = ctx.tenant!;
       const { id, expectedVersion, ...data } = input;
-      const rows = await db.update(taskTemplates).set({ ...data, version: expectedVersion + 1 }).where(and(
-        tenantScope(ctx.tenant!, taskTemplates),
-        eq(taskTemplates.id, id),
-        eq(taskTemplates.version, expectedVersion),
-        isNull(taskTemplates.deletedAt),
-      )).returning({ id: taskTemplates.id });
-      requireUpdated(rows, "Repeating task");
-      await createAuditEntry({
-        userId: ctx.user.id, entityType: "taskTemplate", entityId: String(id), action: "update",
-        newValues: data as any, ipAddress: getClientIp(ctx),
+      await db.transaction(async tx => {
+        const template = await templateInScope(tx, tenant, id);
+        if (data.assignedWorkerId) await assertWorkerInFarm(tx, tenant.companyId, template.farmId, data.assignedWorkerId);
+        const rows = await tx.update(taskTemplates).set({ ...data, version: expectedVersion + 1 }).where(and(
+          tenantScope(tenant, taskTemplates),
+          eq(taskTemplates.id, id),
+          eq(taskTemplates.version, expectedVersion),
+          isNull(taskTemplates.deletedAt),
+        )).returning({ id: taskTemplates.id });
+        requireUpdated(rows, "Repeating task");
+        const sourceKey = await todaysCopyKey(tx, tenant, template);
+        const todaysCopy = (deleted: boolean) => and(
+          eq(tasks.companyId, tenant.companyId),
+          eq(tasks.farmId, template.farmId),
+          eq(tasks.sourceKey, sourceKey),
+          eq(tasks.status, "todo"),
+          deleted ? isNotNull(tasks.deletedAt) : isNull(tasks.deletedAt),
+        );
+        // Today's copy is already made, so a change wouldn't show until tomorrow.
+        // Pausing takes it off the tablet, and switching back on the same day returns it.
+        if (template.isActive && !data.isActive) {
+          await tx.update(tasks).set({ deletedAt: new Date(), deletedBy: ctx.user.id, version: sql`${tasks.version} + 1` })
+            .where(todaysCopy(false));
+        } else if (!template.isActive && data.isActive) {
+          await tx.update(tasks).set({ deletedAt: null, deletedBy: null, version: sql`${tasks.version} + 1` })
+            .where(todaysCopy(true));
+        }
+        await tx.update(tasks).set({
+          title: data.title, notes: data.notes ?? null, assignedWorkerId: data.assignedWorkerId ?? null,
+          version: sql`${tasks.version} + 1`,
+        }).where(todaysCopy(false));
+        await createAuditEntry({
+          userId: ctx.user.id, entityType: "taskTemplate", entityId: String(id), action: "update",
+          newValues: data as any, ipAddress: getClientIp(ctx),
+        }, tx);
       });
       return { success: true };
     }),
@@ -328,17 +484,30 @@ export const tasksRouter = router({
     .input(z.object(versioned))
     .mutation(async ({ input, ctx }) => {
       const db = await requireDb();
-      const rows = await db.update(taskTemplates).set({
-        deletedAt: new Date(), deletedBy: ctx.user.id, version: input.expectedVersion + 1,
-      }).where(and(
-        tenantScope(ctx.tenant!, taskTemplates),
-        eq(taskTemplates.id, input.id),
-        eq(taskTemplates.version, input.expectedVersion),
-        isNull(taskTemplates.deletedAt),
-      )).returning({ id: taskTemplates.id });
-      requireUpdated(rows, "Repeating task");
-      await createAuditEntry({
-        userId: ctx.user.id, entityType: "taskTemplate", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx),
+      const tenant = ctx.tenant!;
+      await db.transaction(async tx => {
+        const template = await templateInScope(tx, tenant, input.id);
+        const rows = await tx.update(taskTemplates).set({
+          deletedAt: new Date(), deletedBy: ctx.user.id, version: input.expectedVersion + 1,
+        }).where(and(
+          tenantScope(tenant, taskTemplates),
+          eq(taskTemplates.id, input.id),
+          eq(taskTemplates.version, input.expectedVersion),
+          isNull(taskTemplates.deletedAt),
+        )).returning({ id: taskTemplates.id });
+        requireUpdated(rows, "Repeating task");
+        await tx.update(tasks).set({
+          deletedAt: new Date(), deletedBy: ctx.user.id, version: sql`${tasks.version} + 1`,
+        }).where(and(
+          eq(tasks.companyId, tenant.companyId),
+          eq(tasks.farmId, template.farmId),
+          eq(tasks.sourceKey, await todaysCopyKey(tx, tenant, template)),
+          eq(tasks.status, "todo"),
+          isNull(tasks.deletedAt),
+        ));
+        await createAuditEntry({
+          userId: ctx.user.id, entityType: "taskTemplate", entityId: String(input.id), action: "delete", ipAddress: getClientIp(ctx),
+        }, tx);
       });
       return { success: true };
     }),
@@ -378,6 +547,51 @@ export const tasksRouter = router({
       await createAuditEntry({
         userId: ctx.user.id, entityType: "worker", entityId: String(id), action: "update",
         newValues: data as any, ipAddress: getClientIp(ctx),
+      });
+      return { success: true };
+    }),
+
+  setWorkerPhoto: permissionProcedure("tasks", "update")
+    .input(z.object({ ...versioned, dataUrl: photoDataUrl.nullable() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await requireDb();
+      const tenant = ctx.tenant!;
+      const [worker] = await db.select({ publicId: workers.publicId, photoKey: workers.photoKey }).from(workers).where(and(
+        tenantScope(tenant, workers), eq(workers.id, input.id),
+      )).limit(1);
+      if (!worker) throw new TRPCError({ code: "NOT_FOUND", message: "Worker not found" });
+      const photoKey = input.dataUrl ? await storePhoto(`workers/${worker.publicId}`, input.dataUrl) : null;
+      const rows = await db.update(workers).set({ photoKey, version: input.expectedVersion + 1 }).where(and(
+        tenantScope(tenant, workers), eq(workers.id, input.id), eq(workers.version, input.expectedVersion),
+      )).returning({ id: workers.id });
+      if (rows.length === 0 && photoKey) await retireFarmImages([photoKey]);
+      requireUpdated(rows, "Worker");
+      if (worker.photoKey) await retireFarmImages([worker.photoKey]);
+      await createAuditEntry({
+        userId: ctx.user.id, entityType: "worker", entityId: String(input.id), action: "update",
+        newValues: { photo: photoKey ? "changed" : "removed" }, ipAddress: getClientIp(ctx),
+      });
+      return { success: true };
+    }),
+
+  // ─── OWNER: CONNECTING TABLETS ────────────────────────────────────────────
+  tabletStatus: permissionProcedure("tasks", "view")
+    .query(({ ctx }) => getTabletStatus(ctx.tenant!)),
+
+  createTabletCode: permissionProcedure("tasks", "create")
+    .mutation(async ({ ctx }) => {
+      const result = await createTabletCode(ctx.tenant!);
+      await createAuditEntry({
+        userId: ctx.user.id, entityType: "tablet", entityId: String(requireFarmId(ctx.tenant!)), action: "tablet_code", ipAddress: getClientIp(ctx),
+      });
+      return result;
+    }),
+
+  disconnectTablets: permissionProcedure("tasks", "update")
+    .mutation(async ({ ctx }) => {
+      await disconnectTablets(ctx.tenant!);
+      await createAuditEntry({
+        userId: ctx.user.id, entityType: "tablet", entityId: String(requireFarmId(ctx.tenant!)), action: "tablet_disconnect", ipAddress: getClientIp(ctx),
       });
       return { success: true };
     }),

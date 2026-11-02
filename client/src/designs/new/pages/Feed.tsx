@@ -222,7 +222,7 @@ export default function NewFeed() {
     onError: e => toast.error(e.message),
   });
   const deleteFeedStock = trpc.recycleBin.deleteFeedStock.useMutation({
-    onSuccess: () => { invalidateStock(); toast.success(t("feed.stockMovedToBin", "Stock entry moved to Recycle Bin")); setDeleteEntry(null); },
+    onSuccess: () => { invalidateStock(); toast.success(t("feed.stockMovedToBin", "Stock entry moved to Recycle Bin")); },
     onError: e => toast.error(e.message),
   });
 
@@ -310,7 +310,7 @@ export default function NewFeed() {
     onError: e => toast.error(e.message),
   });
   const deleteRationPlan = trpc.recycleBin.deleteRationPlan.useMutation({
-    onSuccess: () => { invalidateRations(); toast.success(t("feed.rationMovedToBin", "Ration plan moved to Recycle Bin")); setDeletePlan(null); },
+    onSuccess: () => { invalidateRations(); toast.success(t("feed.rationMovedToBin", "Ration plan moved to Recycle Bin")); },
     onError: e => toast.error(e.message),
   });
   const bulkUpdateDates = trpc.feed.bulkUpdateRationPlanDates.useMutation({
@@ -382,7 +382,7 @@ export default function NewFeed() {
     onError: e => toast.error(e.message),
   });
   const deletePrice = trpc.config.deleteFeedItemPrice.useMutation({
-    onSuccess: () => { utils.config.getAllFeedItemPrices.invalidate(); toast.success(t("feed.priceDeleted", "Price deleted")); setDeletePriceRow(null); },
+    onSuccess: () => { utils.config.getAllFeedItemPrices.invalidate(); toast.success(t("feed.priceDeleted", "Price deleted")); },
     onError: e => toast.error(e.message),
   });
 
@@ -699,8 +699,7 @@ export default function NewFeed() {
         confirmLabel={t("common.moveToBin", "Move to Bin")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={deleteFeedStock.isPending}
-        onConfirm={() => deleteEntry && deleteFeedStock.mutate({ id: deleteEntry.id, expectedVersion: deleteEntry.version })}
+        onConfirm={() => { if (deleteEntry) { deleteFeedStock.mutate({ id: deleteEntry.id, expectedVersion: deleteEntry.version }); setDeleteEntry(null); } }}
       />
 
       {/* Create ration plan */}
@@ -747,8 +746,7 @@ export default function NewFeed() {
         confirmLabel={t("common.moveToBin", "Move to Bin")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={deleteRationPlan.isPending}
-        onConfirm={() => deletePlan && deleteRationPlan.mutate({ id: deletePlan.id, expectedVersion: deletePlan.version })}
+        onConfirm={() => { if (deletePlan) { deleteRationPlan.mutate({ id: deletePlan.id, expectedVersion: deletePlan.version }); setDeletePlan(null); } }}
       />
 
       {/* Bulk update ration effective dates */}
@@ -852,8 +850,7 @@ export default function NewFeed() {
         confirmLabel={t("common.delete", "Delete")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={deletePrice.isPending}
-        onConfirm={() => deletePriceRow && deletePrice.mutate({ id: deletePriceRow.id, expectedVersion: deletePriceRow.version })}
+        onConfirm={() => { if (deletePriceRow) { deletePrice.mutate({ id: deletePriceRow.id, expectedVersion: deletePriceRow.version }); setDeletePriceRow(null); } }}
       />
     </div>
   );

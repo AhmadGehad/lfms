@@ -256,7 +256,7 @@ export default function NewVaccinations() {
     onError: e => toast.error(e.message),
   });
   const remove = trpc.vaccination.deleteVaccinationRecord.useMutation({
-    onSuccess: () => { utils.vaccination.getVaccinationRecords.invalidate(); toast.success(t("vaccine.vaccinationDeleted", "Vaccination deleted")); setDeleteRow(null); },
+    onSuccess: () => { utils.vaccination.getVaccinationRecords.invalidate(); toast.success(t("vaccine.vaccinationDeleted", "Vaccination deleted")); },
     onError: e => toast.error(e.message),
   });
 
@@ -489,8 +489,7 @@ export default function NewVaccinations() {
         confirmLabel={t("common.delete", "Delete")}
         cancelLabel={t("common.cancel", "Cancel")}
         destructive
-        loading={remove.isPending}
-        onConfirm={() => deleteRow && remove.mutate({ id: deleteRow.id, expectedVersion: deleteRow.version })}
+        onConfirm={() => { if (deleteRow) { remove.mutate({ id: deleteRow.id, expectedVersion: deleteRow.version }); setDeleteRow(null); } }}
       />
 
       <BulkApplyDialog open={bulkOpen} onOpenChange={setBulkOpen} />

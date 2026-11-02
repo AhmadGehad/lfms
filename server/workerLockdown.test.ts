@@ -38,6 +38,7 @@ const TABLET_REACHABLE = new Set([
   "tasks.today",
   "tasks.recordAction",
   "tasks.submitReport",
+  "tasks.checkIn",
 ]);
 
 function workerContext(overrides: PermissionOverrides = {}): TrpcContext {

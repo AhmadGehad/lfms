@@ -674,10 +674,10 @@ const setting = (id: number, settingKey: string, settingValue: string, descripti
 export const DEMO_COMPANY_NAME = "APIS";
 
 const WORKERS = [
-  { id: 1, name: "Ali Hassan" },
-  { id: 2, name: "Omar Saeed" },
-  { id: 3, name: "Mahmoud Adel" },
-  { id: 4, name: "Karim Fathy" },
+  { id: 1, name: "Ali Hassan", photoUrl: null },
+  { id: 2, name: "Omar Saeed", photoUrl: null },
+  { id: 3, name: "Mahmoud Adel", photoUrl: null },
+  { id: 4, name: "Karim Fathy", photoUrl: null },
 ];
 
 const demoTask = (
@@ -695,6 +695,8 @@ const demoTask = (
   source: fields.source ?? "template",
   animalId: null,
   animalTag: fields.animalTag ?? null,
+  assignedWorkerId: null,
+  assignedName: null,
   dueDate: fields.dueDate ?? day(0),
   status: fields.status ?? "todo",
   startedByWorkerId: fields.started ?? null,
@@ -724,40 +726,58 @@ const FARM_REPORTS = [
   { id: 3, type: "purchase" as const, answer: null, animalTag: null, stockKinds: null, purchaseKind: "medicine" as const, itemName: "Penicillin", workerName: WORKERS[0].name, workerId: WORKERS[0].id },
 ];
 
+const DEMO_REPORT_ROWS = FARM_REPORTS.map(report => ({
+    ...TASK_ROW,
+    ...report,
+    publicId: pid("rpt", report.id),
+    reportDate: day(0),
+    amount: report.type === "purchase" ? "150.00" : null,
+    animalId: null,
+    matchedAnimalId: null,
+    matchedAnimalTag: null,
+    matchedAnimalActive: false,
+    confirmedAt: null,
+    confirmedBy: null,
+    deletedAt: null,
+    deletedBy: null,
+  }));
+
 export const demoFixtures: DemoFixtures = {
   tasks: {
     today: {
       date: day(0),
       timeZone: "Africa/Cairo",
       farmSelected: true,
-      notAllowed: false,
       tasks: TABLET_TASKS,
       workers: WORKERS,
       reports: FARM_REPORTS.map(({ workerId: _workerId, ...report }) => report),
     },
     overview: { date: day(0), tasks: TABLET_TASKS },
     reportStatus: { date: day(0), missing: [] },
-    listReports: FARM_REPORTS.map(report => ({
-      ...TASK_ROW,
-      ...report,
-      publicId: pid("rpt", report.id),
-      reportDate: day(0),
-      amount: report.type === "purchase" ? "150.00" : null,
-      animalId: null,
-      matchedAnimalId: null,
-      matchedAnimalTag: null,
-      matchedAnimalActive: false,
-      confirmedAt: null,
-      confirmedBy: null,
-      deletedAt: null,
-      deletedBy: null,
-    })),
-    listTemplates: [
-      { ...TASK_ROW, id: 1, publicId: pid("tpl", 1), title: "Morning feed, all pens", notes: null, weekdays: 127, isActive: true, deletedAt: null, deletedBy: null },
-      { ...TASK_ROW, id: 2, publicId: pid("tpl", 2), title: "Feed Pen A", notes: "Two scoops of the new mix per head.", weekdays: 127, isActive: true, deletedAt: null, deletedBy: null },
-      { ...TASK_ROW, id: 3, publicId: pid("tpl", 3), title: "Clean the water troughs", notes: null, weekdays: 0b0100010, isActive: true, deletedAt: null, deletedBy: null },
+    listReports: DEMO_REPORT_ROWS,
+    dayReports: [
+      { date: day(0), isToday: true, tasksTotal: TABLET_TASKS.length, tasksDone: 1, answerCount: DEMO_REPORT_ROWS.length, missing: [], needsAttention: true, photoCount: 0, workerNames: ["Ali Hassan", "Omar Saeed"] },
+      { date: day(-1), isToday: false, tasksTotal: 6, tasksDone: 6, answerCount: 2, missing: [], needsAttention: false, photoCount: 0, workerNames: ["Omar Saeed"] },
+      { date: day(-2), isToday: false, tasksTotal: 6, tasksDone: 4, answerCount: 0, missing: ["doctor_visit", "stock_needed"], needsAttention: false, photoCount: 0, workerNames: ["Ali Hassan"] },
     ],
-    listWorkers: WORKERS.map(worker => ({ ...TASK_ROW, ...worker, publicId: pid("wrk", worker.id), userId: null, loginGone: false, isActive: true })),
+    dayReport: {
+      date: day(0),
+      isToday: true,
+      tasks: TABLET_TASKS,
+      reports: DEMO_REPORT_ROWS,
+      missing: [],
+      checkins: [
+        { id: 1, reportDate: day(0), takenAt: at(0), workerName: "Ali Hassan", photoUrl: null },
+        { id: 2, reportDate: day(0), takenAt: at(0), workerName: "Omar Saeed", photoUrl: null },
+      ],
+    },
+    tabletStatus: { connected: true, connectedAt: at(-3) },
+    listTemplates: [
+      { ...TASK_ROW, assignedWorkerId: null, id: 1, publicId: pid("tpl", 1), title: "Morning feed, all pens", notes: null, weekdays: 127, isActive: true, deletedAt: null, deletedBy: null },
+      { ...TASK_ROW, assignedWorkerId: 1, id: 2, publicId: pid("tpl", 2), title: "Feed Pen A", notes: "Two scoops of the new mix per head.", weekdays: 127, isActive: true, deletedAt: null, deletedBy: null },
+      { ...TASK_ROW, assignedWorkerId: null, id: 3, publicId: pid("tpl", 3), title: "Clean the water troughs", notes: null, weekdays: 0b0100010, isActive: true, deletedAt: null, deletedBy: null },
+    ],
+    listWorkers: WORKERS.map(worker => ({ ...TASK_ROW, ...worker, publicId: pid("wrk", worker.id), photoKey: null, userId: null, loginGone: false, isActive: true })),
   },
   auth: {
     me: userRecord(USERS[0]),

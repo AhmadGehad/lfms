@@ -224,7 +224,7 @@ export function secureEdgeResponse(
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   headers.set(
     "Permissions-Policy",
-    "camera=(), geolocation=(self), microphone=(self), payment=(), usb=()"
+    "camera=(self), geolocation=(self), microphone=(self), payment=(), usb=()"
   );
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
   headers.set("Cross-Origin-Resource-Policy", "same-origin");

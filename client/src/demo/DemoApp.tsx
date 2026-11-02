@@ -11,6 +11,8 @@ import { demoLink } from "./mockLink";
 import { DEMO_STYLES, DemoBar, GuideTour, HelpMarks } from "./DemoGuide";
 
 const WorkerApp = lazy(() => import("@/worker/WorkerApp"));
+// A demo visitor shouldn't be asked for their camera.
+const noCamera = async () => null;
 
 const TOUR_DONE_KEY = "apis-demo-tour-done";
 
@@ -97,7 +99,7 @@ export default function DemoApp() {
               {/* The farm tablet's screen, full size, without the tour on top of it. */}
               {window.location.pathname === "/demo/worker" ? (
                 <Suspense fallback={<main className="min-h-dvh bg-background" aria-busy="true" />}>
-                  <WorkerApp />
+                  <WorkerApp takePhoto={noCamera} />
                 </Suspense>
               ) : (
                 <Walkthrough />
