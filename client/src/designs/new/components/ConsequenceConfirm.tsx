@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export interface Consequence {
@@ -28,8 +29,8 @@ export function ConsequenceConfirm({
   title,
   description,
   consequences,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel,
+  cancelLabel,
   destructive,
   onConfirm,
   loading,
@@ -45,6 +46,7 @@ export function ConsequenceConfirm({
   onConfirm: () => void;
   loading?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -75,13 +77,13 @@ export function ConsequenceConfirm({
         )}
 
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={loading}>{cancelLabel ?? t("common.cancel", "Cancel")}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={loading}
             className={destructive ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
           >
-            {confirmLabel}
+            {confirmLabel ?? t("common.confirm", "Confirm")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

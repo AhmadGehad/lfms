@@ -22,6 +22,8 @@
       "zone_name": "apiseg.com",
     },
   ],
+  // Runs the end-of-day daily report check. See `scheduled` in cloudflare/worker.ts.
+  "triggers": { "crons": ["0 * * * *"] },
   "containers": [
     {
       "name": "lfms-production-lfmswebcontainer",
@@ -84,6 +86,7 @@
     "VITE_SUPPORT_EMAIL": "support@apiseg.com",
     "LOG_LEVEL": "info",
     "SMTP_FROM": "noreply@apiseg.com",
+    "VAPID_SUBJECT": "mailto:noreply@apiseg.com",
   },
   "secrets": {
     "required": [

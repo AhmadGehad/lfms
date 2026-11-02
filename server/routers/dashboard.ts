@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { getClientIp } from "../_core/audit";
+import { ENV } from "../_core/env";
 import { assertFeatureAccess, permissionProcedure, router } from "../_core/trpc";
 import { getRevertPlan, revertAuditEntry } from "../revert";
 import {
@@ -24,6 +25,8 @@ import {
 } from "../db";
 import { TRPCError } from "@trpc/server";
 import { companyMemberships } from "../../drizzle/schema";
+import { pushSubscriptions } from "../../drizzle/schema.workerTasks";
+import { isPushConfigured, isPushServiceEndpoint, sendPushToUsers } from "../notifications/pushFanout";
 import { and, eq } from "drizzle-orm";
 import { tenantScope } from "../tenancy/scope";
 import { requireTenantUserContext } from "../tenancy/runtime";
@@ -116,6 +119,55 @@ export const dashboardRouter = router({
     }),
 });
 
+const pushRouter = router({
+  /** Whether this deployment can push, and the key a browser needs to subscribe. */
+  config: permissionProcedure("notifications", "view")
+    .query(() => ({ publicKey: isPushConfigured() ? ENV.vapidPublicKey : null })),
+
+  // Re-sent on each visit, which picks up a changed language or a renewed subscription.
+  subscribe: permissionProcedure("notifications", "view")
+    .input(z.object({
+      endpoint: z.string().max(2000).refine(isPushServiceEndpoint, "Not a push service address"),
+      p256dh: z.string().min(1).max(200),
+      auth: z.string().min(1).max(100),
+      language: z.enum(["en", "ar"]),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const row = { ...input, companyId: ctx.tenant!.companyId, userId: ctx.user.id };
+      await db.insert(pushSubscriptions).values(row).onConflictDoUpdate({
+        target: [pushSubscriptions.companyId, pushSubscriptions.endpoint],
+        set: { userId: row.userId, p256dh: row.p256dh, auth: row.auth, language: row.language },
+      });
+      return { success: true } as const;
+    }),
+
+  unsubscribe: permissionProcedure("notifications", "view")
+    .input(z.object({ endpoint: z.string().max(2000) }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.delete(pushSubscriptions).where(and(
+        eq(pushSubscriptions.companyId, ctx.tenant!.companyId),
+        eq(pushSubscriptions.userId, ctx.user.id),
+        eq(pushSubscriptions.endpoint, input.endpoint),
+      ));
+      return { success: true } as const;
+    }),
+
+  /** Lets someone see a notification arrive on the device they just turned on. */
+  test: permissionProcedure("notifications", "view")
+    .mutation(async ({ ctx }) => {
+      const sent = await sendPushToUsers(ctx.tenant!.companyId, [ctx.user.id], language => ({
+        title: "APIS",
+        body: language === "ar" ? "الإشعارات تعمل على هذا الجهاز" : "Notifications are working on this device",
+        url: "/notifications",
+      }));
+      return { sent };
+    }),
+});
+
 export const notificationsRouter = router({
   list: permissionProcedure("notifications", "view")
     .input(z.object({ unreadOnly: z.boolean().optional() }).optional())
@@ -147,6 +199,8 @@ export const notificationsRouter = router({
     )
     .mutation(({ input }) => createNotification(input)),
 
+  push: pushRouter,
+
   preferences: router({
     get: permissionProcedure("notifications", "view").query(async () => {
       const tenant = requireTenantUserContext();
@@ -159,7 +213,7 @@ export const notificationsRouter = router({
           Object.fromEntries(
             NOTIFICATION_CATEGORIES.map(category => [
               category,
-              z.object({ inApp: z.boolean(), email: z.boolean() }).optional(),
+              z.object({ inApp: z.boolean(), email: z.boolean(), push: z.boolean().optional() }).optional(),
             ]),
           ),
         ),

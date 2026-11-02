@@ -84,4 +84,37 @@ self.addEventListener("message", event => {
   }
 });
 
+type PushPayload = { title: string; body: string; url: string; language: "en" | "ar" };
+
+self.addEventListener("push", event => {
+  const payload = event.data?.json() as PushPayload | undefined;
+  if (!payload) return;
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: "/pwa-192.png",
+      badge: "/pwa-192.png",
+      lang: payload.language,
+      dir: payload.language === "ar" ? "rtl" : "ltr",
+      data: { url: payload.url },
+    }),
+  );
+});
+
+// Tapping one opens the page it's about, reusing a window that's already open.
+self.addEventListener("notificationclick", event => {
+  event.notification.close();
+  const path = (event.notification.data as { url?: string } | null)?.url ?? "/notifications";
+  const url = new URL(path, self.location.origin);
+  const target = url.origin === self.location.origin ? url.href : self.location.origin;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(windows => {
+      const open = windows[0];
+      if (!open) return self.clients.openWindow(target);
+      // A window this worker doesn't control refuses to navigate, so open a new one.
+      return open.focus().then(focused => focused.navigate(target)).catch(() => self.clients.openWindow(target));
+    }),
+  );
+});
+
 clientsClaim();

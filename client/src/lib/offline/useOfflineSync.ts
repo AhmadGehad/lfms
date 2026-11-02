@@ -48,6 +48,7 @@ export function useOfflineIdentity() {
   const tenant = trpc.auth.tenantContext.useQuery(undefined, { retry: false });
 
   const userId = me.data?.id;
+  const role = me.data?.role;
   const companyId = tenant.data?.company.publicId;
   const farmPublicId = tenant.data?.selectedFarmPublicId ?? null;
   const ready = typeof userId === "number" && Boolean(companyId);
@@ -65,9 +66,11 @@ export function useOfflineIdentity() {
   // Warm the read set once signed in, and again after reconnecting or switching
   // farm, so screens not yet opened still work when the signal drops.
   useEffect(() => {
-    if (!ready || !isOnline) return;
+    // A farm tablet would only collect a refusal per procedure; its one screen
+    // caches itself when it loads.
+    if (!ready || !isOnline || role === "worker") return;
     void prefetchOfflineReadSet(queryClient, trpcClient);
-  }, [ready, isOnline, farmPublicId, queryClient, trpcClient]);
+  }, [ready, isOnline, role, farmPublicId, queryClient, trpcClient]);
 }
 
 export type OfflineSyncState = {

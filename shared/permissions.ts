@@ -5,6 +5,7 @@ export const APP_ROLES = [
   "staff",
   "user",
   "viewer",
+  "worker",
 ] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];
@@ -36,6 +37,9 @@ export const PERMISSION_PAGES = [
   { id: "capital", path: "/config", actions: ["view", "create", "update"] },
   { id: "data", path: "/data", actions: ["view", "import", "export", "restore"] },
   { id: "recycleBin", path: "/recycle-bin", actions: ["view", "restore"] },
+  { id: "tasks", path: "/tasks", actions: ["view", "create", "update", "delete"] },
+  // The farm tablet's own screen. Has no route: a worker sees it on every URL.
+  { id: "workerTasks", path: "/worker", actions: ["view", "update"] },
 ] as const;
 
 export type PermissionPage = (typeof PERMISSION_PAGES)[number]["id"];
@@ -45,6 +49,7 @@ export type PermissionKey = `${PermissionPage}:${PermissionAction}`;
 export type PermissionOverrides = Partial<Record<PermissionKey, boolean>>;
 
 const ROLE_RANK: Record<AppRole, number> = {
+  worker: -2,
   viewer: -1,
   user: 0,
   staff: 1,
@@ -73,6 +78,9 @@ const DEFAULT_MIN_ROLE: Record<PermissionPage, Partial<Record<PermissionAction, 
   capital: { view: "supervisor", create: "admin", update: "admin" },
   data: { view: "admin", import: "admin", export: "admin", restore: "owner" },
   recycleBin: { view: "supervisor", restore: "admin" },
+  tasks: { view: "supervisor", create: "supervisor", update: "supervisor", delete: "supervisor" },
+  // Deliberately empty: see getDefaultPermission.
+  workerTasks: {},
 };
 
 export function permissionKey(
@@ -96,6 +104,9 @@ export function getDefaultPermission(
   action: PermissionAction,
 ): boolean {
   if (role === "owner") return true;
+  // The tablet account sees its task screen and nothing else, and that screen
+  // belongs to it alone: ranking can't express either rule.
+  if (role === "worker") return page === "workerTasks";
   const minimumRole = DEFAULT_MIN_ROLE[page]?.[action];
   if (!minimumRole) return false;
   return ROLE_RANK[role] >= ROLE_RANK[minimumRole];
@@ -109,6 +120,8 @@ export function hasPermission(
 ): boolean {
   if (role === "owner") return true;
   if (role === "admin") return getDefaultPermission(role, page, action);
+  // Not configurable, so no role-permission row can widen the tablet's access.
+  if (role === "worker" || page === "workerTasks") return getDefaultPermission(role, page, action);
   if (
     action !== "view" &&
     !hasPermission(role, overrides, page, "view")

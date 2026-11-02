@@ -31,7 +31,7 @@ export const platformMembershipsRouter = platformRouterFactory({
     create: platformMfaProcedure("memberships.write").input(z.object({
       companyPublicId: publicId,
       email: z.string().trim().email().max(320),
-      role: z.enum(["supervisor", "staff", "admin", "user", "viewer"]),
+      role: z.enum(["supervisor", "staff", "admin", "user", "viewer", "worker"]),
       farmAccessMode: z.enum(["all", "restricted"]),
       farmPublicIds: z.array(publicId).max(100).default([]),
       expiresInHours: z.number().int().min(1).max(168).default(72),
@@ -44,7 +44,7 @@ export const platformMembershipsRouter = platformRouterFactory({
   }),
   update: platformMfaProcedure("memberships.write").input(z.object({
     publicId,
-    role: z.enum(["owner", "supervisor", "staff", "admin", "user", "viewer"]).optional(),
+    role: z.enum(["owner", "supervisor", "staff", "admin", "user", "viewer", "worker"]).optional(),
     status: z.enum(["invited", "active", "suspended", "removed"]).optional(),
     farmAccessMode: z.enum(["all", "restricted"]).optional(),
     farmPublicIds: z.array(publicId).max(100).optional(),

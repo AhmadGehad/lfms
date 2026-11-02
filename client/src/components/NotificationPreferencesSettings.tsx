@@ -2,23 +2,19 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { trpc } from "@/lib/trpc";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-const CATEGORY_LABELS: Record<string, { title: string; description: string }> = {
-  feed_stock: { title: "Feed stock", description: "Low or critical feed stock alerts" },
-  vaccination: { title: "Vaccinations", description: "Vaccination and booster due/overdue alerts" },
-  pregnancy: { title: "Pregnancy", description: "Pregnancy due date and checkup alerts" },
-  growth: { title: "Growth", description: "Target weight and ready-to-sell alerts" },
-};
-
-const CATEGORIES = ["feed_stock", "vaccination", "pregnancy", "growth"] as const;
+const CATEGORIES = ["tasks", "feed_stock", "vaccination", "pregnancy", "growth"] as const;
 type Category = typeof CATEGORIES[number];
-type ChannelPreference = { inApp: boolean; email: boolean };
+type ChannelPreference = { inApp: boolean; email: boolean; push: boolean };
 type Preferences = Partial<Record<Category, ChannelPreference>>;
 
-const DEFAULT_PREFERENCE: ChannelPreference = { inApp: true, email: true };
+const DEFAULT_PREFERENCE: ChannelPreference = { inApp: true, email: true, push: true };
+const CHANNELS = ["inApp", "email", "push"] as const;
 
 export function NotificationPreferencesSettings({ className }: { className?: string }) {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const query = trpc.notifications.preferences.get.useQuery();
   const [preferences, setPreferences] = useState<Preferences>({});
@@ -30,7 +26,7 @@ export function NotificationPreferencesSettings({ className }: { className?: str
   const update = trpc.notifications.preferences.set.useMutation({
     onSuccess: () => {
       utils.notifications.preferences.get.invalidate();
-      toast.success("Notification preferences saved");
+      toast.success(t("notificationSettings.saved", "Notification preferences saved"));
     },
     onError: error => toast.error(error.message),
   });
@@ -38,7 +34,7 @@ export function NotificationPreferencesSettings({ className }: { className?: str
   function toggle(category: Category, channel: keyof ChannelPreference, value: boolean) {
     const next: Preferences = {
       ...preferences,
-      [category]: { ...(preferences[category] ?? DEFAULT_PREFERENCE), [channel]: value },
+      [category]: { ...DEFAULT_PREFERENCE, ...preferences[category], [channel]: value },
     };
     setPreferences(next);
     update.mutate({ preferences: next });
@@ -46,37 +42,33 @@ export function NotificationPreferencesSettings({ className }: { className?: str
 
   return (
     <div className={className}>
-      <h3 className="font-semibold mb-1">Notification preferences</h3>
+      <h3 className="font-semibold mb-1">{t("notificationSettings.title", "Notification preferences")}</h3>
       <p className="text-xs text-muted-foreground mb-4">
-        Choose how you want to be notified for each type of alert in this company.
+        {t("notificationSettings.subtitle", "Choose how you want to be notified for each type of alert. Email and phone notifications are only sent for urgent alerts.")}
       </p>
       <div className="space-y-4">
         {CATEGORIES.map(category => {
-          const pref = preferences[category] ?? DEFAULT_PREFERENCE;
-          const labels = CATEGORY_LABELS[category];
+          const pref = { ...DEFAULT_PREFERENCE, ...preferences[category] };
           return (
-            <div key={category} className="flex items-center justify-between gap-4 border-b border-border pb-4 last:border-b-0 last:pb-0">
+            <div key={category} className="space-y-2 border-b border-border pb-4 last:border-b-0 last:pb-0">
               <div>
-                <Label>{labels.title}</Label>
-                <p className="text-xs text-muted-foreground">{labels.description}</p>
+                <p className="text-sm font-medium">{t(`notificationSettings.${category}.title`)}</p>
+                <p className="text-xs text-muted-foreground">{t(`notificationSettings.${category}.description`)}</p>
               </div>
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={pref.inApp}
-                    onCheckedChange={checked => toggle(category, "inApp", checked)}
-                    disabled={update.isPending}
-                  />
-                  <span className="text-xs text-muted-foreground">In-app</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={pref.email}
-                    onCheckedChange={checked => toggle(category, "email", checked)}
-                    disabled={update.isPending}
-                  />
-                  <span className="text-xs text-muted-foreground">Email</span>
-                </div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                {CHANNELS.map(channel => (
+                  <div key={channel} className="flex items-center gap-2">
+                    <Switch
+                      id={`notify-${category}-${channel}`}
+                      checked={pref[channel]}
+                      onCheckedChange={checked => toggle(category, channel, checked)}
+                      disabled={update.isPending}
+                    />
+                    <Label htmlFor={`notify-${category}-${channel}`} className="text-xs font-normal text-muted-foreground">
+                      {t(`notificationSettings.channel.${channel}`)}
+                    </Label>
+                  </div>
+                ))}
               </div>
             </div>
           );

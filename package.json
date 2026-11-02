@@ -36,6 +36,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "pg:build-schema": "bash scripts/pg-migration/build-schema.sh",
     "pg:apply-schema": "tsx scripts/pg-migration/apply-schema.mts",
+    "pg:apply-post-cutover": "tsx scripts/pg-migration/apply-post-cutover.mts",
     "pg:preflight": "tsx scripts/pg-migration/preflight.mts",
     "pg:copy": "tsx scripts/pg-migration/copy-data.mts",
     "pg:copy-legacy": "tsx scripts/pg-migration/copy-legacy.mts",
@@ -121,6 +122,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
+    "web-push": "^3.6.7",
     "wouter": "^3.3.5",
     "zod": "^4.6.7"
   },
@@ -136,6 +138,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
+    "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",

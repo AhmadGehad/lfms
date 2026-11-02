@@ -16,7 +16,7 @@ import { useCursorPage } from "@admin/hooks/useCursorPage";
 import { formatDate } from "@admin/lib/format";
 import { platformTrpc } from "@admin/lib/trpc";
 
-const roles = ["viewer", "user", "staff", "supervisor", "admin"] as const;
+const roles = ["viewer", "user", "staff", "supervisor", "admin", "worker"] as const;
 
 type MembershipInspection = {
   userPublicId: string;

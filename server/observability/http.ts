@@ -1,3 +1,4 @@
+import { sendMissedReportAlerts } from "../tasks/missedReports";
 import { timingSafeEqual } from "node:crypto";
 import type { Express, RequestHandler } from "express";
 import { ENV } from "../_core/env";
@@ -73,6 +74,8 @@ function renderMetrics() {
   return `${lines.join("\n")}\n`;
 }
 
+export const MISSED_REPORTS_PATH = "/api/internal/missed-reports";
+
 export function registerObservabilityRoutes(app: Express) {
   ensureHealthChecks();
   app.get("/health/live", (_req, res) => res.json(healthRegistry.liveness()));
@@ -81,6 +84,24 @@ export function registerObservabilityRoutes(app: Express) {
     res
       .status(snapshot.status === "unavailable" ? 503 : 200)
       .json(publicReadiness(snapshot));
+  });
+  // Called hourly by the Cloudflare cron. The edge refuses this path from outside,
+  // and the secret stops anything else that reaches the container.
+  app.post(MISSED_REPORTS_PATH, async (req, res) => {
+    const expected = ENV.internalApiSecret;
+    const supplied = req.get("authorization")?.replace(/^Bearer\s+/i, "") ?? "";
+    if (!expected || !safeEqual(supplied, expected)) {
+      res.status(404).send("Not found");
+      return;
+    }
+    try {
+      res.json(await sendMissedReportAlerts());
+    } catch (error) {
+      logger.error("tasks.missed_report_run_failed", {
+        errorName: error instanceof Error ? error.name : "NonErrorThrown",
+      });
+      res.status(500).send("Failed");
+    }
   });
   app.get("/metrics", (req, res) => {
     const expected = ENV.metricsBearerToken;

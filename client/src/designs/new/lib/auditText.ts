@@ -48,6 +48,12 @@ const ACTION_FALLBACK: Record<string, string> = {
   remove_logo: "logo removed",
   upload_favicon: "icon uploaded",
   remove_favicon: "icon removed",
+  task_start: "started",
+  task_done: "marked done",
+  task_blocked: "marked can't do",
+  task_undo: "undone",
+  report_create: "reported",
+  report_delete: "report deleted",
 };
 
 export function auditActionLabel(t: TFunction, action: string): string {

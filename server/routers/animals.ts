@@ -11,7 +11,7 @@ import { optionalAnimalIdNumber, optionalMoneyString, optionalWeightString, weig
 import { storagePut, storageGetSignedUrl } from "../storage";
 import { logger } from "../observability/logger";
 import { executeIdempotent } from "../platform/idempotency";
-import { notifyOperationalAlertByEmail } from "../notifications/emailFanout";
+import { notifyOperationalAlert } from "../notifications/fanout";
 import {
   checkAndStageAnimal,
   createAnimal,
@@ -1008,7 +1008,7 @@ export const animalsRouter = router({
               relatedEntityId: String(input.animalId),
               priority: "high",
             });
-            void notifyOperationalAlertByEmail({
+            notifyOperationalAlert({
               companyId: ctx.tenant!.companyId,
               alertType: "target_weight_reached",
               title,
@@ -1033,7 +1033,7 @@ export const animalsRouter = router({
                 relatedEntityId: String(input.animalId),
                 priority: "high",
               });
-              void notifyOperationalAlertByEmail({
+              notifyOperationalAlert({
                 companyId: ctx.tenant!.companyId,
                 alertType: "ready_to_sell",
                 title,

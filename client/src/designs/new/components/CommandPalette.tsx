@@ -14,7 +14,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { trpc } from "@/lib/trpc";
 import type { PermissionPage } from "@shared/permissions";
-import {
+import { ListChecks,
   Activity, BarChart3, BookOpen, Cog, Database, DollarSign, Egg, FileText,
   Leaf, MapPinned, Plus, Scale, ShoppingCart, Syringe, Trash2, TrendingUp, UserRound, Users, Wheat,
 } from "lucide-react";
@@ -76,6 +76,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     { label: t("nav.dashboard"), icon: BarChart3, path: "/", page: "dashboard" },
     { label: t("nav.animals"), icon: Leaf, path: "/animals", page: "animals" },
     { label: t("nav.breedingPregnancy", "Breeding & Pregnancy"), icon: Egg, path: "/breeding", page: "breeding" },
+    { label: t("nav.tasks", "Tasks"), icon: ListChecks, path: "/tasks", page: "tasks" },
     { label: t("nav.feed"), icon: Wheat, path: "/feed", page: "feed" },
     { label: t("vaccine.title"), icon: Syringe, path: "/vaccinations", page: "vaccinations" },
     { label: t("nav.fattening", "Fattening"), icon: TrendingUp, path: "/fattening", page: "fattening" },
@@ -99,6 +100,7 @@ export function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenCh
     { label: t("vaccine.record", "Record vaccination"), icon: Syringe, path: "/vaccinations?new=1", page: "vaccinations" },
     { label: t("breeding.recordBirth", "Record birth"), icon: Egg, path: "/breeding?new=1", page: "breeding" },
     { label: t("feed.addStock", "Add feed stock"), icon: Wheat, path: "/feed?new=1", page: "feed" },
+    { label: t("tasks.add", "Add task"), icon: ListChecks, path: "/tasks?new=1", page: "tasks" },
   ] as { label: string; icon: typeof Plus; path: string; page: PermissionPage }[]).filter(q => perms.can(q.page, "create"));
 
   const go = (path: string) => { onOpenChange(false); setQuery(""); setLocation(path); };

@@ -19,6 +19,7 @@ export type DemoFixtures = Omit<FlatFixtures, "notifications"> & {
   notifications?: {
     list?: Leaf<Out["notifications"]["list"]>;
     preferences?: { get?: Leaf<Out["notifications"]["preferences"]["get"]> };
+    push?: { config?: Leaf<Out["notifications"]["push"]["config"]> };
   };
 };
 
@@ -553,6 +554,7 @@ const NOTIFICATIONS = [
   { id: 4, type: "pregnancy", title: "Birth expected soon", message: "EW-0201 is expected to give birth within 2 weeks.", priority: "medium" as const, hoursAgo: 48, read: true },
   { id: 5, type: "growth", title: "Ready to sell", message: "FT-0091 reached 49.3 kg, close to its 50 kg target.", priority: "low" as const, hoursAgo: 72, read: true, animalId: 11 },
 ].map((entry: { id: number; type: string; title: string; message: string; priority: "low" | "medium" | "high" | "critical"; hoursAgo: number; read: boolean; animalId?: number }) => ({
+  params: null,
   isRead: entry.read,
   id: entry.id,
   publicId: pid("ntf", entry.id),
@@ -671,7 +673,91 @@ const setting = (id: number, settingKey: string, settingValue: string, descripti
 
 export const DEMO_COMPANY_NAME = "APIS";
 
+const WORKERS = [
+  { id: 1, name: "Ali Hassan" },
+  { id: 2, name: "Omar Saeed" },
+  { id: 3, name: "Mahmoud Adel" },
+  { id: 4, name: "Karim Fathy" },
+];
+
+const demoTask = (
+  id: number,
+  title: string,
+  fields: Partial<{
+    notes: string; source: "manual" | "template" | "vaccination"; animalTag: string; dueDate: string;
+    status: "todo" | "started" | "done" | "blocked"; started: number; finished: number;
+  }> = {},
+) => ({
+  id,
+  version: 1,
+  title,
+  notes: fields.notes ?? null,
+  source: fields.source ?? "template",
+  animalId: null,
+  animalTag: fields.animalTag ?? null,
+  dueDate: fields.dueDate ?? day(0),
+  status: fields.status ?? "todo",
+  startedByWorkerId: fields.started ?? null,
+  startedByName: WORKERS.find(worker => worker.id === fields.started)?.name ?? null,
+  startedAt: fields.started ? at(0) : null,
+  finishedByWorkerId: fields.finished ?? null,
+  finishedByName: WORKERS.find(worker => worker.id === fields.finished)?.name ?? null,
+  finishedAt: fields.finished ? at(0) : null,
+  blockedReason: null,
+});
+
+const TASK_ROW = {
+  version: 1, companyId: COMPANY_ID, farmId: FARM_ID, createdAt: at(-30), updatedAt: at(-30), createdBy: OWNER_USER_ID,
+};
+
+const TABLET_TASKS = [
+  demoTask(1, "Morning feed, all pens", { status: "done", started: 2, finished: 2 }),
+  demoTask(2, "Feed Pen A", { status: "started", started: 1, notes: "Two scoops of the new mix per head." }),
+  demoTask(3, "Clean the water troughs"),
+  demoTask(4, "Clostridial (8-in-1)", { source: "vaccination", animalTag: "EW-0142" }),
+  demoTask(5, "Check the fence in Pen B", { source: "manual", dueDate: day(-1), notes: "The gap is by the north gate." }),
+];
+
+const FARM_REPORTS = [
+  { id: 1, type: "doctor_visit" as const, answer: true, animalTag: null, stockKinds: null, purchaseKind: null, itemName: null, workerName: WORKERS[0].name, workerId: WORKERS[0].id },
+  { id: 2, type: "animal_sick" as const, answer: null, animalTag: "EW-0142", stockKinds: null, purchaseKind: null, itemName: null, workerName: WORKERS[1].name, workerId: WORKERS[1].id },
+  { id: 3, type: "purchase" as const, answer: null, animalTag: null, stockKinds: null, purchaseKind: "medicine" as const, itemName: "Penicillin", workerName: WORKERS[0].name, workerId: WORKERS[0].id },
+];
+
 export const demoFixtures: DemoFixtures = {
+  tasks: {
+    today: {
+      date: day(0),
+      timeZone: "Africa/Cairo",
+      farmSelected: true,
+      tasks: TABLET_TASKS,
+      workers: WORKERS,
+      reports: FARM_REPORTS.map(({ workerId: _workerId, ...report }) => report),
+    },
+    overview: { date: day(0), tasks: TABLET_TASKS },
+    reportStatus: { date: day(0), missing: [] },
+    listReports: FARM_REPORTS.map(report => ({
+      ...TASK_ROW,
+      ...report,
+      publicId: pid("rpt", report.id),
+      reportDate: day(0),
+      amount: report.type === "purchase" ? "150.00" : null,
+      animalId: null,
+      matchedAnimalId: null,
+      matchedAnimalTag: null,
+      matchedAnimalActive: false,
+      confirmedAt: null,
+      confirmedBy: null,
+      deletedAt: null,
+      deletedBy: null,
+    })),
+    listTemplates: [
+      { ...TASK_ROW, id: 1, publicId: pid("tpl", 1), title: "Morning feed, all pens", notes: null, weekdays: 127, isActive: true, deletedAt: null, deletedBy: null },
+      { ...TASK_ROW, id: 2, publicId: pid("tpl", 2), title: "Feed Pen A", notes: "Two scoops of the new mix per head.", weekdays: 127, isActive: true, deletedAt: null, deletedBy: null },
+      { ...TASK_ROW, id: 3, publicId: pid("tpl", 3), title: "Clean the water troughs", notes: null, weekdays: 0b0100010, isActive: true, deletedAt: null, deletedBy: null },
+    ],
+    listWorkers: WORKERS.map(worker => ({ ...TASK_ROW, ...worker, publicId: pid("wrk", worker.id), isActive: true })),
+  },
   auth: {
     me: userRecord(USERS[0]),
     suspensionStatus: { suspended: false },
@@ -717,12 +803,14 @@ export const demoFixtures: DemoFixtures = {
       input?.unreadOnly ? NOTIFICATIONS.filter(row => !row.isRead) : NOTIFICATIONS,
     preferences: {
       get: {
-        pregnancy: { inApp: true, email: true },
-        feed_stock: { inApp: true, email: false },
-        vaccination: { inApp: true, email: true },
-        growth: { inApp: true, email: false },
+        pregnancy: { inApp: true, email: true, push: true },
+        feed_stock: { inApp: true, email: false, push: true },
+        vaccination: { inApp: true, email: true, push: true },
+        growth: { inApp: true, email: false, push: false },
+        tasks: { inApp: true, email: true, push: true },
       },
     },
+    push: { config: { publicKey: null } },
   },
   dashboard: {
     getKPIs: {

@@ -1,5 +1,6 @@
 import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
+import { useTranslation } from "react-i18next";
 
 import { cn } from "@/lib/utils";
 
@@ -7,9 +8,14 @@ function Tabs({
   className,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  // Radix writes dir="ltr" on its root unless told otherwise, which flips
+  // everything inside the tabs (tables included) back to LTR in Arabic.
+  const { i18n } = useTranslation();
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
+      // The admin app shares this file and doesn't set up translations.
+      dir={i18n.dir?.()}
       className={cn("flex flex-col gap-2", className)}
       {...props}
     />

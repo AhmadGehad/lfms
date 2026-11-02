@@ -88,6 +88,9 @@ isn't set.
 | `SMTP_PORT`     | SMTP port (default `587`)                                |
 | `SMTP_USER`     | SMTP auth username                                       |
 | `SMTP_PASSWORD` | SMTP auth password                                       |
+| `VAPID_PUBLIC_KEY` | Web Push key pair, from `npx web-push generate-vapid-keys`. Blank turns phone notifications off. Changing it drops every device's subscription. |
+| `VAPID_PRIVATE_KEY` | Private half of the pair. Keep it secret. |
+| `VAPID_SUBJECT` | Contact for push services, as `mailto:` or `https:`. |
 | `SMTP_FROM`     | From address used for outgoing password-reset emails     |
 | `SMTP_SECURE`   | Set to `1` for implicit TLS (typically with port `465`)  |
 

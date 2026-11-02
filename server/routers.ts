@@ -31,6 +31,7 @@ import { importRouter } from "./routers/import";
 import { backupRouter } from "./routers/backup";
 import { vaccinationRouter } from "./routers/vaccination";
 import { pregnancyRouter } from "./routers/pregnancy";
+import { tasksRouter } from "./routers/tasks";
 import { permissionsRouter } from "./routers/permissions";
 import { preferencesRouter } from "./routers/preferences";
 import { capitalRouter } from "./routers/capital";
@@ -235,6 +236,7 @@ export const appRouter = router({
   backup: backupRouter,
   vaccination: vaccinationRouter,
   pregnancy: pregnancyRouter,
+  tasks: tasksRouter,
   permissions: permissionsRouter,
   preferences: preferencesRouter,
   capital: capitalRouter,

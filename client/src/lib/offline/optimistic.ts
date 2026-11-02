@@ -13,6 +13,16 @@
  * the sync queue instead.
  */
 import type { QueryClient } from "@tanstack/react-query";
+import {
+  isYesNoReport,
+  nextTaskProgress,
+  type BlockedReason,
+  type PurchaseKind,
+  type ReportType,
+  type StockKind,
+  type TaskAction,
+  type TaskProgress,
+} from "../../../../shared/tasks";
 import { offlineQueryKey } from "./prefetch";
 import type { OfflineMutationPath } from "./offlineMutations";
 
@@ -82,11 +92,88 @@ const PLANS: Partial<Record<OfflineMutationPath, OptimisticPlan>> = {
 /** Snapshot taken before an optimistic patch, so it can be rolled back. */
 export type OptimisticSnapshot = Array<{ key: readonly unknown[]; previous: unknown }>;
 
+type TabletDayCache = {
+  tasks: Array<TaskProgress & { id: number; startedByName: string | null; finishedByName: string | null }>;
+  workers: Array<{ id: number; name: string }>;
+  reports?: Array<TabletReportCache>;
+};
+
+type TabletReportCache = {
+  id: number;
+  type: ReportType;
+  answer: boolean | null;
+  animalTag: string | null;
+  stockKinds: StockKind[] | null;
+  purchaseKind: PurchaseKind | null;
+  itemName: string | null;
+  workerName: string;
+};
+
+/**
+ * A tablet tap changes an existing row rather than appending one, so it runs the
+ * same rule the server will. The screen is right immediately, signal or not.
+ */
+function patchTabletDay(
+  day: TabletDayCache,
+  input: { taskId: number; action: TaskAction; workerId?: number | null; reason?: BlockedReason | null },
+): TabletDayCache {
+  const nameOf = (id: number | null) => day.workers.find(worker => worker.id === id)?.name ?? null;
+  return {
+    ...day,
+    tasks: day.tasks.map(task => {
+      if (task.id !== input.taskId) return task;
+      const next = nextTaskProgress(task, { action: input.action, workerId: input.workerId ?? null, reason: input.reason });
+      if (!next) return task;
+      return {
+        ...task,
+        ...next,
+        startedByName: next.startedByWorkerId === task.startedByWorkerId ? task.startedByName : nameOf(next.startedByWorkerId),
+        finishedByName: next.finishedByWorkerId === null
+          ? null
+          : next.finishedByWorkerId === task.startedByWorkerId
+            ? task.startedByName ?? nameOf(next.finishedByWorkerId)
+            : nameOf(next.finishedByWorkerId),
+      };
+    }),
+  };
+}
+
+/** A report shows straight away; a new yes/no answer replaces the day's old one. */
+function addTabletReport(
+  day: TabletDayCache,
+  input: Partial<Omit<TabletReportCache, "id" | "workerName">> & { type: ReportType; workerId: number },
+): TabletDayCache {
+  const row: TabletReportCache = {
+    id: -Date.now(),
+    type: input.type,
+    answer: input.answer ?? null,
+    animalTag: input.animalTag ?? null,
+    stockKinds: input.stockKinds ?? null,
+    purchaseKind: input.purchaseKind ?? null,
+    itemName: input.itemName ?? null,
+    workerName: day.workers.find(worker => worker.id === input.workerId)?.name ?? "",
+  };
+  const kept = (day.reports ?? []).filter(report => !(isYesNoReport(input.type) && report.type === input.type));
+  return { ...day, reports: [row, ...kept] };
+}
+
 export function applyOptimisticRow(
   queryClient: QueryClient,
   path: OfflineMutationPath,
   input: unknown,
 ): OptimisticSnapshot {
+  if (path === "tasks.recordAction" || path === "tasks.submitReport") {
+    const key = offlineQueryKey("tasks.today", undefined);
+    const previous = queryClient.getQueryData<TabletDayCache>(key);
+    if (!previous) return [];
+    // A poll already in flight would otherwise overwrite the tap with older data.
+    void queryClient.cancelQueries({ queryKey: key });
+    queryClient.setQueryData(key, path === "tasks.recordAction"
+      ? patchTabletDay(previous, input as Parameters<typeof patchTabletDay>[1])
+      : addTabletReport(previous, input as Parameters<typeof addTabletReport>[1]));
+    return [{ key, previous }];
+  }
+
   const plan = PLANS[path];
   if (!plan) return [];
 

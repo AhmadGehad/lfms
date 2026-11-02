@@ -1,3 +1,4 @@
+import { isDeathStatusName } from "@shared/tasks";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -100,7 +101,7 @@ function money(value: unknown) {
     : "—";
 }
 
-type AnimalView = "all" | "active" | "fattening" | "ready" | "females" | "sold";
+type AnimalView = "all" | "active" | "fattening" | "ready" | "females" | "sold" | "dead";
 
 function matchesAnimalSearch(row: any, query: string) {
   if (!query) return true;
@@ -116,9 +117,11 @@ function matchesAnimalSearch(row: any, query: string) {
 function matchesAnimalView(row: any, view: AnimalView) {
   const status = String(row.statusName ?? "").toLowerCase();
   const category = String(row.categoryName ?? "").toLowerCase();
-  const isSold = row.isExitStatus || status.includes("sold") || row.animal?.isActive === false;
+  const isExited = row.isExitStatus || status.includes("sold") || row.animal?.isActive === false;
+  const isDead = isExited && isDeathStatusName(status);
   if (view === "all") return true;
-  if (view === "sold") return isSold;
+  if (view === "sold") return isExited && !isDead;
+  if (view === "dead") return isDead;
   if (row.animal?.isActive === false) return false;
   if (view === "active") return true;
   if (view === "fattening") return category.includes("fatten") || status.includes("fatten");
@@ -490,7 +493,7 @@ export default function NewAnimals() {
 
   useEffect(() => {
     const qView = query.get("view");
-    if (qView === "all" || qView === "active" || qView === "fattening" || qView === "ready" || qView === "females" || qView === "sold") {
+    if (qView === "all" || qView === "active" || qView === "fattening" || qView === "ready" || qView === "females" || qView === "sold" || qView === "dead") {
       setView(qView);
     }
   }, [query]);
@@ -520,6 +523,7 @@ export default function NewAnimals() {
       ready: count("ready"),
       females: count("females"),
       sold: count("sold"),
+      dead: count("dead"),
     };
   }, [searchMatchedRows]);
 
@@ -633,6 +637,7 @@ export default function NewAnimals() {
           ["ready", t("animals.readyToSell", "Ready To Sell"), counts.ready],
           ["females", t("animals.females", "Females"), counts.females],
           ["sold", t("animals.sold", "Sold"), counts.sold],
+          ["dead", t("animals.dead", "Dead"), counts.dead],
         ] as const).map(([key, label, count]) => (
           <button
             key={key}
