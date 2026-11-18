@@ -1,20 +1,22 @@
 import { isDeathStatusName } from "@shared/tasks";
+import { matchesPregnancyFilter, PREGNANCY_FILTERS, summarizeReproduction, type PregnancyFilter, type Reproduction } from "@shared/reproduction";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { useLocation, useSearch } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useOwnerFilter } from "@/contexts/OwnerFilterContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { EditAnimalDialog } from "@/components/EditAnimalDialog";
-import { DollarSign, Leaf, MoreHorizontal, Pencil, Plus, Scale, Search, ShoppingCart, Syringe, Trash2 } from "lucide-react";
+import { Baby, DollarSign, Leaf, MoreHorizontal, Pencil, Plus, Scale, Search, ShoppingCart, Syringe, Trash2 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, type Column } from "../components/DataTable";
@@ -40,6 +42,80 @@ function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photo
         <div className="h-full w-full flex items-center justify-center text-xs text-muted-foreground">—</div>
       )}
     </div>
+  );
+}
+
+const NO_REPRODUCTION = { pregnancies: [], offspring: [] };
+
+function PregnancyCell({ summary }: { summary: Reproduction | undefined }) {
+  const { t } = useTranslation();
+  if (summary?.dueDate) {
+    // Two short lines, so it fits a phone's card as well as the table.
+    return (
+      <span className="inline-flex flex-col items-start gap-0.5">
+        <StatusBadge tone="info">{t("animals.pregnantNow", "Pregnant now")}</StatusBadge>
+        <span className="whitespace-nowrap text-xs text-muted-foreground">
+          {t("animals.dueOn", "Due")} <span dir="ltr" className="tabular-nums">{fmtDate(summary.dueDate)}</span>
+        </span>
+      </span>
+    );
+  }
+  if (summary && (summary.pastPregnancies > 0 || summary.gaveBirth)) {
+    return (
+      <span className="whitespace-nowrap text-sm text-muted-foreground">
+        {summary.pastPregnancies > 0
+          ? t("animals.wasPregnantCount", { count: summary.pastPregnancies })
+          : t("animals.wasPregnant", "Was pregnant")}
+      </span>
+    );
+  }
+  return <span className="text-muted-foreground">—</span>;
+}
+
+/** The row opens the animal, so the list of offspring keeps its clicks to itself. */
+function OffspringCell({ summary, parentTag }: { summary: Reproduction | undefined; parentTag: string }) {
+  const { t } = useTranslation();
+  const kids = summary?.offspring ?? [];
+  if (kids.length === 0) return <span className="text-muted-foreground">—</span>;
+  const keep = (event: React.SyntheticEvent) => event.stopPropagation();
+  return (
+    <span onClick={keep} onKeyDown={keep}>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-sm font-medium tabular-nums text-foreground hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
+            aria-label={t("animals.showOffspring", { count: kids.length, id: parentTag })}
+          >
+            <Baby className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            {kids.length}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-72 p-0" onClick={keep}>
+          <p className="border-b border-border px-3 py-2 text-sm font-semibold text-foreground">
+            {t("animals.offspringOf", { id: parentTag })}
+          </p>
+          <ul className="max-h-72 overflow-y-auto py-1">
+            {kids.map(kid => (
+              <li key={kid.id}>
+                <Link
+                  href={`/animals/${kid.id}`}
+                  className="flex min-h-11 items-center justify-between gap-3 px-3 py-1.5 text-sm hover:bg-surface focus-visible:outline-2 focus-visible:outline-ring"
+                >
+                  <span className="min-w-0">
+                    <span className="block font-medium text-foreground">{kid.tag}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {t(`animals.${kid.sex}`, kid.sex)} · <span dir="ltr" className="tabular-nums">{fmtDate(kid.birthDate)}</span>
+                    </span>
+                  </span>
+                  {!kid.isActive && <StatusBadge tone="neutral">{t("animals.notOnFarm", "Not on farm")}</StatusBadge>}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </PopoverContent>
+      </Popover>
+    </span>
   );
 }
 
@@ -294,6 +370,7 @@ function BulkEditDialog({
     onSuccess: (r: any) => {
       toast.success(`${r.count} ${t("animals.title", "animals")} ${t("common.updated", "updated")}`);
       utils.animals.list.invalidate();
+      utils.animals.reproduction.invalidate();
       utils.dashboard.getKPIs.invalidate();
       onOpenChange(false);
       onSuccess();
@@ -443,6 +520,10 @@ export default function NewAnimals() {
   const [filterSpecies, setFilterSpecies] = useState(() => query.get("species") || "all");
   const [filterStatus, setFilterStatus] = useState(() => query.get("status") || "all");
   const [filterAcquisitionType, setFilterAcquisitionType] = useState(() => query.get("source") || "all");
+  const [filterPregnancy, setFilterPregnancy] = useState<PregnancyFilter | "all">(() => {
+    const value = query.get("pregnancy");
+    return (PREGNANCY_FILTERS as readonly string[]).includes(value ?? "") ? value as PregnancyFilter : "all";
+  });
   
   // Sync filters to URL
   useEffect(() => {
@@ -453,9 +534,11 @@ export default function NewAnimals() {
     else params.delete("status");
     if (filterAcquisitionType !== "all") params.set("source", filterAcquisitionType);
     else params.delete("source");
+    if (filterPregnancy !== "all") params.set("pregnancy", filterPregnancy);
+    else params.delete("pregnancy");
     const qs = params.toString();
     setLocation(`${location.split("?")[0]}${qs ? `?${qs}` : ""}`);
-  }, [filterSpecies, filterStatus, filterAcquisitionType]);
+  }, [filterSpecies, filterStatus, filterAcquisitionType, filterPregnancy]);
   const [deleteRow, setDeleteRow] = useState<any | null>(null);
   const [view, setView] = useState<AnimalView>("active");
   const [selectedKeys, setSelectedKeys] = useState<Set<string | number>>(new Set());
@@ -477,6 +560,9 @@ export default function NewAnimals() {
   });
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: statuses } = trpc.config.getStatuses.useQuery();
+  // Pregnancies and births are recorded on other pages, so it's fetched fresh on every visit.
+  const { data: reproductionData } = trpc.animals.reproduction.useQuery(undefined, { refetchOnMount: "always" });
+  const reproduction = useMemo(() => summarizeReproduction(reproductionData ?? NO_REPRODUCTION), [reproductionData]);
 
   const deleteAnimal = trpc.recycleBin.deleteAnimal.useMutation({
     onSuccess: () => {
@@ -508,8 +594,9 @@ export default function NewAnimals() {
 
   const searchMatchedRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rowsBase.filter(a => matchesAnimalSearch(a, q));
-  }, [rowsBase, search]);
+    return rowsBase.filter(a => matchesAnimalSearch(a, q)
+      && matchesPregnancyFilter(reproduction.get(a.animal?.id), a.animal?.sex, filterPregnancy));
+  }, [rowsBase, search, reproduction, filterPregnancy]);
 
   const rows = useMemo(() => searchMatchedRows.filter(a => matchesAnimalView(a, view)), [searchMatchedRows, view]);
 
@@ -577,6 +664,27 @@ export default function NewAnimals() {
       cell: a => <StatusBadge tone={statusTone(a.statusName)}>{a.statusName ?? "—"}</StatusBadge>,
       sortValue: a => a.statusName,
       mobileLabel: t("animals.status", "Status"),
+    },
+    {
+      id: "pregnancy",
+      header: t("animals.pregnancy", "Pregnancy"),
+      cell: a => <PregnancyCell summary={reproduction.get(a.animal?.id)} />,
+      // Due soonest first, then those that were pregnant.
+      sortValue: a => {
+        const summary = reproduction.get(a.animal?.id);
+        if (summary?.dueDate) return Date.parse(summary.dueDate);
+        return summary?.pastPregnancies || summary?.gaveBirth ? Number.MAX_SAFE_INTEGER : null;
+      },
+      hideable: true,
+      mobileLabel: t("animals.pregnancy", "Pregnancy"),
+    },
+    {
+      id: "offspring",
+      header: t("animals.offspring", "Offspring"),
+      cell: a => <OffspringCell summary={reproduction.get(a.animal?.id)} parentTag={a.animal?.animalId ?? ""} />,
+      sortValue: a => reproduction.get(a.animal?.id)?.offspring.length ?? 0,
+      hideable: true,
+      mobileLabel: t("animals.offspring", "Offspring"),
     },
     { id: "acqType", header: t("animals.acquisitionType", "Acquisition Type"), cell: a => t(`animals.${a.animal?.acquisitionType}`, a.animal?.acquisitionType ?? "—"), sortValue: a => a.animal?.acquisitionType, hideable: true, defaultHidden: true, mobileLabel: t("animals.acquisitionType", "Acquisition Type") },
     { id: "birth", header: t("animals.birthDate", "Birth Date"), cell: a => fmtDate(a.animal?.birthDate), sortValue: a => a.animal?.birthDate, hideable: true, defaultHidden: true, mobileLabel: t("animals.birthDate", "Birth Date") },
@@ -656,10 +764,11 @@ export default function NewAnimals() {
         data={rows}
         columns={columns}
         rowKey={a => a.animal?.id}
-        loading={isLoading}
+        // Filtering by pregnancy before it has loaded would show the wrong animals.
+        loading={isLoading || (filterPregnancy !== "all" && !reproductionData)}
         storageKey="animals"
         onRowClick={a => setLocation(`/animals/${a.animal?.id}`)}
-        mobileColumns={["category", "weight", "status"]}
+        mobileColumns={filterPregnancy !== "all" || view === "females" ? ["status", "pregnancy", "offspring"] : ["category", "weight", "status"]}
         mobileRowActions={a => (canEdit || canWeigh || canSell || canDelete) ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -810,7 +919,7 @@ export default function NewAnimals() {
             description={t("animals.noneHint", "Animals you register or that are born will appear here.")}
           />
         }
-        activeFilterCount={[filterSpecies, filterStatus, filterAcquisitionType].filter(v => v !== "all").length}
+        activeFilterCount={[filterSpecies, filterStatus, filterAcquisitionType, filterPregnancy].filter(v => v !== "all").length}
         toolbar={
             <div className="relative">
               <Search className="pointer-events-none absolute inset-y-0 start-2.5 my-auto h-4 w-4 text-muted-foreground" />
@@ -849,6 +958,16 @@ export default function NewAnimals() {
                 <SelectItem value="all">{t("animals.allSources", "All sources")}</SelectItem>
                 <SelectItem value="purchased">{t("animals.purchased", "Purchased")}</SelectItem>
                 <SelectItem value="born">{t("animals.born", "Born")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterPregnancy} onValueChange={value => setFilterPregnancy(value as PregnancyFilter | "all")}>
+              <SelectTrigger className="h-9 w-40" aria-label={t("animals.pregnancy", "Pregnancy")}><SelectValue placeholder={t("animals.pregnancy", "Pregnancy")} /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("animals.anyPregnancy", "Any pregnancy")}</SelectItem>
+                <SelectItem value="pregnant">{t("animals.pregnantNow", "Pregnant now")}</SelectItem>
+                <SelectItem value="was_pregnant">{t("animals.wasPregnant", "Was pregnant")}</SelectItem>
+                <SelectItem value="has_offspring">{t("animals.hasOffspring", "Has offspring")}</SelectItem>
+                <SelectItem value="never_pregnant">{t("animals.neverPregnant", "Never pregnant")}</SelectItem>
               </SelectContent>
             </Select>
           </>

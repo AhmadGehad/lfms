@@ -2526,6 +2526,37 @@ export async function restorePregnancyRecord(id: number) {
   await db.update(pregnancyRecords).set({ deletedAt: null, deletedBy: null }).where(and(tenantScope(tenant, pregnancyRecords), eq(pregnancyRecords.id, id)));
 }
 
+/** Every pregnancy, and every animal with a known parent, for the Animals list's pregnancy filter and columns. */
+export async function getReproductionSummary() {
+  const db = await getDb();
+  if (!db) return { pregnancies: [], offspring: [] };
+  const tenant = requireTenantUserContext();
+  const [pregnancies, offspring] = await Promise.all([
+    db.select({
+      animalId: pregnancyRecords.animalId,
+      status: pregnancyRecords.status,
+      expectedDueDate: pregnancyRecords.expectedDueDate,
+    }).from(pregnancyRecords)
+      // An animal in the bin isn't on the list, so its pregnancies shouldn't count either.
+      .innerJoin(animals, and(eq(pregnancyRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId), isNull(animals.deletedAt)))
+      .where(and(tenantScope(tenant, pregnancyRecords), isNull(pregnancyRecords.deletedAt))),
+    db.select({
+      id: animals.id,
+      tag: animals.animalId,
+      damId: animals.damId,
+      sireId: animals.sireId,
+      sex: animals.sex,
+      birthDate: animals.birthDate,
+      isActive: animals.isActive,
+    }).from(animals).where(and(
+      tenantScope(tenant, animals),
+      isNull(animals.deletedAt),
+      or(isNotNull(animals.damId), isNotNull(animals.sireId)),
+    )),
+  ]);
+  return { pregnancies, offspring };
+}
+
 export async function getPregnancies(filters?: { animalId?: number; status?: string; ownerId?: number; dueWithinDays?: number }) {
   const db = await getDb();
   if (!db) return [];

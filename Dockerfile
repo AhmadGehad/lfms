@@ -32,7 +32,7 @@ RUN pnpm run check \
   && ! grep -q 'id="manus-runtime"' dist/public/index.html \
   && pnpm prune --prod
 
-FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13:nonroot@sha256:10747a1323be68f206aed893599d43e6697ad67257e7c42703553f99fbce3d33 AS runtime-base
+FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13:nonroot@sha256:39c66687298417dbf3ff2fb8b6012c20554494e16414ef7afd07b9abbb45b501 AS runtime-base
 
 WORKDIR /app
 ENV NODE_ENV=production
