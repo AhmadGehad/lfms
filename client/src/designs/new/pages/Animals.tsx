@@ -47,7 +47,7 @@ function AnimalPhotoCell({ animalId, photoKey, alt }: { animalId?: number; photo
 
 const NO_REPRODUCTION = { pregnancies: [], offspring: [] };
 
-function PregnancyCell({ summary, sex }: { summary: Reproduction | undefined; sex?: string }) {
+function PregnancyCell({ summary }: { summary: Reproduction | undefined }) {
   const { t } = useTranslation();
   if (summary?.dueDate) {
     // Two short lines, so it fits a phone's card as well as the table.
@@ -60,7 +60,7 @@ function PregnancyCell({ summary, sex }: { summary: Reproduction | undefined; se
       </span>
     );
   }
-  if (sex === "female" && summary && (summary.pastPregnancies > 0 || summary.gaveBirth)) {
+  if (summary && (summary.pastPregnancies > 0 || summary.gaveBirth)) {
     return (
       <span className="whitespace-nowrap text-sm text-muted-foreground">
         {summary.pastPregnancies > 0
@@ -370,6 +370,7 @@ function BulkEditDialog({
     onSuccess: (r: any) => {
       toast.success(`${r.count} ${t("animals.title", "animals")} ${t("common.updated", "updated")}`);
       utils.animals.list.invalidate();
+      utils.animals.reproduction.invalidate();
       utils.dashboard.getKPIs.invalidate();
       onOpenChange(false);
       onSuccess();
@@ -559,7 +560,8 @@ export default function NewAnimals() {
   });
   const { data: species } = trpc.config.getSpecies.useQuery();
   const { data: statuses } = trpc.config.getStatuses.useQuery();
-  const { data: reproductionData } = trpc.animals.reproduction.useQuery();
+  // Pregnancies and births are recorded on other pages, so it's fetched fresh on every visit.
+  const { data: reproductionData } = trpc.animals.reproduction.useQuery(undefined, { refetchOnMount: "always" });
   const reproduction = useMemo(() => summarizeReproduction(reproductionData ?? NO_REPRODUCTION), [reproductionData]);
 
   const deleteAnimal = trpc.recycleBin.deleteAnimal.useMutation({
@@ -666,11 +668,12 @@ export default function NewAnimals() {
     {
       id: "pregnancy",
       header: t("animals.pregnancy", "Pregnancy"),
-      cell: a => <PregnancyCell summary={reproduction.get(a.animal?.id)} sex={a.animal?.sex} />,
+      cell: a => <PregnancyCell summary={reproduction.get(a.animal?.id)} />,
       // Due soonest first, then those that were pregnant.
       sortValue: a => {
         const summary = reproduction.get(a.animal?.id);
-        return summary?.dueDate ?? (summary?.pastPregnancies || summary?.gaveBirth ? "~" : null);
+        if (summary?.dueDate) return Date.parse(summary.dueDate);
+        return summary?.pastPregnancies || summary?.gaveBirth ? Number.MAX_SAFE_INTEGER : null;
       },
       hideable: true,
       mobileLabel: t("animals.pregnancy", "Pregnancy"),
@@ -761,7 +764,8 @@ export default function NewAnimals() {
         data={rows}
         columns={columns}
         rowKey={a => a.animal?.id}
-        loading={isLoading}
+        // Filtering by pregnancy before it has loaded would show the wrong animals.
+        loading={isLoading || (filterPregnancy !== "all" && !reproductionData)}
         storageKey="animals"
         onRowClick={a => setLocation(`/animals/${a.animal?.id}`)}
         mobileColumns={filterPregnancy !== "all" || view === "females" ? ["status", "pregnancy", "offspring"] : ["category", "weight", "status"]}

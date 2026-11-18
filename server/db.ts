@@ -2536,7 +2536,10 @@ export async function getReproductionSummary() {
       animalId: pregnancyRecords.animalId,
       status: pregnancyRecords.status,
       expectedDueDate: pregnancyRecords.expectedDueDate,
-    }).from(pregnancyRecords).where(and(tenantScope(tenant, pregnancyRecords), isNull(pregnancyRecords.deletedAt))),
+    }).from(pregnancyRecords)
+      // An animal in the bin isn't on the list, so its pregnancies shouldn't count either.
+      .innerJoin(animals, and(eq(pregnancyRecords.animalId, animals.id), eq(animals.companyId, tenant.companyId), isNull(animals.deletedAt)))
+      .where(and(tenantScope(tenant, pregnancyRecords), isNull(pregnancyRecords.deletedAt))),
     db.select({
       id: animals.id,
       tag: animals.animalId,
