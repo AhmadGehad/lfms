@@ -896,6 +896,13 @@ export const demoFixtures: DemoFixtures = {
         (!input?.groupId || row.animal.groupId === input.groupId) &&
         (!input?.ownerId || row.animal.ownerId === input.ownerId),
       ),
+    reproduction: {
+      pregnancies: PREGNANCIES.map(row => ({ animalId: row.record.animalId, status: row.record.status, expectedDueDate: row.record.expectedDueDate })),
+      offspring: ANIMAL_ROWS.filter(row => row.animal.damId || row.animal.sireId).map(row => ({
+        id: row.animal.id, tag: row.animal.animalId, damId: row.animal.damId, sireId: row.animal.sireId,
+        sex: row.animal.sex, birthDate: row.animal.birthDate, isActive: row.animal.isActive,
+      })),
+    },
     lookup: (input?: { sex?: "male" | "female"; speciesId?: number }) =>
       ANIMAL_ROWS.filter(row =>
         row.animal.isActive &&

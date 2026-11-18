@@ -46,6 +46,7 @@ import {
   getWeightLog,
   recordStatusChange,
   updateAnimal,
+  getReproductionSummary,
 } from "../db";
 
 async function validateAnimalReferences(input: {
@@ -118,6 +119,9 @@ export const animalsRouter = router({
       }).optional()
     )
     .query(({ input }) => getAnimals(input ?? {})),
+
+  reproduction: permissionProcedure("animals", "view")
+    .query(() => getReproductionSummary()),
 
   lookup: anyPermissionProcedure([
     ["animals", "view"],
